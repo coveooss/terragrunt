@@ -1340,6 +1340,10 @@ If you were using Terragrunt <= v0.11.x and Terraform <= 0.8.x, here is how to m
     }
     ```
 
+    **NOTE**: We recommend using a completely new lock table name and NOT reusing the lock table from older versions of 
+    Terragrunt, as that older table had a different structure than what Terraform expects, and Terragrunt will not 
+    automatically recreate it.
+
     If you would like Terraform to automatically retry locks like Terragrunt did (this is particularly useful when 
     running Terraform as part of an automated script, such as a CI build), you use an `extra_arguments` block:
 
@@ -1360,22 +1364,24 @@ If you were using Terragrunt <= v0.11.x and Terraform <= 0.8.x, here is how to m
         }
       }
    
-      # Force Terraform to keep trying to acquire a lock for up to 20 minutes if someone else already has the lock 
-      extra_arguments "retry_lock" {
-        commands = [
-          "init",
-          "apply",
-          "refresh",
-          "import",
-          "plan",
-          "taint",
-          "untaint"
-        ]
-      
-        arguments = [
-          "-lock-timeout=20m"
-        ]    
-      }     
+      terraform { 
+        # Force Terraform to keep trying to acquire a lock for up to 20 minutes if someone else already has the lock 
+        extra_arguments "retry_lock" {
+          commands = [
+            "init",
+            "apply",
+            "refresh",
+            "import",
+            "plan",
+            "taint",
+            "untaint"
+          ]
+        
+          arguments = [
+            "-lock-timeout=20m"
+          ]    
+        }  
+      }
     }     
     ``` 
 
