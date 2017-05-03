@@ -16,6 +16,7 @@ import (
 var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(`\$\{.*?\}`)
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(`"\$\{.*?\}"`)
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`\$\{(.*?)\((.*?)\)\}`)
+var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
 var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,\s*"(?P<default>.*?)"\s*`)
 var MAX_PARENT_FOLDERS_TO_CHECK = 100
 
@@ -88,6 +89,29 @@ func ResolveTerragruntConfigString(terragruntConfigString string, include *Inclu
 	})
 
 	return
+}
+
+// Substitute any variables in the string if there is a value associated with the variable
+func SubstituteVars(str string, terragruntOptions *options.TerragruntOptions) string {
+	if newStr, ok := resolveTerragruntVars(str, terragruntOptions); ok {
+		return newStr
+	}
+	return str
+}
+
+// Resolve the references to variables ${var.name} if there are
+func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOptions) (string, bool) {
+	var match = false
+	str = HELPER_VAR_REGEX.ReplaceAllStringFunc(str, func(str string) string {
+		match = true
+		matches := HELPER_VAR_REGEX.FindStringSubmatch(str)
+		if found, ok := terragruntOptions.Variables[matches[1]]; ok {
+			return found.Value
+		}
+		return matches[0]
+	})
+
+	return str, match
 }
 
 // Resolve a single call to an interpolation function of the format ${some_function()} in a Terragrunt configuration

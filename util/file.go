@@ -2,6 +2,9 @@ package util
 
 import (
 	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/hashicorp/hcl"
+	"github.com/hashicorp/hcl/hcl/ast"
+	"github.com/hashicorp/hcl/hcl/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -113,6 +116,36 @@ func ReadFileAsString(path string) (string, error) {
 	}
 
 	return string(bytes), nil
+}
+
+// Return a map of the literal variables defined in the tfvars file
+func LoadTfVarLiterals(path string) (map[string]string, error) {
+	variables := map[string]string{}
+
+	content, err := ReadFileAsString(path)
+	if err != nil {
+		return variables, err
+	}
+
+	parsed, err := hcl.ParseString(content)
+	if err != nil {
+		return variables, err
+	}
+	for _, object := range parsed.Node.(*ast.ObjectList).Items {
+		key := object.Keys[0].Token.Text
+		switch v := object.Val.(type) {
+		// We only load literal types, we ignore complex structures (a.k.a. map, list)
+		case *ast.LiteralType:
+			value := v.Token.Text
+			if v.Token.Type == token.STRING {
+				// We strip the quote for string literals
+				value = value[1 : len(value)-1]
+			}
+			variables[key] = value
+		}
+	}
+
+	return variables, nil
 }
 
 // Copy the files and folders within the source folder into the destination folder
