@@ -114,14 +114,18 @@ func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOpti
 	return str, match
 }
 
-// Resolve a single call to an interpolation function of the format ${some_function()} in a Terragrunt configuration
-func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
+// Resolve a single call to an interpolation function of the format ${some_function()} of ${var.some_var} in a Terragrunt configuration
+func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+	if result, ok := resolveTerragruntVars(str, terragruntOptions); ok {
+		return result, nil
+	}
+
 	matches := HELPER_FUNCTION_SYNTAX_REGEX.FindStringSubmatch(str)
 	if len(matches) == 3 {
 		return executeTerragruntHelperFunction(matches[1], matches[2], include, terragruntOptions)
-	} else {
-		return "", errors.WithStackTrace(InvalidInterpolationSyntax(str))
 	}
+
+	return "", errors.WithStackTrace(InvalidInterpolationSyntax(str))
 }
 
 // Execute a single Terragrunt helper function and return its value as a string
