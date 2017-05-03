@@ -13,11 +13,35 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile("\\$\\{.*?\\}")
+var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(`\$\{.*?\}`)
+var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(`"\$\{.*?\}"`)
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`\$\{(.*?)\((.*?)\)\}`)
 var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
 var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,\s*"(?P<default>.*?)"\s*`)
 var MAX_PARENT_FOLDERS_TO_CHECK = 100
+
+// List of terraform commands that accept -lock-timeout
+var TERRAFORM_COMMANDS_NEED_LOCKING = []string{
+	"apply",
+	"destroy",
+	"import",
+	"init",
+	"plan",
+	"refresh",
+	"taint",
+	"untaint",
+}
+
+// List of terraform commands that accept -var or -var-file
+var TERRAFORM_COMMANDS_NEED_VARS = []string{
+	"apply",
+	"console",
+	"destroy",
+	"import",
+	"plan",
+	"push",
+	"refresh",
+}
 
 type EnvVar struct {
 	Name         string
@@ -29,12 +53,39 @@ type EnvVar struct {
 func ResolveTerragruntConfigString(terragruntConfigString string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (resolved string, finalErr error) {
 	// The function we pass to ReplaceAllStringFunc cannot return an error, so we have to use named error
 	// parameters to capture such errors.
-	resolved = INTERPOLATION_SYNTAX_REGEX.ReplaceAllStringFunc(terragruntConfigString, func(str string) string {
+
+	resolved = INTERPOLATION_SYNTAX_REGEX_SINGLE.ReplaceAllStringFunc(terragruntConfigString, func(str string) string {
+		// We do a special treatment for function returning an array of values because they need
+		// to be declared like that "${function()" and the result must get rid of the surrounding quote
+		// to return a real array of values.
+		internalStr := str[1 : len(str)-1] // We get rid of the surrounding quote
+		out, err := resolveTerragruntInterpolation(internalStr, include, terragruntOptions)
+		if err != nil {
+			finalErr = err
+		}
+
+		switch out := out.(type) {
+		case []string:
+			return util.ListToHCLArray(out)
+		}
+
+		// The function is not returning an array of string, so left the string unchanged
+		// Remaining functions will be processed by the next statement
+		return str
+	})
+
+	resolved = INTERPOLATION_SYNTAX_REGEX.ReplaceAllStringFunc(resolved, func(str string) string {
 		out, err := resolveTerragruntInterpolation(str, include, terragruntOptions)
 		if err != nil {
 			finalErr = err
 		}
-		return out
+
+		switch out := out.(type) {
+		case string:
+			return out
+		default:
+			return fmt.Sprintf("%v", out)
+		}
 	})
 
 	return
@@ -64,7 +115,7 @@ func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOpti
 }
 
 // Resolve a single call to an interpolation function of the format ${some_function()} of ${var.some_var} in a Terragrunt configuration
-func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
 	if result, ok := resolveTerragruntVars(str, terragruntOptions); ok {
 		return result, nil
 	}
@@ -78,7 +129,7 @@ func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragru
 }
 
 // Execute a single Terragrunt helper function and return its value as a string
-func executeTerragruntHelperFunction(functionName string, parameters string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+func executeTerragruntHelperFunction(functionName string, parameters string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
 	switch functionName {
 	case "find_in_parent_folders":
 		return findInParentFolders(terragruntOptions)
@@ -94,6 +145,10 @@ func executeTerragruntHelperFunction(functionName string, parameters string, inc
 		return getParentTfVarsDir(include, terragruntOptions)
 	case "get_aws_account_id":
 		return getAWSAccountID()
+	case "get_terraform_commands_that_need_vars":
+		return TERRAFORM_COMMANDS_NEED_VARS, nil
+	case "get_terraform_commands_that_need_locking":
+		return TERRAFORM_COMMANDS_NEED_LOCKING, nil
 	default:
 		return "", errors.WithStackTrace(UnknownHelperFunction(functionName))
 	}
