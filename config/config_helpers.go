@@ -115,7 +115,7 @@ func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOpti
 }
 
 // Resolve a single call to an interpolation function of the format ${some_function()} of ${var.some_var} in a Terragrunt configuration
-func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
 	if result, ok := resolveTerragruntVars(str, terragruntOptions); ok {
 		return result, nil
 	}
