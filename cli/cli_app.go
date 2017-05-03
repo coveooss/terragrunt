@@ -183,6 +183,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 		terragruntOptions.TerraformCliArgs = append(terragruntOptions.TerraformCliArgs, filterTerraformExtraArgs(terragruntOptions, conf)...)
 	}
 
+	// We read again the configuration file since new extrapolation of vars could be available after applying extra arguments
+	conf, err = config.ReadTerragruntConfig(terragruntOptions)
+	if err != nil {
+		return err
+	}
+
 	if sourceUrl, hasSourceUrl := getTerraformSourceUrl(terragruntOptions, conf); hasSourceUrl {
 		if err := downloadTerraformSource(sourceUrl, terragruntOptions); err != nil {
 			return err

@@ -33,6 +33,9 @@ type TerragruntOptions struct {
 	// Environment variables at runtime
 	Env map[string]string
 
+	// Terraform variables at runtime
+	Variables VariableList
+
 	// Download Terraform configurations from the specified source location into a temporary folder and run
 	// Terraform in that temporary folder
 	Source string
@@ -66,6 +69,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		WorkingDir:           workingDir,
 		Logger:               util.CreateLogger(""),
 		Env:                  map[string]string{},
+		Variables:            VariableList{},
 		Source:               "",
 		SourceUpdate:         false,
 		Writer:               os.Stdout,
@@ -105,6 +109,32 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		ErrWriter:            terragruntOptions.ErrWriter,
 	}
 }
+
+// Custom types
+type VariableList map[string]Variable
+
+func (this VariableList) SetValue(key, value string, source VariableSource) {
+	if this[key].Source <= source {
+		// We only override value if the source has less or equal precedence than the previous value
+		this[key] = Variable{source, value}
+	}
+}
+
+type VariableSource byte
+
+// Value and origin of a variable (origin is important due to the precedence of the definition)
+// i.e. A value specified by -var has precedence over value defined in -var-file
+type Variable struct {
+	Source VariableSource
+	Value  string
+}
+
+const (
+	UndefinedSource VariableSource = iota
+	Environment
+	VarFile
+	VarParameter
+)
 
 // Custom error types
 

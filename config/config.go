@@ -76,6 +76,7 @@ func (conf *TerraformConfig) String() string {
 type TerraformExtraArguments struct {
 	Name             string   `hcl:",key"`
 	Arguments        []string `hcl:"arguments,omitempty"`
+	Vars             []string `hcl:"vars,omitempty"`
 	RequiredVarFiles []string `hcl:"required_var_files,omitempty"`
 	OptionalVarFiles []string `hcl:"optional_var_files,omitempty"`
 	Commands         []string `hcl:"commands,omitempty"`
