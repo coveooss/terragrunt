@@ -94,7 +94,7 @@ func NewTerragruntOptionsForTest(terragruntConfigPath string) *TerragruntOptions
 func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *TerragruntOptions {
 	workingDir := filepath.Dir(terragruntConfigPath)
 
-	return &TerragruntOptions{
+	newOptions := TerragruntOptions{
 		TerragruntConfigPath: terragruntConfigPath,
 		TerraformPath:        terragruntOptions.TerraformPath,
 		NonInteractive:       terragruntOptions.NonInteractive,
@@ -102,12 +102,19 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		WorkingDir:           workingDir,
 		Logger:               util.CreateLogger(workingDir),
 		Env:                  terragruntOptions.Env,
+		Variables:            VariableList{},
 		Source:               terragruntOptions.Source,
 		SourceUpdate:         terragruntOptions.SourceUpdate,
 		RunTerragrunt:        terragruntOptions.RunTerragrunt,
 		Writer:               terragruntOptions.Writer,
 		ErrWriter:            terragruntOptions.ErrWriter,
 	}
+
+	// We do a deep copy of the variables since they must be disctint from the original
+	for key, value := range terragruntOptions.Variables {
+		newOptions.Variables.SetValue(key, value.Value, value.Source)
+	}
+	return &newOptions
 }
 
 // Custom types
