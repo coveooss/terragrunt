@@ -71,19 +71,22 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 
-	options := options.TerragruntOptions{
-		TerragruntConfigPath: filepath.ToSlash(terragruntConfigPath),
-		TerraformPath:        filepath.ToSlash(terraformPath),
-		NonInteractive:       parseBooleanArg(args, OPT_NON_INTERACTIVE, false),
-		TerraformCliArgs:     filterTerragruntArgs(args),
-		WorkingDir:           filepath.ToSlash(workingDir),
-		Logger:               util.CreateLogger(""),
-		RunTerragrunt:        runTerragrunt,
-		Source:               terraformSource,
-		SourceUpdate:         sourceUpdate,
-		Env:                  map[string]string{},
-		Variables:            options.VariableList{},
-	}
+	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
+
+    options := options.TerragruntOptions{
+		TerragruntConfigPath:   filepath.ToSlash(terragruntConfigPath),
+		TerraformPath:          filepath.ToSlash(terraformPath),
+		NonInteractive:         parseBooleanArg(args, OPT_NON_INTERACTIVE, false),
+		TerraformCliArgs:       filterTerragruntArgs(args),
+		WorkingDir:             filepath.ToSlash(workingDir),
+		Logger:                 util.CreateLogger(""),
+		RunTerragrunt:          runTerragrunt,
+		Source:                 terraformSource,
+		SourceUpdate:           sourceUpdate,
+		Env:                    map[string]string{},
+		Variables:              options.VariableList{},
+		IgnoreDependencyErrors: ignoreDependencyErrors,
+    }
 
 	parseEnvironmentVariables(&options, os.Environ())
 	parseVarsAndVarFiles(&options, args)
@@ -162,19 +165,19 @@ func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, env
 func splitVariable(str string) (key, value string, err error) {
 	variableSplit := strings.SplitN(str, "=", 2)
 
-	if len(variableSplit) == 2 {
+		if len(variableSplit) == 2 {
 		key, value, err = strings.TrimSpace(variableSplit[0]), variableSplit[1], nil
 	} else {
 		err = goErrors.New(fmt.Sprintf("Invalid variable format %v, should be name=value", str))
-	}
+		}
 	return
-}
+	}
 
 func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string) {
 	vars, err := util.LoadTfVarLiterals(path)
 	if err != nil {
 		terragruntOptions.Logger.Printf("Unable to read file %s, %v", path, err)
-	}
+}
 	for key, value := range vars {
 		terragruntOptions.Variables.SetValue(key, value, options.VarFile)
 	}
