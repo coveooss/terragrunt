@@ -99,47 +99,46 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 	cmd := firstArg(terragruntOptions.TerraformCliArgs)
 
 	for _, arg := range terragruntConfig.Terraform.ExtraArgs {
-		for _, arg_cmd := range arg.Commands {
-			// We first process all the -var because they have precedence over -var-file
-			if cmd == arg_cmd {
-				out = append(out, arg.Arguments...)
+		currentCommandIncluded := util.ListContainsElement(arg.Commands, cmd)
 
-				// If vars is specified, add -var <key=value> for each specified key
-				for _, varDef := range util.RemoveDuplicatesFromListKeepLast(arg.Vars) {
-					varDef = config.SubstituteVars(varDef, terragruntOptions)
-					out = append(out, "-var")
-					out = append(out, varDef)
-					if key, value, err := splitVariable(varDef); err != nil {
-						terragruntOptions.Logger.Printf("-var ignored in %v: %v", arg.Name, err)
-					} else {
-						terragruntOptions.Variables.SetValue(key, value, options.VarParameter)
-					}
-				}
+		if currentCommandIncluded {
+			out = append(out, arg.Arguments...)
+		}
+
+		// We first process all the -var because they have precedence over -var-file
+		// If vars is specified, add -var <key=value> for each specified key
+		for _, varDef := range util.RemoveDuplicatesFromListKeepLast(arg.Vars) {
+			varDef = config.SubstituteVars(varDef, terragruntOptions)
+			if key, value, err := splitVariable(varDef); err != nil {
+				terragruntOptions.Logger.Printf("-var ignored in %v: %v", arg.Name, err)
+			} else {
+				terragruntOptions.Variables.SetValue(key, value, options.VarParameter)
+			}
+			if currentCommandIncluded {
+				out = append(out, "-var", varDef)
 			}
 		}
 
-		for _, arg_cmd := range arg.Commands {
-			if cmd == arg_cmd {
-				out = append(out, arg.Arguments...)
+		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
+		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
+			file = config.SubstituteVars(file, terragruntOptions)
+			importTfVarFile(terragruntOptions, file)
+			if currentCommandIncluded {
+				out = append(out, fmt.Sprintf("-var-file=%s", file))
+			}
+		}
 
-				// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
-				for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
-					file = config.SubstituteVars(file, terragruntOptions)
+		// If OptionalVarFiles is specified, check for each file if it exists and if so, add -var-file=<file>
+		// It is possible that many files resolve to the same path, so we remove duplicates.
+		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.OptionalVarFiles) {
+			file = config.SubstituteVars(file, terragruntOptions)
+			if util.FileExists(file) {
+				if currentCommandIncluded {
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
-					importTfVarFile(terragruntOptions, file)
 				}
-
-				// If OptionalVarFiles is specified, check for each file if it exists and if so, add -var-file=<file>
-				// It is possible that many files resolve to the same path, so we remove duplicates.
-				for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.OptionalVarFiles) {
-					file = config.SubstituteVars(file, terragruntOptions)
-					if util.FileExists(file) {
-						out = append(out, fmt.Sprintf("-var-file=%s", file))
-						importTfVarFile(terragruntOptions, file)
-					} else {
-						terragruntOptions.Logger.Printf("Skipping var-file %s as it does not exist", file)
-					}
-				}
+				importTfVarFile(terragruntOptions, file)
+			} else if currentCommandIncluded {
+				terragruntOptions.Logger.Printf("Skipping var-file %s as it does not exist", file)
 			}
 		}
 	}
@@ -148,7 +147,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 }
 
 func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, environment []string) {
-	const tfPrefix = "TF_ENV_"
+	const tfPrefix = "TF_VAR_"
 	for i := 0; i < len(environment); i++ {
 		if key, value, err := splitVariable(environment[i]); err != nil {
 			terragruntOptions.Logger.Printf("Environment variable ignored: %v", err)
@@ -181,7 +180,6 @@ func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string) 
 	for key, value := range vars {
 		terragruntOptions.Variables.SetValue(key, value, options.VarFile)
 	}
-	terragruntOptions.Logger.Printf("Imported %v from %v", vars, path)
 }
 
 func parseVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []string) {
