@@ -107,11 +107,17 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 
 		// We first process all the -var because they have precedence over -var-file
 		// If vars is specified, add -var <key=value> for each specified key
-		for _, varDef := range util.RemoveDuplicatesFromListKeepLast(arg.Vars) {
+		keyFunc := func(key string) string { return strings.Split(key, "=")[0] }
+		varList := util.RemoveDuplicatesFromList(arg.Vars, true, keyFunc)
+		variablesExplicitlyProvided := terragruntOptions.VariablesExplicitlyProvided()
+		for _, varDef := range varList {
 			varDef = config.SubstituteVars(varDef, terragruntOptions)
 			if key, value, err := splitVariable(varDef); err != nil {
 				terragruntOptions.Logger.Printf("-var ignored in %v: %v", arg.Name, err)
 			} else {
+				if util.ListContainsElement(variablesExplicitlyProvided, key) {
+					continue
+				}
 				terragruntOptions.Variables.SetValue(key, value, options.VarParameter)
 			}
 			if currentCommandIncluded {

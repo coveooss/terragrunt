@@ -18,33 +18,32 @@ func ListContainsElement(list []string, element string) bool {
 
 // Return a copy of the given list with all instances of the given element removed
 func RemoveElementFromList(list []string, element string) []string {
-	out := []string{}
-	for _, item := range list {
-		if item != element {
-			out = append(out, item)
-		}
-	}
-	return out
+	return removeElementFromList(list, element, wholeValue)
 }
 
 // Returns a copy of the given list with all duplicates removed (keeping the first encountereds)
-func RemoveDuplicatesFromList(list []string) []string {
-	return removeDuplicatesFromList(list, false)
+func RemoveDuplicatesFromListKeepFirst(list []string) []string {
+	return RemoveDuplicatesFromList(list, false, wholeValue)
 }
 
 // Returns a copy of the given list with all duplicates removed (keeping the last encountereds)
 func RemoveDuplicatesFromListKeepLast(list []string) []string {
-	return removeDuplicatesFromList(list, true)
+	return RemoveDuplicatesFromList(list, true, wholeValue)
 }
 
-func removeDuplicatesFromList(list []string, keepLast bool) []string {
+// Returns a copy of the given list with all duplicates removed (keeping the last encountereds)
+// Params:
+//   list: The list to filter
+//   keepLast: Indicates whether the last or first encountered duplicate element should be kept
+//	 getKey: Function used to extract the actual key from the string
+func RemoveDuplicatesFromList(list []string, keepLast bool, getKey func(key string) string) []string {
 	out := make([]string, 0, len(list))
 	present := make(map[string]bool)
 
 	for _, value := range list {
-		if _, ok := present[value]; ok {
+		if _, ok := present[getKey(value)]; ok {
 			if keepLast {
-				out = RemoveElementFromList(out, value)
+				out = removeElementFromList(out, value, getKey)
 			} else {
 				continue
 			}
@@ -54,6 +53,18 @@ func removeDuplicatesFromList(list []string, keepLast bool) []string {
 	}
 	return out
 }
+
+func removeElementFromList(list []string, element string, getKey func(key string) string) []string {
+	out := []string{}
+	for _, item := range list {
+		if item != element {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func wholeValue(key string) string { return key }
 
 // Returns an HCL compliant formated list of strings
 func ListToHCLArray(list []string) string {

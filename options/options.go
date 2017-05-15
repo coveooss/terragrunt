@@ -177,6 +177,16 @@ func (terragruntOptions *TerragruntOptions) AddDeferredSaveVariables(filename st
 	terragruntOptions.deferredSaveList[filename] = true
 }
 
+// VariablesExplicitlyProvided returns the list of variables that have been explicitly provided as argument
+func (terragruntOptions *TerragruntOptions) VariablesExplicitlyProvided() (result []string) {
+	for key, arg := range terragruntOptions.Variables {
+		if arg.Source == VarParameterExplicit {
+			result = append(result, key)
+		}
+	}
+	return
+}
+
 // Custom types
 type VariableList map[string]Variable
 

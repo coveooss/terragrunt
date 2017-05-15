@@ -68,7 +68,7 @@ func TestRemoveDuplicatesFromList(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		f := RemoveDuplicatesFromList
+		f := RemoveDuplicatesFromListKeepFirst
 		if testCase.reverse {
 			f = RemoveDuplicatesFromListKeepLast
 		}

@@ -19,7 +19,7 @@ var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(`\$\{.*?\}`)
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(`"\$\{.*?\}"`)
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`\$\{(.*?)\((.*?)\)\}`)
 var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
-var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,\s*"(?P<default>.*?)"\s*`)
+var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,\s*(?:"(?P<default>.*?)"|var\.(?P<vardef>\w+))\s*`)
 var HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX = regexp.MustCompile(`\s*"(.*?)"\s*`)
 var MAX_PARENT_FOLDERS_TO_CHECK = 100
 
@@ -90,8 +90,6 @@ func ResolveTerragruntConfigString(terragruntConfigString string, include Includ
 			return fmt.Sprintf("%v", out)
 		}
 	})
-
-	fmt.Println("resolved =", resolved)
 
 	return
 }
@@ -200,19 +198,30 @@ func getParentTfVarsDir(include IncludeConfig, terragruntOptions *options.Terrag
 	return filepath.ToSlash(parentPath), nil
 }
 
-func parseGetEnvParameters(parameters string) (EnvVar, error) {
+func parseGetEnvParameters(parameters string, terragruntOptions *options.TerragruntOptions) (EnvVar, error) {
 	envVariable := EnvVar{}
 	matches := HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX.FindStringSubmatch(parameters)
-	if len(matches) < 2 {
+	if len(matches) < 4 {
 		return envVariable, errors.WithStackTrace(InvalidFunctionParameters(parameters))
 	}
 
 	for index, name := range HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX.SubexpNames() {
-		if name == "env" {
+		switch name {
+		case "env":
 			envVariable.Name = strings.TrimSpace(matches[index])
-		}
-		if name == "default" {
-			envVariable.DefaultValue = strings.TrimSpace(matches[index])
+		case "default":
+			if matches[index] != "" {
+				envVariable.DefaultValue = strings.TrimSpace(matches[index])
+			}
+		case "vardef":
+			if matches[index] != "" {
+				if value, found := terragruntOptions.Variables[matches[index]]; found {
+					envVariable.DefaultValue = fmt.Sprintf("%v", value.Value)
+				} else {
+					// The variable is not defined yet, we replace it by its name
+					envVariable.DefaultValue = fmt.Sprintf("${var.%v}", matches[index])
+				}
+			}
 		}
 	}
 
@@ -220,16 +229,11 @@ func parseGetEnvParameters(parameters string) (EnvVar, error) {
 }
 
 func getEnvironmentVariable(parameters string, terragruntOptions *options.TerragruntOptions) (string, error) {
-	fmt.Println("xxxx")
-	for key, value := range terragruntOptions.Variables {
-		fmt.Println(key, "=", value)
-	}
-	parameterMap, err := parseGetEnvParameters(parameters)
+	parameterMap, err := parseGetEnvParameters(parameters, terragruntOptions)
 
 	if err != nil {
-		// return "", errors.WithStackTrace(err)
+		return "", errors.WithStackTrace(err)
 	}
-	fmt.Println("name=", parameterMap.Name)
 	envValue, exists := terragruntOptions.Env[parameterMap.Name]
 
 	if !exists {
