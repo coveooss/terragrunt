@@ -1,14 +1,16 @@
 package util
 
 import (
+	"fmt"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/hashicorp/hcl"
-	"github.com/hashicorp/hcl/hcl/ast"
-	"github.com/hashicorp/hcl/hcl/token"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"sync"
 )
 
 // Return true if the given file exists
@@ -118,34 +120,97 @@ func ReadFileAsString(path string) (string, error) {
 	return string(bytes), nil
 }
 
-// Return a map of the literal variables defined in the tfvars file
-func LoadTfVarLiterals(path string) (map[string]string, error) {
-	variables := map[string]string{}
+// ReadFileAsStringFromSource returns the contents of the file at the given path
+// from an external source (github, s3, etc.) as a string
+// It uses terraform to execute its command
+func ReadFileAsStringFromSource(source, path string, terraform string) (localFile, content string, err error) {
+	cacheDir := filepath.Join(os.TempDir(), "terragrunt-cache", EncodeBase64Sha1(source))
+	sharedMutex.Lock()
+	defer sharedMutex.Unlock()
 
-	content, err := ReadFileAsString(path)
-	if err != nil {
-		return variables, err
+	if _, ok := sharedContent[cacheDir]; !ok {
+		cmd := exec.Command(terraform, "init", "-no-color", source, cacheDir)
+		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stderr, os.Stderr
+		err = cmd.Run()
+		if err != nil {
+			return
+		}
+		sharedContent[cacheDir] = true
 	}
+	localFile = filepath.Join(cacheDir, path)
+	content, err = ReadFileAsString(localFile)
+	return
+}
 
-	parsed, err := hcl.ParseString(content)
-	if err != nil {
-		return variables, err
-	}
-	for _, object := range parsed.Node.(*ast.ObjectList).Items {
-		key := object.Keys[0].Token.Text
-		switch v := object.Val.(type) {
-		// We only load literal types, we ignore complex structures (a.k.a. map, list)
-		case *ast.LiteralType:
-			value := v.Token.Text
-			if v.Token.Type == token.STRING {
-				// We strip the quote for string literals
-				value = value[1 : len(value)-1]
+var sharedMutex sync.Mutex
+var sharedContent = map[string]bool{}
+
+// FlattenHCL - Convert array of map to single map if there is only one element in the array
+// By default, the hcl.Unmarshal returns array of map even if there is only a single map in the definition
+func FlattenHCL(source map[string]interface{}) map[string]interface{} {
+	for key, value := range source {
+		switch value := value.(type) {
+		case []map[string]interface{}:
+			switch len(value) {
+			case 1:
+				source[key] = FlattenHCL(value[0])
+			default:
+				for i, subMap := range value {
+					value[i] = FlattenHCL(subMap)
+				}
 			}
-			variables[key] = value
+		}
+	}
+	return source
+}
+
+// Return a map of the variables defined in the tfvars file
+func LoadDefaultValues(files []string) (map[string]interface{}, error) {
+	content := map[string]interface{}{}
+
+	for _, file := range files {
+		bytes, err := ioutil.ReadFile(file)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = hcl.Unmarshal(bytes, &content); err != nil {
+			_, file = filepath.Split(file)
+			return nil, fmt.Errorf("%v %v", file, err)
 		}
 	}
 
-	return variables, nil
+	if variables := content["variable"]; variables != nil {
+		switch variables := variables.(type) {
+		case []map[string]interface{}:
+			result := map[string]interface{}{}
+			for _, value := range variables {
+				for name, value := range value {
+					value := value.([]map[string]interface{})[0]
+
+					if value := value["default"]; value != nil {
+						result[name] = value
+					}
+				}
+			}
+			return result, nil
+		}
+	}
+
+	return nil, nil
+}
+
+// Return a map of the variables defined in the tfvars file
+func LoadTfVars(path string) (map[string]interface{}, error) {
+	variables := map[string]interface{}{}
+
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return variables, err
+	}
+
+	err = hcl.Unmarshal(bytes, &variables)
+	return FlattenHCL(variables), err
 }
 
 // Copy the files and folders within the source folder into the destination folder
@@ -207,4 +272,27 @@ func JoinPath(elem ...string) string {
 // Use this function when cleaning paths to ensure the returned path uses / as the path separator to improve cross-platform compatibility
 func CleanPath(path string) string {
 	return filepath.ToSlash(filepath.Clean(path))
+}
+
+// ExpandArguments expands the list of arguments like x shell do
+func ExpandArguments(args []string, folder string) (result []string) {
+	prefix := folder + string(filepath.Separator)
+
+	for _, arg := range args {
+		if strings.ContainsAny(arg, "*?[]") {
+			if !filepath.IsAbs(arg) {
+				arg = prefix + arg
+			}
+			if expanded, _ := filepath.Glob(arg); expanded != nil {
+				for i := range expanded {
+					// We remove the prefix from the result as if it was executed directly in the folder directory
+					expanded[i] = strings.TrimPrefix(expanded[i], prefix)
+				}
+				result = append(result, expanded...)
+				continue
+			}
+		}
+		result = append(result, arg)
+	}
+	return
 }

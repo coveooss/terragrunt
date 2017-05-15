@@ -11,7 +11,10 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/urfave/cli"
 	"io"
+	"path/filepath"
 	"regexp"
+	"runtime"
+	"strings"
 )
 
 const OPT_TERRAGRUNT_CONFIG = "terragrunt-config"
@@ -202,18 +205,74 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 	}
 
 	// We read again the configuration file since new extrapolation of vars could be available after applying extra arguments
-	conf, err = config.ReadTerragruntConfig(terragruntOptions)
+	terragruntOptions.EraseNonDefinedVariables = true
+	conf, err = config.ParseConfigFile(terragruntOptions, config.IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
 	if err != nil {
 		return err
 	}
 
+	var tempFolder string
 	if sourceUrl, hasSourceUrl := getTerraformSourceUrl(terragruntOptions, conf); hasSourceUrl {
-		if err := downloadTerraformSource(sourceUrl, terragruntOptions); err != nil {
+		terragruntOptions.Uniqueness = conf.Uniqueness
+		if tempFolder, err = downloadTerraformSource(sourceUrl, terragruntOptions); err != nil {
 			return err
 		}
 	}
 
+	// If the temp directory has been specified in args, we replace the argument with the actual folder
+	for _, hook := range append(conf.PreHooks, conf.PostHooks...) {
+		for i, arg := range hook.Arguments {
+			hook.Arguments[i] = strings.Replace(arg, config.GET_TEMP_FOLDER, tempFolder, -1)
+		}
+	}
+
+	// Import the required files in the temporary folder
+	for _, importer := range conf.ImportFiles {
+		for _, source := range importer.Files {
+			if util.FileExists(source) {
+				target := filepath.Join(terragruntOptions.WorkingDir, filepath.Base(source))
+				terragruntOptions.Logger.Printf("Copy file %s to temporary folder %v\n", source, target)
+				if err := util.CopyFile(source, target); err != nil {
+					return err
+				}
+			} else if importer.Required {
+				return fmt.Errorf("Unable to import required file %s", source)
+			} else {
+				terragruntOptions.Logger.Printf("Skipping copy of %s to temporary folder, the source is not found\n", source)
+			}
+		}
+	}
+
 	if err := downloadModules(terragruntOptions); err != nil {
+		return err
+	}
+
+	tfFiles, err := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, "*.tf"))
+	if err != nil {
+		return err
+	}
+
+	// If there is no terraform file in the folder, we skip the command
+	if len(tfFiles) == 0 {
+		terragruntOptions.Logger.Println("No terraform file found, skipping folder")
+		return nil
+	}
+
+	// Retrieve the default variables from the .tf files
+	tfFiles, err = filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, "*.tf"))
+	variables, err := util.LoadDefaultValues(tfFiles)
+	if err != nil {
+		return err
+	}
+	for key, value := range variables {
+		terragruntOptions.Variables.SetValue(key, value, options.Default)
+	}
+
+	// Save all variable files requested in the terragrunt config
+	terragruntOptions.SaveVariables()
+
+	// Executing the pre-hooks commands if there are
+	if err := runHooks(terragruntOptions, conf.PreHooks); err != nil {
 		return err
 	}
 
@@ -223,7 +282,38 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 		}
 	}
 
-	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+	result := shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+
+	// Executing the post-hooks commands if there are
+	if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
+		terragruntOptions.Logger.Println(err)
+		return result
+	}
+
+	return result
+}
+
+// Execute the hooks. If OS is specified and the current OS is not listed, the command is ignored
+func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook) error {
+	for _, hook := range hooks {
+		if len(hook.OS) > 0 && !util.ListContainsElement(hook.OS, runtime.GOOS) {
+			terragruntOptions.Logger.Printf("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
+			continue
+		}
+		hook.Command = strings.TrimSpace(hook.Command)
+		if len(hook.Command) == 0 {
+			terragruntOptions.Logger.Printf("Hook %s skipped, no command to execute", hook.Name)
+			continue
+		}
+		cmd := shell.RunShellCommand
+		if hook.ExpandArgs {
+			cmd = shell.RunShellCommandExpandArgs
+		}
+		if err := cmd(terragruntOptions, hook.Command, hook.Arguments...); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the

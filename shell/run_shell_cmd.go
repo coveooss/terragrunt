@@ -12,6 +12,7 @@ import (
 
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/gruntwork-io/terragrunt/util"
 )
 
 // Run the given Terraform command
@@ -20,7 +21,7 @@ func RunTerraformCommand(terragruntOptions *options.TerragruntOptions, args ...s
 }
 
 // Run the given Terraform command but redirect all outputs (both stdout and stderr) to the logger instead of
-// the default stream. This allows us to isolate the true output of terrraform command from the artefact of commands
+// the default stream. This allows us to isolate the true output of terraform command from the artefact of commands
 // like init and get during the preparation steps.
 // If the user redirect the stdout, he will only get the output for the terraform desired command.
 func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.TerragruntOptions, args ...string) error {
@@ -37,7 +38,21 @@ func RunTerraformCommandAndCaptureOutput(terragruntOptions *options.TerragruntOp
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
 // the currently running app.
 func RunShellCommand(terragruntOptions *options.TerragruntOptions, command string, args ...string) error {
+	return runShellCommand(terragruntOptions, false, command, args...)
+}
+
+// Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
+// the currently running app.
+func RunShellCommandExpandArgs(terragruntOptions *options.TerragruntOptions, command string, args ...string) error {
+	return runShellCommand(terragruntOptions, true, command, args...)
+}
+
+func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bool, command string, args ...string) error {
 	terragruntOptions.Logger.Printf("Running command: %s %s", command, strings.Join(args, " "))
+
+	if expandArgs {
+		args = util.ExpandArguments(args, terragruntOptions.WorkingDir)
+	}
 
 	cmd := exec.Command(command, args...)
 
@@ -76,6 +91,12 @@ func runShellCommandAndCaptureOutput(terragruntOptions *options.TerragruntOption
 	}
 	terragruntOptionsCopy.Writer = stdout
 	terragruntOptionsCopy.ErrWriter = stdout
+
+	// If the user specified -no-color, we should respect it in intermediate calls too
+	const noColor = "-no-color"
+	if util.ListContainsElement(terragruntOptions.TerraformCliArgs, noColor) {
+		args = append(args, noColor)
+	}
 
 	err := RunShellCommand(terragruntOptionsCopy, command, args...)
 	return stdout.String(), err

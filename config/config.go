@@ -20,6 +20,10 @@ type TerragruntConfig struct {
 	Terraform    *TerraformConfig
 	RemoteState  *remote.RemoteState
 	Dependencies *ModuleDependencies
+	Uniqueness   string
+	PreHooks     []Hook
+	PostHooks    []Hook
+	ImportFiles  []ImportConfig
 }
 
 func (conf *TerragruntConfig) String() string {
@@ -34,6 +38,10 @@ type terragruntConfigFile struct {
 	Lock         *LockConfig         `hcl:"lock,omitempty"`
 	RemoteState  *remote.RemoteState `hcl:"remote_state,omitempty"`
 	Dependencies *ModuleDependencies `hcl:"dependencies,omitempty"`
+	Uniqueness   string              `hcl:"uniqueness_criteria"`
+	PreHooks     []Hook              `hcl:"pre_hooks,omitempty"`
+	PostHooks    []Hook              `hcl:"post_hooks,omitempty"`
+	ImportFiles  []ImportConfig      `hcl:"import_files,omitempty"`
 }
 
 // Older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -49,7 +57,17 @@ type tfvarsFileWithTerragruntConfig struct {
 // IncludeConfig represents the configuration settings for a parent Terragrunt configuration file that you can
 // "include" in a child Terragrunt configuration file
 type IncludeConfig struct {
-	Path string `hcl:"path"`
+	Source    string `hcl:"source"`
+	Path      string `hcl:"path"`
+	IncludeBy *IncludeConfig
+}
+
+func (include IncludeConfig) String() string {
+	var includeBy string
+	if include.IncludeBy != nil {
+		includeBy = fmt.Sprintf(" included by %v", include.IncludeBy)
+	}
+	return fmt.Sprintf("IncludeConfig: %v%s", util.JoinPath(include.Source, include.Path), includeBy)
 }
 
 // ModuleDependencies represents the paths to other Terraform modules that must be applied before the current module
@@ -84,6 +102,31 @@ type TerraformExtraArguments struct {
 
 func (conf *TerraformExtraArguments) String() string {
 	return fmt.Sprintf("TerraformArguments{Name = %s, Arguments = %v, Commands = %v}", conf.Name, conf.Arguments, conf.Commands)
+}
+
+// Hook is a definition of user command that should be executed as part of the terragrunt process
+type Hook struct {
+	Name       string   `hcl:",key"`
+	Command    string   `hcl:"command"`
+	OS         []string `hcl:"os,omitempty"`
+	Arguments  []string `hcl:"arguments,omitempty"`
+	ExpandArgs bool     `hcl:"expand_args,omitempty"`
+}
+
+func (hook Hook) String() string {
+	return fmt.Sprintf("Hook %s: %s %s", hook.Name, hook.Command, strings.Join(hook.Arguments, " "))
+}
+
+// ImportConfig is a configuration of files that must be imported from another directory to the terraform directory
+// prior executing terraform commands
+type ImportConfig struct {
+	Name     string   `hcl:",key"`
+	Files    []string `hcl:"files"`
+	Required bool     `hcl:"required,omitempty"`
+}
+
+func (importConfig ImportConfig) String() string {
+	return fmt.Sprintf("ImportConfig %s required=%v: %s ", importConfig.Name, importConfig.Required, importConfig.Files)
 }
 
 // Return the default path to use for the Terragrunt configuration file. The reason this is a method rather than a
@@ -148,7 +191,7 @@ func isOldTerragruntConfig(path string) bool {
 	return strings.HasSuffix(path, OldTerragruntConfigPath)
 }
 
-// Retrusn true if the given path points to a new (current) Terragrunt config file
+// Returns true if the given path points to a new (current) Terragrunt config file
 func isNewTerragruntConfig(path string) (bool, error) {
 	configContents, err := util.ReadFileAsString(path)
 	if err != nil {
@@ -170,22 +213,33 @@ func containsTerragruntBlock(configString string) bool {
 // Read the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	terragruntOptions.Logger.Printf("Reading Terragrunt config file at %s", terragruntOptions.TerragruntConfigPath)
-	return ParseConfigFile(terragruntOptions.TerragruntConfigPath, terragruntOptions, nil)
+	return ParseConfigFile(terragruntOptions, IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
 }
 
 // Parse the Terragrunt config file at the given path. If the include parameter is not nil, then treat this as a config
 // included in some other config file when resolving relative paths.
-func ParseConfigFile(configPath string, terragruntOptions *options.TerragruntOptions, include *IncludeConfig) (*TerragruntConfig, error) {
-	if isOldTerragruntConfig(configPath) {
-		terragruntOptions.Logger.Printf("DEPRECATION WARNING: Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", configPath, DefaultTerragruntConfigPath)
+func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
+	if isOldTerragruntConfig(include.Path) {
+		terragruntOptions.Logger.Printf("DEPRECATION WARNING: Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
 	}
 
-	configString, err := util.ReadFileAsString(configPath)
+	var (
+		configString string
+		err          error
+	)
+	if include.Source == "" {
+		configString, err = util.ReadFileAsString(include.Path)
+	} else {
+		if include.Path == "" {
+			include.Path = DefaultTerragruntConfigPath
+		}
+		include.Path, configString, err = util.ReadFileAsStringFromSource(include.Source, include.Path, terragruntOptions.TerraformPath)
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	config, err := parseConfigString(configString, terragruntOptions, include, configPath)
+	config, err := parseConfigString(configString, terragruntOptions, include)
 	if err != nil {
 		return nil, err
 	}
@@ -194,18 +248,18 @@ func ParseConfigFile(configPath string, terragruntOptions *options.TerragruntOpt
 }
 
 // Parse the Terragrunt config contained in the given string.
-func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include *IncludeConfig, configPath string) (*TerragruntConfig, error) {
+func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
 	resolvedConfigString, err := ResolveTerragruntConfigString(configString, include, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(resolvedConfigString, configPath)
+	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(resolvedConfigString, include.Path)
 	if err != nil {
 		return nil, err
 	}
 	if terragruntConfigFile == nil {
-		return nil, errors.WithStackTrace(CouldNotResolveTerragruntConfigInFile(configPath))
+		return nil, errors.WithStackTrace(CouldNotResolveTerragruntConfigInFile(include.Path))
 	}
 
 	config, err := convertToTerragruntConfig(terragruntConfigFile, terragruntOptions)
@@ -213,20 +267,17 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return nil, err
 	}
 
-	if include != nil && terragruntConfigFile.Include != nil {
-		return nil, errors.WithStackTrace(TooManyLevelsOfInheritance{
-			ConfigPath:             terragruntOptions.TerragruntConfigPath,
-			FirstLevelIncludePath:  include.Path,
-			SecondLevelIncludePath: terragruntConfigFile.Include.Path,
-		})
+	if terragruntConfigFile.Include == nil {
+		return config, nil
 	}
+
+	terragruntConfigFile.Include.IncludeBy = &include
 
 	includedConfig, err := parseIncludedConfig(terragruntConfigFile.Include, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
-
-	return mergeConfigWithIncludedConfig(config, includedConfig)
+	return mergeConfigWithIncludedConfig(config, includedConfig, terragruntOptions)
 }
 
 // Parse the given config string, read from the given config file, as a terragruntConfigFile struct. This method solely
@@ -249,7 +300,7 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 
 // Merge the given config with an included config. Anything specified in the current config will override the contents
 // of the included config. If the included config is nil, just return the current config.
-func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *TerragruntConfig) (*TerragruntConfig, error) {
+func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *TerragruntConfig, terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	if includedConfig == nil {
 		return config, nil
 	}
@@ -259,35 +310,120 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 	}
 
 	if config.Terraform != nil {
-		includedConfig.Terraform = config.Terraform
+		if includedConfig.Terraform == nil {
+			includedConfig.Terraform = config.Terraform
+		} else {
+			if config.Terraform.Source != "" {
+				includedConfig.Terraform = config.Terraform
+			}
+
+			mergeExtraArgs(terragruntOptions, config.Terraform.ExtraArgs, &includedConfig.Terraform.ExtraArgs)
+		}
 	}
 
 	if config.Dependencies != nil {
 		includedConfig.Dependencies = config.Dependencies
 	}
 
+	if config.Uniqueness != "" {
+		includedConfig.Uniqueness = config.Uniqueness
+	}
+
+	mergePreHooks(terragruntOptions, config.PreHooks, &includedConfig.PreHooks)
+	mergePostHooks(terragruntOptions, config.PostHooks, &includedConfig.PostHooks)
+	mergeImports(terragruntOptions, config.ImportFiles, &includedConfig.ImportFiles)
+
 	return includedConfig, nil
 }
 
-// Parse the config of the given include, if one is specified
-func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
-	if includedConfig == nil {
-		return nil, nil
+// Merge the extra arguments priorising those defined in the leaf
+func mergeExtraArgs(terragruntOptions *options.TerragruntOptions, original []TerraformExtraArguments, newExtra *[]TerraformExtraArguments) {
+	result := *newExtra
+addExtra:
+	for _, extra := range original {
+		for i, existing := range result {
+			if existing.Name == extra.Name {
+				terragruntOptions.Logger.Printf("Skipping extra_arguments %v as it is overridden in the current config", extra.Name)
+				// For extra args, we want to keep the values specified in the child and put them after
+				// the parent ones, so if we encounter a duplicate, we just overwrite it.
+				result[i] = extra
+				continue addExtra
+			}
+		}
+		result = append(result, extra)
 	}
-	if includedConfig.Path == "" {
+	*newExtra = result
+}
+
+// Merge the extra arguments priorising those defined in the leaf
+func mergePreHooks(terragruntOptions *options.TerragruntOptions, original []Hook, newHooks *[]Hook) {
+	result := *newHooks
+addHook:
+	for _, hook := range original {
+		for i, existing := range result {
+			if existing.Name == hook.Name {
+				terragruntOptions.Logger.Printf("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				result[i] = hook
+				continue addHook
+			}
+		}
+		result = append(result, hook)
+	}
+	*newHooks = result
+}
+
+func mergePostHooks(terragruntOptions *options.TerragruntOptions, original []Hook, newHooks *[]Hook) {
+	result := original
+addHook:
+	for _, hook := range *newHooks {
+		for _, existing := range original {
+			if existing.Name == hook.Name {
+				terragruntOptions.Logger.Printf("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				continue addHook
+			}
+		}
+		result = append(result, hook)
+	}
+	*newHooks = result
+}
+
+// Merge the import files priorising those defined in the leaf
+func mergeImports(terragruntOptions *options.TerragruntOptions, original []ImportConfig, newImports *[]ImportConfig) {
+	result := *newImports
+addImport:
+	for _, importer := range original {
+		for i, existing := range result {
+			if existing.Name == importer.Name {
+				terragruntOptions.Logger.Printf("Skipping ImportFiles %v as it is overridden in the current config", importer.Name)
+				result[i] = importer
+				continue addImport
+			}
+		}
+		result = append(result, importer)
+	}
+	*newImports = result
+}
+
+// Parse the config of the given include, if one is specified
+func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
+	if includedConfig.Path == "" && includedConfig.Source == "" {
 		return nil, errors.WithStackTrace(IncludedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
 	}
 
-	resolvedIncludePath, err := ResolveTerragruntConfigString(includedConfig.Path, nil, terragruntOptions)
+	includedConfig.Path, err = ResolveTerragruntConfigString(includedConfig.Path, *includedConfig, terragruntOptions)
+	if err != nil {
+		return nil, err
+	}
+	includedConfig.Source, err = ResolveTerragruntConfigString(includedConfig.Source, *includedConfig, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	if !filepath.IsAbs(resolvedIncludePath) {
-		resolvedIncludePath = util.JoinPath(filepath.Dir(terragruntOptions.TerragruntConfigPath), resolvedIncludePath)
+	if !filepath.IsAbs(includedConfig.Path) && includedConfig.Source == "" {
+		includedConfig.Path = util.JoinPath(filepath.Dir(includedConfig.IncludeBy.Path), includedConfig.Path)
 	}
 
-	return ParseConfigFile(resolvedIncludePath, terragruntOptions, includedConfig)
+	return ParseConfigFile(terragruntOptions, *includedConfig)
 }
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
@@ -309,6 +445,10 @@ func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, t
 
 	terragruntConfig.Terraform = terragruntConfigFromFile.Terraform
 	terragruntConfig.Dependencies = terragruntConfigFromFile.Dependencies
+	terragruntConfig.Uniqueness = terragruntConfigFromFile.Uniqueness
+	terragruntConfig.PreHooks = terragruntConfigFromFile.PreHooks
+	terragruntConfig.PostHooks = terragruntConfigFromFile.PostHooks
+	terragruntConfig.ImportFiles = terragruntConfigFromFile.ImportFiles
 
 	return terragruntConfig, nil
 }
@@ -318,17 +458,7 @@ func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, t
 type IncludedConfigMissingPath string
 
 func (err IncludedConfigMissingPath) Error() string {
-	return fmt.Sprintf("The include configuration in %s must specify a 'path' parameter", string(err))
-}
-
-type TooManyLevelsOfInheritance struct {
-	ConfigPath             string
-	FirstLevelIncludePath  string
-	SecondLevelIncludePath string
-}
-
-func (err TooManyLevelsOfInheritance) Error() string {
-	return fmt.Sprintf("%s includes %s, which itself includes %s. Only one level of includes is allowed.", err.ConfigPath, err.FirstLevelIncludePath, err.SecondLevelIncludePath)
+	return fmt.Sprintf("The include configuration in %s must specify a 'path' and/or 'source' parameter", string(err))
 }
 
 type CouldNotResolveTerragruntConfigInFile string

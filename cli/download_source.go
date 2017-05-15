@@ -44,25 +44,25 @@ var forcedRegexp = regexp.MustCompile(`^([A-Za-z0-9]+)::(.+)$`)
 //
 // See the processTerraformSource method for how we determine the temporary folder so we can reuse it across multiple
 // runs of Terragrunt to avoid downloading everything from scratch every time.
-func downloadTerraformSource(source string, terragruntOptions *options.TerragruntOptions) error {
+func downloadTerraformSource(source string, terragruntOptions *options.TerragruntOptions) (string, error) {
 	terraformSource, err := processTerraformSource(source, terragruntOptions)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err := downloadTerraformSourceIfNecessary(terraformSource, terragruntOptions); err != nil {
-		return err
+		return "", err
 	}
 
 	terragruntOptions.Logger.Printf("Copying files from %s into %s", terragruntOptions.WorkingDir, terraformSource.WorkingDir)
 	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, terraformSource.WorkingDir); err != nil {
-		return err
+		return "", err
 	}
 
 	terragruntOptions.Logger.Printf("Setting working directory to %s", terraformSource.WorkingDir)
 	terragruntOptions.WorkingDir = terraformSource.WorkingDir
 
-	return nil
+	return terraformSource.DownloadDir, nil
 }
 
 // Download the specified TerraformSource if the latest code hasn't already been downloaded.
@@ -195,7 +195,9 @@ func processTerraformSource(source string, terragruntOptions *options.Terragrunt
 		return nil, err
 	}
 
-	encodedWorkingDir := util.EncodeBase64Sha1(canonicalWorkingDir)
+	// We add the uniqueness factor to the folder name to ensure that distinct environment are processed in
+	// distinct directory
+	encodedWorkingDir := util.EncodeBase64Sha1(canonicalWorkingDir + terragruntOptions.Uniqueness)
 	downloadDir := util.JoinPath(os.TempDir(), "terragrunt-download", encodedWorkingDir, rootPath)
 	workingDir := util.JoinPath(downloadDir, modulePath)
 	versionFile := util.JoinPath(downloadDir, ".terragrunt-source-version")
@@ -333,7 +335,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 }
 
 // There are two ways a user can tell Terragrunt that it needs to download Terraform configurations from a specific
-// URL: via a command-line option or via an entry in the Terragrunt configuratino. If the user used one of these, this
+// URL: via a command-line option or via an entry in the Terragrunt configuration. If the user used one of these, this
 // method returns the source URL and the boolean true; if not, this method returns an empty string and false.
 func getTerraformSourceUrl(terragruntOptions *options.TerragruntOptions, terragruntConfig *config.TerragruntConfig) (string, bool) {
 	if terragruntOptions.Source != "" {

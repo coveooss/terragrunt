@@ -207,7 +207,15 @@ func TestParseEnvironmentVariables(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualVariables := parseEnvironmentVariables(testCase.environmentVariables)
-		assert.Equal(t, testCase.expectedVariables, actualVariables)
+		var mockOptions = options.TerragruntOptions{
+			TerragruntConfigPath: "test-env-mock",
+			NonInteractive:       true,
+			Env:                  map[string]string{},
+			Variables:            options.VariableList{},
+			Logger:               util.CreateLogger(""),
+		}
+
+		parseEnvironmentVariables(&mockOptions, testCase.environmentVariables)
+		assert.Equal(t, testCase.expectedVariables, mockOptions.Env)
 	}
 }

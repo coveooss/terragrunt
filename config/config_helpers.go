@@ -13,11 +13,14 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
+const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
+
 var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(`\$\{.*?\}`)
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(`"\$\{.*?\}"`)
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`\$\{(.*?)\((.*?)\)\}`)
 var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
 var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,\s*"(?P<default>.*?)"\s*`)
+var HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX = regexp.MustCompile(`\s*"(.*?)"\s*`)
 var MAX_PARENT_FOLDERS_TO_CHECK = 100
 
 // List of terraform commands that accept -lock-timeout
@@ -50,7 +53,7 @@ type EnvVar struct {
 
 // Given a string value from a Terragrunt configuration, parse the string, resolve any calls to helper functions using
 // the syntax ${...}, and return the final value.
-func ResolveTerragruntConfigString(terragruntConfigString string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (resolved string, finalErr error) {
+func ResolveTerragruntConfigString(terragruntConfigString string, include IncludeConfig, terragruntOptions *options.TerragruntOptions) (resolved string, finalErr error) {
 	// The function we pass to ReplaceAllStringFunc cannot return an error, so we have to use named error
 	// parameters to capture such errors.
 
@@ -88,6 +91,8 @@ func ResolveTerragruntConfigString(terragruntConfigString string, include *Inclu
 		}
 	})
 
+	fmt.Println("resolved =", resolved)
+
 	return
 }
 
@@ -106,7 +111,14 @@ func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOpti
 		match = true
 		matches := HELPER_VAR_REGEX.FindStringSubmatch(str)
 		if found, ok := terragruntOptions.Variables[matches[1]]; ok {
-			return found.Value
+			return fmt.Sprint(found.Value)
+		}
+		if terragruntOptions.EraseNonDefinedVariables {
+			if !warningDone[matches[0]] {
+				terragruntOptions.Logger.Printf("Variable %s undefined", matches[0])
+				warningDone[matches[0]] = true
+			}
+			return ""
 		}
 		return matches[0]
 	})
@@ -114,8 +126,10 @@ func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOpti
 	return str, match
 }
 
+var warningDone = map[string]bool{}
+
 // Resolve a single call to an interpolation function of the format ${some_function()} of ${var.some_var} in a Terragrunt configuration
-func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
+func resolveTerragruntInterpolation(str string, include IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
 	if result, ok := resolveTerragruntVars(str, terragruntOptions); ok {
 		return result, nil
 	}
@@ -129,7 +143,7 @@ func resolveTerragruntInterpolation(str string, include *IncludeConfig, terragru
 }
 
 // Execute a single Terragrunt helper function and return its value as a string
-func executeTerragruntHelperFunction(functionName string, parameters string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
+func executeTerragruntHelperFunction(functionName string, parameters string, include IncludeConfig, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
 	switch functionName {
 	case "find_in_parent_folders":
 		return findInParentFolders(terragruntOptions)
@@ -139,16 +153,22 @@ func executeTerragruntHelperFunction(functionName string, parameters string, inc
 		return pathRelativeFromInclude(include, terragruntOptions)
 	case "get_env":
 		return getEnvironmentVariable(parameters, terragruntOptions)
-	case "get_tfvars_dir":
+	case "get_current_dir":
+		return filepath.Dir(include.Path), nil
+	case "get_leaf_dir", "get_tfvars_dir":
 		return getTfVarsDir(terragruntOptions)
-	case "get_parent_tfvars_dir":
+	case "get_parent_dir", "get_parent_tfvars_dir":
 		return getParentTfVarsDir(include, terragruntOptions)
 	case "get_aws_account_id":
 		return getAWSAccountID()
+	case "save_variables":
+		return saveVariables(parameters, terragruntOptions)
 	case "get_terraform_commands_that_need_vars":
 		return TERRAFORM_COMMANDS_NEED_VARS, nil
 	case "get_terraform_commands_that_need_locking":
 		return TERRAFORM_COMMANDS_NEED_LOCKING, nil
+	case "get_temp_folder":
+		return GET_TEMP_FOLDER, nil
 	default:
 		return "", errors.WithStackTrace(UnknownHelperFunction(functionName))
 	}
@@ -165,7 +185,7 @@ func getTfVarsDir(terragruntOptions *options.TerragruntOptions) (string, error) 
 }
 
 // Return the parent directory where the Terragrunt configuration file lives
-func getParentTfVarsDir(include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+func getParentTfVarsDir(include IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
 	parentPath, err := pathRelativeFromInclude(include, terragruntOptions)
 	if err != nil {
 		return "", errors.WithStackTrace(err)
@@ -200,11 +220,16 @@ func parseGetEnvParameters(parameters string) (EnvVar, error) {
 }
 
 func getEnvironmentVariable(parameters string, terragruntOptions *options.TerragruntOptions) (string, error) {
+	fmt.Println("xxxx")
+	for key, value := range terragruntOptions.Variables {
+		fmt.Println(key, "=", value)
+	}
 	parameterMap, err := parseGetEnvParameters(parameters)
 
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		// return "", errors.WithStackTrace(err)
 	}
+	fmt.Println("name=", parameterMap.Name)
 	envValue, exists := terragruntOptions.Env[parameterMap.Name]
 
 	if !exists {
@@ -245,45 +270,27 @@ func findInParentFolders(terragruntOptions *options.TerragruntOptions) (string, 
 
 // Return the relative path between the included Terragrunt configuration file and the current Terragrunt configuration
 // file
-func pathRelativeToInclude(include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
-	if include == nil {
-		return ".", nil
-	}
-
-	includedConfigPath, err := ResolveTerragruntConfigString(include.Path, include, terragruntOptions)
-	if err != nil {
-		return "", errors.WithStackTrace(err)
-	}
-
-	includePath := filepath.Dir(includedConfigPath)
-	currentPath := filepath.Dir(terragruntOptions.TerragruntConfigPath)
-
-	if !filepath.IsAbs(includePath) {
-		includePath = util.JoinPath(currentPath, includePath)
-	}
-
-	return util.GetPathRelativeTo(currentPath, includePath)
+func pathRelativeToInclude(include IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+	parent := getparentLocalConfigFilesLocation(include, terragruntOptions)
+	child := filepath.Dir(terragruntOptions.TerragruntConfigPath)
+	return util.GetPathRelativeTo(child, parent)
 }
 
 // Return the relative path from the current Terragrunt configuration to the included Terragrunt configuration file
-func pathRelativeFromInclude(include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
-	if include == nil {
-		return ".", nil
+func pathRelativeFromInclude(include IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
+	parent := getparentLocalConfigFilesLocation(include, terragruntOptions)
+	child := filepath.Dir(terragruntOptions.TerragruntConfigPath)
+	return util.GetPathRelativeTo(parent, child)
+}
+
+func getparentLocalConfigFilesLocation(include IncludeConfig, terragruntOptions *options.TerragruntOptions) string {
+	cursor := &include
+	for {
+		if cursor.Source == "" {
+			return filepath.Dir(cursor.Path)
+		}
+		cursor = cursor.IncludeBy
 	}
-
-	includedConfigPath, err := ResolveTerragruntConfigString(include.Path, include, terragruntOptions)
-	if err != nil {
-		return "", errors.WithStackTrace(err)
-	}
-
-	includePath := filepath.Dir(includedConfigPath)
-	currentPath := filepath.Dir(terragruntOptions.TerragruntConfigPath)
-
-	if !filepath.IsAbs(includePath) {
-		includePath = util.JoinPath(currentPath, includePath)
-	}
-
-	return util.GetPathRelativeTo(includePath, currentPath)
 }
 
 // Return the AWS account id associated to the current set of credentials
@@ -299,6 +306,16 @@ func getAWSAccountID() (string, error) {
 	}
 
 	return *identity.Account, nil
+}
+
+func saveVariables(parameter string, terragruntOptions *options.TerragruntOptions) (interface{}, error) {
+	matches := HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX.FindStringSubmatch(parameter)
+	if len(matches) != 2 {
+		return "", errors.WithStackTrace(InvalidSaveVariablesParameter(parameter))
+	}
+
+	terragruntOptions.AddDeferredSaveVariables(matches[1])
+	return matches[1], nil
 }
 
 // Custom error types
@@ -331,4 +348,10 @@ type InvalidFunctionParameters string
 
 func (err InvalidFunctionParameters) Error() string {
 	return fmt.Sprintf("Invalid parameters. Expected syntax of the form '${get_env(\"env\", \"default\")}', but got '%s'", string(err))
+}
+
+type InvalidSaveVariablesParameter string
+
+func (err InvalidSaveVariablesParameter) Error() string {
+	return fmt.Sprintf("Invalid parameters. Expected syntax of the form '${save_variables(\"filename.json\")}', but got '%s'", string(err))
 }

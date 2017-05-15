@@ -122,7 +122,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
 		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
 			file = config.SubstituteVars(file, terragruntOptions)
-			importTfVarFile(terragruntOptions, file)
+			importTfVarFile(terragruntOptions, file, options.VarFile)
 			if currentCommandIncluded {
 				out = append(out, fmt.Sprintf("-var-file=%s", file))
 			}
@@ -136,7 +136,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 				if currentCommandIncluded {
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
 				}
-				importTfVarFile(terragruntOptions, file)
+				importTfVarFile(terragruntOptions, file, options.VarFile)
 			} else if currentCommandIncluded {
 				terragruntOptions.Logger.Printf("Skipping var-file %s as it does not exist", file)
 			}
@@ -172,13 +172,13 @@ func splitVariable(str string) (key, value string, err error) {
 	return
 }
 
-func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string) {
-	vars, err := util.LoadTfVarLiterals(path)
+func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string, source options.VariableSource) {
+	vars, err := util.LoadTfVars(path)
 	if err != nil {
 		terragruntOptions.Logger.Printf("Unable to read file %s, %v", path, err)
 	}
 	for key, value := range vars {
-		terragruntOptions.Variables.SetValue(key, value, options.VarFile)
+		terragruntOptions.Variables.SetValue(key, value, source)
 	}
 }
 
@@ -189,7 +189,7 @@ func parseVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []s
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], varFile) {
 			path := args[i][len(varFile):]
-			importTfVarFile(terragruntOptions, path)
+			importTfVarFile(terragruntOptions, path, options.VarFileExplicit)
 		}
 	}
 
@@ -198,7 +198,7 @@ func parseVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []s
 			if key, value, err := splitVariable(args[i+1]); err != nil {
 				terragruntOptions.Logger.Printf("-var ignored: %v", err)
 			} else {
-				terragruntOptions.Variables.SetValue(key, value, options.VarParameter)
+				terragruntOptions.Variables.SetValue(key, value, options.VarParameterExplicit)
 			}
 		}
 	}

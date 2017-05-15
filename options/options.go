@@ -1,13 +1,17 @@
 package options
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
+	"gopkg.in/yaml.v2"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // TerragruntOptions represents options that configure the behavior of the Terragrunt program
@@ -58,6 +62,17 @@ type TerragruntOptions struct {
 	// packages can use the command without a direct reference back to the cli package (which would create a
 	// circular dependency).
 	RunTerragrunt func(*TerragruntOptions) error
+
+	// If set in terragrunt configuration, this string is added to the directory name before calculating the hashing
+	// This allow differentiation based on certain attribute to ensure that different config (env, region) are executed
+	// in distinct folder
+	Uniqueness string
+
+	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
+	deferredSaveList map[string]bool
+
+	// Used to replace ${var.xxx} that are not defined by blanks (used in the second parsing pass)
+	EraseNonDefinedVariables bool
 }
 
 // Create a new TerragruntOptions object with reasonable defaults for real usage
@@ -72,7 +87,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		WorkingDir:             workingDir,
 		Logger:                 util.CreateLogger(""),
 		Env:                    map[string]string{},
-		Variables:            VariableList{},
+		Variables:              VariableList{},
 		Source:                 "",
 		SourceUpdate:           false,
 		IgnoreDependencyErrors: false,
@@ -106,7 +121,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		WorkingDir:             workingDir,
 		Logger:                 util.CreateLogger(workingDir),
 		Env:                    terragruntOptions.Env,
-		Variables:            VariableList{},
+		Variables:              VariableList{},
 		Source:                 terragruntOptions.Source,
 		SourceUpdate:           terragruntOptions.SourceUpdate,
 		IgnoreDependencyErrors: terragruntOptions.IgnoreDependencyErrors,
@@ -118,14 +133,54 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 	// We do a deep copy of the variables since they must be disctint from the original
 	for key, value := range terragruntOptions.Variables {
 		newOptions.Variables.SetValue(key, value.Value, value.Source)
-}
+	}
 	return &newOptions
+}
+
+// SaveVariables - Actually save the variables to the list of deferred files
+func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
+	if terragruntOptions.deferredSaveList != nil {
+		variables := make(map[string]interface{}, len(terragruntOptions.Variables))
+
+		// We keep only the value from the variable list, don't need the source
+		for key, value := range terragruntOptions.Variables {
+			variables[key] = value.Value
+		}
+
+		for file := range terragruntOptions.deferredSaveList {
+			terragruntOptions.Logger.Printf("Saving variables into %s", file)
+			var content []byte
+			switch strings.ToLower(filepath.Ext(file)) {
+			case ".yml", ".yaml":
+				content, err = yaml.Marshal(variables)
+				if err != nil {
+					return
+				}
+			default:
+				content, err = json.MarshalIndent(variables, "", "  ")
+				if err != nil {
+					return
+				}
+			}
+
+			err = ioutil.WriteFile(filepath.Join(terragruntOptions.WorkingDir, file), content, 0644)
+		}
+	}
+	return
+}
+
+// AddDeferredSaveVariables - Add a path where to save the variable list
+func (terragruntOptions *TerragruntOptions) AddDeferredSaveVariables(filename string) {
+	if terragruntOptions.deferredSaveList == nil {
+		terragruntOptions.deferredSaveList = map[string]bool{}
+	}
+	terragruntOptions.deferredSaveList[filename] = true
 }
 
 // Custom types
 type VariableList map[string]Variable
 
-func (this VariableList) SetValue(key, value string, source VariableSource) {
+func (this VariableList) SetValue(key string, value interface{}, source VariableSource) {
 	if this[key].Source <= source {
 		// We only override value if the source has less or equal precedence than the previous value
 		this[key] = Variable{source, value}
@@ -138,14 +193,17 @@ type VariableSource byte
 // i.e. A value specified by -var has precedence over value defined in -var-file
 type Variable struct {
 	Source VariableSource
-	Value  string
+	Value  interface{}
 }
 
 const (
 	UndefinedSource VariableSource = iota
+	Default
 	Environment
 	VarFile
+	VarFileExplicit
 	VarParameter
+	VarParameterExplicit
 )
 
 // Custom error types
