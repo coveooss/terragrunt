@@ -19,9 +19,19 @@ var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(`\$\{.*?\}`)
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(`"\$\{.*?\}"`)
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`\$\{(.*?)\((.*?)\)\}`)
 var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
-var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,\s*(?:"(?P<default>.*?)"|var\.(?P<vardef>\w+))\s*`)
+var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<env>[^=]+?)"\s*\,` + getVarParams(1))
+var HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`\s*"(?P<tag>[^=]+?)"\s*\,` + getVarParams(2))
 var HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX = regexp.MustCompile(`\s*"(.*?)"\s*`)
 var MAX_PARENT_FOLDERS_TO_CHECK = 100
+
+func getVarParams(count int) string {
+	const parameterRegexBase = `\s*(?:"(?P<def%d>.*?)"|var\.(?P<var%d>\w+))\s*`
+	var params []string
+	for i := 1; i <= count; i++ {
+		params = append(params, fmt.Sprintf(parameterRegexBase, i, i))
+	}
+	return strings.Join(params, ",")
+}
 
 // List of terraform commands that accept -lock-timeout
 var TERRAFORM_COMMANDS_NEED_LOCKING = []string{
@@ -151,6 +161,8 @@ func executeTerragruntHelperFunction(functionName string, parameters string, inc
 		return pathRelativeFromInclude(include, terragruntOptions)
 	case "get_env":
 		return getEnvironmentVariable(parameters, terragruntOptions)
+	case "discover":
+		return getDiscoveredValue(parameters, terragruntOptions)
 	case "get_current_dir":
 		return filepath.Dir(include.Path), nil
 	case "get_leaf_dir", "get_tfvars_dir":
@@ -206,21 +218,18 @@ func parseGetEnvParameters(parameters string, terragruntOptions *options.Terragr
 	}
 
 	for index, name := range HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX.SubexpNames() {
+		value := strings.TrimSpace(matches[index])
 		switch name {
 		case "env":
-			envVariable.Name = strings.TrimSpace(matches[index])
-		case "default":
-			if matches[index] != "" {
-				envVariable.DefaultValue = strings.TrimSpace(matches[index])
+			envVariable.Name = value
+		case "def1":
+			if value != "" {
+				envVariable.DefaultValue = value
 			}
-		case "vardef":
-			if matches[index] != "" {
-				if value, found := terragruntOptions.Variables[matches[index]]; found {
-					envVariable.DefaultValue = fmt.Sprintf("%v", value.Value)
-				} else {
-					// The variable is not defined yet, we replace it by its name
-					envVariable.DefaultValue = fmt.Sprintf("${var.%v}", matches[index])
-				}
+		case "var1":
+			if value != "" {
+				varName := fmt.Sprintf("${var.%v}", value)
+				envVariable.DefaultValue, _ = resolveTerragruntVars(varName, terragruntOptions)
 			}
 		}
 	}
@@ -241,6 +250,62 @@ func getEnvironmentVariable(parameters string, terragruntOptions *options.Terrag
 	}
 
 	return envValue, nil
+}
+
+func getDiscoveredValue(parameters string, terragruntOptions *options.TerragruntOptions) (string, error) {
+	matches := HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX.FindStringSubmatch(parameters)
+	if len(matches) < 6 {
+		err := fmt.Errorf(`Invalid parameters. Expected syntax of the form '${discover("tag", "key", "default_key")}', but got '%s'`, parameters)
+		return "", err
+	}
+
+	var tag, key string
+	for index, name := range HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX.SubexpNames() {
+		value := strings.TrimSpace(matches[index])
+		switch name {
+		case "tag":
+			tag = value
+		case "def1":
+			if value != "" {
+				key = value
+			}
+		case "var1":
+			if value != "" {
+				varName := fmt.Sprintf("${var.%v}", value)
+				key, _ = resolveTerragruntVars(varName, terragruntOptions)
+				if strings.HasPrefix(key, "${") {
+					key = ""
+				}
+			}
+		case "def2":
+			if value != "" && key == "" {
+				key = value
+			}
+		case "var2":
+			if value != "" && key == "" {
+				varName := fmt.Sprintf("${var.%v}", value)
+				key, _ = resolveTerragruntVars(varName, terragruntOptions)
+				if strings.HasPrefix(key, "${") {
+					key = ""
+				}
+			}
+		}
+	}
+
+	if key == "" && !terragruntOptions.EraseNonDefinedVariables {
+		return "", nil
+	}
+
+	result, err := util.GetSecurityGroupTags(fmt.Sprintf("terragrunt-%s", key))
+	if err != nil {
+		return "", errors.WithStackTrace(err)
+	}
+
+	value, ok := result[tag]
+	if !ok {
+		return "", fmt.Errorf("No tag with key %s in terragrunt-%s", tag, key)
+	}
+	return value, nil
 }
 
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file
