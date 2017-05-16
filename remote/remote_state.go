@@ -60,12 +60,12 @@ func (remoteState RemoteState) ConfigureRemoteState(terragruntOptions *options.T
 	}
 
 	if shouldConfigure {
-		terragruntOptions.Logger.Noticef("Initializing remote state for the %s backend", remoteState.Backend)
+		terragruntOptions.Logger.Infof("Initializing remote state for the %s backend", remoteState.Backend)
 		if err := remoteState.Initialize(terragruntOptions); err != nil {
 			return err
 		}
 
-		terragruntOptions.Logger.Noticef("Configuring remote state for the %s backend", remoteState.Backend)
+		terragruntOptions.Logger.Infof("Configuring remote state for the %s backend", remoteState.Backend)
 		return shell.RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions, initCommand(remoteState)...)
 	}
 
