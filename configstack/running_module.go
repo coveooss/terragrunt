@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/shell"
+	"github.com/gruntwork-io/terragrunt/util"
 	"io"
 	"strings"
 	"sync"
@@ -232,7 +233,12 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 	if module.Handler != nil {
 		moduleErr = module.Handler(*module.Module, module.OutStream.String(), moduleErr)
 	}
-	fmt.Fprintf(module.Writer, "%s\n%v\n\n%v\n", separator, module.Module.Path, module.OutStream.String())
+	out := module.OutStream.String()
+	if out == "" {
+		module.Module.TerragruntOptions.Logger.Notice("No output")
+	} else {
+		fmt.Fprintf(module.Writer, "%s\n%v\n\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path), module.OutStream.String())
+	}
 
 	module.Status = Finished
 	module.Err = moduleErr
