@@ -111,6 +111,16 @@ func GetPathRelativeTo(path string, basePath string) (string, error) {
 	return filepath.ToSlash(relPath), nil
 }
 
+// Return the path relative to the current working directory
+func GetPathRelativeToWorkingDir(path string) (result string) {
+	currentDir, err := os.Getwd()
+	result = path
+	if err == nil {
+		result, err = GetPathRelativeTo(path, currentDir)
+	}
+	return
+}
+
 // Return the contents of the file at the given path as a string
 func ReadFileAsString(path string) (string, error) {
 	bytes, err := ioutil.ReadFile(path)

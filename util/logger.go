@@ -18,9 +18,9 @@ func CreateLogger(prefix string) *logging.Logger {
 func InitLogging(levelName string, defaultLevel logging.Level, color bool) error {
 	var format string
 	if color {
-		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05}: %{color}%{level:-8s} %{message}%{color:reset}`
+		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05} %{color}%{level:-8s} %{message}%{color:reset}`
 	} else {
-		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05}: %{level:-8s} %{message}`
+		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05} %{level:-8s} %{message}`
 	}
 
 	logging.SetBackend(logging.NewBackendFormatter(logging.NewLogBackend(os.Stderr, "", 0), logging.MustStringFormatter(format)))

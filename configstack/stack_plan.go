@@ -63,10 +63,12 @@ func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHand
 			err = nil
 		}
 
-		message, count := extractSummaryResultFromPlan(output)
+		if output != "" {
+			message, count := extractSummaryResultFromPlan(output)
 
-		// We add the result to the result list (there is no concurrency problem because it is handled by the running_module)
-		*results = append(*results, moduleResult{module, err, message, count})
+			// We add the result to the result list (there is no concurrency problem because it is handled by the running_module)
+			*results = append(*results, moduleResult{module, err, message, count})
+		}
 
 		return err
 	}
@@ -75,13 +77,23 @@ func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHand
 // Print a little summary of the plan execution
 func printSummary(terragruntOptions *options.TerragruntOptions, results []moduleResult) {
 	fmt.Fprintf(terragruntOptions.Writer, "%s\nSummary:\n", separator)
+
+	var length int
+	for _, result := range results {
+		nameLength := len(util.GetPathRelativeToWorkingDir(result.Module.Path))
+		if nameLength > length {
+			length = nameLength
+		}
+	}
+
+	format := fmt.Sprintf("    %%-%dv : %%v%%v\n", length)
 	for _, result := range results {
 		errMsg := ""
 		if result.Err != nil {
 			errMsg = fmt.Sprintf(", Error: %v", result.Err)
 		}
 
-		fmt.Fprintf(terragruntOptions.Writer, "    %v : %v%v\n", result.Module.Path, result.Message, errMsg)
+		fmt.Fprintf(terragruntOptions.Writer, format, util.GetPathRelativeToWorkingDir(result.Module.Path), result.Message, errMsg)
 	}
 }
 
