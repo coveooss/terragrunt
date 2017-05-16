@@ -24,9 +24,10 @@ const OPT_WORKING_DIR = "terragrunt-working-dir"
 const OPT_TERRAGRUNT_SOURCE = "terragrunt-source"
 const OPT_TERRAGRUNT_SOURCE_UPDATE = "terragrunt-source-update"
 const OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS = "terragrunt-ignore-dependency-errors"
+const OPT_LOGGING_LEVEL = "terragrunt-logging-level"
 
 var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
-var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE}
+var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL}
 
 const CMD_PLAN_ALL = "plan-all"
 const CMD_APPLY_ALL = "apply-all"
@@ -99,6 +100,9 @@ GLOBAL OPTIONS:
    terragrunt-source                    Download Terraform configurations from the specified source into a temporary folder, and run Terraform in that temporary folder.
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
+   terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5)
+}	
+
 
 VERSION:
    {{.Version}}{{if len .Authors}}
@@ -230,14 +234,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 		for _, source := range importer.Files {
 			if util.FileExists(source) {
 				target := filepath.Join(terragruntOptions.WorkingDir, filepath.Base(source))
-				terragruntOptions.Logger.Printf("Copy file %s to temporary folder %v\n", source, target)
+				terragruntOptions.Logger.Noticef("Copy file %s to temporary folder %v\n", source, target)
 				if err := util.CopyFile(source, target); err != nil {
 					return err
 				}
 			} else if importer.Required {
 				return fmt.Errorf("Unable to import required file %s", source)
 			} else {
-				terragruntOptions.Logger.Printf("Skipping copy of %s to temporary folder, the source is not found\n", source)
+				terragruntOptions.Logger.Warningf("Skipping copy of %s to temporary folder, the source is not found\n", source)
 			}
 		}
 	}
@@ -253,7 +257,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 
 	// If there is no terraform file in the folder, we skip the command
 	if len(tfFiles) == 0 {
-		terragruntOptions.Logger.Println("No terraform file found, skipping folder")
+		terragruntOptions.Logger.Notice("No terraform file found, skipping folder")
 		return nil
 	}
 
@@ -285,7 +289,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 
 	// Executing the post-hooks commands if there are
 	if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
-		terragruntOptions.Logger.Println(err)
+		terragruntOptions.Logger.Error(err)
 		return result
 	}
 
@@ -296,12 +300,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook) error {
 	for _, hook := range hooks {
 		if len(hook.OS) > 0 && !util.ListContainsElement(hook.OS, runtime.GOOS) {
-			terragruntOptions.Logger.Printf("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
+			terragruntOptions.Logger.Infof("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
 			continue
 		}
 		hook.Command = strings.TrimSpace(hook.Command)
 		if len(hook.Command) == 0 {
-			terragruntOptions.Logger.Printf("Hook %s skipped, no command to execute", hook.Name)
+			terragruntOptions.Logger.Infof("Hook %s skipped, no command to execute", hook.Name)
 			continue
 		}
 		cmd := shell.RunShellCommand
@@ -385,7 +389,7 @@ func planAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Printf("%s", stack.String())
+	terragruntOptions.Logger.Notice(stack.String())
 	return stack.Plan(terragruntOptions)
 }
 
@@ -397,7 +401,7 @@ func applyAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Printf("%s", stack.String())
+	terragruntOptions.Logger.Notice(stack.String())
 	shouldApplyAll, err := shell.PromptUserForYesNo("Are you sure you want to run 'terragrunt apply' in each folder of the stack described above?", terragruntOptions)
 	if err != nil {
 		return err
@@ -418,7 +422,7 @@ func destroyAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Printf("%s", stack.String())
+	terragruntOptions.Logger.Noticef("%s", stack.String())
 	shouldDestroyAll, err := shell.PromptUserForYesNo("WARNING: Are you sure you want to run `terragrunt destroy` in each folder of the stack described above? There is no undo!", terragruntOptions)
 	if err != nil {
 		return err
@@ -439,7 +443,7 @@ func outputAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Printf("%s", stack.String())
+	terragruntOptions.Logger.Notice(stack.String())
 	return stack.Output(terragruntOptions)
 }
 

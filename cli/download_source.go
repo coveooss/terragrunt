@@ -54,12 +54,12 @@ func downloadTerraformSource(source string, terragruntOptions *options.Terragrun
 		return "", err
 	}
 
-	terragruntOptions.Logger.Printf("Copying files from %s into %s", terragruntOptions.WorkingDir, terraformSource.WorkingDir)
+	terragruntOptions.Logger.Noticef("Copying files from %s into %s", terragruntOptions.WorkingDir, terraformSource.WorkingDir)
 	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, terraformSource.WorkingDir); err != nil {
 		return "", err
 	}
 
-	terragruntOptions.Logger.Printf("Setting working directory to %s", terraformSource.WorkingDir)
+	terragruntOptions.Logger.Noticef("Setting working directory to %s", terraformSource.WorkingDir)
 	terragruntOptions.WorkingDir = terraformSource.WorkingDir
 
 	return terraformSource.DownloadDir, nil
@@ -68,7 +68,7 @@ func downloadTerraformSource(source string, terragruntOptions *options.Terragrun
 // Download the specified TerraformSource if the latest code hasn't already been downloaded.
 func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terragruntOptions *options.TerragruntOptions) error {
 	if terragruntOptions.SourceUpdate {
-		terragruntOptions.Logger.Printf("The --%s flag is set, so deleting the temporary folder %s before downloading source.", OPT_TERRAGRUNT_SOURCE_UPDATE, terraformSource.DownloadDir)
+		terragruntOptions.Logger.Noticef("The --%s flag is set, so deleting the temporary folder %s before downloading source.", OPT_TERRAGRUNT_SOURCE_UPDATE, terraformSource.DownloadDir)
 		if err := os.RemoveAll(terraformSource.DownloadDir); err != nil {
 			return errors.WithStackTrace(err)
 		}
@@ -80,7 +80,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 	}
 
 	if alreadyLatest {
-		terragruntOptions.Logger.Printf("Terraform files in %s are up to date. Will not download again.", terraformSource.WorkingDir)
+		terragruntOptions.Logger.Infof("Terraform files in %s are up to date. Will not download again.", terraformSource.WorkingDir)
 		return nil
 	}
 
@@ -270,7 +270,7 @@ func splitSourceUrl(sourceUrl *url.URL, terragruntOptions *options.TerragruntOpt
 		sourceUrlModifiedPath.Path = pathSplitOnDoubleSlash[0]
 		return sourceUrlModifiedPath, pathSplitOnDoubleSlash[1], nil
 	} else {
-		terragruntOptions.Logger.Printf("WARNING: no double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
+		terragruntOptions.Logger.Warningf("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
 		return sourceUrl, "", nil
 	}
 }
@@ -315,7 +315,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 		return nil
 	}
 
-	terragruntOptions.Logger.Printf("Cleaning up existing *.tf files in %s", path)
+	terragruntOptions.Logger.Infof("Cleaning up existing *.tf files in %s", path)
 
 	files, err := zglob.Glob(util.JoinPath(path, "**/*.tf"))
 	if err != nil {
@@ -349,7 +349,7 @@ func getTerraformSourceUrl(terragruntOptions *options.TerragruntOptions, terragr
 
 // Download the code from the Canonical Source URL into the Download Folder using the terraform init command
 func terraformInit(terraformSource *TerraformSource, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Printf("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
+	terragruntOptions.Logger.Noticef("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
 
 	// Backend and get configuration will be handled separately
 	return shell.RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions, "init", "-backend=false", "-get=false", terraformSource.CanonicalSourceURL.String(), terraformSource.DownloadDir)

@@ -3,15 +3,16 @@ package options
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/util"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/op/go-logging"
+	"gopkg.in/yaml.v2"
 )
 
 // TerragruntOptions represents options that configure the behavior of the Terragrunt program
@@ -32,7 +33,7 @@ type TerragruntOptions struct {
 	WorkingDir string
 
 	// The logger to use for all logging
-	Logger *log.Logger
+	Logger *logging.Logger
 
 	// Environment variables at runtime
 	Env map[string]string
@@ -148,7 +149,7 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 		}
 
 		for file := range terragruntOptions.deferredSaveList {
-			terragruntOptions.Logger.Printf("Saving variables into %s", file)
+			terragruntOptions.Logger.Infof("Saving variables into %s", file)
 			var content []byte
 			switch strings.ToLower(filepath.Ext(file)) {
 			case ".yml", ".yaml":

@@ -7,6 +7,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/op/go-logging"
 	"github.com/urfave/cli"
 	"os"
 	"path/filepath"
@@ -69,6 +70,11 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return nil, err
 	}
 
+	loggingLevel, err := parseStringArg(args, OPT_LOGGING_LEVEL, os.Getenv("TERRAGRUNT_LOGGING_LEVEL"))
+	if err != nil {
+		return nil, err
+	}
+
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
@@ -91,7 +97,8 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	parseEnvironmentVariables(&options, os.Environ())
 	parseVarsAndVarFiles(&options, args)
 
-	return &options, nil
+	err = util.InitLogging(loggingLevel, logging.INFO, !util.ListContainsElement(options.TerraformCliArgs, "-no-color"))
+	return &options, err
 }
 
 func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terragruntConfig *config.TerragruntConfig) []string {
@@ -113,7 +120,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 		for _, varDef := range varList {
 			varDef = config.SubstituteVars(varDef, terragruntOptions)
 			if key, value, err := splitVariable(varDef); err != nil {
-				terragruntOptions.Logger.Printf("-var ignored in %v: %v", arg.Name, err)
+				terragruntOptions.Logger.Warningf("-var ignored in %v: %v", arg.Name, err)
 			} else {
 				if util.ListContainsElement(variablesExplicitlyProvided, key) {
 					continue
@@ -144,7 +151,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 				}
 				importTfVarFile(terragruntOptions, file, options.VarFile)
 			} else if currentCommandIncluded {
-				terragruntOptions.Logger.Printf("Skipping var-file %s as it does not exist", file)
+				terragruntOptions.Logger.Infof("Skipping var-file %s as it does not exist", file)
 			}
 		}
 	}
@@ -156,7 +163,7 @@ func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, env
 	const tfPrefix = "TF_VAR_"
 	for i := 0; i < len(environment); i++ {
 		if key, value, err := splitVariable(environment[i]); err != nil {
-			terragruntOptions.Logger.Printf("Environment variable ignored: %v", err)
+			terragruntOptions.Logger.Warningf("Environment variable ignored: %v", err)
 		} else {
 			terragruntOptions.Env[key] = value
 			// All environment variables starting with TF_ENV_ are considered as variables
@@ -181,7 +188,7 @@ func splitVariable(str string) (key, value string, err error) {
 func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string, source options.VariableSource) {
 	vars, err := util.LoadTfVars(path)
 	if err != nil {
-		terragruntOptions.Logger.Printf("Unable to read file %s, %v", path, err)
+		terragruntOptions.Logger.Errorf("Unable to read file %s, %v", path, err)
 	}
 	for key, value := range vars {
 		terragruntOptions.Variables.SetValue(key, value, source)
@@ -202,7 +209,7 @@ func parseVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []s
 	for i := 0; i < len(args); i++ {
 		if args[i] == varArg && i+1 < len(args) {
 			if key, value, err := splitVariable(args[i+1]); err != nil {
-				terragruntOptions.Logger.Printf("-var ignored: %v", err)
+				terragruntOptions.Logger.Warningf("-var ignored: %v", err)
 			} else {
 				terragruntOptions.Variables.SetValue(key, value, options.VarParameterExplicit)
 			}

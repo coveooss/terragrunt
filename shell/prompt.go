@@ -11,14 +11,14 @@ import (
 
 // Prompt the user for text in the CLI. Returns the text entered by the user.
 func PromptUserForInput(prompt string, terragruntOptions *options.TerragruntOptions) (string, error) {
-	if terragruntOptions.Logger.Prefix() != "" {
-		prompt = fmt.Sprintf("%s %s", terragruntOptions.Logger.Prefix(), prompt)
+	if terragruntOptions.Logger.Module != "" {
+		prompt = fmt.Sprintf("%s %s", terragruntOptions.Logger.Module, prompt)
 	}
 	fmt.Print(prompt)
 
 	if terragruntOptions.NonInteractive {
 		fmt.Println()
-		terragruntOptions.Logger.Printf("The non-interactive flag is set to true, so assuming 'yes' for all prompts")
+		terragruntOptions.Logger.Notice("The non-interactive flag is set to true, so assuming 'yes' for all prompts")
 		return "yes", nil
 	}
 

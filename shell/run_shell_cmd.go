@@ -2,7 +2,6 @@ package shell
 
 import (
 	"bytes"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -13,6 +12,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/op/go-logging"
 )
 
 // Run the given Terraform command
@@ -26,7 +26,7 @@ func RunTerraformCommand(terragruntOptions *options.TerragruntOptions, args ...s
 // If the user redirect the stdout, he will only get the output for the terraform desired command.
 func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.TerragruntOptions, args ...string) error {
 	output, err := runShellCommandAndCaptureOutput(terragruntOptions, true, terragruntOptions.TerraformPath, args...)
-	terragruntOptions.Logger.Println(output)
+	terragruntOptions.Logger.Info(output)
 	return err
 }
 
@@ -48,7 +48,7 @@ func RunShellCommandExpandArgs(terragruntOptions *options.TerragruntOptions, com
 }
 
 func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bool, command string, args ...string) error {
-	terragruntOptions.Logger.Printf("Running command: %s %s", command, strings.Join(args, " "))
+	terragruntOptions.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
 
 	if expandArgs {
 		args = util.ExpandArguments(args, terragruntOptions.WorkingDir)
@@ -119,7 +119,7 @@ func GetExitCode(err error) (int, error) {
 type SignalsForwarder chan os.Signal
 
 // Forwards signals to a command, waiting for the command to finish.
-func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *log.Logger, cmdChannel chan error) SignalsForwarder {
+func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *logging.Logger, cmdChannel chan error) SignalsForwarder {
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, signals...)
 
@@ -127,10 +127,10 @@ func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *log.Logger, c
 		for {
 			select {
 			case s := <-signalChannel:
-				logger.Printf("Forward signal %s to terraform.", s.String())
+				logger.Warningf("Forward signal %s to terraform.", s.String())
 				err := c.Process.Signal(s)
 				if err != nil {
-					logger.Printf("Error forwarding signal: %v", err)
+					logger.Errorf("Error forwarding signal: %v", err)
 				}
 			case <-cmdChannel:
 				return

@@ -29,15 +29,15 @@ func checkForErrorsAndExit(err error) {
 	} else {
 		logger := util.CreateLogger("")
 		if os.Getenv("TERRAGRUNT_DEBUG") != "" {
-			logger.Println(errors.PrintErrorWithStackTrace(err))
+			logger.Error(errors.PrintErrorWithStackTrace(err))
 		} else {
-			logger.Println(err)
+			logger.Error(err)
 		}
 		// exit with the underlying error code
 		exitCode, exitCodeErr := shell.GetExitCode(err)
 		if exitCodeErr != nil {
 			exitCode = 1
-			logger.Println("Unable to determine underlying exit code, so Terragrunt will exit with error code 1")
+			logger.Error("Unable to determine underlying exit code, so Terragrunt will exit with error code 1")
 		}
 		os.Exit(exitCode)
 	}

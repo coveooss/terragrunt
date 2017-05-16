@@ -212,7 +212,7 @@ func containsTerragruntBlock(configString string) bool {
 
 // Read the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
-	terragruntOptions.Logger.Printf("Reading Terragrunt config file at %s", terragruntOptions.TerragruntConfigPath)
+	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", terragruntOptions.TerragruntConfigPath)
 	return ParseConfigFile(terragruntOptions, IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
 }
 
@@ -220,7 +220,7 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 // included in some other config file when resolving relative paths.
 func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
 	if isOldTerragruntConfig(include.Path) {
-		terragruntOptions.Logger.Printf("DEPRECATION WARNING: Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
+		terragruntOptions.Logger.Warningf("DEPRECATION : Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
 	}
 
 	var (
@@ -343,7 +343,7 @@ addExtra:
 	for _, extra := range original {
 		for i, existing := range result {
 			if existing.Name == extra.Name {
-				terragruntOptions.Logger.Printf("Skipping extra_arguments %v as it is overridden in the current config", extra.Name)
+				terragruntOptions.Logger.Infof("Skipping extra_arguments %v as it is overridden in the current config", extra.Name)
 				// For extra args, we want to keep the values specified in the child and put them after
 				// the parent ones, so if we encounter a duplicate, we just overwrite it.
 				result[i] = extra
@@ -362,7 +362,7 @@ addHook:
 	for _, hook := range original {
 		for i, existing := range result {
 			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Printf("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				terragruntOptions.Logger.Infof("Skipping Hook %v as it is overridden in the current config", hook.Name)
 				result[i] = hook
 				continue addHook
 			}
@@ -378,7 +378,7 @@ addHook:
 	for _, hook := range *newHooks {
 		for _, existing := range original {
 			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Printf("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				terragruntOptions.Logger.Infof("Skipping Hook %v as it is overridden in the current config", hook.Name)
 				continue addHook
 			}
 		}
@@ -394,7 +394,7 @@ addImport:
 	for _, importer := range original {
 		for i, existing := range result {
 			if existing.Name == importer.Name {
-				terragruntOptions.Logger.Printf("Skipping ImportFiles %v as it is overridden in the current config", importer.Name)
+				terragruntOptions.Logger.Infof("Skipping ImportFiles %v as it is overridden in the current config", importer.Name)
 				result[i] = importer
 				continue addImport
 			}
@@ -431,7 +431,7 @@ func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, t
 	terragruntConfig := &TerragruntConfig{}
 
 	if terragruntConfigFromFile.Lock != nil {
-		terragruntOptions.Logger.Printf("WARNING: Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as of version 0.9.0, so this feature has been removed from Terragrunt and will have no effect. See your Terraform backend docs for how to configure locking: https://www.terraform.io/docs/backends/types/index.html.", terragruntOptions.TerragruntConfigPath)
+		terragruntOptions.Logger.Warningf("Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as of version 0.9.0, so this feature has been removed from Terragrunt and will have no effect. See your Terraform backend docs for how to configure locking: https://www.terraform.io/docs/backends/types/index.html.", terragruntOptions.TerragruntConfigPath)
 	}
 
 	if terragruntConfigFromFile.RemoteState != nil {

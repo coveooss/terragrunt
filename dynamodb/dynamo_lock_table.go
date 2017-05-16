@@ -44,7 +44,7 @@ func CreateLockTableIfNecessary(tableName string, client *dynamodb.DynamoDB, ter
 	}
 
 	if !tableExists {
-		terragruntOptions.Logger.Printf("Lock table %s does not exist in DynamoDB. Will need to create it just this first time.", tableName)
+		terragruntOptions.Logger.Warningf("Lock table %s does not exist in DynamoDB. Will need to create it just this first time.", tableName)
 		return CreateLockTable(tableName, DEFAULT_READ_CAPACITY_UNITS, DEFAULT_WRITE_CAPACITY_UNITS, client, terragruntOptions)
 	}
 
@@ -71,7 +71,7 @@ func CreateLockTable(tableName string, readCapacityUnits int, writeCapacityUnits
 	tableCreateDeleteSemaphore.Acquire()
 	defer tableCreateDeleteSemaphore.Release()
 
-	terragruntOptions.Logger.Printf("Creating table %s in DynamoDB", tableName)
+	terragruntOptions.Logger.Noticef("Creating table %s in DynamoDB", tableName)
 
 	attributeDefinitions := []*dynamodb.AttributeDefinition{
 		&dynamodb.AttributeDefinition{AttributeName: aws.String(ATTR_LOCK_ID), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
@@ -93,7 +93,7 @@ func CreateLockTable(tableName string, readCapacityUnits int, writeCapacityUnits
 
 	if err != nil {
 		if isTableAlreadyBeingCreatedError(err) {
-			terragruntOptions.Logger.Printf("Looks like someone created table %s at the same time. Will wait for it to be in active state.", tableName)
+			terragruntOptions.Logger.Warningf("Looks like someone created table %s at the same time. Will wait for it to be in active state.", tableName)
 		} else {
 			return errors.WithStackTrace(err)
 		}
@@ -134,12 +134,12 @@ func waitForTableToBeActiveWithRandomSleep(tableName string, client *dynamodb.Dy
 		}
 
 		if tableReady {
-			terragruntOptions.Logger.Printf("Success! Table %s is now in active state.", tableName)
+			terragruntOptions.Logger.Noticef("Success! Table %s is now in active state.", tableName)
 			return nil
 		}
 
 		sleepBetweenRetries := util.GetRandomTime(sleepBetweenRetriesMin, sleepBetweenRetriesMax)
-		terragruntOptions.Logger.Printf("Table %s is not yet in active state. Will check again after %s.", tableName, sleepBetweenRetries)
+		terragruntOptions.Logger.Warningf("Table %s is not yet in active state. Will check again after %s.", tableName, sleepBetweenRetries)
 		time.Sleep(sleepBetweenRetries)
 	}
 

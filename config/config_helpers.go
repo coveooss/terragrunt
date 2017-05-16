@@ -113,7 +113,7 @@ func resolveTerragruntVars(str string, terragruntOptions *options.TerragruntOpti
 		}
 		if terragruntOptions.EraseNonDefinedVariables {
 			if !warningDone[matches[0]] {
-				terragruntOptions.Logger.Printf("Variable %s undefined", matches[0])
+				terragruntOptions.Logger.Warningf("Variable %s undefined", matches[0])
 				warningDone[matches[0]] = true
 			}
 			return ""

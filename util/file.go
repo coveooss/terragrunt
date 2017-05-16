@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/hashicorp/hcl"
@@ -129,12 +130,18 @@ func ReadFileAsStringFromSource(source, path string, terraform string) (localFil
 	defer sharedMutex.Unlock()
 
 	if _, ok := sharedContent[cacheDir]; !ok {
+		log := CreateLogger("Copy source")
+
 		cmd := exec.Command(terraform, "init", "-no-color", source, cacheDir)
-		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stderr, os.Stderr
+		cmd.Stdin = os.Stdin
+		var out bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &out, &out
 		err = cmd.Run()
 		if err != nil {
+			log.Error(out.String())
 			return
 		}
+		log.Info(out.String())
 		sharedContent[cacheDir] = true
 	}
 	localFile = filepath.Join(cacheDir, path)

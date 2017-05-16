@@ -60,12 +60,12 @@ func (remoteState RemoteState) ConfigureRemoteState(terragruntOptions *options.T
 	}
 
 	if shouldConfigure {
-		terragruntOptions.Logger.Printf("Initializing remote state for the %s backend", remoteState.Backend)
+		terragruntOptions.Logger.Noticef("Initializing remote state for the %s backend", remoteState.Backend)
 		if err := remoteState.Initialize(terragruntOptions); err != nil {
 			return err
 		}
 
-		terragruntOptions.Logger.Printf("Configuring remote state for the %s backend", remoteState.Backend)
+		terragruntOptions.Logger.Noticef("Configuring remote state for the %s backend", remoteState.Backend)
 		return shell.RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions, initCommand(remoteState)...)
 	}
 
@@ -107,7 +107,7 @@ func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remote
 		if value, err := strconv.ParseBool(existingBackend.Config["encrypt"].(string)); err == nil {
 			existingBackend.Config["encrypt"] = value
 		} else {
-			terragruntOptions.Logger.Printf("Remote state configuration encrypt contains invalid value %v, should be boolean.", existingBackend.Config["encrypt"])
+			terragruntOptions.Logger.Errorf("Remote state configuration encrypt contains invalid value %v, should be boolean.", existingBackend.Config["encrypt"])
 		}
 	}
 
@@ -116,7 +116,7 @@ func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remote
 		return shell.PromptUserForYesNo(prompt, terragruntOptions)
 	}
 
-	terragruntOptions.Logger.Printf("Remote state is already configured for backend %s", existingBackend.Type)
+	terragruntOptions.Logger.Warningf("Remote state is already configured for backend %s", existingBackend.Type)
 	return false, nil
 }
 
