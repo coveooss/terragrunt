@@ -129,6 +129,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
 			file = config.SubstituteVars(file, terragruntOptions)
 			importTfVarFile(terragruntOptions, file, options.VarFile)
+			terragruntOptions.Logger.Infof("Importing %s", file)
 			if currentCommandIncluded {
 				out = append(out, fmt.Sprintf("-var-file=%s", file))
 			}
@@ -142,6 +143,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 				if currentCommandIncluded {
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
 				}
+				terragruntOptions.Logger.Infof("Importing %s", file)
 				importTfVarFile(terragruntOptions, file, options.VarFile)
 			} else if currentCommandIncluded {
 				terragruntOptions.Logger.Printf("Skipping var-file %s as it does not exist", file)
