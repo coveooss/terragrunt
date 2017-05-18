@@ -101,7 +101,6 @@ GLOBAL OPTIONS:
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5)
-}	
 
 
 VERSION:
