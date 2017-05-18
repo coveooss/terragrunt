@@ -102,7 +102,6 @@ GLOBAL OPTIONS:
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5)
 
-
 VERSION:
    {{.Version}}{{if len .Authors}}
 
@@ -146,15 +145,18 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
-	// If someone calls us with no args at all, show the help text and exit
-	if !cliContext.Args().Present() {
-		cli.ShowAppHelp(cliContext)
-		return nil
-	}
-
 	terragruntOptions, err := ParseTerragruntOptions(cliContext)
 	if err != nil {
 		return err
+	}
+
+	// If someone calls us with no args at all, show the help text and exit
+	if !cliContext.Args().Present() {
+		cli.ShowAppHelp(cliContext)
+
+		fmt.Fprintln(cliContext.App.Writer)
+		shell.RunTerraformCommand(terragruntOptions, "--help")
+		return nil
 	}
 
 	if err := CheckTerraformVersion(DEFAULT_TERRAFORM_VERSION_CONSTRAINT, terragruntOptions); err != nil {
