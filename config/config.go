@@ -152,6 +152,11 @@ func FindConfigFilesInPath(rootPath string) ([]string, error) {
 		}
 
 		if info.IsDir() {
+			if util.FileExists(filepath.Join(path, "terragrunt.ignore")) {
+				// If we wish to exclude a directory from the *-all commands, we just
+				// have to put an empty file name terragrunt.ignore in the folder
+				return nil
+			}
 			configPath := DefaultConfigPath(path)
 			isTerragruntConfig, err := IsTerragruntConfigFile(configPath)
 			if err != nil {
