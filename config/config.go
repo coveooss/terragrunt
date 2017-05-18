@@ -319,9 +319,8 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 			includedConfig.Terraform = config.Terraform
 		} else {
 			if config.Terraform.Source != "" {
-				includedConfig.Terraform = config.Terraform
+				includedConfig.Terraform.Source = config.Terraform.Source
 			}
-
 			mergeExtraArgs(terragruntOptions, config.Terraform.ExtraArgs, &includedConfig.Terraform.ExtraArgs)
 		}
 	}
