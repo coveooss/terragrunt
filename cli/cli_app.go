@@ -200,12 +200,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 		if util.ListContainsElement(TERRAFORM_COMMANDS_WITH_SUBCOMMAND, terragruntOptions.TerraformCliArgs[0]) {
 			commandLength = 2
 		}
-		var args []string
-		args = append(args, terragruntOptions.TerraformCliArgs[:commandLength]...)
 
 		// Options must be inserted after command but before the other args command is either 1 word or 2 words
+		var args []string
+		args = append(args, terragruntOptions.TerraformCliArgs[:commandLength]...)
 		args = append(args, filterTerraformExtraArgs(terragruntOptions, conf)...)
-		terragruntOptions.TerraformCliArgs = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
+		args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
+		terragruntOptions.TerraformCliArgs = args
 	}
 
 	// We read again the configuration file since new extrapolation of vars could be available after applying extra arguments

@@ -66,8 +66,8 @@ func removeElementFromList(list []string, element string, getKey func(key string
 
 func wholeValue(key string) string { return key }
 
-// Returns an HCL compliant formated list of strings
-func ListToHCLArray(list []string) string {
+// CommaSeparatedStrings returns an HCL compliant formated list of strings (each string within double quote)
+func CommaSeparatedStrings(list []string) string {
 	values := make([]string, 0, len(list))
 	for _, value := range list {
 		values = append(values, fmt.Sprintf(`"%s"`, value))
