@@ -18,7 +18,7 @@ const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
 var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(`\$\{.*?\}`)
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`^\$\{(.*?)\((.*?)\)\}$`)
-var HELPER_VAR_REGEX = regexp.MustCompile(`^\$\{var\.([[[:alpha:]][\w-]*)\}$`)
+var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
 var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(?P<env>[^=]+?)"\s*\,` + getVarParams(1) + `$`)
 var HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(?P<tag>[^=]+?)"\s*\,` + getVarParams(2) + `$`)
 var HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(.*?)"\s*$`)
@@ -113,10 +113,11 @@ func executeTerragruntHelperFunction(functionName string, parameters string, inc
 func processSingleInterpolationInString(terragruntConfigString string, include *IncludeConfig, terragruntOptions *options.TerragruntOptions) (resolved string, finalErr error) {
 	// The function we pass to ReplaceAllStringFunc cannot return an error, so we have to use named error parameters to capture such errors.
 	resolved = INTERPOLATION_SYNTAX_REGEX_SINGLE.ReplaceAllStringFunc(terragruntConfigString, func(str string) string {
-		matches := INTERPOLATION_SYNTAX_REGEX_SINGLE.FindStringSubmatch(terragruntConfigString)
+		matches := INTERPOLATION_SYNTAX_REGEX_SINGLE.FindStringSubmatch(str)
 		out, err := resolveTerragruntInterpolation(matches[1], *include, terragruntOptions)
 		if err != nil {
 			finalErr = err
+			return str
 		}
 
 		switch out := out.(type) {
@@ -140,6 +141,7 @@ func processMultipleInterpolationsInString(terragruntConfigString string, includ
 		out, err := resolveTerragruntInterpolation(str, *include, terragruntOptions)
 		if err != nil {
 			finalErr = err
+			return str
 		}
 
 		return fmt.Sprintf("%v", out)
