@@ -87,7 +87,7 @@ func executeTerragruntHelperFunction(functionName string, parameters string, inc
 	case "discover":
 		return getDiscoveredValue(parameters, terragruntOptions)
 	case "get_current_dir":
-		return filepath.Dir(include.Path), nil
+		return getCurrentDir(include), nil
 	case "get_leaf_dir", "get_tfvars_dir":
 		return getTfVarsDir(terragruntOptions)
 	case "get_parent_dir", "get_parent_tfvars_dir":
@@ -200,6 +200,11 @@ func resolveTerragruntInterpolation(str string, include IncludeConfig, terragrun
 	}
 
 	return "", errors.WithStackTrace(InvalidInterpolationSyntax(str))
+}
+
+// Return the directory of the current include file that is processed
+func getCurrentDir(include IncludeConfig) string {
+	return filepaht.ToSlash(filepath.Dir(include.Path))
 }
 
 // Return the directory where the Terragrunt configuration file lives
