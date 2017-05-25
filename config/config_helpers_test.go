@@ -372,7 +372,7 @@ func TestResolveTerragruntConfigString(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, &testCase.include, &testCase.terragruntOptions)
+		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, testCase.include, &testCase.terragruntOptions)
 		if testCase.expectedErr != nil {
 			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' include %v and options %v, expected error %v but got error %v", testCase.str, testCase.include, testCase.terragruntOptions, testCase.expectedErr, actualErr)
 		} else {
@@ -498,7 +498,7 @@ TERRAGRUNT_HIT","")}/bar`,
 	}
 
 	for _, testCase := range testCases {
-		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, &testCase.include, &testCase.terragruntOptions)
+		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, testCase.include, &testCase.terragruntOptions)
 		if testCase.expectedErr != nil {
 			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' include %v and options %v, expected error %v but got error %v and output %v", testCase.str, testCase.include, testCase.terragruntOptions, testCase.expectedErr, actualErr, actualOut)
 		} else {
@@ -513,28 +513,28 @@ func TestResolveCommandsInterpolationConfigString(t *testing.T) {
 
 	testCases := []struct {
 		str               string
-		include           *IncludeConfig
+		include           IncludeConfig
 		terragruntOptions options.TerragruntOptions
 		expectedOut       string
 		expectedErr       error
 	}{
 		{
 			`"${get_terraform_commands_that_need_locking()}"`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_LOCKING),
 			nil,
 		},
 		{
 			`commands = ["${get_terraform_commands_that_need_vars()}"]`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf("commands = [%s]", util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_VARS)),
 			nil,
 		},
 		{
 			`commands = "test-${get_terraform_commands_that_need_vars()}"`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf(`commands = "test-%v"`, TERRAFORM_COMMANDS_NEED_VARS),
 			nil,
@@ -557,29 +557,44 @@ func TestResolveMultipleInterpolationsConfigString(t *testing.T) {
 
 	testCases := []struct {
 		str               string
-		include           *IncludeConfig
+		include           IncludeConfig
 		terragruntOptions options.TerragruntOptions
 		expectedOut       string
 		expectedErr       error
 	}{
 		{
 			`${get_env("NON_EXISTING_VAR1", "default1")}-${get_env("NON_EXISTING_VAR2", "default2")}`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf("default1-default2"),
 			nil,
 		},
 		{
+			// Included within quotes
+			`"${get_env("NON_EXISTING_VAR1", "default1")}-${get_env("NON_EXISTING_VAR2", "default2")}"`,
+			mockDefaultInclude,
+			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
+			fmt.Sprintf(`"default1-default2"`),
+			nil,
+		},
+		{
 			// Malformed parameters
 			`${get_env("NON_EXISTING_VAR1", "default"-${get_terraform_commands_that_need_vars()}`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidFunctionParameters(`"NON_EXISTING_VAR1", "default"-${get_terraform_commands_that_need_vars(`),
 		},
 		{
-			`${get_env("NON_EXISTING_VAR1", "default")}-${get_terraform_commands_that_need_vars()}`,
+			`test1 = "${get_env("NON_EXISTING_VAR1", "default")}" test2 = ["${get_terraform_commands_that_need_vars()}"]`,
+			mockDefaultInclude,
+			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
+			fmt.Sprintf(`test1 = "default" test2 = [%v]`, util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_VARS)),
 			nil,
+		},
+		{
+			`${get_env("NON_EXISTING_VAR1", "default")}-${get_terraform_commands_that_need_vars()}`,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf("default-%v", TERRAFORM_COMMANDS_NEED_VARS),
 			nil,

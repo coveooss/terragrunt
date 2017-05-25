@@ -254,7 +254,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
-	resolvedConfigString, err := ResolveTerragruntConfigString(configString, &include, terragruntOptions)
+	resolvedConfigString, err := ResolveTerragruntConfigString(configString, include, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -414,11 +414,11 @@ func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *optio
 		return nil, errors.WithStackTrace(IncludedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
 	}
 
-	includedConfig.Path, err = ResolveTerragruntConfigString(includedConfig.Path, includedConfig, terragruntOptions)
+	includedConfig.Path, err = ResolveTerragruntConfigString(includedConfig.Path, *includedConfig, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
-	includedConfig.Source, err = ResolveTerragruntConfigString(includedConfig.Source, includedConfig, terragruntOptions)
+	includedConfig.Source, err = ResolveTerragruntConfigString(includedConfig.Source, *includedConfig, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
