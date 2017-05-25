@@ -270,7 +270,7 @@ func splitSourceUrl(sourceUrl *url.URL, terragruntOptions *options.TerragruntOpt
 		sourceUrlModifiedPath.Path = pathSplitOnDoubleSlash[0]
 		return sourceUrlModifiedPath, pathSplitOnDoubleSlash[1], nil
 	} else {
-		terragruntOptions.Logger.Warningf("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
+		terragruntOptions.Logger.Noticef("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
 		return sourceUrl, "", nil
 	}
 }
