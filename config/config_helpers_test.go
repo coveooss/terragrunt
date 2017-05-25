@@ -12,6 +12,7 @@ import (
 	"testing"
 )
 
+// It is no longer possible to pass nil as parameter for include
 var mockDefaultInclude = IncludeConfig{Path: DefaultTerragruntConfigPath}
 
 func TestPathRelativeToInclude(t *testing.T) {
