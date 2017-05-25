@@ -227,7 +227,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 	// If the temp directory has been specified in args, we replace the argument with the actual folder
 	for _, hook := range append(conf.PreHooks, conf.PostHooks...) {
 		for i, arg := range hook.Arguments {
-			hook.Arguments[i] = strings.Replace(arg, config.GET_TEMP_FOLDER, tempFolder, -1)
+			hook.Arguments[i] = strings.Replace(arg, config.GET_TEMP_FOLDER, filepath.Join(tempFolder), -1)
 		}
 	}
 
