@@ -204,7 +204,7 @@ func resolveTerragruntInterpolation(str string, include IncludeConfig, terragrun
 
 // Return the directory of the current include file that is processed
 func getCurrentDir(include IncludeConfig) string {
-	return filepaht.ToSlash(filepath.Dir(include.Path))
+	return filepath.ToSlash(filepath.Dir(include.Path))
 }
 
 // Return the directory where the Terragrunt configuration file lives
