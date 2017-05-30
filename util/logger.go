@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Create a logger with the given prefix
+// CreateLogger creates a logger with the given prefix
 func CreateLogger(prefix string) *logging.Logger {
 	if prefix != "" {
 		prefix = " " + prefix
@@ -15,6 +15,12 @@ func CreateLogger(prefix string) *logging.Logger {
 	return logging.MustGetLogger(prefix)
 }
 
+// SetWarningLoggingLevel sets the logging level to the warning
+func SetWarningLoggingLevel() {
+	logging.SetLevel(logging.WARNING, "")
+}
+
+// InitLogging must be called to set the logging string, initialize color and logging level
 func InitLogging(levelName string, defaultLevel logging.Level, color bool) error {
 	var format string
 	if color {

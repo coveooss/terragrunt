@@ -155,6 +155,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		cli.ShowAppHelp(cliContext)
 
 		fmt.Fprintln(cliContext.App.Writer)
+		util.SetWarningLoggingLevel()
 		shell.RunTerraformCommand(terragruntOptions, "--help")
 		return nil
 	}
