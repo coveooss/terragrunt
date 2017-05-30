@@ -26,7 +26,11 @@ func RunTerraformCommand(terragruntOptions *options.TerragruntOptions, args ...s
 // If the user redirect the stdout, he will only get the output for the terraform desired command.
 func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.TerragruntOptions, args ...string) error {
 	output, err := runShellCommandAndCaptureOutput(terragruntOptions, true, terragruntOptions.TerraformPath, args...)
-	terragruntOptions.Logger.Info(output)
+	if err != nil {
+		terragruntOptions.Logger.Error(output)
+	} else {
+		terragruntOptions.Logger.Info(output)
+	}
 	return err
 }
 
