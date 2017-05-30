@@ -404,14 +404,14 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
-			InvalidFunctionParameters("Invalid Parameters"),
+			InvalidInterpolationSyntax("${get_env(Invalid Parameters)}"),
 		},
 		{
 			"foo/${get_env('env','')}/bar",
 			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
-			InvalidFunctionParameters("'env',''"),
+			InvalidInterpolationSyntax("${get_env('env','')}"),
 		},
 		{
 			`foo/${get_env("","")}/bar`,
@@ -458,9 +458,9 @@ TERRAGRUNT_HIT","")}/bar`,
 				NonInteractive:       true,
 				Env:                  map[string]string{"TEST_ENV_TERRAGRUNT_OTHER": "SOMETHING"},
 			},
-			`foo/${get_env("TEST_ENV_
-TERRAGRUNT_HIT","")}/bar`,
-			nil,
+			"",
+			InvalidInterpolationSyntax(`${get_env("TEST_ENV_
+TERRAGRUNT_HIT","")}`),
 		},
 		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","DEFAULT")}/bar`,
@@ -574,7 +574,7 @@ func TestResolveMultipleInterpolationsConfigString(t *testing.T) {
 			`"${get_env("NON_EXISTING_VAR1", "default1")}-${get_env("NON_EXISTING_VAR2", "default2")}"`,
 			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
-			fmt.Sprintf(`"default1-default2"`),
+			`"default1-default2"`,
 			nil,
 		},
 		{
@@ -582,8 +582,8 @@ func TestResolveMultipleInterpolationsConfigString(t *testing.T) {
 			`${get_env("NON_EXISTING_VAR1", "default"-${get_terraform_commands_that_need_vars()}`,
 			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
-			"",
-			InvalidFunctionParameters(`"NON_EXISTING_VAR1", "default"-${get_terraform_commands_that_need_vars(`),
+			fmt.Sprintf(`${get_env("NON_EXISTING_VAR1", "default"-%v`, TERRAFORM_COMMANDS_NEED_VARS),
+			nil,
 		},
 		{
 			`test1 = "${get_env("NON_EXISTING_VAR1", "default")}" test2 = ["${get_terraform_commands_that_need_vars()}"]`,
