@@ -15,12 +15,13 @@ import (
 
 const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
 
-var INTERPOLATION_PARAMETERS = `(\s*"[^"]*?"\s*,?\s*)*`
-var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\))\s*\}`, INTERPOLATION_PARAMETERS))
+var INTERPOLATION_VARS = `\s*var\.([[:alpha:]][\w-]*)\s*`
+var INTERPOLATION_PARAMETERS = `(\s*("[^"]*?"|var\.\w+)\s*,?\s*)*`
+var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
 var INTERPOLATION_SYNTAX_REGEX_REMAINING = regexp.MustCompile(`\$\{.*?\}`)
 var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`^\$\{(.*?)\((.*?)\)\}$`)
-var HELPER_VAR_REGEX = regexp.MustCompile(`\$\{var\.([[[:alpha:]][\w-]*)\}`)
+var HELPER_VAR_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, INTERPOLATION_VARS))
 var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(?P<env>[^=]+?)"\s*\,` + getVarParams(1) + `$`)
 var HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(?P<tag>[^=]+?)"\s*\,` + getVarParams(2) + `$`)
 var HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(.*?)"\s*$`)
@@ -165,7 +166,8 @@ func processMultipleInterpolationsInString(terragruntConfigString string, includ
 		// If there is no error, we check if there are remaining look-a-like interpolation strings
 		// that have not been considered. If so, they are certainly malformed.
 		remaining := INTERPOLATION_SYNTAX_REGEX_REMAINING.FindAllString(resolved, -1)
-		if len(remaining) > 0 {
+		if len(remaining) > 0 && terragruntOptions.EraseNonDefinedVariables {
+			remaining = util.RemoveDuplicatesFromListKeepFirst(remaining)
 			finalErr = InvalidInterpolationSyntax(strings.Join(remaining, ", "))
 		}
 	}
