@@ -349,6 +349,20 @@ func TestResolveTerragruntConfigString(t *testing.T) {
 			nil,
 		},
 		{
+			"${    find_in_parent_folders()    }",
+			nil,
+			options.TerragruntOptions{TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath, NonInteractive: true},
+			"../../" + DefaultTerragruntConfigPath,
+			nil,
+		},
+		{
+			"${find_in_parent_folders ()}",
+			nil,
+			options.TerragruntOptions{TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath, NonInteractive: true},
+			"",
+			InvalidInterpolationSyntax("${find_in_parent_folders ()}"),
+		},
+		{
 			"foo/${find_in_parent_folders()}/bar",
 			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath, NonInteractive: true},
@@ -428,6 +442,13 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 			InvalidFunctionParameters(`   ""    ,   ""    `),
 		},
 		{
+			`${get_env("SOME_VAR", "SOME{VALUE}")}`,
+			nil,
+			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
+			"SOME{VALUE}",
+			nil,
+		},
+		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","")}/bar`,
 			mockDefaultInclude,
 			options.TerragruntOptions{
@@ -493,6 +514,22 @@ TERRAGRUNT_HIT","")}`),
 				Env:                  map[string]string{"TEST_ENV_TERRAGRUNT_HIT": "HIT"},
 			},
 			"foo/HIT/bar",
+			nil,
+		},
+		{
+			// Unclosed quote
+			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT}/bar`,
+			nil,
+			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
+			"",
+			InvalidInterpolationSyntax(`${get_env("TEST_ENV_TERRAGRUNT_HIT}`),
+		},
+		{
+			// Unclosed quote and interpolation pattern
+			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`,
+			nil,
+			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
+			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`,
 			nil,
 		},
 	}

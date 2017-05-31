@@ -218,8 +218,8 @@ func resolveTerragruntInterpolation(str string, include IncludeConfig, terragrun
 		return executeTerragruntHelperFunction(matches[1], matches[2], include, terragruntOptions)
 	}
 
-	return "", errors.WithStackTrace(InvalidInterpolationSyntax(str))
-}
+		return "", errors.WithStackTrace(InvalidInterpolationSyntax(str))
+	}
 
 // Return the directory of the current include file that is processed
 func getCurrentDir(include IncludeConfig) string {
@@ -267,13 +267,13 @@ func parseGetEnvParameters(parameters string, terragruntOptions *options.Terragr
 		case "def1":
 			if value != "" {
 				envVariable.DefaultValue = value
-			}
+		}
 		case "var1":
 			if value != "" {
 				varName := fmt.Sprintf("${var.%v}", value)
 				envVariable.DefaultValue, _ = resolveTerragruntVars(varName, terragruntOptions)
-			}
 		}
+	}
 	}
 
 	return envVariable, nil
@@ -385,21 +385,21 @@ func pathRelativeToInclude(include IncludeConfig, terragruntOptions *options.Ter
 	parent := getparentLocalConfigFilesLocation(include, terragruntOptions)
 	child := filepath.Dir(terragruntOptions.TerragruntConfigPath)
 	return util.GetPathRelativeTo(child, parent)
-}
+	}
 
 // Return the relative path from the current Terragrunt configuration to the included Terragrunt configuration file
 func pathRelativeFromInclude(include IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
 	parent := getparentLocalConfigFilesLocation(include, terragruntOptions)
 	child := filepath.Dir(terragruntOptions.TerragruntConfigPath)
 	return util.GetPathRelativeTo(parent, child)
-}
+	}
 
 func getparentLocalConfigFilesLocation(include IncludeConfig, terragruntOptions *options.TerragruntOptions) string {
 	cursor := &include
 	for {
 		if cursor.Source == "" {
 			return filepath.Dir(cursor.Path)
-		}
+	}
 		cursor = cursor.IncludeBy
 	}
 }
