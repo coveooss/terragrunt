@@ -290,10 +290,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 
 	result := shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
 
-	// Executing the post-hooks commands if there are
-	if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
-		terragruntOptions.Logger.Error(err)
-		return result
+	// Executing the post-hooks commands if there are and there is no error
+	if result == nil {
+		if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
+			terragruntOptions.Logger.Error(err)
+			return result
+		}
 	}
 
 	return result
@@ -301,7 +303,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 
 // Execute the hooks. If OS is specified and the current OS is not listed, the command is ignored
 func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook) error {
+	cmd := firstArg(terragruntOptions.TerraformCliArgs)
 	for _, hook := range hooks {
+		if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, cmd) {
+			// The current command is not in the list of command on which the hook should be applied
+			continue
+		}
 		if len(hook.OS) > 0 && !util.ListContainsElement(hook.OS, runtime.GOOS) {
 			terragruntOptions.Logger.Infof("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
 			continue
