@@ -3,10 +3,11 @@ package shell
 import (
 	"bufio"
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/options"
 	"os"
 	"strings"
+
+	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/gruntwork-io/terragrunt/options"
 )
 
 // Prompt the user for text in the CLI. Returns the text entered by the user.
@@ -14,11 +15,10 @@ func PromptUserForInput(prompt string, terragruntOptions *options.TerragruntOpti
 	if terragruntOptions.Logger.Module != "" {
 		prompt = fmt.Sprintf("%s %s", terragruntOptions.Logger.Module, prompt)
 	}
-	fmt.Print(prompt)
+	terragruntOptions.Logger.Info(prompt)
 
 	if terragruntOptions.NonInteractive {
-		fmt.Println()
-		terragruntOptions.Logger.Notice("The non-interactive flag is set to true, so assuming 'yes' for all prompts")
+		terragruntOptions.Logger.Notice("\nThe non-interactive flag is set to true, so assuming 'yes' for all prompts")
 		return "yes", nil
 	}
 

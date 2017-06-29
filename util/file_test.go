@@ -1,9 +1,11 @@
 package util
 
 import (
+	"path/filepath"
+	"testing"
+
 	"github.com/gruntwork-io/terragrunt/test/helpers"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestGetPathRelativeTo(t *testing.T) {
@@ -57,5 +59,33 @@ func TestCanonicalPath(t *testing.T) {
 		actual, err := CanonicalPath(testCase.path, testCase.basePath)
 		assert.Nil(t, err, "Unexpected error for path %s and basePath %s: %v", testCase.path, testCase.basePath, err)
 		assert.Equal(t, testCase.expected, actual, "For path %s and basePath %s", testCase.path, testCase.basePath)
+	}
+}
+
+func TestPathContainsHiddenFileOrFolder(t *testing.T) {
+	testCases := []struct {
+		path     string
+		expected bool
+	}{
+		{"", false},
+		{".", false},
+		{".foo", true},
+		{".foo/", true},
+		{"foo/bar", false},
+		{"/foo/bar", false},
+		{".foo/bar", true},
+		{"foo/.bar", true},
+		{"/foo/.bar", true},
+		{"/foo/./bar", false},
+		{"/foo/../bar", false},
+		{"/foo/.././bar", false},
+		{"/foo/.././.bar", true},
+		{"/foo/.././.bar/", true},
+	}
+
+	for _, testCase := range testCases {
+		path := filepath.FromSlash(testCase.path)
+		actual := PathContainsHiddenFileOrFolder(path)
+		assert.Equal(t, testCase.expected, actual, "For path %s", path)
 	}
 }

@@ -2,16 +2,17 @@ package config
 
 import (
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/stretchr/testify/assert"
-	"reflect"
-	"testing"
 )
 
-var mockOptions = options.TerragruntOptions{TerragruntConfigPath: "test-time-mock", NonInteractive: true}
+var mockOptions = options.TerragruntOptions{TerragruntConfigPath: "test-time-mock", NonInteractive: true, Logger: util.CreateLogger("config_test")}
 var mockOldInclude = IncludeConfig{Path: OldTerragruntConfigPath}
 
 func TestParseTerragruntConfigRemoteStateMinimalConfig(t *testing.T) {
@@ -407,7 +408,7 @@ func TestParseTerragruntConfigTwoLevels(t *testing.T) {
 	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
-}
+	}
 
 func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 	t.Parallel()
@@ -424,7 +425,7 @@ func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
-}
+	}
 
 func TestParseTerragruntConfigEmptyConfig(t *testing.T) {
 	t.Parallel()
@@ -490,6 +491,21 @@ func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 			&TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
 			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
 			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+		},
+		{
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
+			&TerragruntConfig{Terraform: &TerraformConfig{}},
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
+		},
+		{
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}}}},
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}, TerraformExtraArguments{Name: "childArgs"}}}},
+		},
+		{
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-parent"}}}}},
+			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
 		},
 	}
 
@@ -630,7 +646,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude, DefaultTerragruntConfigPath)
 	if err != nil {
 		t.Fatal(err)
 	}

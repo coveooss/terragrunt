@@ -2,6 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/url"
+	"os"
+	"regexp"
+	"strings"
+
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -10,11 +16,6 @@ import (
 	"github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
 	"github.com/mattn/go-zglob"
-	"io/ioutil"
-	"net/url"
-	"os"
-	"regexp"
-	"strings"
 )
 
 // This struct represents information about Terraform source code that needs to be downloaded
@@ -198,7 +199,7 @@ func processTerraformSource(source string, terragruntOptions *options.Terragrunt
 	// We add the uniqueness factor to the folder name to ensure that distinct environment are processed in
 	// distinct directory
 	encodedWorkingDir := util.EncodeBase64Sha1(canonicalWorkingDir + terragruntOptions.Uniqueness)
-	downloadDir := util.JoinPath(os.TempDir(), "terragrunt-download", encodedWorkingDir, rootPath)
+	downloadDir := util.JoinPath(terragruntOptions.DownloadDir, encodedWorkingDir, rootPath)
 	workingDir := util.JoinPath(downloadDir, modulePath)
 	versionFile := util.JoinPath(downloadDir, ".terragrunt-source-version")
 

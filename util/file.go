@@ -3,8 +3,6 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/hashicorp/hcl"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,6 +10,9 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+
+	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/hashicorp/hcl"
 )
 
 // Return true if the given file exists
@@ -230,7 +231,8 @@ func LoadTfVars(path string) (map[string]interface{}, error) {
 	return FlattenHCL(variables), err
 }
 
-// Copy the files and folders within the source folder into the destination folder
+// Copy the files and folders within the source folder into the destination folder. Note that hidden files and folders
+// (those starting with a dot) will be skipped.
 func CopyFolderContents(source string, destination string) error {
 	files, err := ioutil.ReadDir(source)
 	if err != nil {
@@ -238,10 +240,12 @@ func CopyFolderContents(source string, destination string) error {
 	}
 
 	for _, file := range files {
-		src := JoinPath(source, file.Name())
-		dest := JoinPath(destination, file.Name())
+		src := filepath.Join(source, file.Name())
+		dest := filepath.Join(destination, file.Name())
 
-		if file.IsDir() {
+		if PathContainsHiddenFileOrFolder(src) {
+			continue
+		} else if file.IsDir() {
 			if err := os.MkdirAll(dest, file.Mode()); err != nil {
 				return errors.WithStackTrace(err)
 			}
@@ -257,6 +261,16 @@ func CopyFolderContents(source string, destination string) error {
 	}
 
 	return nil
+}
+
+func PathContainsHiddenFileOrFolder(path string) bool {
+	pathParts := strings.Split(path, string(filepath.Separator))
+	for _, pathPart := range pathParts {
+		if strings.HasPrefix(pathPart, ".") && pathPart != "." && pathPart != ".." {
+			return true
+		}
+	}
+	return false
 }
 
 // Copy a file from source to destination

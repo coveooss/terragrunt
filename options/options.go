@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -48,6 +49,9 @@ type TerragruntOptions struct {
 	// If set to true, delete the contents of the temporary folder before downloading Terraform source code into it
 	SourceUpdate bool
 
+	// Download Terraform configurations specified in the Source parameter into this folder
+	DownloadDir string
+
 	// If set to true, continue running *-all commands even if a dependency has errors. This is mostly useful for 'output-all <some_variable>'. See https://github.com/gruntwork-io/terragrunt/issues/193
 	IgnoreDependencyErrors bool
 
@@ -80,6 +84,15 @@ type TerragruntOptions struct {
 func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 	workingDir := filepath.Dir(terragruntConfigPath)
 
+	downloadDir := filepath.Join(os.TempDir(), "terragrunt")
+	// On some versions of Windows, the default temp dir is a fairly long path (e.g. C:/Users/JONDOE~1/AppData/Local/Temp/2/).
+	// This is a problem because Windows also limits path lengths to 260 characters, and with nested folders and hashed folder names
+	// (e.g. from running terraform get), you can hit that limit pretty quickly. Therefore, we try to set the temporary download
+	// folder to something slightly shorter, but still reasonable.
+	if runtime.GOOS == "windows" {
+		downloadDir = `C:\\Windows\\Temp\\terragrunt`
+	}
+
 	return &TerragruntOptions{
 		TerragruntConfigPath:   terragruntConfigPath,
 		TerraformPath:          "terraform",
@@ -91,6 +104,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		Variables:              VariableList{},
 		Source:                 "",
 		SourceUpdate:           false,
+		DownloadDir:            downloadDir,
 		IgnoreDependencyErrors: false,
 		Writer:                 os.Stdout,
 		ErrWriter:              os.Stderr,
@@ -125,6 +139,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		Variables:              VariableList{},
 		Source:                 terragruntOptions.Source,
 		SourceUpdate:           terragruntOptions.SourceUpdate,
+		DownloadDir:            terragruntOptions.DownloadDir,
 		IgnoreDependencyErrors: terragruntOptions.IgnoreDependencyErrors,
 		Writer:                 terragruntOptions.Writer,
 		ErrWriter:              terragruntOptions.ErrWriter,

@@ -3,15 +3,16 @@ package cli
 import (
 	goErrors "errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/op/go-logging"
 	"github.com/urfave/cli"
-	"os"
-	"path/filepath"
-	"strings"
 )
 
 // Parse command line options that are passed in for Terragrunt
@@ -79,26 +80,24 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
 
-	options := options.TerragruntOptions{
-		TerragruntConfigPath:   filepath.ToSlash(terragruntConfigPath),
-		TerraformPath:          filepath.ToSlash(terraformPath),
-		NonInteractive:         parseBooleanArg(args, OPT_NON_INTERACTIVE, false),
-		TerraformCliArgs:       filterTerragruntArgs(args),
-		WorkingDir:             filepath.ToSlash(workingDir),
-		Logger:                 util.CreateLogger(""),
-		RunTerragrunt:          runTerragrunt,
-		Source:                 terraformSource,
-		SourceUpdate:           sourceUpdate,
-		Env:                    map[string]string{},
-		Variables:              options.VariableList{},
-		IgnoreDependencyErrors: ignoreDependencyErrors,
-	}
+	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
+	opts.TerraformPath = filepath.ToSlash(terraformPath)
+	opts.NonInteractive = parseBooleanArg(args, OPT_NON_INTERACTIVE, false)
+	opts.TerraformCliArgs = filterTerragruntArgs(args)
+	opts.WorkingDir = filepath.ToSlash(workingDir)
+	opts.Logger = util.CreateLogger("")
+	opts.RunTerragrunt = runTerragrunt
+	opts.Source = terraformSource
+	opts.SourceUpdate = sourceUpdate
+	opts.IgnoreDependencyErrors = ignoreDependencyErrors
+	opts.Env = map[string]string{}
+	opts.Variables = options.VariableList{}
 
-	parseEnvironmentVariables(&options, os.Environ())
-	parseVarsAndVarFiles(&options, args)
+	parseEnvironmentVariables(opts, os.Environ())
+	parseVarsAndVarFiles(opts, args)
 
-	err = util.InitLogging(loggingLevel, logging.INFO, !util.ListContainsElement(options.TerraformCliArgs, "-no-color"))
-	return &options, err
+	err = util.InitLogging(loggingLevel, logging.INFO, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
+	return opts, err
 }
 
 func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terragruntConfig *config.TerragruntConfig) []string {

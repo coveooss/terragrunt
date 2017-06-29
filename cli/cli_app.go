@@ -2,6 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"io"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"strings"
+
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -10,11 +16,6 @@ import (
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/urfave/cli"
-	"io"
-	"path/filepath"
-	"regexp"
-	"runtime"
-	"strings"
 )
 
 const OPT_TERRAGRUNT_CONFIG = "terragrunt-config"
@@ -34,6 +35,8 @@ const CMD_APPLY_ALL = "apply-all"
 const CMD_DESTROY_ALL = "destroy-all"
 const CMD_OUTPUT_ALL = "output-all"
 
+const CMD_INIT = "init"
+
 // CMD_SPIN_UP is deprecated.
 const CMD_SPIN_UP = "spin-up"
 
@@ -49,6 +52,7 @@ var DEPRECATED_COMMANDS = map[string]string{
 }
 
 var TERRAFORM_COMMANDS_THAT_USE_STATE = []string{
+	"init",
 	"apply",
 	"destroy",
 	"env",
@@ -165,15 +169,15 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 	}
 
 	givenCommand := cliContext.Args().First()
-	command := checkDeprecated(givenCommand)
+	command := checkDeprecated(givenCommand, terragruntOptions)
 	return runCommand(command, terragruntOptions)
 }
 
 // checkDeprecated checks if the given command is deprecated.  If so: prints a message and returns the new command.
-func checkDeprecated(command string) string {
+func checkDeprecated(command string, terragruntOptions *options.TerragruntOptions) string {
 	newCommand, deprecated := DEPRECATED_COMMANDS[command]
 	if deprecated {
-		fmt.Printf("%v is deprecated; running %v instead.\n", command, newCommand)
+		terragruntOptions.Logger.Warningf("%v is deprecated; running %v instead.\n", command, newCommand)
 		return newCommand
 	}
 	return command
@@ -190,7 +194,7 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
-func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
+func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) {
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
 		return err
@@ -278,7 +282,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 	terragruntOptions.SaveVariables()
 
 	// Executing the pre-hooks commands if there are
-	if err := runHooks(terragruntOptions, conf.PreHooks); err != nil {
+	if err = runHooks(terragruntOptions, conf.PreHooks); err != nil {
 		return err
 	}
 
@@ -288,17 +292,25 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) error {
 		}
 	}
 
-	result := shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
-
-	// Executing the post-hooks commands if there are and there is no error
-	if result == nil {
-		if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
-			terragruntOptions.Logger.Error(err)
-			return result
+	defer func() {
+		// Executing the post-hooks commands if there are and there is no error
+		if result == nil {
+			if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
+				terragruntOptions.Logger.Error(err)
+				result = err
+			}
 		}
+	}()
+
+	// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
+	// terraform init if it was necessary, and the below RunTerraformCommand would end up calling init without
+	// the correct remote state arguments, which is confusing.
+	if terragruntOptions.TerraformCliArgs[0] == CMD_INIT {
+		terragruntOptions.Logger.Info("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
+		return nil
 	}
 
-	return result
+	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
 }
 
 // Execute the hooks. If OS is specified and the current OS is not listed, the command is ignored
@@ -372,7 +384,8 @@ func downloadModules(terragruntOptions *options.TerragruntOptions) error {
 // modules at all. Detecting if your downloaded modules are out of date (as opposed to missing entirely) is more
 // complicated and not something we handle at the moment.
 func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, error) {
-	if util.FileExists(util.JoinPath(terragruntOptions.WorkingDir, ".terraform/modules")) {
+	modulesPath := util.JoinPath(terragruntOptions.WorkingDir, ".terraform/modules")
+	if util.FileExists(modulesPath) {
 		return false, nil
 	}
 
