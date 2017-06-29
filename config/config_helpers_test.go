@@ -350,14 +350,14 @@ func TestResolveTerragruntConfigString(t *testing.T) {
 		},
 		{
 			"${    find_in_parent_folders()    }",
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"../../" + DefaultTerragruntConfigPath,
 			nil,
 		},
 		{
 			"${find_in_parent_folders ()}",
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidInterpolationSyntax("${find_in_parent_folders ()}"),
@@ -443,7 +443,7 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 		},
 		{
 			`${get_env("SOME_VAR", "SOME{VALUE}")}`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"SOME{VALUE}",
 			nil,
@@ -519,7 +519,7 @@ TERRAGRUNT_HIT","")}`),
 		{
 			// Unclosed quote
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT}/bar`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidInterpolationSyntax(`${get_env("TEST_ENV_TERRAGRUNT_HIT}`),
@@ -527,7 +527,7 @@ TERRAGRUNT_HIT","")}`),
 		{
 			// Unclosed quote and interpolation pattern
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`,
-			nil,
+			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`,
 			nil,

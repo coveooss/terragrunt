@@ -144,7 +144,8 @@ func DefaultConfigPath(workingDir string) string {
 // Returns a list of all Terragrunt config files in the given path or any subfolder of the path. A file is a Terragrunt
 // config file if it has a name as returned by the DefaultConfigPath method and contains Terragrunt config contents
 // as returned by the IsTerragruntConfigFile method.
-func FindConfigFilesInPath(rootPath string) ([]string, error) {
+func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]string, error) {
+	rootPath := terragruntOptions.WorkingDir
 	configFiles := []string{}
 
 	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
@@ -156,6 +157,12 @@ func FindConfigFilesInPath(rootPath string) ([]string, error) {
 			if util.FileExists(filepath.Join(path, "terragrunt.ignore")) {
 				// If we wish to exclude a directory from the *-all commands, we just
 				// have to put an empty file name terragrunt.ignore in the folder
+				return nil
+			}
+			if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(path, "terragrunt-non-interactive.ignore")) {
+				// If we wish to exclude a directory from the *-all commands, we just
+				// have to put an empty file name terragrunt-non-interactive.ignore in
+				// the folder
 				return nil
 			}
 			configPath := DefaultConfigPath(path)
