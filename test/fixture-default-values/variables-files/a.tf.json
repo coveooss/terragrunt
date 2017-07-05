@@ -1,0 +1,10 @@
+{
+    "variable": {
+        "aj": {
+            "default": "AJ (a.tf.json)"
+        },
+        "aj_overridden_1": {
+            "default": "AJ (a.tf.json)"
+        }
+    }
+}

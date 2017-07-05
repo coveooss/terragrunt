@@ -2,14 +2,17 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"regexp"
+	"testing"
+
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/test/helpers"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 var mockDefaultInclude = IncludeConfig{Path: DefaultTerragruntConfigPath}
@@ -65,7 +68,8 @@ func TestPathRelativeToInclude(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualPath, actualErr := pathRelativeToInclude(testCase.include, &testCase.terragruntOptions)
+		context := resolveContext{testCase.include, &testCase.terragruntOptions, ""}
+		actualPath, actualErr := context.pathRelativeToInclude()
 		assert.Nil(t, actualErr, "For include %v and options %v, unexpected error: %v", testCase.include, testCase.terragruntOptions, actualErr)
 		assert.Equal(t, testCase.expectedPath, actualPath, "For include %v and options %v", testCase.include, testCase.terragruntOptions)
 	}
@@ -122,7 +126,8 @@ func TestPathRelativeFromInclude(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualPath, actualErr := pathRelativeFromInclude(testCase.include, &testCase.terragruntOptions)
+		context := resolveContext{testCase.include, &testCase.terragruntOptions, ""}
+		actualPath, actualErr := context.pathRelativeFromInclude()
 		assert.Nil(t, actualErr, "For include %v and options %v, unexpected error: %v", testCase.include, testCase.terragruntOptions, actualErr)
 		assert.Equal(t, testCase.expectedPath, actualPath, "For include %v and options %v", testCase.include, testCase.terragruntOptions)
 	}
@@ -179,7 +184,8 @@ func TestFindInParentFolders(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualPath, actualErr := findInParentFolders(&testCase.terragruntOptions)
+		context := resolveContext{mockDefaultInclude, &testCase.terragruntOptions, ""}
+		actualPath, actualErr := context.findInParentFolders()
 		if testCase.expectedErr != nil {
 			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For options %v, expected error %v but got error %v", testCase.terragruntOptions, testCase.expectedErr, actualErr)
 		} else {
@@ -258,7 +264,8 @@ func TestResolveTerragruntInterpolation(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualOut, actualErr := resolveTerragruntInterpolation(testCase.str, testCase.include, &testCase.terragruntOptions)
+		context := resolveContext{testCase.include, &testCase.terragruntOptions, ""}
+		actualOut, actualErr := context.resolveTerragruntInterpolation(testCase.str)
 		if testCase.expectedErr != nil {
 			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' include %v and options %v, expected error %v but got error %v", testCase.str, testCase.include, testCase.terragruntOptions, testCase.expectedErr, actualErr)
 		} else {
@@ -401,56 +408,48 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 
 	testCases := []struct {
 		str               string
-		include           IncludeConfig
 		terragruntOptions options.TerragruntOptions
 		expectedOut       string
 		expectedErr       error
 	}{
 		{
 			"foo/${get_env()}/bar",
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidFunctionParameters(""),
 		},
 		{
 			"foo/${get_env(Invalid Parameters)}/bar",
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidInterpolationSyntax("${get_env(Invalid Parameters)}"),
 		},
 		{
 			"foo/${get_env('env','')}/bar",
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidInterpolationSyntax("${get_env('env','')}"),
 		},
 		{
 			`foo/${get_env("","")}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidFunctionParameters(`"",""`),
 		},
 		{
 			`foo/${get_env(   ""    ,   ""    )}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidFunctionParameters(`   ""    ,   ""    `),
 		},
 		{
 			`${get_env("SOME_VAR", "SOME{VALUE}")}`,
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"SOME{VALUE}",
 			nil,
 		},
 		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","")}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{
 				TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath,
 				NonInteractive:       true,
@@ -461,7 +460,6 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 		},
 		{
 			`foo/${get_env(    "TEST_ENV_TERRAGRUNT_HIT"   ,   ""   )}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{
 				TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath,
 				NonInteractive:       true,
@@ -473,7 +471,6 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 		{
 			`foo/${get_env("TEST_ENV_
 TERRAGRUNT_HIT","")}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{
 				TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath,
 				NonInteractive:       true,
@@ -485,7 +482,6 @@ TERRAGRUNT_HIT","")}`),
 		},
 		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","DEFAULT")}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{
 				TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath,
 				NonInteractive:       true,
@@ -496,7 +492,6 @@ TERRAGRUNT_HIT","")}`),
 		},
 		{
 			`foo/${get_env(    "TEST_ENV_TERRAGRUNT_HIT      "   ,   "default"   )}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{
 				TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath,
 				NonInteractive:       true,
@@ -507,7 +502,6 @@ TERRAGRUNT_HIT","")}`),
 		},
 		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","default")}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{
 				TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath,
 				NonInteractive:       true,
@@ -519,7 +513,6 @@ TERRAGRUNT_HIT","")}`),
 		{
 			// Unclosed quote
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT}/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			"",
 			InvalidInterpolationSyntax(`${get_env("TEST_ENV_TERRAGRUNT_HIT}`),
@@ -527,7 +520,6 @@ TERRAGRUNT_HIT","")}`),
 		{
 			// Unclosed quote and interpolation pattern
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`,
-			mockDefaultInclude,
 			options.TerragruntOptions{TerragruntConfigPath: "/root/child/" + DefaultTerragruntConfigPath, NonInteractive: true},
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`,
 			nil,
@@ -535,12 +527,12 @@ TERRAGRUNT_HIT","")}`),
 	}
 
 	for _, testCase := range testCases {
-		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, testCase.include, &testCase.terragruntOptions)
+		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, mockDefaultInclude, &testCase.terragruntOptions)
 		if testCase.expectedErr != nil {
-			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' include %v and options %v, expected error %v but got error %v and output %v", testCase.str, testCase.include, testCase.terragruntOptions, testCase.expectedErr, actualErr, actualOut)
+			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' options %v, expected error %v but got error %v and output %v", testCase.str, testCase.terragruntOptions, testCase.expectedErr, actualErr, actualOut)
 		} else {
-			assert.Nil(t, actualErr, "For string '%s' include %v and options %v, unexpected error: %v", testCase.str, testCase.include, testCase.terragruntOptions, actualErr)
-			assert.Equal(t, testCase.expectedOut, actualOut, "For string '%s' include %v and options %v", testCase.str, testCase.include, testCase.terragruntOptions)
+			assert.Nil(t, actualErr, "For string '%s' options %v, unexpected error: %v", testCase.str, testCase.terragruntOptions, actualErr)
+			assert.Equal(t, testCase.expectedOut, actualOut, "For string '%s' options %v", testCase.str, testCase.terragruntOptions)
 		}
 	}
 }
@@ -549,42 +541,35 @@ func TestResolveCommandsInterpolationConfigString(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		str               string
-		include           IncludeConfig
-		terragruntOptions options.TerragruntOptions
-		expectedOut       string
-		expectedErr       error
+		str         string
+		expectedOut string
+		expectedErr error
 	}{
 		{
 			`"${get_terraform_commands_that_need_locking()}"`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_LOCKING),
 			nil,
 		},
 		{
 			`commands = ["${get_terraform_commands_that_need_vars()}"]`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf("commands = [%s]", util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_VARS)),
 			nil,
 		},
 		{
 			`commands = "test-${get_terraform_commands_that_need_vars()}"`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf(`commands = "test-%v"`, TERRAFORM_COMMANDS_NEED_VARS),
 			nil,
 		},
 	}
 
 	for _, testCase := range testCases {
-		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, testCase.include, &testCase.terragruntOptions)
+		options := options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true}
+		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, mockDefaultInclude, &options)
 		if testCase.expectedErr != nil {
-			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' include %v and options %v, expected error %v but got error %v and output %v", testCase.str, testCase.include, testCase.terragruntOptions, testCase.expectedErr, actualErr, actualOut)
+			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s', expected error %v but got error %v and output %v", testCase.str, testCase.expectedErr, actualErr, actualOut)
 		} else {
-			assert.Nil(t, actualErr, "For string '%s' include %v and options %v, unexpected error: %v", testCase.str, testCase.include, testCase.terragruntOptions, actualErr)
-			assert.Equal(t, testCase.expectedOut, actualOut, "For string '%s' include %v and options %v", testCase.str, testCase.include, testCase.terragruntOptions)
+			assert.Nil(t, actualErr, "For string '%s', unexpected error: %v", testCase.str, actualErr)
+			assert.Equal(t, testCase.expectedOut, actualOut, "For string '%s'", testCase.str)
 		}
 	}
 }
@@ -593,58 +578,48 @@ func TestResolveMultipleInterpolationsConfigString(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		str               string
-		include           IncludeConfig
-		terragruntOptions options.TerragruntOptions
-		expectedOut       string
-		expectedErr       error
+		str         string
+		expectedOut string
+		expectedErr error
 	}{
 		{
 			`${get_env("NON_EXISTING_VAR1", "default1")}-${get_env("NON_EXISTING_VAR2", "default2")}`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf("default1-default2"),
 			nil,
 		},
 		{
 			// Included within quotes
 			`"${get_env("NON_EXISTING_VAR1", "default1")}-${get_env("NON_EXISTING_VAR2", "default2")}"`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			`"default1-default2"`,
 			nil,
 		},
 		{
 			// Malformed parameters
 			`${get_env("NON_EXISTING_VAR1", "default"-${get_terraform_commands_that_need_vars()}`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf(`${get_env("NON_EXISTING_VAR1", "default"-%v`, TERRAFORM_COMMANDS_NEED_VARS),
 			nil,
 		},
 		{
 			`test1 = "${get_env("NON_EXISTING_VAR1", "default")}" test2 = ["${get_terraform_commands_that_need_vars()}"]`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf(`test1 = "default" test2 = [%v]`, util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_VARS)),
 			nil,
 		},
 		{
 			`${get_env("NON_EXISTING_VAR1", "default")}-${get_terraform_commands_that_need_vars()}`,
-			mockDefaultInclude,
-			options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true},
 			fmt.Sprintf("default-%v", TERRAFORM_COMMANDS_NEED_VARS),
 			nil,
 		},
 	}
 
 	for _, testCase := range testCases {
-		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, testCase.include, &testCase.terragruntOptions)
+		include := mockDefaultInclude
+		options := options.TerragruntOptions{TerragruntConfigPath: DefaultTerragruntConfigPath, NonInteractive: true}
+		actualOut, actualErr := ResolveTerragruntConfigString(testCase.str, include, &options)
 		if testCase.expectedErr != nil {
-			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s' include %v and options %v, expected error %v but got error %v and output %v", testCase.str, testCase.include, testCase.terragruntOptions, testCase.expectedErr, actualErr, actualOut)
+			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For string '%s', expected error %v but got error %v and output %v", testCase.str, testCase.expectedErr, actualErr, actualOut)
 		} else {
-			assert.Nil(t, actualErr, "For string '%s' include %v and options %v, unexpected error: %v", testCase.str, testCase.include, testCase.terragruntOptions, actualErr)
-			assert.Equal(t, testCase.expectedOut, actualOut, "For string '%s' include %v and options %v", testCase.str, testCase.include, testCase.terragruntOptions)
+			assert.Nil(t, actualErr, "For string '%s', unexpected error: %v", testCase.str, actualErr)
+			assert.Equal(t, testCase.expectedOut, actualOut, "For string '%s'", testCase.str)
 		}
 	}
 }
@@ -666,8 +641,8 @@ func TestGetTfVarsDirRelPath(t *testing.T) {
 }
 
 func testGetTfVarsDir(t *testing.T, configPath string, expectedPath string) {
-	terragruntOptions := options.NewTerragruntOptionsForTest(configPath)
-	actualPath, err := getTfVarsDir(terragruntOptions)
+	context := resolveContext{mockDefaultInclude, options.NewTerragruntOptionsForTest(configPath), ""}
+	actualPath, err := context.getTfVarsDir()
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.Equal(t, expectedPath, actualPath)
@@ -728,8 +703,49 @@ func TestGetParentTfVarsDir(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actualPath, actualErr := getParentTfVarsDir(testCase.include, &testCase.terragruntOptions)
+		context := resolveContext{testCase.include, &testCase.terragruntOptions, ""}
+		actualPath, actualErr := context.getParentTfVarsDir()
 		assert.Nil(t, actualErr, "For include %v and options %v, unexpected error: %v", testCase.include, testCase.terragruntOptions, actualErr)
 		assert.Equal(t, testCase.expectedPath, actualPath, "For include %v and options %v", testCase.include, testCase.terragruntOptions)
+	}
+}
+
+func Test_getParameters(t *testing.T) {
+	type args struct {
+		parameters        string
+		regex             *regexp.Regexp
+		terragruntOptions *options.TerragruntOptions
+	}
+
+	mockOptions := &options.TerragruntOptions{Variables: options.VariableList{
+		"a": {Source: options.Default, Value: "a"},
+		"b": {Source: options.Default, Value: "b"},
+	}}
+
+	tests := []struct {
+		name       string
+		args       args
+		wantResult []string
+		wantErr    bool
+	}{
+		{"Too much parameters", args{`var.a, var.b, "text", var.c`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, nil, true},
+		{"y", args{`var.a, var.b, "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"a", "b", "text"}, false},
+		{"Var with -", args{`var.a-1, var.b, "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"", "b", "text"}, false},
+		{"With function", args{`var.a-1, default(var.a, "no a"), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"", "a", "text"}, false},
+		{"With default no value", args{`var.a-1, default(var.c, "no c"), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"", "no c", "text"}, false},
+		{"Wrong number of parameters", args{`var.a-1, default(var.c, "no c", extra), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			context := resolveContext{mockDefaultInclude, tt.args.terragruntOptions, tt.args.parameters}
+			gotResult, err := context.getParameters(tt.args.regex)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getParameters() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(gotResult, tt.wantResult) {
+				t.Errorf("getParameters() = %v, want %v", gotResult, tt.wantResult)
+			}
+		})
 	}
 }

@@ -408,7 +408,7 @@ func TestParseTerragruntConfigTwoLevels(t *testing.T) {
 	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
-	}
+}
 
 func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 	t.Parallel()
@@ -425,7 +425,7 @@ func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
-	}
+}
 
 func TestParseTerragruntConfigEmptyConfig(t *testing.T) {
 	t.Parallel()
@@ -646,7 +646,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude, DefaultTerragruntConfigPath)
+	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}

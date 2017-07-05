@@ -1,0 +1,13 @@
+{
+    "variable": {
+        "bj": {
+            "default": "BJ (b.tf.json)"
+        },
+        "bj_overridden_1": {
+            "default": "BJ (b.tf.json)"
+        },
+        "bj_overridden_2": {
+            "default": "BJ (b.tf.json)"
+        }
+    }
+}

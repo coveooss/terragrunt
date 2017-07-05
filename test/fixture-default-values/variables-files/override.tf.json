@@ -1,0 +1,10 @@
+{
+    "variable": {
+        "aj_overridden_1": {
+            "default": "AJ (override.tf.json)"
+        },
+        "bj_overridden_2": {
+            "default": "BJ (override.tf.json)"
+        }
+    }
+}

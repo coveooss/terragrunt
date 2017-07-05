@@ -269,8 +269,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Retrieve the default variables from the .tf files
-	tfFiles, err = filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, "*.tf"))
-	variables, err := util.LoadDefaultValues(tfFiles)
+	variables, err := util.LoadDefaultValues(terragruntOptions.WorkingDir)
 	if err != nil {
 		return err
 	}
@@ -281,15 +280,15 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Save all variable files requested in the terragrunt config
 	terragruntOptions.SaveVariables()
 
-	// Executing the pre-hooks commands if there are
-	if err = runHooks(terragruntOptions, conf.PreHooks); err != nil {
-		return err
-	}
-
 	if conf.RemoteState != nil {
 		if err := configureRemoteState(conf.RemoteState, terragruntOptions); err != nil {
 			return err
 		}
+	}
+
+	// Executing the pre-hooks commands if there are
+	if err = runHooks(terragruntOptions, conf.PreHooks); err != nil {
+		return err
 	}
 
 	defer func() {
