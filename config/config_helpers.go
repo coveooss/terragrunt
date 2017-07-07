@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -16,20 +17,16 @@ import (
 const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
 
 var INTERPOLATION_VARS = `\s*var\.([[:alpha:]][\w-]*)\s*`
-var INTERPOLATION_PARAMETERS = `(\s*("[^"]*?"|var\.\w+)\s*,?\s*)*`
+var INTERPOLATION_PARAMETERS = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
 var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
 var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
 var INTERPOLATION_SYNTAX_REGEX_REMAINING = regexp.MustCompile(`\$\{.*?\}`)
-var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`^\$\{(.*?)\((.*?)\)\}$`)
+var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`^\$\{\s*(.*?)\((.*?)\)\s*\}$`)
 var HELPER_VAR_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, INTERPOLATION_VARS))
-var HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(?P<env>[^=]+?)"\s*\,` + getVarParams(1) + `$`)
-var HELPER_FUNCTION_GET_DEFAULT_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^` + getVarParams(2) + `$`)
-var HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(?P<tag>[^=]+?)"\s*\,` + getVarParams(2) + `$`)
-var HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX = regexp.MustCompile(`^\s*"(.*?)"\s*$`)
 var MAX_PARENT_FOLDERS_TO_CHECK = 100
 
 func getVarParams(count int) string {
-	const parameterRegexBase = `\s*(?:"(?P<string%d>.*?)"|var\.(?P<var%d>[[:alpha:]][\w-]*)|(?P<func%d>\w+\(.*?\)))\s*`
+	const parameterRegexBase = `\s*(?:"(?P<string%d>[^\"]*?)"|var\.(?P<var%d>[[:alpha:]][\w-]*)|(?P<func%d>\w+\(.*?\)))\s*`
 	var params []string
 	for i := 1; i <= count; i++ {
 		params = append(params, fmt.Sprintf(parameterRegexBase, i, i, i))
@@ -75,15 +72,19 @@ type EnvVar struct {
 }
 
 type resolveContext struct {
-	include    IncludeConfig
-	options    *options.TerragruntOptions
-	parameters string
+	include          IncludeConfig
+	options          *options.TerragruntOptions
+	parameters       string
+	errorOnUndefined bool
 }
 
 // Given a string value from a Terragrunt configuration, parse the string, resolve any calls to helper functions using
 // the syntax ${...}, and return the final value.
 func ResolveTerragruntConfigString(terragruntConfigString string, include IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
-	context := &resolveContext{include, terragruntOptions, ""}
+	context := &resolveContext{
+		include: include,
+		options: terragruntOptions,
+	}
 
 	// First, we replace all single interpolation syntax (i.e. function directly enclosed within quotes "${function()}")
 	terragruntConfigString, err := context.processSingleInterpolationInString(terragruntConfigString)
@@ -92,6 +93,15 @@ func ResolveTerragruntConfigString(terragruntConfigString string, include Includ
 	}
 	// Then, we replace all other interpolation functions (i.e. functions not directly enclosed within quotes)
 	return context.processMultipleInterpolationsInString(terragruntConfigString)
+}
+
+// SubstituteVars substitutes any variables in the string if there is a value associated with the variable
+func SubstituteVars(str string, terragruntOptions *options.TerragruntOptions) string {
+	context := &resolveContext{options: terragruntOptions}
+	if newStr, ok := context.resolveTerragruntVars(str); ok {
+		return newStr
+	}
+	return str
 }
 
 // Execute a single Terragrunt helper function and return its value as a string
@@ -120,13 +130,20 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 	}
 
 	// We create a new context with the parameters
-	context = &resolveContext{context.include, context.options, parameters}
+	context = &resolveContext{
+		include:          context.include,
+		options:          context.options,
+		parameters:       parameters,
+		errorOnUndefined: context.errorOnUndefined,
+	}
 	switch invoke := functionMap[functionName].(type) {
 	case func(*resolveContext) (interface{}, error):
-		return invoke(context)
-	case string:
-		return invoke, nil
-	case []string:
+		result, err := invoke(context)
+		if err != nil {
+			err = errors.WithStackTrace(err)
+		}
+		return result, err
+	case string, []string:
 		return invoke, nil
 	default:
 		return "", errors.WithStackTrace(UnknownHelperFunction(functionName))
@@ -135,13 +152,18 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 
 var functionMap map[string]interface{}
 
+type UnknownHelperFunction string
+
+func (err UnknownHelperFunction) Error() string {
+	return fmt.Sprintf("Unknown helper function: %s", string(err))
+}
+
 // For all interpolation functions that are called using the syntax "${function_name()}" (i.e. single interpolation function within string,
 // functions that return a non-string value we have to get rid of the surrounding quotes and convert the output to HCL syntax. For example,
 // for an array, we need to return "v1", "v2", "v3".
 func (context *resolveContext) processSingleInterpolationInString(terragruntConfigString string) (resolved string, finalErr error) {
 	// The function we pass to ReplaceAllStringFunc cannot return an error, so we have to use named error parameters to capture such errors.
 	resolved = INTERPOLATION_SYNTAX_REGEX_SINGLE.ReplaceAllStringFunc(terragruntConfigString, func(str string) string {
-		fmt.Println("String to replace", str)
 		matches := INTERPOLATION_SYNTAX_REGEX_SINGLE.FindStringSubmatch(str)
 
 		out, err := context.resolveTerragruntInterpolation(matches[1])
@@ -181,21 +203,20 @@ func (context *resolveContext) processMultipleInterpolationsInString(terragruntC
 		// If there is no error, we check if there are remaining look-a-like interpolation strings
 		// that have not been considered. If so, they are certainly malformed.
 		remaining := INTERPOLATION_SYNTAX_REGEX_REMAINING.FindAllString(resolved, -1)
-		if len(remaining) > 0 && context.options.EraseNonDefinedVariables {
-			remaining = util.RemoveDuplicatesFromListKeepFirst(remaining)
-			finalErr = InvalidInterpolationSyntax(strings.Join(remaining, ", "))
+		if len(remaining) > 0 {
+			if resolved == terragruntConfigString && context.errorOnUndefined {
+				remaining = util.RemoveDuplicatesFromListKeepFirst(remaining)
+				finalErr = InvalidInterpolationSyntax(strings.Join(remaining, ", "))
+			} else if resolved != terragruntConfigString {
+				// There was a change, so we retry the conversion to catch cases where there is an
+				// interpolation in the interpolation "${func("${func2()}")}" which is legit in
+				// terraform
+				return context.processMultipleInterpolationsInString(resolved)
+			}
 		}
 	}
 
 	return
-}
-
-// Substitute any variables in the string if there is a value associated with the variable
-func (context *resolveContext) SubstituteVars(str string, terragruntOptions *options.TerragruntOptions) string {
-	if newStr, ok := context.resolveTerragruntVars(str); ok {
-		return newStr
-	}
-	return str
 }
 
 // Resolve the references to variables ${var.name} if there are
@@ -207,7 +228,7 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 		if found, ok := context.options.Variables[matches[1]]; ok {
 			return fmt.Sprint(found.Value)
 		}
-		if context.options.EraseNonDefinedVariables {
+		if context.errorOnUndefined {
 			if !warningDone[matches[0]] {
 				context.options.Logger.Warningf("Variable %s undefined", matches[0])
 				warningDone[matches[0]] = true
@@ -236,6 +257,12 @@ func (context *resolveContext) resolveTerragruntInterpolation(str string) (inter
 	return "", errors.WithStackTrace(InvalidInterpolationSyntax(str))
 }
 
+type InvalidInterpolationSyntax string
+
+func (err InvalidInterpolationSyntax) Error() string {
+	return fmt.Sprintf("Invalid interpolation syntax. Expected syntax of the form '${function_name()}', but got '%s'", string(err))
+}
+
 // Return the directory of the current include file that is processed
 func (context *resolveContext) getCurrentDir() (interface{}, error) {
 	return filepath.ToSlash(filepath.Dir(context.include.Path)), nil
@@ -245,7 +272,7 @@ func (context *resolveContext) getCurrentDir() (interface{}, error) {
 func (context *resolveContext) getTfVarsDir() (interface{}, error) {
 	terragruntConfigFileAbsPath, err := filepath.Abs(context.options.TerragruntConfigPath)
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", err
 	}
 
 	return filepath.ToSlash(filepath.Dir(terragruntConfigFileAbsPath)), nil
@@ -255,166 +282,109 @@ func (context *resolveContext) getTfVarsDir() (interface{}, error) {
 func (context *resolveContext) getParentTfVarsDir() (interface{}, error) {
 	parentPath, err := context.pathRelativeFromInclude()
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", err
 	}
 
 	currentPath := filepath.Dir(context.options.TerragruntConfigPath)
 	parentPath, err = filepath.Abs(filepath.Join(currentPath, parentPath.(string)))
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", err
 	}
 
 	return filepath.ToSlash(parentPath.(string)), nil
 }
 
-func (context *resolveContext) parseGetEnvParameters() (EnvVar, error) {
-	envVariable := EnvVar{}
-	matches := HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX.FindStringSubmatch(context.parameters)
-	if len(matches) < 4 {
-		return envVariable, errors.WithStackTrace(InvalidFunctionParameters(context.parameters))
-	}
+var p1Regex = regexp.MustCompile(`^` + getVarParams(1) + `$`)
+var p2Regex = regexp.MustCompile(`^` + getVarParams(2) + `$`)
+var p3Regex = regexp.MustCompile(`^` + getVarParams(3) + `$`)
 
-	for index, name := range HELPER_FUNCTION_GET_ENV_PARAMETERS_SYNTAX_REGEX.SubexpNames() {
-		value := strings.TrimSpace(matches[index])
-		switch name {
-		case "env":
-			envVariable.Name = value
-		case "string1":
-			if value != "" {
-				envVariable.DefaultValue = value
-			}
-		case "var1":
-			if value != "" {
-				varName := fmt.Sprintf("${var.%v}", value)
-				envVariable.DefaultValue, _ = context.resolveTerragruntVars(varName)
-			}
-		}
-	}
-
-	return envVariable, nil
-}
-
+// Returns the named environment variable or default value if it does not exist
+//     get_env(variable_name, default_value)
 func (context *resolveContext) getEnvironmentVariable() (interface{}, error) {
-	fmt.Printf("get_env(%s)\n", context.parameters)
-	parameterMap, err := context.parseGetEnvParameters()
-
-	if err != nil {
-		return "", errors.WithStackTrace(err)
+	parameters, err := context.getParameters(p2Regex)
+	if err != nil || parameters[0] == "" {
+		return "", InvalidFunctionParameters(context.parameters)
 	}
-	envValue, exists := context.options.Env[parameterMap.Name]
-
-	if !exists {
-		envValue = parameterMap.DefaultValue
+	if value, exists := context.options.Env[parameters[0]]; exists {
+		return value, nil
 	}
 
-	return envValue, nil
+	return parameters[1], nil
 }
 
+type InvalidGetEnvParameters string
+
+func (err InvalidGetEnvParameters) Error() string {
+	return fmt.Sprintf("Invalid parameters. Expected get_env(variable_name, default_value) but got '%s'", string(err))
+}
+
+// Returns the value of a variable or default value if the variable is not defined
+//     default(var.name, default_value)
 func (context *resolveContext) getDefaultValue() (interface{}, error) {
-	parameters, err := context.getParameters(HELPER_FUNCTION_GET_DEFAULT_PARAMETERS_SYNTAX_REGEX)
+	parameters, err := context.getParameters(p2Regex)
 	if err != nil {
-		return "", fmt.Errorf(`Expecting default(var.name, "default")`)
+		return "", InvalidDefaultParameters(context.parameters)
 	}
 
-	if parameters[0] != "" {
+	if parameters[0] != "" && !strings.HasPrefix(parameters[0], "${") {
 		return parameters[0], nil
 	}
 	return parameters[1], nil
 }
 
-func (context *resolveContext) getParameters(regex *regexp.Regexp) ([]string, error) {
-	matches := regex.FindStringSubmatch(context.parameters)
-	if len(matches) != len(regex.SubexpNames()) {
-		return nil, fmt.Errorf("Mistmatch number of parameters")
+type InvalidDefaultParameters string
+
+func (err InvalidDefaultParameters) Error() string {
+	return fmt.Sprintf("Invalid parameters. Expected default(var.name, default) but got '%s'", string(err))
+}
+
+// Returns the value from the parameter store
+//     discover(key_name, folder, region)
+func (context *resolveContext) getDiscoveredValue() (interface{}, error) {
+	parameters, err := context.getParameters(p3Regex)
+	if err != nil {
+		return "", InvalidDiscoveryParameters(context.parameters)
 	}
 
-	var result []string
-	x := regexp.MustCompile(`^(string|var|func)(\d+)$`)
-	for index, name := range regex.SubexpNames()[1:] {
-		value := strings.TrimSpace(matches[index+1])
-
-		subMatches := x.FindStringSubmatch(name)
-		if len(subMatches) > 0 {
-			switch subMatches[1] {
-			case "string":
-				result = append(result, value)
-			case "var":
-				i := len(result) - 1
-				if value != "" {
-					varName := fmt.Sprintf("${var.%v}", value)
-					value, _ = context.resolveTerragruntVars(varName)
-					if !strings.HasPrefix(value, "${") {
-						result[i] = value
-					}
-				}
-			case "func":
-				i := len(result) - 1
-				if value != "" {
-					function := fmt.Sprintf("${%v}", value)
-					funcResult, err := context.resolveTerragruntInterpolation(function)
-					if err != nil {
-						return nil, err
-					}
-					result[i] = fmt.Sprintf("%v", funcResult)
-				}
-			}
-		} else {
-			result = append(result, value)
-		}
+	result, err := aws_helper.GetSSMParameter(fmt.Sprintf("/%s/terragrunt/%s", parameters[1], parameters[0]), parameters[2])
+	if err != nil {
+		return "", ErrorOnDiscovery{err, context.parameters}
 	}
+
 	return result, nil
 }
 
-func (context *resolveContext) getDiscoveredValue() (interface{}, error) {
-	matches := HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX.FindStringSubmatch(context.parameters)
-	if len(matches) < 6 {
-		err := fmt.Errorf(`Invalid parameters. Expected syntax of the form '${discover("tag", "key", "sault_key")}', but got '%s'`, context.parameters)
-		return "", err
-	}
+type InvalidDiscoveryParameters string
 
-	var tag, key string
-	for index, name := range HELPER_FUNCTION_GET_DISCOVER_PARAMETERS_SYNTAX_REGEX.SubexpNames() {
-		value := strings.TrimSpace(matches[index])
-		switch name {
-		case "tag":
-			tag = value
-		case "string1":
-			if value != "" {
-				key = value
-			}
-		case "var1":
-			if value != "" {
-				varName := fmt.Sprintf("${var.%v}", value)
-				key, _ = context.resolveTerragruntVars(varName)
-				if strings.HasPrefix(key, "${") {
-					key = ""
-				}
-			}
-		case "string2":
-			if value != "" && key == "" {
-				key = value
-			}
-		case "var2":
-			if value != "" && key == "" {
-				varName := fmt.Sprintf("${var.%v}", value)
-				key, _ = context.resolveTerragruntVars(varName)
-				if strings.HasPrefix(key, "${") {
-					key = ""
-				}
-			}
-		}
-	}
+func (err InvalidDiscoveryParameters) Error() string {
+	return fmt.Sprintf("Invalid parameters. Expected discover(key, env, region) but got '%s'", string(err))
+}
 
-	if key == "" && !context.options.EraseNonDefinedVariables {
-		return "", nil
-	}
+type ErrorOnDiscovery struct {
+	sourceError error
+	parameters  string
+}
 
-	result, err := util.GetSSMParameter(fmt.Sprintf("%s/terragrunt/%s", key, tag))
+func (err ErrorOnDiscovery) Error() string {
+	return fmt.Sprintf("Error while calling discovery(%s): %v", err.parameters, err.sourceError)
+}
+
+// Saves variables into a file
+//     save_variables(filename)
+func (context *resolveContext) saveVariables() (interface{}, error) {
+	parameters, err := context.getParameters(p1Regex)
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", InvalidSaveVariablesParameters(context.parameters)
 	}
 
-	return result, nil
+	context.options.AddDeferredSaveVariables(parameters[0])
+	return parameters[0], nil
+}
+
+type InvalidSaveVariablesParameters string
+
+func (err InvalidSaveVariablesParameters) Error() string {
+	return fmt.Sprintf("Invalid parameters. Expected save_variables(filename) but got '%s'", string(err))
 }
 
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file
@@ -424,7 +394,7 @@ func (context *resolveContext) findInParentFolders() (interface{}, error) {
 	previousDir = filepath.ToSlash(previousDir)
 
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", err
 	}
 
 	// To avoid getting into an accidental infinite loop (e.g. do to cyclical symlinks), set a max on the number of
@@ -432,7 +402,7 @@ func (context *resolveContext) findInParentFolders() (interface{}, error) {
 	for i := 0; i < MAX_PARENT_FOLDERS_TO_CHECK; i++ {
 		currentDir := filepath.ToSlash(filepath.Dir(previousDir))
 		if currentDir == previousDir {
-			return "", errors.WithStackTrace(ParentTerragruntConfigNotFound(context.options.TerragruntConfigPath))
+			return "", ParentTerragruntConfigNotFound(context.options.TerragruntConfigPath)
 		}
 
 		configPath := DefaultConfigPath(currentDir)
@@ -443,7 +413,19 @@ func (context *resolveContext) findInParentFolders() (interface{}, error) {
 		previousDir = currentDir
 	}
 
-	return "", errors.WithStackTrace(CheckedTooManyParentFolders(context.options.TerragruntConfigPath))
+	return "", CheckedTooManyParentFolders(context.options.TerragruntConfigPath)
+}
+
+type ParentTerragruntConfigNotFound string
+
+func (err ParentTerragruntConfigNotFound) Error() string {
+	return fmt.Sprintf("Could not find a Terragrunt config file in any of the parent folders of %s", string(err))
+}
+
+type CheckedTooManyParentFolders string
+
+func (err CheckedTooManyParentFolders) Error() string {
+	return fmt.Sprintf("Could not find a Terragrunt config file in a parent folder of %s after checking %d parent folders", string(err), MAX_PARENT_FOLDERS_TO_CHECK)
 }
 
 // Return the relative path between the included Terragrunt configuration file and the current Terragrunt configuration
@@ -475,61 +457,60 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 func (context *resolveContext) getAWSAccountID() (interface{}, error) {
 	session, err := session.NewSession()
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", err
 	}
 
 	identity, err := sts.New(session).GetCallerIdentity(nil)
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", err
 	}
 
 	return *identity.Account, nil
 }
 
-func (context *resolveContext) saveVariables() (interface{}, error) {
-	matches := HELPER_FUNCTION_SINGLE_STRING_PARAMETER_SYNTAX_REGEX.FindStringSubmatch(context.parameters)
-	if len(matches) != 2 {
-		return "", errors.WithStackTrace(InvalidSaveVariablesParameter(context.parameters))
+func (context *resolveContext) getParameters(regex *regexp.Regexp) ([]string, error) {
+	matches := regex.FindStringSubmatch(context.parameters)
+	if len(matches) != len(regex.SubexpNames()) {
+		return nil, fmt.Errorf("Mistmatch number of parameters")
 	}
 
-	context.options.AddDeferredSaveVariables(matches[1])
-	return matches[1], nil
+	var result []string
+	for index, name := range regex.SubexpNames()[1:] {
+		value := strings.TrimSpace(matches[index+1])
+
+		subMatches := parameterTypeRegex.FindStringSubmatch(name)
+		if len(subMatches) > 0 {
+			switch subMatches[1] {
+			case "string":
+				result = append(result, value)
+			case "var":
+				i := len(result) - 1
+				if value != "" {
+					varName := fmt.Sprintf("${var.%v}", value)
+					result[i], _ = context.resolveTerragruntVars(varName)
+				}
+			case "func":
+				i := len(result) - 1
+				if value != "" {
+					function := fmt.Sprintf("${%v}", value)
+					funcResult, err := context.resolveTerragruntInterpolation(function)
+					if err != nil {
+						return nil, err
+					}
+					result[i] = fmt.Sprintf("%v", funcResult)
+				}
+			}
+		} else {
+			result = append(result, value)
+		}
+	}
+	return result, nil
 }
 
-// Custom error types
-
-type InvalidInterpolationSyntax string
-
-func (err InvalidInterpolationSyntax) Error() string {
-	return fmt.Sprintf("Invalid interpolation syntax. Expected syntax of the form '${function_name()}', but got '%s'", string(err))
-}
-
-type UnknownHelperFunction string
-
-func (err UnknownHelperFunction) Error() string {
-	return fmt.Sprintf("Unknown helper function: %s", string(err))
-}
-
-type ParentTerragruntConfigNotFound string
-
-func (err ParentTerragruntConfigNotFound) Error() string {
-	return fmt.Sprintf("Could not find a Terragrunt config file in any of the parent folders of %s", string(err))
-}
-
-type CheckedTooManyParentFolders string
-
-func (err CheckedTooManyParentFolders) Error() string {
-	return fmt.Sprintf("Could not find a Terragrunt config file in a parent folder of %s after checking %d parent folders", string(err), MAX_PARENT_FOLDERS_TO_CHECK)
-}
+var parameterTypeRegex = regexp.MustCompile(`^(string|var|func)(\d+)$`)
 
 type InvalidFunctionParameters string
 
 func (err InvalidFunctionParameters) Error() string {
 	return fmt.Sprintf("Invalid parameters. Expected syntax of the form '${get_env(\"env\", \"default\")}', but got '%s'", string(err))
-}
-
-type InvalidSaveVariablesParameter string
-
-func (err InvalidSaveVariablesParameter) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected syntax of the form '${save_variables(\"filename.json\")}', but got '%s'", string(err))
 }

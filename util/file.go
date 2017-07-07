@@ -2,7 +2,6 @@ package util
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
 )
 
@@ -135,33 +135,66 @@ func ReadFileAsString(path string) (string, error) {
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
 func ReadFileAsStringFromSource(source, path string, terraform string) (localFile, content string, err error) {
-	fmt.Println(strings.Repeat("*", 80), source, path)
-	cacheDir := filepath.Join(os.TempDir(), "terragrunt-cache", EncodeBase64Sha1(source))
-	sharedMutex.Lock()
-	defer sharedMutex.Unlock()
-
-	if _, ok := sharedContent[cacheDir]; !ok {
-		log := CreateLogger("Copy source")
-
-		cmd := exec.Command(terraform, "init", "-no-color", source, cacheDir)
-		cmd.Stdin = os.Stdin
-		var out bytes.Buffer
-		cmd.Stdout, cmd.Stderr = &out, &out
-		err = cmd.Run()
-		if err != nil {
-			log.Error(out.String())
-			return
-		}
-		log.Info(out.String())
-		sharedContent[cacheDir] = true
+	cacheDir, err := GetSource(source, terraform)
+	if err != nil {
+		return "", "", err
 	}
+
 	localFile = filepath.Join(cacheDir, path)
 	content, err = ReadFileAsString(localFile)
 	return
 }
 
+// GetSource gets the content of the source in a temporary folder and returns
+// the local path. The function manages a cache to avoid multiple remote calls
+// if the content has not changed
+func GetSource(source string, terraform string) (string, error) {
+	path, err := aws_helper.ConvertS3Path(source)
+	if err != nil {
+		return "", err
+	}
+
+	cacheDir := os.Getenv("TERRAGRUNT_CACHE")
+	if cacheDir == "" {
+		cacheDir = filepath.Join(os.TempDir(), "terragrunt-cache")
+	}
+
+	cacheDir = filepath.Join(cacheDir, EncodeBase64Sha1(source))
+
+	sharedMutex.Lock()
+	defer sharedMutex.Unlock()
+
+	if _, ok := sharedContent[cacheDir]; !ok {
+		if !FileExists(cacheDir) || Expired(cacheDir) {
+			log := CreateLogger("Copy source")
+
+			os.RemoveAll(cacheDir)
+
+			cmd := exec.Command(terraform, "init", "-no-color", "-input=false", path, cacheDir)
+			cmd.Stdin = os.Stdin
+			var out bytes.Buffer
+			cmd.Stdout, cmd.Stderr = &out, &out
+			err = cmd.Run()
+			if err != nil {
+				log.Error(out.String())
+				return "", err
+			}
+			log.Info(out.String())
+
+			aws_helper.SaveS3Status(source, cacheDir)
+		}
+		sharedContent[cacheDir] = true
+	}
+	return cacheDir, nil
+}
+
 var sharedMutex sync.Mutex
 var sharedContent = map[string]bool{}
+
+// ExpiredFolderContent returns false if the source does not need to be refreshed
+func Expired(folder string) bool {
+	return !aws_helper.CheckS3Status(folder)
+}
 
 // Copy the files and folders within the source folder into the destination folder. Note that hidden files and folders
 // (those starting with a dot) will be skipped.
@@ -258,4 +291,17 @@ func ExpandArguments(args []string, folder string) (result []string) {
 		result = append(result, arg)
 	}
 	return
+}
+
+// FindFiles returns the list of files in the specified folder that match one of the supplied patterns
+func FindFiles(folder string, patterns ...string) ([]string, error) {
+	var tfFiles []string
+	for _, ext := range patterns {
+		files, err := filepath.Glob(filepath.Join(folder, ext))
+		if err != nil {
+			return nil, err
+		}
+		tfFiles = append(tfFiles, files...)
+	}
+	return tfFiles, nil
 }

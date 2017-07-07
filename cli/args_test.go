@@ -2,14 +2,15 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"path/filepath"
-	"testing"
 )
 
 func TestParseTerragruntOptionsFromArgs(t *testing.T) {
@@ -207,15 +208,8 @@ func TestParseEnvironmentVariables(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		var mockOptions = options.TerragruntOptions{
-			TerragruntConfigPath: "test-env-mock",
-			NonInteractive:       true,
-			Env:                  map[string]string{},
-			Variables:            options.VariableList{},
-			Logger:               util.CreateLogger(""),
-		}
-
-		parseEnvironmentVariables(&mockOptions, testCase.environmentVariables)
+		var mockOptions = options.NewTerragruntOptionsForTest("test-env-mock")
+		parseEnvironmentVariables(mockOptions, testCase.environmentVariables)
 		assert.Equal(t, testCase.expectedVariables, mockOptions.Env)
 	}
 }

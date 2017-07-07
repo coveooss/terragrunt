@@ -2,12 +2,13 @@ package remote
 
 import (
 	"fmt"
+	"reflect"
+	"strconv"
+
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
-	"reflect"
-	"strconv"
 )
 
 // Configuration for Terraform remote state
@@ -132,7 +133,7 @@ func (remoteState RemoteState) ToTerraformInitArgs() []string {
 		backendConfigArgs = append(backendConfigArgs, arg)
 	}
 
-	backendConfigArgs = append(backendConfigArgs, "-force-copy")
+	backendConfigArgs = append(backendConfigArgs, "-force-copy", "-get=false")
 	return backendConfigArgs
 }
 

@@ -3,12 +3,13 @@ package configstack
 import (
 	"bytes"
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/shell"
-	"github.com/gruntwork-io/terragrunt/util"
 	"io"
 	"strings"
 	"sync"
+
+	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/gruntwork-io/terragrunt/shell"
+	"github.com/gruntwork-io/terragrunt/util"
 )
 
 // Represents the status of a module that we are trying to apply as part of the apply-all or destroy-all command
@@ -222,13 +223,15 @@ var separator = strings.Repeat("-", 132)
 // Record that a module has finished executing and notify all of this module's dependencies
 func (module *runningModule) moduleFinished(moduleErr error) {
 	status := "successfully!"
+	logFinish := module.Module.TerragruntOptions.Logger.Noticef
 	if moduleErr != nil {
 		status = fmt.Sprintf("with an error: %v", moduleErr)
+		logFinish = module.Module.TerragruntOptions.Logger.Errorf
 	}
 
 	module.Mutex.Lock()
 	defer module.Mutex.Unlock()
-	module.Module.TerragruntOptions.Logger.Noticef("Module %s has finished %s", module.Module.Path, status)
+	logFinish("Module %s has finished %s", module.Module.Path, status)
 
 	if module.Handler != nil {
 		moduleErr = module.Handler(*module.Module, module.OutStream.String(), moduleErr)

@@ -75,9 +75,6 @@ type TerragruntOptions struct {
 
 	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
 	deferredSaveList map[string]bool
-
-	// Used to replace ${var.xxx} that are not defined by blanks (used in the second parsing pass)
-	EraseNonDefinedVariables bool
 }
 
 // Create a new TerragruntOptions object with reasonable defaults for real usage
@@ -144,6 +141,8 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		Writer:                 terragruntOptions.Writer,
 		ErrWriter:              terragruntOptions.ErrWriter,
 		RunTerragrunt:          terragruntOptions.RunTerragrunt,
+		Uniqueness:             terragruntOptions.Uniqueness,
+		deferredSaveList:       terragruntOptions.deferredSaveList,
 	}
 
 	// We do a deep copy of the variables since they must be disctint from the original

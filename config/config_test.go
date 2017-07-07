@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockOptions = options.TerragruntOptions{TerragruntConfigPath: "test-time-mock", NonInteractive: true, Logger: util.CreateLogger("config_test")}
+var mockOptions = options.NewTerragruntOptionsForTest("test-time-mock")
 var mockOldInclude = IncludeConfig{Path: OldTerragruntConfigPath}
 
 func TestParseTerragruntConfigRemoteStateMinimalConfig(t *testing.T) {
@@ -26,7 +26,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ terragrunt = {
 }
 `
 
-	_, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	_, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	assert.True(t, errors.IsError(err, remote.RemoteBackendMissing), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
 }
 
@@ -70,7 +70,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,7 +160,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ dependencies {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockOldInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockOldInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,12 +241,8 @@ terragrunt = {
 }
 `, DefaultTerragruntConfigPath)
 
-	opts := options.TerragruntOptions{
-		TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath,
-		NonInteractive:       true,
-	}
-
-	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: opts.TerragruntConfigPath})
+	opts := options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath)
+	terragruntConfig, err := parseConfigString(config, opts, IncludeConfig{Path: opts.TerragruntConfigPath})
 	if assert.Nil(t, err, "Unexpected error: %v", errors.PrintErrorWithStackTrace(err)) {
 		assert.Nil(t, terragruntConfig.Terraform)
 
@@ -273,12 +269,8 @@ terragrunt = {
 }
 `
 
-	opts := options.TerragruntOptions{
-		TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath,
-		NonInteractive:       true,
-	}
-
-	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: opts.TerragruntConfigPath})
+	opts := options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath)
+	terragruntConfig, err := parseConfigString(config, opts, IncludeConfig{Path: opts.TerragruntConfigPath})
 	if assert.Nil(t, err, "Unexpected error: %v", errors.PrintErrorWithStackTrace(err)) {
 		assert.Nil(t, terragruntConfig.Terraform)
 
@@ -317,12 +309,8 @@ terragrunt = {
 }
 `, DefaultTerragruntConfigPath)
 
-	opts := options.TerragruntOptions{
-		TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath,
-		NonInteractive:       true,
-	}
-
-	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: opts.TerragruntConfigPath})
+	opts := options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath)
+	terragruntConfig, err := parseConfigString(config, opts, IncludeConfig{Path: opts.TerragruntConfigPath})
 	if assert.Nil(t, err, "Unexpected error: %v", errors.PrintErrorWithStackTrace(err)) {
 		assert.Nil(t, terragruntConfig.Terraform)
 
@@ -369,12 +357,8 @@ terragrunt = {
 }
 `, DefaultTerragruntConfigPath)
 
-	opts := options.TerragruntOptions{
-		TerragruntConfigPath: "../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath,
-		NonInteractive:       true,
-	}
-
-	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: opts.TerragruntConfigPath})
+	opts := options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child/" + DefaultTerragruntConfigPath)
+	terragruntConfig, err := parseConfigString(config, opts, IncludeConfig{Path: opts.TerragruntConfigPath})
 	if assert.Nil(t, err, "Unexpected error: %v", errors.PrintErrorWithStackTrace(err)) {
 		if assert.NotNil(t, terragruntConfig.Terraform) {
 			assert.Equal(t, "foo", terragruntConfig.Terraform.Source)
@@ -403,9 +387,7 @@ func TestParseTerragruntConfigTwoLevels(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	opts := options.TerragruntOptions{TerragruntConfigPath: configPath, NonInteractive: true}
-
-	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: configPath})
+	terragruntConfig, err := parseConfigString(config, options.NewTerragruntOptionsForTest(configPath), IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
 }
@@ -420,9 +402,7 @@ func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	opts := options.TerragruntOptions{TerragruntConfigPath: configPath, NonInteractive: true}
-
-	terragruntConfig, err := parseConfigString(config, &opts, IncludeConfig{Path: configPath})
+	terragruntConfig, err := parseConfigString(config, options.NewTerragruntOptionsForTest(configPath), IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
 }
@@ -432,7 +412,7 @@ func TestParseTerragruntConfigEmptyConfig(t *testing.T) {
 
 	config := ``
 
-	_, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	_, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	assert.True(t, errors.IsError(err, CouldNotResolveTerragruntConfigInFile(DefaultTerragruntConfigPath)))
 }
 
@@ -441,7 +421,7 @@ func TestParseTerragruntConfigEmptyConfigOldConfig(t *testing.T) {
 
 	config := ``
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockOldInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockOldInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -510,7 +490,7 @@ func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		actual, err := mergeConfigWithIncludedConfig(testCase.config, testCase.includedConfig, &mockOptions)
+		actual, err := mergeConfigWithIncludedConfig(testCase.config, testCase.includedConfig, mockOptions)
 		if assert.Nil(t, err, "Unexpected error for config %v and includeConfig %v: %v", testCase.config, testCase.includedConfig, err) {
 			assert.Equal(t, testCase.expected, actual, "For config %v and includeConfig %v", testCase.config, testCase.includedConfig)
 		}
@@ -527,7 +507,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -551,7 +531,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -581,7 +561,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -646,7 +626,7 @@ terragrunt = {
 }
 `
 
-	terragruntConfig, err := parseConfigString(config, &mockOptions, mockDefaultInclude)
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -674,7 +654,7 @@ func TestFindConfigFilesInPathNone(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{}
-	actual, err := FindConfigFilesInPath(&options.TerragruntOptions{WorkingDir: "../test/fixture-config-files/none"})
+	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/none"))
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.Equal(t, expected, actual)
@@ -684,7 +664,7 @@ func TestFindConfigFilesInPathOneNewConfig(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{"../test/fixture-config-files/one-new-config/subdir/terraform.tfvars"}
-	actual, err := FindConfigFilesInPath(&options.TerragruntOptions{WorkingDir: "../test/fixture-config-files/one-new-config"})
+	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/one-new-config"))
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.Equal(t, expected, actual)
@@ -694,7 +674,7 @@ func TestFindConfigFilesInPathOneOldConfig(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{"../test/fixture-config-files/one-old-config/subdir/.terragrunt"}
-	actual, err := FindConfigFilesInPath(&options.TerragruntOptions{WorkingDir: "../test/fixture-config-files/one-old-config"})
+	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/one-old-config"))
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.Equal(t, expected, actual)
@@ -708,8 +688,14 @@ func TestFindConfigFilesInPathMultipleConfigs(t *testing.T) {
 		"../test/fixture-config-files/multiple-configs/subdir-2/subdir/.terragrunt",
 		"../test/fixture-config-files/multiple-configs/subdir-3/terraform.tfvars",
 	}
-	actual, err := FindConfigFilesInPath(&options.TerragruntOptions{WorkingDir: "../test/fixture-config-files/multiple-configs"})
+	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/multiple-configs"))
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.Equal(t, expected, actual)
+}
+
+func newOptionsWorkingDir(workingDir string) *options.TerragruntOptions {
+	opts := options.NewTerragruntOptionsForTest("")
+	opts.WorkingDir = workingDir
+	return opts
 }

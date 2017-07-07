@@ -8,13 +8,17 @@ import (
 
 // Returns an AWS session object for the given region, ensuring that the credentials are available
 func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
-	session, err := session.NewSessionWithOptions(session.Options{
-		Config:            aws.Config{Region: aws.String(awsRegion)},
+	options := session.Options{
 		Profile:           awsProfile,
 		SharedConfigState: session.SharedConfigEnable,
-	})
+	}
+	if awsRegion != "" {
+		options.Config = aws.Config{Region: aws.String(awsRegion)}
+	}
+	session, err := session.NewSessionWithOptions(options)
+
 	if err != nil {
-		return nil, errors.WithStackTraceAndPrefix(err, "Error intializing session")
+		return nil, errors.WithStackTraceAndPrefix(err, "Error initializing session")
 	}
 
 	_, err = session.Config.Credentials.Get()

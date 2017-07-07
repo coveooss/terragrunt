@@ -45,25 +45,20 @@ var forcedRegexp = regexp.MustCompile(`^([A-Za-z0-9]+)::(.+)$`)
 //
 // See the processTerraformSource method for how we determine the temporary folder so we can reuse it across multiple
 // runs of Terragrunt to avoid downloading everything from scratch every time.
-func downloadTerraformSource(source string, terragruntOptions *options.TerragruntOptions) (string, error) {
-	terraformSource, err := processTerraformSource(source, terragruntOptions)
-	if err != nil {
-		return "", err
+func downloadTerraformSource(source *TerraformSource, terragruntOptions *options.TerragruntOptions) error {
+	if err := downloadTerraformSourceIfNecessary(source, terragruntOptions); err != nil {
+		return err
 	}
 
-	if err := downloadTerraformSourceIfNecessary(terraformSource, terragruntOptions); err != nil {
-		return "", err
+	terragruntOptions.Logger.Noticef("Copying files from %s into %s", terragruntOptions.WorkingDir, source.WorkingDir)
+	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, source.WorkingDir); err != nil {
+		return err
 	}
 
-	terragruntOptions.Logger.Noticef("Copying files from %s into %s", terragruntOptions.WorkingDir, terraformSource.WorkingDir)
-	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, terraformSource.WorkingDir); err != nil {
-		return "", err
-	}
+	terragruntOptions.Logger.Noticef("Setting working directory to %s", source.WorkingDir)
+	terragruntOptions.WorkingDir = source.WorkingDir
 
-	terragruntOptions.Logger.Noticef("Setting working directory to %s", terraformSource.WorkingDir)
-	terragruntOptions.WorkingDir = terraformSource.WorkingDir
-
-	return terraformSource.DownloadDir, nil
+	return nil
 }
 
 // Download the specified TerraformSource if the latest code hasn't already been downloaded.
@@ -338,7 +333,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 // There are two ways a user can tell Terragrunt that it needs to download Terraform configurations from a specific
 // URL: via a command-line option or via an entry in the Terragrunt configuration. If the user used one of these, this
 // method returns the source URL and the boolean true; if not, this method returns an empty string and false.
-func getTerraformSourceUrl(terragruntOptions *options.TerragruntOptions, terragruntConfig *config.TerragruntConfig) (string, bool) {
+func getTerraformSourceURL(terragruntOptions *options.TerragruntOptions, terragruntConfig *config.TerragruntConfig) (string, bool) {
 	if terragruntOptions.Source != "" {
 		return terragruntOptions.Source, true
 	} else if terragruntConfig.Terraform != nil && terragruntConfig.Terraform.Source != "" {

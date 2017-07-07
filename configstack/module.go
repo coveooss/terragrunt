@@ -2,13 +2,14 @@ package configstack
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
-	"path/filepath"
-	"strings"
 )
 
 // Represents a single module (i.e. folder with Terraform templates), including the Terragrunt configuration for that

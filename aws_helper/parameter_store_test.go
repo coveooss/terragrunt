@@ -1,4 +1,4 @@
-package util
+package aws_helper
 
 import "testing"
 
@@ -16,7 +16,7 @@ func TestGetSSMParameter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetSSMParameter(tt.args.parameterName)
+			got, err := GetSSMParameter(tt.args.parameterName, "")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetSSMParameter(%s) error = %v, wantErr %v", tt.args.parameterName, err, tt.wantErr)
 				return

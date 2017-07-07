@@ -31,6 +31,51 @@ func (conf *TerragruntConfig) String() string {
 	return fmt.Sprintf("TerragruntConfig{Terraform = %v, RemoteState = %v, Dependencies = %v}", conf.Terraform, conf.RemoteState, conf.Dependencies)
 }
 
+// SubstituteAllVariables replace all remaining variables by the value
+func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions) {
+	substitute := func(value *string) string {
+		*value = SubstituteVars(*value, terragruntOptions)
+		return *value
+	}
+
+	substitute(&conf.Uniqueness)
+	if conf.Terraform != nil {
+		substitute(&conf.Terraform.Source)
+	}
+	if conf.RemoteState != nil && conf.RemoteState.Config != nil {
+		for key, value := range conf.RemoteState.Config {
+			switch val := value.(type) {
+			case string:
+				conf.RemoteState.Config[key] = substitute(&val)
+			}
+		}
+	}
+
+	substituteHooks := func(hooks []Hook) {
+		for i, hook := range hooks {
+			substitute(&hook.Command)
+			for i, arg := range hook.Arguments {
+				hook.Arguments[i] = substitute(&arg)
+			}
+			hooks[i] = hook
+		}
+	}
+	substituteHooks(conf.PreHooks)
+	substituteHooks(conf.PostHooks)
+
+	for i, importer := range conf.ImportFiles {
+		substitute(&importer.Source)
+		for i, value := range importer.Files {
+			importer.Files[i] = substitute(&value)
+		}
+		for _, value := range importer.CopyAndRenameFiles {
+			substitute(&value.Source)
+			substitute(&value.Target)
+		}
+		conf.ImportFiles[i] = importer
+	}
+}
+
 // terragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e.
 // terraform.tfvars or .terragrunt)
 type terragruntConfigFile struct {
@@ -122,16 +167,34 @@ func (hook Hook) String() string {
 // ImportConfig is a configuration of files that must be imported from another directory to the terraform directory
 // prior executing terraform commands
 type ImportConfig struct {
-	Name     string   `hcl:",key"`
-	Files    []string `hcl:"files"`
-	Required bool     `hcl:"required,omitempty"`
+	Name               string          `hcl:",key"`
+	Source             string          `hcl:"source"`
+	Files              []string        `hcl:"files"`
+	CopyAndRenameFiles []CopyAndRename `hcl:"copy_and_rename"`
+	Required           bool            `hcl:"required,omitempty"`
+	ImportIntoModules  bool            `hcl:"import_into_modules"`
+}
+
+// CopyAndRename is a structure used by ImportConfig to rename the imported files
+type CopyAndRename struct {
+	Source string `hcl:"source"`
+	Target string `hcl:"target"`
 }
 
 func (importConfig ImportConfig) String() string {
-	return fmt.Sprintf("ImportConfig %s required=%v: %s ", importConfig.Name, importConfig.Required, importConfig.Files)
+	files := importConfig.Files
+
+	for _, copy := range importConfig.CopyAndRenameFiles {
+		files = append(files, fmt.Sprintf("%s → %s", copy.Source, copy.Target))
+	}
+
+	return fmt.Sprintf("ImportConfig %s %s required=%v modules=%v : %s",
+		importConfig.Name, importConfig.Source,
+		importConfig.Required, importConfig.ImportIntoModules,
+		strings.Join(files, ", "))
 }
 
-// Return the default path to use for the Terragrunt configuration file. The reason this is a method rather than a
+// Returns the default path to use for the Terragrunt configuration file. The reason this is a method rather than a
 // constant is that older versions of Terragrunt stored configuration in a different file. This method returns the
 // path to the old configuration format if such a file exists and the new format otherwise.
 func DefaultConfigPath(workingDir string) string {

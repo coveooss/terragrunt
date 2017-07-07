@@ -3,9 +3,9 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/config"
@@ -214,42 +214,48 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		terragruntOptions.TerraformCliArgs = args
 	}
 
-	// We read again the configuration file since new extrapolation of vars could be available after applying extra arguments
-	terragruntOptions.EraseNonDefinedVariables = true
-	conf, err = config.ParseConfigFile(terragruntOptions, config.IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
+	conf.SubstituteAllVariables(terragruntOptions)
+
+	// Copy the deployment files to the working directory
+	sourceURL, hasSourceURL := getTerraformSourceURL(terragruntOptions, conf)
+	if sourceURL == "" {
+		sourceURL = terragruntOptions.WorkingDir
+	}
+	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
 	if err != nil {
 		return err
 	}
-
-	var tempFolder string
-	if sourceUrl, hasSourceUrl := getTerraformSourceUrl(terragruntOptions, conf); hasSourceUrl {
-		terragruntOptions.Uniqueness = conf.Uniqueness
-		if tempFolder, err = downloadTerraformSource(sourceUrl, terragruntOptions); err != nil {
+	if hasSourceURL {
+		if err = downloadTerraformSource(terraformSource, terragruntOptions); err != nil {
 			return err
 		}
 	}
 
+	// Import the required files in the temporary folder and copy the temporary imported file in the
+	// working folder. We did not put them directly into the folder because terraform init would complain
+	// if there are already terraform files in the target folder
+	const importDir = "temporary_imported_files"
+	tempImportFolder := filepath.Join(terraformSource.WorkingDir, importDir)
+	if err := importFiles(terragruntOptions, conf.ImportFiles, tempImportFolder, false); err != nil {
+		return err
+	}
+	err = util.CopyFolderContents(tempImportFolder, terragruntOptions.WorkingDir)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve the default variables from the terraform files
+	err = importVariables(terragruntOptions, terragruntOptions.WorkingDir)
+	if err != nil {
+		return err
+	}
+
+	conf.SubstituteAllVariables(terragruntOptions)
+
 	// If the temp directory has been specified in args, we replace the argument with the actual folder
 	for _, hook := range append(conf.PreHooks, conf.PostHooks...) {
 		for i, arg := range hook.Arguments {
-			hook.Arguments[i] = strings.Replace(arg, config.GET_TEMP_FOLDER, filepath.Join(tempFolder), -1)
-		}
-	}
-
-	// Import the required files in the temporary folder
-	for _, importer := range conf.ImportFiles {
-		for _, source := range importer.Files {
-			if util.FileExists(source) {
-				target := filepath.Join(terragruntOptions.WorkingDir, filepath.Base(source))
-				terragruntOptions.Logger.Noticef("Copy file %s to temporary folder %v\n", source, target)
-				if err := util.CopyFile(source, target); err != nil {
-					return err
-				}
-			} else if importer.Required {
-				return fmt.Errorf("Unable to import required file %s", source)
-			} else {
-				terragruntOptions.Logger.Warningf("Skipping copy of %s to temporary folder, the source is not found\n", source)
-			}
+			hook.Arguments[i] = strings.Replace(arg, config.GET_TEMP_FOLDER, filepath.Join(terraformSource.DownloadDir), -1)
 		}
 	}
 
@@ -257,24 +263,30 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
-	tfFiles, err := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, "*.tf"))
-	if err != nil {
-		return err
+	// Resolve the links to check if we must copy files in them
+	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
+	links := make(map[string]int)
+	for _, module := range modules {
+		link, err := os.Readlink(module)
+		if err != nil {
+			return err
+		}
+		links[link] = links[link] + 1
+	}
+	for moduleFolder := range links {
+		if err := importFiles(terragruntOptions, conf.ImportFiles, moduleFolder, true); err != nil {
+			return err
+		}
 	}
 
 	// If there is no terraform file in the folder, we skip the command
-	if len(tfFiles) == 0 {
-		terragruntOptions.Logger.Notice("No terraform file found, skipping folder")
-		return nil
-	}
-
-	// Retrieve the default variables from the .tf files
-	variables, err := util.LoadDefaultValues(terragruntOptions.WorkingDir)
+	tfFiles, err := util.FindFiles(terragruntOptions.WorkingDir, "*.tf", "*.tf.json")
 	if err != nil {
 		return err
 	}
-	for key, value := range variables {
-		terragruntOptions.Variables.SetValue(key, value, options.Default)
+	if len(tfFiles) == 0 {
+		terragruntOptions.Logger.Warning("No terraform file found, skipping folder")
+		return nil
 	}
 
 	// Save all variable files requested in the terragrunt config
@@ -310,34 +322,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
-}
-
-// Execute the hooks. If OS is specified and the current OS is not listed, the command is ignored
-func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook) error {
-	cmd := firstArg(terragruntOptions.TerraformCliArgs)
-	for _, hook := range hooks {
-		if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, cmd) {
-			// The current command is not in the list of command on which the hook should be applied
-			continue
-		}
-		if len(hook.OS) > 0 && !util.ListContainsElement(hook.OS, runtime.GOOS) {
-			terragruntOptions.Logger.Infof("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
-			continue
-		}
-		hook.Command = strings.TrimSpace(hook.Command)
-		if len(hook.Command) == 0 {
-			terragruntOptions.Logger.Infof("Hook %s skipped, no command to execute", hook.Name)
-			continue
-		}
-		cmd := shell.RunShellCommand
-		if hook.ExpandArgs {
-			cmd = shell.RunShellCommandExpandArgs
-		}
-		if err := cmd(terragruntOptions, hook.Command, hook.Arguments...); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the

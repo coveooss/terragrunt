@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -75,7 +74,6 @@ func Test_getTerraformFiles(t *testing.T) {
 		{"All Types", args{TEST_FIXTURE_DEFAULT_VALUES}, expectedResult},
 		{"Invalid Folder", args{"Invalid"}, nil},
 	}
-	fmt.Println(reflect.DeepEqual([]string{}, []string{}))
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := getTerraformFiles(tt.args.folder)

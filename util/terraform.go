@@ -137,6 +137,5 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 	default:
 		return nil, fmt.Errorf("%v: Unknown type %T", filename, variables)
 	}
-	fmt.Println("File:", filename, "Result:", result)
 	return result, nil
 }
