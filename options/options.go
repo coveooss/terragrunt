@@ -132,6 +132,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		TerraformCliArgs:       terragruntOptions.TerraformCliArgs,
 		WorkingDir:             workingDir,
 		Logger:                 util.CreateLogger(util.GetPathRelativeToWorkingDir(workingDir)),
+		Env:                    map[string]string{},
 		Variables:              VariableList{},
 		Source:                 terragruntOptions.Source,
 		SourceUpdate:           terragruntOptions.SourceUpdate,
@@ -142,7 +143,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		RunTerragrunt:          terragruntOptions.RunTerragrunt,
 		Uniqueness:             terragruntOptions.Uniqueness,
 		deferredSaveList:       terragruntOptions.deferredSaveList,
-		Env:                          map[string]string{},
+	}
 
 	// We create a distinct map for the environment variables
 	for key, value := range terragruntOptions.Env {
