@@ -25,6 +25,7 @@ type TerragruntConfig struct {
 	PreHooks     []Hook
 	PostHooks    []Hook
 	ImportFiles  []ImportConfig
+	AssumeRole   *string
 }
 
 func (conf *TerragruntConfig) String() string {
@@ -33,12 +34,17 @@ func (conf *TerragruntConfig) String() string {
 
 // SubstituteAllVariables replace all remaining variables by the value
 func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions) {
-	substitute := func(value *string) string {
+	substitute := func(value *string) *string {
+		if value == nil {
+			return nil
+		}
+
 		*value = SubstituteVars(*value, terragruntOptions)
-		return *value
+		return value
 	}
 
 	substitute(&conf.Uniqueness)
+	substitute(conf.AssumeRole)
 	if conf.Terraform != nil {
 		substitute(&conf.Terraform.Source)
 	}
@@ -46,7 +52,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		for key, value := range conf.RemoteState.Config {
 			switch val := value.(type) {
 			case string:
-				conf.RemoteState.Config[key] = substitute(&val)
+				conf.RemoteState.Config[key] = *substitute(&val)
 			}
 		}
 	}
@@ -55,7 +61,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		for i, hook := range hooks {
 			substitute(&hook.Command)
 			for i, arg := range hook.Arguments {
-				hook.Arguments[i] = substitute(&arg)
+				hook.Arguments[i] = *substitute(&arg)
 			}
 			hooks[i] = hook
 		}
@@ -66,7 +72,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	for i, importer := range conf.ImportFiles {
 		substitute(&importer.Source)
 		for i, value := range importer.Files {
-			importer.Files[i] = substitute(&value)
+			importer.Files[i] = *substitute(&value)
 		}
 		for _, value := range importer.CopyAndRenameFiles {
 			substitute(&value.Source)
@@ -88,6 +94,7 @@ type terragruntConfigFile struct {
 	PreHooks     []Hook              `hcl:"pre_hooks,omitempty"`
 	PostHooks    []Hook              `hcl:"post_hooks,omitempty"`
 	ImportFiles  []ImportConfig      `hcl:"import_files,omitempty"`
+	AssumeRole   *string             `hcl:"assume_role"`
 }
 
 // Older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -406,6 +413,10 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 		includedConfig.Uniqueness = config.Uniqueness
 	}
 
+	if config.AssumeRole != nil {
+		includedConfig.AssumeRole = config.AssumeRole
+	}
+
 	mergePreHooks(terragruntOptions, config.PreHooks, &includedConfig.PreHooks)
 	mergePostHooks(terragruntOptions, config.PostHooks, &includedConfig.PostHooks)
 	mergeImports(terragruntOptions, config.ImportFiles, &includedConfig.ImportFiles)
@@ -566,6 +577,7 @@ func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, t
 	terragruntConfig.PreHooks = terragruntConfigFromFile.PreHooks
 	terragruntConfig.PostHooks = terragruntConfigFromFile.PostHooks
 	terragruntConfig.ImportFiles = terragruntConfigFromFile.ImportFiles
+	terragruntConfig.AssumeRole = terragruntConfigFromFile.AssumeRole
 
 	return terragruntConfig, nil
 }

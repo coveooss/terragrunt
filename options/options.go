@@ -132,7 +132,6 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		TerraformCliArgs:       terragruntOptions.TerraformCliArgs,
 		WorkingDir:             workingDir,
 		Logger:                 util.CreateLogger(util.GetPathRelativeToWorkingDir(workingDir)),
-		Env:                    terragruntOptions.Env,
 		Variables:              VariableList{},
 		Source:                 terragruntOptions.Source,
 		SourceUpdate:           terragruntOptions.SourceUpdate,
@@ -143,6 +142,11 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		RunTerragrunt:          terragruntOptions.RunTerragrunt,
 		Uniqueness:             terragruntOptions.Uniqueness,
 		deferredSaveList:       terragruntOptions.deferredSaveList,
+		Env:                          map[string]string{},
+
+	// We create a distinct map for the environment variables
+	for key, value := range terragruntOptions.Env {
+		newOptions.Env[key] = value
 	}
 
 	// We do a deep copy of the variables since they must be disctint from the original
@@ -198,6 +202,15 @@ func (terragruntOptions *TerragruntOptions) VariablesExplicitlyProvided() (resul
 		if arg.Source == VarParameterExplicit {
 			result = append(result, key)
 		}
+	}
+	return
+}
+
+// EnvironmentVariables returns an array of string that defines the environment variables as required
+// by external commands
+func (terragruntOptions *TerragruntOptions) EnvironmentVariables() (result []string) {
+	for key, value := range terragruntOptions.Env {
+		result = append(result, fmt.Sprintf("%s=%s", key, value))
 	}
 	return
 }
