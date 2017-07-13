@@ -73,6 +73,10 @@ type TerragruntOptions struct {
 	// in distinct folder
 	Uniqueness string
 
+	// If set, this indicate that remaining interpolation are not considered as an error during the configuration
+	// resolving process. This allows further resolution of variables that are not initially defined.
+	IgnoreRemainingInterpolation bool
+
 	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
 	deferredSaveList map[string]bool
 }
@@ -126,23 +130,24 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 	workingDir := filepath.Dir(terragruntConfigPath)
 
 	newOptions := TerragruntOptions{
-		TerragruntConfigPath:   terragruntConfigPath,
-		TerraformPath:          terragruntOptions.TerraformPath,
-		NonInteractive:         terragruntOptions.NonInteractive,
-		TerraformCliArgs:       terragruntOptions.TerraformCliArgs,
-		WorkingDir:             workingDir,
-		Logger:                 util.CreateLogger(util.GetPathRelativeToWorkingDir(workingDir)),
+		TerragruntConfigPath:         terragruntConfigPath,
+		TerraformPath:                terragruntOptions.TerraformPath,
+		NonInteractive:               terragruntOptions.NonInteractive,
+		TerraformCliArgs:             terragruntOptions.TerraformCliArgs,
+		WorkingDir:                   workingDir,
+		Logger:                       util.CreateLogger(util.GetPathRelativeToWorkingDir(workingDir)),
 		Env:                    terragruntOptions.Env,
-		Variables:              VariableList{},
-		Source:                 terragruntOptions.Source,
-		SourceUpdate:           terragruntOptions.SourceUpdate,
-		DownloadDir:            terragruntOptions.DownloadDir,
-		IgnoreDependencyErrors: terragruntOptions.IgnoreDependencyErrors,
-		Writer:                 terragruntOptions.Writer,
-		ErrWriter:              terragruntOptions.ErrWriter,
-		RunTerragrunt:          terragruntOptions.RunTerragrunt,
-		Uniqueness:             terragruntOptions.Uniqueness,
-		deferredSaveList:       terragruntOptions.deferredSaveList,
+		Variables:                    VariableList{},
+		Source:                       terragruntOptions.Source,
+		SourceUpdate:                 terragruntOptions.SourceUpdate,
+		DownloadDir:                  terragruntOptions.DownloadDir,
+		IgnoreDependencyErrors:       terragruntOptions.IgnoreDependencyErrors,
+		Writer:                       terragruntOptions.Writer,
+		ErrWriter:                    terragruntOptions.ErrWriter,
+		RunTerragrunt:                terragruntOptions.RunTerragrunt,
+		Uniqueness:                   terragruntOptions.Uniqueness,
+		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,
+		deferredSaveList:             terragruntOptions.deferredSaveList,
 	}
 
 	// We do a deep copy of the variables since they must be disctint from the original

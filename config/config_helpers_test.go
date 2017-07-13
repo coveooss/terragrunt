@@ -421,11 +421,11 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 		expectedOut       string
 		expectedErr       error
 	}{
-		{"foo/${get_env()}/bar", defaultOptions, "", InvalidFunctionParameters("")},
+		{"foo/${get_env()}/bar", defaultOptions, "", InvalidGetEnvParameters("")},
 		{"foo/${get_env(Invalid Parameters)}/bar", defaultOptions, "", InvalidInterpolationSyntax("${get_env(Invalid Parameters)}")},
 		{"foo/${get_env('env','')}/bar", defaultOptions, "", InvalidInterpolationSyntax("${get_env('env','')}")},
-		{`foo/${get_env("","")}/bar`, defaultOptions, "", InvalidFunctionParameters(`"",""`)},
-		{`foo/${get_env(   ""    ,   ""    )}/bar`, defaultOptions, "", InvalidFunctionParameters(`   ""    ,   ""    `)},
+		{`foo/${get_env("","")}/bar`, defaultOptions, "", InvalidGetEnvParameters(`"",""`)},
+		{`foo/${get_env(   ""    ,   ""    )}/bar`, defaultOptions, "", InvalidGetEnvParameters(`   ""    ,   ""    `)},
 		{`${get_env("SOME_VAR", "SOME{VALUE}")}`, defaultOptions, "SOME{VALUE}", nil},
 		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","")}/bar`,
@@ -683,11 +683,11 @@ func Test_getParameters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.args.terragruntOptions.IgnoreRemainingInterpolation = !tt.errorOnUndefined
 			context := resolveContext{
-				include:          mockDefaultInclude,
-				options:          tt.args.terragruntOptions,
-				parameters:       tt.args.parameters,
-				errorOnUndefined: tt.errorOnUndefined,
+				include:    mockDefaultInclude,
+				options:    tt.args.terragruntOptions,
+				parameters: tt.args.parameters,
 			}
 			gotResult, err := context.getParameters(tt.args.regex)
 			if (err != nil) != tt.wantErr {
