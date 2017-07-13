@@ -64,6 +64,7 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = terragruntOptions.Writer
 	cmd.Stderr = terragruntOptions.ErrWriter
+	cmd.Env = terragruntOptions.EnvironmentVariables()
 
 	// Terragrunt can run some commands (such as terraform remote config) before running the actual terraform
 	// command requested by the user. The output of these other commands should not end up on stdout as this

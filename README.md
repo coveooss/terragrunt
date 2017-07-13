@@ -49,6 +49,7 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
    1. [Keep your remote state configuration DRY](#keep-your-remote-state-configuration-dry)
    1. [Keep your CLI flags DRY](#keep-your-cli-flags-dry)
    1. [Execute Terraform commands on multiple modules at once](#execute-terraform-commands-on-multiple-modules-at-once)
+   1. [Assume a different AWS IAM role to execute Terraform commands](#assume-aws-iam-role)
 1. [Terragrunt details](#terragrunt-details)
    1. [AWS credentials](#aws-credentials)
    1. [AWS IAM policies](#aws-iam-policies)
@@ -931,6 +932,43 @@ If any of the modules fail to deploy, then Terragrunt will not attempt to deploy
 you've fixed the error, it's usually safe to re-run the `apply-all` or `destroy-all` command again, since it'll be a
 no-op for the modules that already deployed successfully, and should only affect the ones that had an error the last
 time around.
+
+### Assume AWS IAM role
+
+* [Motivation](#motivation-3)
+* [The apply-all, destroy-all, output-all and plan-all commands](#the-apply-all-destroy-all-output-all-and-plan-all-commands)
+* [Dependencies between modules](#dependencies-between-modules)
+
+
+#### Motivation
+
+Terraform already provides the functionality to configure AWS provider that assume a different IAM Role when retrieving and creating AWS resources.
+But when we use terragrunt to configure S3 backend to store our remote states, terraform uses the current user rights to access and configure the remote state file and to manage locking operation in the DynamoDB database.
+
+Since the state files may contain secrets, it is often required to restrict access to these files. But event if the AWS provider is configured to allow access to the state file
+by assuming a role, the call will fail if the current user does not have a direct access to theses files.
+
+Moreover, if the user has configured its AWS profile (in .aws/config) to assume a role instead of directly using credentials, terraform would not be
+able to recognize that configuration and will complain that there is `No valid credential sources found for AWS Provider`
+
+```
+[profile deploy]
+source_profile = default
+role_arn = arn:aws:iam::9999999999999:role/deploy-role
+region = us-east-1
+```
+
+#### Configure role
+
+To solve that problem, it is possible to tell terragrunt to assume a different IAM role when it calls terraform operations.
+
+```hcl
+terragrunt = {
+  assume_role = "arn:aws:iam::9999999999999:role/deploy-terraform-role"
+}
+```
+
+The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf configuration will prevail.
 
 
 ## Terragrunt details

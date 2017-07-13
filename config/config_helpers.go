@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -142,7 +141,7 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 	case func(*resolveContext) (interface{}, error):
 		result, err := invoke(context)
 		if err != nil {
-			err = errors.WithStackTrace(err)
+			err = errors.WithStackTraceAndPrefix(err, "Error while calling %s(%s)", functionName, parameters)
 		}
 		return result, err
 	case string, []string:
@@ -457,7 +456,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 
 // Return the AWS account id associated to the current set of credentials
 func (context *resolveContext) getAWSAccountID() (interface{}, error) {
-	session, err := session.NewSession()
+	session, err := aws_helper.CreateAwsSession("", "")
 	if err != nil {
 		return "", err
 	}

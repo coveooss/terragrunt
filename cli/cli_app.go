@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -259,6 +260,19 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	terragruntOptions.IgnoreRemainingInterpolation = false
 	conf.SubstituteAllVariables(terragruntOptions)
+
+	// Check if we must configure environment variables to assume a distinct role when applying external commands.
+	if conf.AssumeRole != nil {
+		terragruntOptions.Logger.Noticef("Assuming role %s", *conf.AssumeRole)
+		roleVars, err := aws_helper.AssumeRoleEnvironmentVariables(*conf.AssumeRole, "terragrunt")
+		if err != nil {
+			return err
+		}
+
+		for key, value := range roleVars {
+			terragruntOptions.Env[key] = value
+		}
+	}
 
 	// If the temp directory has been specified in args, we replace the argument with the actual folder
 	for _, hook := range append(conf.PreHooks, conf.PostHooks...) {
