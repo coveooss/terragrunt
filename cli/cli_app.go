@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -286,16 +285,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Resolve the links to check if we must copy files in them
-	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
-	links := make(map[string]int)
-	for _, module := range modules {
-		link, err := os.Readlink(module)
-		if err != nil {
-			return err
-		}
-		links[link] = links[link] + 1
+	modules, err := getModulesFolders(terragruntOptions)
+	if err != nil {
+		return err
 	}
-	for moduleFolder := range links {
+	for _, moduleFolder := range modules {
 		if err := importFiles(terragruntOptions, conf.ImportFiles, moduleFolder, true); err != nil {
 			return err
 		}

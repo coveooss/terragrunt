@@ -125,3 +125,34 @@ func importVariables(terragruntOptions *options.TerragruntOptions, folder string
 	}
 	return nil
 }
+
+func getModulesFolders(terragruntOptions *options.TerragruntOptions) ([]string, error) {
+	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
+	folders := make(map[string]int)
+	for _, module := range modules {
+		stat, err := os.Stat(module)
+		if err != nil {
+			return nil, err
+		}
+		if !stat.IsDir() {
+			terragruntOptions.Logger.Warningf("Unexpected file in .terraform/modules: %s", module)
+			continue
+		}
+
+		stat, _ = os.Lstat(module)
+		if !stat.IsDir() {
+			link, err := os.Readlink(module)
+			if err != nil {
+				return nil, err
+			}
+			module = link
+		}
+		folders[module] = folders[module] + 1
+	}
+
+	keys := make([]string, 0, len(folders))
+	for key := range folders {
+		keys = append(keys, key)
+	}
+	return keys, nil
+}
