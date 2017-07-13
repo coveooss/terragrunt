@@ -71,10 +71,13 @@ type EnvVar struct {
 }
 
 type resolveContext struct {
-	include          IncludeConfig
-	options          *options.TerragruntOptions
-	parameters       string
-	errorOnUndefined bool
+	include    IncludeConfig
+	options    *options.TerragruntOptions
+	parameters string
+}
+
+func (context *resolveContext) ErrorOnUndefined() bool {
+	return !context.options.IgnoreRemainingInterpolation
 }
 
 // Given a string value from a Terragrunt configuration, parse the string, resolve any calls to helper functions using
@@ -130,10 +133,9 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 
 	// We create a new context with the parameters
 	context = &resolveContext{
-		include:          context.include,
-		options:          context.options,
-		parameters:       parameters,
-		errorOnUndefined: context.errorOnUndefined,
+		include:    context.include,
+		options:    context.options,
+		parameters: parameters,
 	}
 	switch invoke := functionMap[functionName].(type) {
 	case func(*resolveContext) (interface{}, error):
@@ -203,7 +205,7 @@ func (context *resolveContext) processMultipleInterpolationsInString(terragruntC
 		// that have not been considered. If so, they are certainly malformed.
 		remaining := INTERPOLATION_SYNTAX_REGEX_REMAINING.FindAllString(resolved, -1)
 		if len(remaining) > 0 {
-			if resolved == terragruntConfigString && context.errorOnUndefined {
+			if resolved == terragruntConfigString && context.ErrorOnUndefined() {
 				remaining = util.RemoveDuplicatesFromListKeepFirst(remaining)
 				finalErr = InvalidInterpolationSyntax(strings.Join(remaining, ", "))
 			} else if resolved != terragruntConfigString {
@@ -227,7 +229,7 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 		if found, ok := context.options.Variables[matches[1]]; ok {
 			return fmt.Sprint(found.Value)
 		}
-		if context.errorOnUndefined {
+		if context.ErrorOnUndefined() {
 			if !warningDone[matches[0]] {
 				context.options.Logger.Warningf("Variable %s undefined", matches[0])
 				warningDone[matches[0]] = true
@@ -302,7 +304,7 @@ var p3Regex = regexp.MustCompile(`^` + getVarParams(3) + `$`)
 func (context *resolveContext) getEnvironmentVariable() (interface{}, error) {
 	parameters, err := context.getParameters(p2Regex)
 	if err != nil || parameters[0] == "" {
-		return "", InvalidFunctionParameters(context.parameters)
+		return "", InvalidGetEnvParameters(context.parameters)
 	}
 	if value, exists := context.options.Env[parameters[0]]; exists {
 		return value, nil
@@ -507,9 +509,3 @@ func (context *resolveContext) getParameters(regex *regexp.Regexp) ([]string, er
 }
 
 var parameterTypeRegex = regexp.MustCompile(`^(string|var|func)(\d+)$`)
-
-type InvalidFunctionParameters string
-
-func (err InvalidFunctionParameters) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected syntax of the form '${get_env(\"env\", \"default\")}', but got '%s'", string(err))
-}

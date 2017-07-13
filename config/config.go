@@ -21,7 +21,7 @@ type TerragruntConfig struct {
 	Terraform    *TerraformConfig
 	RemoteState  *remote.RemoteState
 	Dependencies *ModuleDependencies
-	Uniqueness   string
+	Uniqueness   *string
 	PreHooks     []Hook
 	PostHooks    []Hook
 	ImportFiles  []ImportConfig
@@ -43,7 +43,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		return value
 	}
 
-	substitute(&conf.Uniqueness)
+	substitute(conf.Uniqueness)
 	substitute(conf.AssumeRole)
 	if conf.Terraform != nil {
 		substitute(&conf.Terraform.Source)
@@ -90,7 +90,7 @@ type terragruntConfigFile struct {
 	Lock         *LockConfig         `hcl:"lock,omitempty"`
 	RemoteState  *remote.RemoteState `hcl:"remote_state,omitempty"`
 	Dependencies *ModuleDependencies `hcl:"dependencies,omitempty"`
-	Uniqueness   string              `hcl:"uniqueness_criteria"`
+	Uniqueness   *string             `hcl:"uniqueness_criteria"`
 	PreHooks     []Hook              `hcl:"pre_hooks,omitempty"`
 	PostHooks    []Hook              `hcl:"post_hooks,omitempty"`
 	ImportFiles  []ImportConfig      `hcl:"import_files,omitempty"`
@@ -409,7 +409,7 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 		includedConfig.Dependencies = config.Dependencies
 	}
 
-	if config.Uniqueness != "" {
+	if config.Uniqueness != nil {
 		includedConfig.Uniqueness = config.Uniqueness
 	}
 

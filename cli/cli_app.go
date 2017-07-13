@@ -196,6 +196,7 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) {
+	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
 		return err
@@ -221,6 +222,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	sourceURL, hasSourceURL := getTerraformSourceURL(terragruntOptions, conf)
 	if sourceURL == "" {
 		sourceURL = terragruntOptions.WorkingDir
+	}
+
+	if conf.Uniqueness != nil {
+		// If uniqueness_criteria has been defined, we set it in the options to ensure that
+		// we use distinct folder based on this criteria
+		terragruntOptions.Uniqueness = *conf.Uniqueness
 	}
 	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
 	if err != nil {
@@ -251,6 +258,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
+	terragruntOptions.IgnoreRemainingInterpolation = false
 	conf.SubstituteAllVariables(terragruntOptions)
 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
