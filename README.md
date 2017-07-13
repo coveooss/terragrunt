@@ -949,7 +949,7 @@ Since the state files may contain secrets, it is often required to restrict acce
 by assuming a role, the call will fail if the current user does not have a direct access to theses files.
 
 Moreover, if the user has configured its AWS profile (in .aws/config) to assume a role instead of directly using credentials, terraform would not be
-able to recognize that configuration and will complain that thre is `No valid credential sources found for AWS Provider`
+able to recognize that configuration and will complain that there is `No valid credential sources found for AWS Provider`
 
 ```
 [profile deploy]
