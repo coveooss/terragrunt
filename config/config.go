@@ -317,7 +317,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		if include.Path == "" {
 			include.Path = DefaultTerragruntConfigPath
 		}
-		include.Path, configString, err = util.ReadFileAsStringFromSource(include.Source, include.Path, terragruntOptions.TerraformPath)
+		include.Path, configString, err = util.ReadFileAsStringFromSource(include.Source, include.Path, terragruntOptions.TerraformPath, terragruntOptions.EnvironmentVariables()...)
 	}
 	if err != nil {
 		return nil, err

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
@@ -29,7 +30,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 		}
 
 		if importer.Source != "" {
-			sourceFolder, err = util.GetSource(importer.Source, terragruntOptions.TerraformPath)
+			sourceFolder, err = util.GetSource(importer.Source, terragruntOptions.TerraformPath, terragruntOptions.EnvironmentVariables()...)
 			if err != nil {
 				return err
 			}
@@ -155,4 +156,16 @@ func getModulesFolders(terragruntOptions *options.TerragruntOptions) ([]string, 
 		keys = append(keys, key)
 	}
 	return keys, nil
+}
+
+func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, roleArn string) error {
+	roleVars, err := aws_helper.AssumeRoleEnvironmentVariables(roleArn, "terragrunt")
+	if err != nil {
+		return err
+	}
+
+	for key, value := range roleVars {
+		terragruntOptions.Env[key] = value
+	}
+	return nil
 }
