@@ -264,7 +264,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	conf.SubstituteAllVariables(terragruntOptions)
 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
-	if conf.AssumeRole != nil {
+	if conf.AssumeRole != nil && *conf.AssumeRole != "" {
 		terragruntOptions.Logger.Noticef("Assuming role %s", *conf.AssumeRole)
 		if err := setRoleEnvironmentVariables(terragruntOptions, *conf.AssumeRole); err != nil {
 			return err
