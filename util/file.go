@@ -134,8 +134,8 @@ func ReadFileAsString(path string) (string, error) {
 // ReadFileAsStringFromSource returns the contents of the file at the given path
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
-func ReadFileAsStringFromSource(source, path string, terraform string) (localFile, content string, err error) {
-	cacheDir, err := GetSource(source, terraform)
+func ReadFileAsStringFromSource(source, path string, terraform string, env ...string) (localFile, content string, err error) {
+	cacheDir, err := GetSource(source, terraform, env...)
 	if err != nil {
 		return "", "", err
 	}
@@ -148,7 +148,7 @@ func ReadFileAsStringFromSource(source, path string, terraform string) (localFil
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
-func GetSource(source string, terraform string) (string, error) {
+func GetSource(source string, terraform string, env ...string) (string, error) {
 	path, err := aws_helper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
@@ -174,6 +174,7 @@ func GetSource(source string, terraform string) (string, error) {
 			cmd.Stdin = os.Stdin
 			var out bytes.Buffer
 			cmd.Stdout, cmd.Stderr = &out, &out
+			cmd.Env = env
 			err = cmd.Run()
 			if err != nil {
 				log.Error(out.String())

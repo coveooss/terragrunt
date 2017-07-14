@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -195,6 +194,10 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) {
+	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
+		return err
+	}
+
 	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
@@ -263,13 +266,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
 	if conf.AssumeRole != nil {
 		terragruntOptions.Logger.Noticef("Assuming role %s", *conf.AssumeRole)
-		roleVars, err := aws_helper.AssumeRoleEnvironmentVariables(*conf.AssumeRole, "terragrunt")
-		if err != nil {
+		if err := setRoleEnvironmentVariables(terragruntOptions, *conf.AssumeRole); err != nil {
 			return err
-		}
-
-		for key, value := range roleVars {
-			terragruntOptions.Env[key] = value
 		}
 	}
 
