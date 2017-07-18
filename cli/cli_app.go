@@ -185,6 +185,10 @@ func checkDeprecated(command string, terragruntOptions *options.TerragruntOption
 // runCommand runs one or many terraform commands based on the type of
 // terragrunt command
 func runCommand(command string, terragruntOptions *options.TerragruntOptions) (finalEff error) {
+	terragruntOptions.IgnoreRemainingInterpolation = true
+	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
+		return err
+	}
 	if isMultiModuleCommand(command) {
 		return runMultiModuleCommand(command, terragruntOptions)
 	}
@@ -194,10 +198,6 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) {
-	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
-		return err
-	}
-
 	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
