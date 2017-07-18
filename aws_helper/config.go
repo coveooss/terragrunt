@@ -46,10 +46,6 @@ func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (result 
 		// if a role is assumed. This is required because terraform does not support AWS_PROFILE
 		// that refers to a configuration that assume a role.
 		cred, err = svc.Config.Credentials.Get()
-		if err != nil || cred.SessionToken == "" {
-			return
-		}
-
 	} else {
 		var response *sts.AssumeRoleOutput
 		response, err = svc.AssumeRole(&sts.AssumeRoleInput{
@@ -69,7 +65,9 @@ func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (result 
 	result = map[string]string{
 		"AWS_ACCESS_KEY_ID":     cred.AccessKeyID,
 		"AWS_SECRET_ACCESS_KEY": cred.SecretAccessKey,
-		"AWS_SESSION_TOKEN":     cred.SessionToken,
+	}
+	if cred.SessionToken != "" {
+		result["AWS_SESSION_TOKEN"] = cred.SessionToken
 	}
 	return
 }
