@@ -98,9 +98,12 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	// We remove the -var and -var-file from the cli arguments if the target command does not require
 	// those parameters. We have to get the cmd from the args since multi-module commands xxx-all are
 	// stripped from the cli args.
-	cmd := args[0]
-	if util.ListContainsElement(MULTI_MODULE_COMMANDS, cmd) {
-		cmd = strings.TrimRight(cmd, "-all")
+	var cmd string
+	if len(args) > 0 {
+		cmd := args[0]
+		if util.ListContainsElement(MULTI_MODULE_COMMANDS, cmd) {
+			cmd = strings.TrimRight(cmd, "-all")
+		}
 	}
 	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 
