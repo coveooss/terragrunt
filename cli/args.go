@@ -94,7 +94,15 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.Variables = options.VariableList{}
 
 	parseEnvironmentVariables(opts, os.Environ())
-	opts.TerraformCliArgs = filterVarsAndVarFiles(opts, opts.TerraformCliArgs)
+
+	// We remove the -var and -var-file from the cli arguments if the target command does not require
+	// those parameters. We have to get the cmd from the args since multi-module commands xxx-all are
+	// stripped from the cli args.
+	cmd := args[0]
+	if util.ListContainsElement(MULTI_MODULE_COMMANDS, cmd) {
+		cmd = strings.Trim(cmd, "-all")
+	}
+	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 
 	err = util.InitLogging(loggingLevel, logging.INFO, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	return opts, err
@@ -196,7 +204,7 @@ func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string, 
 	}
 }
 
-func filterVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []string) []string {
+func filterVarsAndVarFiles(command string, terragruntOptions *options.TerragruntOptions, args []string) []string {
 	const varFile = "-var-file="
 	const varArg = "-var"
 
@@ -217,7 +225,7 @@ func filterVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []
 		}
 	}
 
-	if util.ListContainsElement(config.TERRAFORM_COMMANDS_NEED_VARS, firstArg(terragruntOptions.TerraformCliArgs)) {
+	if util.ListContainsElement(config.TERRAFORM_COMMANDS_NEED_VARS, command) {
 		// The -var and -var-file are required by the terraform command, we return the args list unaltered
 		return args
 	}
