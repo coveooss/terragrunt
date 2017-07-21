@@ -94,7 +94,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.Variables = options.VariableList{}
 
 	parseEnvironmentVariables(opts, os.Environ())
-	parseVarsAndVarFiles(opts, args)
+	opts.TerraformCliArgs = filterVarsAndVarFiles(opts, opts.TerraformCliArgs)
 
 	err = util.InitLogging(loggingLevel, logging.INFO, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	return opts, err
@@ -196,7 +196,7 @@ func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string, 
 	}
 }
 
-func parseVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []string) {
+func filterVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []string) []string {
 	const varFile = "-var-file="
 	const varArg = "-var"
 
@@ -216,6 +216,27 @@ func parseVarsAndVarFiles(terragruntOptions *options.TerragruntOptions, args []s
 			}
 		}
 	}
+
+	if util.ListContainsElement(config.TERRAFORM_COMMANDS_NEED_VARS, firstArg(terragruntOptions.TerraformCliArgs)) {
+		// The -var and -var-file are required by the terraform command, we return the args list unaltered
+		return args
+	}
+
+	// We must remove the -var and -var-file arguments because they are not needed by the terraform command
+	// but they may have been supplied by the user to help determine the current content
+	filtered := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], varFile) {
+			continue
+		}
+		if args[i] == varArg && i+1 < len(args) {
+			i++
+			continue
+		}
+		filtered = append(filtered, args[i])
+	}
+
+	return filtered
 }
 
 // Return a copy of the given args with all Terragrunt-specific args removed
