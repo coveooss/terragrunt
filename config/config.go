@@ -18,14 +18,15 @@ const OldTerragruntConfigPath = ".terragrunt"
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Terraform    *TerraformConfig
-	RemoteState  *remote.RemoteState
-	Dependencies *ModuleDependencies
-	Uniqueness   *string
-	PreHooks     []Hook
-	PostHooks    []Hook
-	ImportFiles  []ImportConfig
-	AssumeRole   *string
+	Terraform     *TerraformConfig
+	RemoteState   *remote.RemoteState
+	Dependencies  *ModuleDependencies
+	Uniqueness    *string
+	PreHooks      []Hook
+	PostHooks     []Hook
+	ExtraCommands []ExtraCommand
+	ImportFiles   []ImportConfig
+	AssumeRole    *string
 }
 
 func (conf *TerragruntConfig) String() string {
@@ -85,16 +86,17 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 // terragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e.
 // terraform.tfvars or .terragrunt)
 type terragruntConfigFile struct {
-	Terraform    *TerraformConfig    `hcl:"terraform,omitempty"`
-	Include      *IncludeConfig      `hcl:"include,omitempty"`
-	Lock         *LockConfig         `hcl:"lock,omitempty"`
-	RemoteState  *remote.RemoteState `hcl:"remote_state,omitempty"`
-	Dependencies *ModuleDependencies `hcl:"dependencies,omitempty"`
-	Uniqueness   *string             `hcl:"uniqueness_criteria"`
-	PreHooks     []Hook              `hcl:"pre_hooks,omitempty"`
-	PostHooks    []Hook              `hcl:"post_hooks,omitempty"`
-	ImportFiles  []ImportConfig      `hcl:"import_files,omitempty"`
-	AssumeRole   *string             `hcl:"assume_role"`
+	Terraform     *TerraformConfig    `hcl:"terraform,omitempty"`
+	Include       *IncludeConfig      `hcl:"include,omitempty"`
+	Lock          *LockConfig         `hcl:"lock,omitempty"`
+	RemoteState   *remote.RemoteState `hcl:"remote_state,omitempty"`
+	Dependencies  *ModuleDependencies `hcl:"dependencies,omitempty"`
+	Uniqueness    *string             `hcl:"uniqueness_criteria"`
+	PreHooks      []Hook              `hcl:"pre_hooks,omitempty"`
+	PostHooks     []Hook              `hcl:"post_hooks,omitempty"`
+	ExtraCommands []ExtraCommand      `hcl:"extra_command,omitempty"`
+	ImportFiles   []ImportConfig      `hcl:"import_files,omitempty"`
+	AssumeRole    *string             `hcl:"assume_role"`
 }
 
 // Older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -167,8 +169,21 @@ type Hook struct {
 	ExpandArgs bool     `hcl:"expand_args,omitempty"`
 }
 
-func (hook Hook) String() string {
+func (hook *Hook) String() string {
 	return fmt.Sprintf("Hook %s: %s %s", hook.Name, hook.Command, strings.Join(hook.Arguments, " "))
+}
+
+// ExtraCommand is a definition of user extra command that should be executed in place of terraform
+type ExtraCommand struct {
+	Name       string   `hcl:",key"`
+	Commands   []string `hcl:"commands,omitempty"`
+	OnCommands []string `hcl:"on_commands,omitempty"`
+	OS         []string `hcl:"os,omitempty"`
+	UseState   *bool    `hcl:"use_state,omitempty"`
+}
+
+func (command *ExtraCommand) String() string {
+	return fmt.Sprintf("Extra Command %s: %s", command.Name, command.Commands)
 }
 
 // ImportConfig is a configuration of files that must be imported from another directory to the terraform directory
@@ -419,6 +434,7 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 
 	mergePreHooks(terragruntOptions, config.PreHooks, &includedConfig.PreHooks)
 	mergePostHooks(terragruntOptions, config.PostHooks, &includedConfig.PostHooks)
+	mergeExtraCommands(terragruntOptions, config.ExtraCommands, &includedConfig.ExtraCommands)
 	mergeImports(terragruntOptions, config.ImportFiles, &includedConfig.ImportFiles)
 
 	return includedConfig, nil
@@ -473,6 +489,22 @@ addHook:
 		result = append(result, hook)
 	}
 	*newHooks = result
+}
+
+func mergeExtraCommands(terragruntOptions *options.TerragruntOptions, original []ExtraCommand, newCommands *[]ExtraCommand) {
+	result := *newCommands
+add:
+	for _, command := range original {
+		for i, existing := range result {
+			if existing.Name == command.Name {
+				terragruntOptions.Logger.Infof("Skipping Extra Command %v as it is overridden in the current config", command.Name)
+				result[i] = command
+				continue add
+			}
+		}
+		result = append(result, command)
+	}
+	*newCommands = result
 }
 
 // Merge the import files priorising those defined in the leaf
@@ -576,6 +608,7 @@ func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, t
 	terragruntConfig.Uniqueness = terragruntConfigFromFile.Uniqueness
 	terragruntConfig.PreHooks = terragruntConfigFromFile.PreHooks
 	terragruntConfig.PostHooks = terragruntConfigFromFile.PostHooks
+	terragruntConfig.ExtraCommands = terragruntConfigFromFile.ExtraCommands
 	terragruntConfig.ImportFiles = terragruntConfigFromFile.ImportFiles
 	terragruntConfig.AssumeRole = terragruntConfigFromFile.AssumeRole
 

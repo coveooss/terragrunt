@@ -5,6 +5,7 @@ import (
 	"io"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/config"
@@ -333,6 +334,34 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	if terragruntOptions.TerraformCliArgs[0] == CMD_INIT {
 		terragruntOptions.Logger.Info("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
 		return nil
+	}
+
+	// Check if the supplied command is an extra command. In that case, we execute that command instead of calling terraform.
+	cmd := terragruntOptions.TerraformCliArgs[0]
+	for _, commands := range conf.ExtraCommands {
+		if len(commands.OS) > 0 && !util.ListContainsElement(commands.OS, runtime.GOOS) {
+			continue
+		}
+		if len(commands.Commands) == 0 {
+			commands.Commands = append(commands.Commands, commands.Name)
+		}
+
+		if commands.Name == cmd && !util.ListContainsElement(commands.Commands, cmd) {
+			// The named command is not in the list of commands but match the commands name, in that case,
+			// we consider tha ame acts as an alias for the first command)
+			cmd = commands.Commands[0]
+		}
+
+		if util.ListContainsElement(commands.Commands, cmd) {
+			if conf.RemoteState != nil && (commands.UseState == nil || *commands.UseState) {
+				// We must initialize the remote state since it would not have been configured because the command
+				// is unknown for terraform
+				if err := conf.RemoteState.ConfigureRemoteState(terragruntOptions); err != nil {
+					return err
+				}
+			}
+			return shell.RunShellCommand(terragruntOptions, cmd, terragruntOptions.TerraformCliArgs[1:]...)
+		}
 	}
 
 	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)

@@ -50,6 +50,7 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
    1. [Keep your CLI flags DRY](#keep-your-cli-flags-dry)
    1. [Execute Terraform commands on multiple modules at once](#execute-terraform-commands-on-multiple-modules-at-once)
    1. [Assume a different AWS IAM role to execute Terraform commands](#assume-aws-iam-role)
+   1. [Define extra commands](#define-extra-commands)
 1. [Terragrunt details](#terragrunt-details)
    1. [AWS credentials](#aws-credentials)
    1. [AWS IAM policies](#aws-iam-policies)
@@ -935,13 +936,6 @@ time around.
 
 ### Assume AWS IAM role
 
-* [Motivation](#motivation-3)
-* [The apply-all, destroy-all, output-all and plan-all commands](#the-apply-all-destroy-all-output-all-and-plan-all-commands)
-* [Dependencies between modules](#dependencies-between-modules)
-
-
-#### Motivation
-
 Terraform already provides the functionality to configure AWS provider that assume a different IAM Role when retrieving and creating AWS resources.
 But when we use terragrunt to configure S3 backend to store our remote states, terraform uses the current user rights to access and configure the remote state file and to manage locking operation in the DynamoDB database.
 
@@ -970,6 +964,52 @@ terragrunt = {
 
 The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf configuration will prevail.
 
+### Define extra commands
+
+Since Terragrunt configure the execution context in temporary folder, it may be useful to execute other command than terraform in that context after
+the terraform remote state has been configured.
+
+#### Configure extra commands
+
+```hcl
+terragrunt = {
+  extra_command "name" {
+    commands  = [list of commands]  # optional (default use name as the command)
+    os        = [list of os]        # optional (default run on all os, os name are those supported by go, i.e. linux, darwin, windows)
+    use_state = true or false       # optional (default = true)
+  }
+}
+```
+
+#### Example of extra commands
+
+```hcl
+  # Add extra commands to terragrunt
+  extra_command "shell" {
+    commands = ["bash", "sh", "zsh", "fish", "ls"]
+    os       = ["darwin", "linux"]
+  }
+```
+
+So the following commands do:
+
+- starts a shell into the temporary folder
+
+```bash
+> terragrunt bash
+> terragrunt sh
+> terragrunt zsh
+> terragrunt fish
+> terragrunt shell
+```
+
+- List the content of the temporary folder
+
+```bash
+> terragrunt ls -al
+```
+
+The name `shell` used to name the extra_command group could also be used as a command. It acts as an alias for the first command in `commands` list.
 
 ## Terragrunt details
 
