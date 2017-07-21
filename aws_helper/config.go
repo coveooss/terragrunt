@@ -1,6 +1,11 @@
 package aws_helper
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -10,9 +15,17 @@ import (
 
 // CreateAwsSession returns an AWS session object for the given region, ensuring that the credentials are available
 func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
+	mfaRequired := false
 	options := session.Options{
 		Profile:           awsProfile,
 		SharedConfigState: session.SharedConfigEnable,
+		AssumeRoleTokenProvider: func() (string, error) {
+			mfaRequired = true
+			fmt.Print("Enter MFA Code: ")
+			reader := bufio.NewReader(os.Stdin)
+			mfa, err := reader.ReadString('\n')
+			return strings.TrimSpace(mfa), err
+		},
 	}
 	if awsRegion != "" {
 		options.Config = aws.Config{Region: aws.String(awsRegion)}
@@ -23,11 +36,18 @@ func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
 		return nil, errors.WithStackTraceAndPrefix(err, "Error initializing session")
 	}
 
-	_, err = session.Config.Credentials.Get()
+	creds, err := session.Config.Credentials.Get()
 	if err != nil {
 		return nil, errors.WithStackTraceAndPrefix(err, "Error finding AWS credentials (did you set the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables?)")
 	}
 
+	if mfaRequired {
+		// If MFA has been required, we set the environment variables to keep the session alive and avoid
+		// to be asked for MFA on every new session call during the current execution
+		os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
+		os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
+		os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
+	}
 	return session, nil
 }
 
@@ -39,13 +59,13 @@ func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (result 
 	}
 
 	svc := sts.New(session)
-	var cred credentials.Value
+	var creds credentials.Value
 
 	if roleArn == "" {
 		// If no role is specified, we just convert the current access to environment variables
 		// if a role is assumed. This is required because terraform does not support AWS_PROFILE
 		// that refers to a configuration that assume a role.
-		cred, err = svc.Config.Credentials.Get()
+		creds, err = svc.Config.Credentials.Get()
 	} else {
 		var response *sts.AssumeRoleOutput
 		response, err = svc.AssumeRole(&sts.AssumeRoleInput{
@@ -55,7 +75,7 @@ func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (result 
 		if err != nil {
 			return
 		}
-		cred = credentials.Value{
+		creds = credentials.Value{
 			AccessKeyID:     *response.Credentials.AccessKeyId,
 			SecretAccessKey: *response.Credentials.SecretAccessKey,
 			SessionToken:    *response.Credentials.SessionToken,
@@ -63,11 +83,11 @@ func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (result 
 	}
 
 	result = map[string]string{
-		"AWS_ACCESS_KEY_ID":     cred.AccessKeyID,
-		"AWS_SECRET_ACCESS_KEY": cred.SecretAccessKey,
+		"AWS_ACCESS_KEY_ID":     creds.AccessKeyID,
+		"AWS_SECRET_ACCESS_KEY": creds.SecretAccessKey,
 	}
-	if cred.SessionToken != "" {
-		result["AWS_SESSION_TOKEN"] = cred.SessionToken
+	if creds.SessionToken != "" {
+		result["AWS_SESSION_TOKEN"] = creds.SessionToken
 	}
 	return
 }
