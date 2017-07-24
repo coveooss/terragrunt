@@ -75,8 +75,6 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			target = filepath.Join(importerTarget, target)
 			if err := util.CopyFile(source, target); err == nil {
 				if importer.FileMode != nil {
-					fmt.Println("Filemode", *importer.FileMode)
-					fmt.Println("mode =", 0755, "target =", target)
 					err = os.Chmod(target, os.FileMode(*importer.FileMode))
 				}
 			}
