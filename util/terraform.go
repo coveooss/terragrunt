@@ -1,11 +1,14 @@
 package util
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/hashicorp/hcl"
 )
@@ -29,7 +32,7 @@ func FlattenHCL(source map[string]interface{}) map[string]interface{} {
 	return source
 }
 
-// Return a map of the variables defined in the tfvars file
+// LoadDefaultValues returns a map of the variables defined in the tfvars file
 func LoadDefaultValues(folder string) (result map[string]interface{}, err error) {
 	result = map[string]interface{}{}
 	for _, file := range getTerraformFiles(folder) {
@@ -52,7 +55,7 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 	return result, nil
 }
 
-// Return a map of the variables defined in the tfvars file
+// LoadTfVars returns a map of the variables defined in the tfvars file
 func LoadTfVars(path string) (map[string]interface{}, error) {
 	variables := map[string]interface{}{}
 
@@ -63,6 +66,84 @@ func LoadTfVars(path string) (map[string]interface{}, error) {
 
 	err = hcl.Unmarshal(bytes, &variables)
 	return FlattenHCL(variables), err
+}
+
+// MarshalHCLVars serialize values to hcl variable definition format
+func MarshalHCLVars(value interface{}, indent int) []byte {
+	if indent == 0 {
+		value = FlattenHCL(value.(map[string]interface{}))
+	}
+	var buffer bytes.Buffer
+
+	typ, val := reflect.TypeOf(value), reflect.ValueOf(value)
+	switch typ.Kind() {
+	case reflect.String:
+		buffer.WriteByte('"')
+		buffer.WriteString(val.String())
+		buffer.WriteByte('"')
+
+	case reflect.Int:
+		fallthrough
+	case reflect.Bool:
+		buffer.WriteString(fmt.Sprintf("%v", value))
+
+	case reflect.Slice:
+		fallthrough
+	case reflect.Array:
+		switch val.Len() {
+		case 0:
+			buffer.WriteString("[]")
+		case 1:
+			buffer.WriteByte('[')
+			buffer.Write(MarshalHCLVars(reflect.ValueOf(value).Index(0).Interface(), indent+1))
+			buffer.WriteByte(']')
+		default:
+			if indent > 0 {
+				buffer.WriteString("[\n")
+			}
+			for i := 0; i < val.Len(); i++ {
+				buffer.WriteString(strings.Repeat(" ", indent*2))
+				buffer.Write(MarshalHCLVars(val.Index(i).Interface(), indent+1))
+				buffer.WriteString(",\n")
+			}
+			if indent > 0 {
+				buffer.WriteString(strings.Repeat(" ", (indent-1)*2))
+				buffer.WriteString("]")
+			}
+		}
+
+	case reflect.Map:
+		switch value := value.(type) {
+		case map[string]interface{}:
+			keys := make([]string, 0, len(value))
+
+			for _, key := range val.MapKeys() {
+				keys = append(keys, key.String())
+			}
+			sort.Strings(keys)
+
+			if indent > 0 {
+				buffer.WriteString("{\n")
+			}
+			for _, key := range keys {
+				buffer.WriteString(strings.Repeat(" ", indent*2))
+				buffer.WriteString(key)
+				buffer.WriteString(" = ")
+				buffer.Write(MarshalHCLVars(value[key], indent+1))
+				buffer.WriteString("\n")
+			}
+			if indent > 0 {
+				buffer.WriteString(strings.Repeat(" ", (indent-1)*2))
+				buffer.WriteString("}")
+			}
+		}
+
+	default:
+		fmt.Printf("Unknown type %T %v : %v\n", value, typ.Kind(), value)
+		buffer.WriteString(fmt.Sprintf("%v", value))
+	}
+
+	return buffer.Bytes()
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)

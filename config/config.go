@@ -180,6 +180,7 @@ type ExtraCommand struct {
 	OnCommands []string `hcl:"on_commands,omitempty"`
 	OS         []string `hcl:"os,omitempty"`
 	UseState   *bool    `hcl:"use_state,omitempty"`
+	Arguments  []string `hcl:"arguments,omitempty"`
 }
 
 func (command *ExtraCommand) String() string {
@@ -195,6 +196,9 @@ type ImportConfig struct {
 	CopyAndRenameFiles []CopyAndRename `hcl:"copy_and_rename"`
 	Required           bool            `hcl:"required,omitempty"`
 	ImportIntoModules  bool            `hcl:"import_into_modules"`
+	FileMode           *int            `hcl:"file_mode, omitempty"`
+	Target             string          `hcl:"target, omitempty"`
+	OS                 []string        `hcl:"os,omitempty"`
 }
 
 // CopyAndRename is a structure used by ImportConfig to rename the imported files

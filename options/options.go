@@ -181,6 +181,8 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 				if err != nil {
 					return
 				}
+			case ".tfvars", ".hcl":
+				content = util.MarshalHCLVars(variables, 0)
 			default:
 				content, err = json.MarshalIndent(variables, "", "  ")
 				if err != nil {
