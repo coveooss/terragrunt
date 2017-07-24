@@ -24,6 +24,11 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 	}
 
 	for _, importer := range importers {
+		if len(importer.OS) > 0 && !util.ListContainsElement(importer.OS, runtime.GOOS) {
+			terragruntOptions.Logger.Infof("Importer %s skipped, executed only on %v", importer.Name, importer.OS)
+			continue
+		}
+
 		var sourceFolder string
 		if isModule && !importer.ImportIntoModules {
 			continue
@@ -56,11 +61,31 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			sourceFiles = append(sourceFiles, files...)
 		}
 
+		// Local copy function used by both type of file copy
+		importerTarget := targetFolder
+		if importer.Target != "" {
+			if filepath.IsAbs(importer.Target) {
+				importerTarget = importer.Target
+			} else {
+				importerTarget = filepath.Join(targetFolder, importer.Target)
+			}
+		}
+
+		copy := func(source, target string) error {
+			target = filepath.Join(importerTarget, target)
+			if err := util.CopyFile(source, target); err == nil {
+				if importer.FileMode != nil {
+					fmt.Println("Filemode", *importer.FileMode)
+					fmt.Println("mode =", 0755, "target =", target)
+					err = os.Chmod(target, os.FileMode(*importer.FileMode))
+				}
+			}
+			return err
+		}
+
 		for _, source := range sourceFiles {
 			if util.FileExists(source) {
-				base := filepath.Base(source)
-				target := filepath.Join(targetFolder, base)
-				if err := util.CopyFile(source, target); err != nil {
+				if err := copy(source, filepath.Base(source)); err != nil {
 					return err
 				}
 			} else if importer.Required {
@@ -72,9 +97,8 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 
 		for _, source := range importer.CopyAndRenameFiles {
 			if util.FileExists(source.Source) {
-				target := filepath.Join(targetFolder, source.Target)
 				terragruntOptions.Logger.Noticef("Copy file %s to %s/%v", filepath.Base(source.Source), folderName, source.Target)
-				if err := util.CopyFile(source.Source, target); err != nil {
+				if err := copy(source.Source, source.Target); err != nil {
 					return err
 				}
 			} else if importer.Required {

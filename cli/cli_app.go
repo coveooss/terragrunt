@@ -279,6 +279,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 	}
 
+	// Check if the current command is an extra command
+	extraCommand, extraArgs := getExtraCommand(terragruntOptions, conf)
+
 	if err := downloadModules(terragruntOptions); err != nil {
 		return err
 	}
@@ -307,6 +310,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Save all variable files requested in the terragrunt config
 	terragruntOptions.SaveVariables()
 
+	// Configure remote state if required
 	if conf.RemoteState != nil {
 		if err := configureRemoteState(conf.RemoteState, terragruntOptions); err != nil {
 			return err
@@ -337,8 +341,18 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Check if the supplied command is an extra command. In that case, we execute that command instead of calling terraform.
+	if extraCommand != "" {
+		return shell.RunShellCommand(terragruntOptions, extraCommand, append(extraArgs, terragruntOptions.TerraformCliArgs[1:]...)...)
+	}
+
+	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+}
+
+// Returns the empty if the supplied command is not an extra command, otherwise, returns the command name
+// to execute and the default arguments
+func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) (string, []string) {
 	cmd := terragruntOptions.TerraformCliArgs[0]
-	for _, commands := range conf.ExtraCommands {
+	for _, commands := range config.ExtraCommands {
 		if len(commands.OS) > 0 && !util.ListContainsElement(commands.OS, runtime.GOOS) {
 			continue
 		}
@@ -353,18 +367,15 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 
 		if util.ListContainsElement(commands.Commands, cmd) {
-			if conf.RemoteState != nil && (commands.UseState == nil || *commands.UseState) {
-				// We must initialize the remote state since it would not have been configured because the command
-				// is unknown for terraform
-				if err := conf.RemoteState.ConfigureRemoteState(terragruntOptions); err != nil {
-					return err
-				}
+			if commands.UseState == nil || *commands.UseState {
+				// We simulate that the extra command acts as the plan command to init the state file
+				// and get the modules
+				terragruntOptions.TerraformCliArgs[0] = "plan"
 			}
-			return shell.RunShellCommand(terragruntOptions, cmd, terragruntOptions.TerraformCliArgs[1:]...)
+			return cmd, commands.Arguments
 		}
 	}
-
-	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+	return "", nil
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
