@@ -102,7 +102,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	if len(args) > 0 {
 		cmd := args[0]
 		if util.ListContainsElement(MULTI_MODULE_COMMANDS, cmd) {
-			cmd = strings.TrimRight(cmd, "-all")
+			cmd = strings.TrimSuffix(cmd, "-all")
 		}
 	}
 	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
