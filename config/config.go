@@ -70,8 +70,19 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	substituteHooks(conf.PreHooks)
 	substituteHooks(conf.PostHooks)
 
+	for i, command := range conf.ExtraCommands {
+		for i, cmd := range command.Commands {
+			command.Commands[i] = *substitute(&cmd)
+		}
+		for i, arg := range command.Arguments {
+			command.Arguments[i] = *substitute(&arg)
+		}
+		conf.ExtraCommands[i] = command
+	}
+
 	for i, importer := range conf.ImportFiles {
 		substitute(&importer.Source)
+		substitute(&importer.Target)
 		for i, value := range importer.Files {
 			importer.Files[i] = *substitute(&value)
 		}
