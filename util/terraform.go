@@ -84,6 +84,8 @@ func MarshalHCLVars(value interface{}, indent int) []byte {
 
 	case reflect.Int:
 		fallthrough
+	case reflect.Float64:
+		fallthrough
 	case reflect.Bool:
 		buffer.WriteString(fmt.Sprintf("%v", value))
 
