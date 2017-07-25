@@ -100,7 +100,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	// stripped from the cli args.
 	var cmd string
 	if len(args) > 0 {
-		cmd := args[0]
+		cmd = args[0]
 		if util.ListContainsElement(MULTI_MODULE_COMMANDS, cmd) {
 			cmd = strings.TrimSuffix(cmd, "-all")
 		}
