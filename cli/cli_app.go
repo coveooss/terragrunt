@@ -329,7 +329,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		// Executing the post-hooks commands if there are and there is no error
 		if result == nil {
 			if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
-				terragruntOptions.Logger.Error(err)
 				result = err
 			}
 		}
@@ -345,6 +344,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	// Check if the supplied command is an extra command. In that case, we execute that command instead of calling terraform.
 	if extraCommand != "" {
+		// We restore back the name of the command since it may have been temporary changed to support
+		// state file initialization and get modules
+		terragruntOptions.TerraformCliArgs[0] = extraCommand
 		return shell.RunShellCommand(terragruntOptions, extraCommand, append(extraArgs, terragruntOptions.TerraformCliArgs[1:]...)...)
 	}
 

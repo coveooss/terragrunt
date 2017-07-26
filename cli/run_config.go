@@ -76,6 +76,8 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 		for _, pattern := range importer.Files {
 			if sourceFolder != "" {
 				pattern = filepath.Join(sourceFolder, pattern)
+			} else if !filepath.IsAbs(pattern) {
+				pattern = filepath.Join(terragruntOptions.WorkingDir, pattern)
 			}
 			files, err := filepath.Glob(pattern)
 			if err != nil {
@@ -88,6 +90,8 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 					fileBases[i] = filepath.Base(file)
 				}
 				terragruntOptions.Logger.Noticef("%s: Copy %s to %s", importer.Name, strings.Join(fileBases, ", "), folderName)
+			} else if importer.Required {
+				return fmt.Errorf("Unable to import required file %s", pattern)
 			}
 			sourceFiles = append(sourceFiles, files...)
 		}
