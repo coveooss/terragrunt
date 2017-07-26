@@ -3,11 +3,12 @@ package cli
 import (
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
 
+	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -26,9 +27,10 @@ const OPT_TERRAGRUNT_SOURCE = "terragrunt-source"
 const OPT_TERRAGRUNT_SOURCE_UPDATE = "terragrunt-source-update"
 const OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS = "terragrunt-ignore-dependency-errors"
 const OPT_LOGGING_LEVEL = "terragrunt-logging-level"
+const OPT_AWS_PROFILE = "profile"
 
 var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
-var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL}
+var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE}
 
 const CMD_PLAN_ALL = "plan-all"
 const CMD_APPLY_ALL = "apply-all"
@@ -105,6 +107,7 @@ GLOBAL OPTIONS:
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5)
+   profile                              Specify an AWS profile to use
 
 VERSION:
    {{.Version}}{{if len .Authors}}
@@ -164,6 +167,14 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		return nil
 	}
 
+	// If AWS is configured, we init the session to ensure that proper environment variables are set
+	if terragruntOptions.AwsProfile != "" || os.Getenv("AWS_PROFILE") != "" && os.Getenv("AWS_ACCESS_KEY_ID") == "" {
+		_, err := aws_helper.InitAwsSession(terragruntOptions.AwsProfile)
+		if err != nil {
+			return err
+		}
+	}
+
 	if err := CheckTerraformVersion(DEFAULT_TERRAFORM_VERSION_CONSTRAINT, terragruntOptions); err != nil {
 		return err
 	}
@@ -219,7 +230,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		terragruntOptions.TerraformCliArgs = args
 	}
 
-	conf.SubstituteAllVariables(terragruntOptions)
+	conf.SubstituteAllVariables(terragruntOptions, false)
 
 	// Copy the deployment files to the working directory
 	sourceURL, hasSourceURL := getTerraformSourceURL(terragruntOptions, conf)
@@ -236,22 +247,18 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	if err != nil {
 		return err
 	}
-	if hasSourceURL {
+	if hasSourceURL || len(conf.ImportFiles) > 0 {
+		// If there are import files, we force the usage of a temp directory.
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); err != nil {
 			return err
 		}
 	}
+	conf.SubstituteAllVariables(terragruntOptions, true)
 
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder
-	const importDir = "temporary_imported_files"
-	tempImportFolder := filepath.Join(terraformSource.WorkingDir, importDir)
-	if err := importFiles(terragruntOptions, conf.ImportFiles, tempImportFolder, false); err != nil {
-		return err
-	}
-	err = util.CopyFolderContents(tempImportFolder, terragruntOptions.WorkingDir)
-	if err != nil {
+	if err := importFiles(terragruntOptions, conf.ImportFiles, terragruntOptions.WorkingDir, false); err != nil {
 		return err
 	}
 
@@ -262,20 +269,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	terragruntOptions.IgnoreRemainingInterpolation = false
-	conf.SubstituteAllVariables(terragruntOptions)
+	conf.SubstituteAllVariables(terragruntOptions, true)
 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
 	if conf.AssumeRole != nil && *conf.AssumeRole != "" {
 		terragruntOptions.Logger.Noticef("Assuming role %s", *conf.AssumeRole)
 		if err := setRoleEnvironmentVariables(terragruntOptions, *conf.AssumeRole); err != nil {
 			return err
-		}
-	}
-
-	// If the temp directory has been specified in args, we replace the argument with the actual folder
-	for _, hook := range append(conf.PreHooks, conf.PostHooks...) {
-		for i, arg := range hook.Arguments {
-			hook.Arguments[i] = strings.Replace(arg, config.GET_TEMP_FOLDER, filepath.Join(terraformSource.DownloadDir), -1)
 		}
 	}
 
@@ -309,6 +309,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	// Save all variable files requested in the terragrunt config
 	terragruntOptions.SaveVariables()
+
+	// Set the temporary script folder as the first item of the PATH
+	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
 	// Configure remote state if required
 	if conf.RemoteState != nil {

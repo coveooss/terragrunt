@@ -1,10 +1,8 @@
 package util
 
 import (
-	"bytes"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -12,6 +10,8 @@ import (
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/hashicorp/terraform/config/module"
+	logging "github.com/op/go-logging"
 )
 
 // Return true if the given file exists
@@ -134,8 +134,8 @@ func ReadFileAsString(path string) (string, error) {
 // ReadFileAsStringFromSource returns the contents of the file at the given path
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
-func ReadFileAsStringFromSource(source, path string, terraform string, env ...string) (localFile, content string, err error) {
-	cacheDir, err := GetSource(source, terraform, env...)
+func ReadFileAsStringFromSource(source, path string, logger *logging.Logger) (localFile, content string, err error) {
+	cacheDir, err := GetSource(source, logger)
 	if err != nil {
 		return "", "", err
 	}
@@ -145,42 +145,39 @@ func ReadFileAsStringFromSource(source, path string, terraform string, env ...st
 	return
 }
 
+// GetTempDownloadFolder returns the fo
+func GetTempDownloadFolder(folders ...string) string {
+	tempFolder := os.Getenv("TERRAGRUNT_CACHE")
+	if tempFolder == "" {
+		tempFolder = os.TempDir()
+	}
+	return filepath.Join(append([]string{tempFolder}, folders...)...)
+}
+
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
-func GetSource(source string, terraform string, env ...string) (string, error) {
+func GetSource(source string, logger *logging.Logger) (string, error) {
 	path, err := aws_helper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
 	}
 
-	cacheDir := os.Getenv("TERRAGRUNT_CACHE")
-	if cacheDir == "" {
-		cacheDir = filepath.Join(os.TempDir(), "terragrunt-cache")
-	}
-
-	cacheDir = filepath.Join(cacheDir, EncodeBase64Sha1(source))
-
+	cacheDir := GetTempDownloadFolder("terragrunt-cache", EncodeBase64Sha1(source))
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
 	if _, ok := sharedContent[cacheDir]; !ok {
 		if !FileExists(cacheDir) || Expired(cacheDir) {
-			log := CreateLogger("Copy source")
-
+			if logger != nil {
+				logger.Info("Getting source files from", path)
+			}
 			os.RemoveAll(cacheDir)
 
-			cmd := exec.Command(terraform, "init", "-no-color", "-input=false", path, cacheDir)
-			cmd.Stdin = os.Stdin
-			var out bytes.Buffer
-			cmd.Stdout, cmd.Stderr = &out, &out
-			cmd.Env = env
-			err = cmd.Run()
+			err = module.GetCopy(cacheDir, path)
 			if err != nil {
-				log.Error(out.String())
 				return "", err
 			}
-			log.Info(out.String())
 
 			aws_helper.SaveS3Status(source, cacheDir)
 		}

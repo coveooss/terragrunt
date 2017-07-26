@@ -36,18 +36,25 @@ func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
 		return nil, errors.WithStackTraceAndPrefix(err, "Error initializing session")
 	}
 
+	return session, nil
+}
+
+// InitAwsSession configures environment variables to ensure that all following AWS operations will be able to
+// be executed using the proper credentials. Some calls to terraform library are not able to handle shared config
+// properly. This also ensures that the session remains alive in case of MFA is required avoiding asking for
+// MFA on each AWS calls.
+func InitAwsSession(awsProfile string) (*session.Session, error) {
+	session, err := CreateAwsSession("", awsProfile)
+	if err != nil {
+		return nil, err
+	}
 	creds, err := session.Config.Credentials.Get()
 	if err != nil {
 		return nil, errors.WithStackTraceAndPrefix(err, "Error finding AWS credentials (did you set the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables?)")
 	}
-
-	if mfaRequired {
-		// If MFA has been required, we set the environment variables to keep the session alive and avoid
-		// to be asked for MFA on every new session call during the current execution
-		os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
-		os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
-		os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
-	}
+	os.Setenv("AWS_ACCESS_KEY_ID", creds.AccessKeyID)
+	os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
+	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
 	return session, nil
 }
 

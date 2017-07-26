@@ -14,6 +14,7 @@ import (
 )
 
 const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
+const GET_SCRIPT_FOLDER = "<SCRIPT_FOLDER>"
 
 var INTERPOLATION_VARS = `\s*var\.([[:alpha:]][\w-]*)\s*`
 var INTERPOLATION_PARAMETERS = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
@@ -128,6 +129,7 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 			"get_terraform_commands_that_need_locking": TERRAFORM_COMMANDS_NEED_LOCKING,
 			"get_terraform_commands_that_need_input":   TERRAFORM_COMMANDS_NEED_INPUT,
 			"get_temp_folder":                          GET_TEMP_FOLDER,
+			"get_script_folder":                        GET_SCRIPT_FOLDER,
 		}
 	}
 

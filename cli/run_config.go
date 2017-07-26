@@ -14,10 +14,13 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-func importFiles(terragruntOptions *options.TerragruntOptions, importers []config.ImportConfig, targetFolder string, isModule bool) (err error) {
+func importFiles(terragruntOptions *options.TerragruntOptions, importers []config.ImportConfig, targetFolder string, isModule bool) error {
 	var folderName string
 	if !isModule {
-		os.MkdirAll(targetFolder, 0755)
+		err := os.MkdirAll(targetFolder, 0755)
+		if err != nil {
+			return err
+		}
 		folderName = "temporary folder"
 	} else {
 		folderName = filepath.Base(targetFolder)
@@ -29,16 +32,44 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			continue
 		}
 
-		var sourceFolder string
 		if isModule && !importer.ImportIntoModules {
 			continue
 		}
 
+		var sourceFolder string
 		if importer.Source != "" {
-			sourceFolder, err = util.GetSource(importer.Source, terragruntOptions.TerraformPath, terragruntOptions.EnvironmentVariables()...)
+			var err error
+			sourceFolder, err = util.GetSource(importer.Source, terragruntOptions.Logger)
 			if err != nil {
 				return err
 			}
+		}
+
+		// Check if the importer has a specific target folder
+		importerTarget := targetFolder
+		if importer.Target != "" {
+			folderName = importer.Target
+			if filepath.IsAbs(importer.Target) {
+				importerTarget = importer.Target
+			} else {
+				importerTarget = filepath.Join(targetFolder, importer.Target)
+			}
+			err := os.MkdirAll(importerTarget, 0755)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Local copy function used by both type of file copy
+		copy := func(source, target string) error {
+			target = filepath.Join(importerTarget, target)
+			if err := util.CopyFile(source, target); err != nil {
+				return err
+			}
+			if importer.FileMode != nil {
+				return os.Chmod(target, os.FileMode(*importer.FileMode))
+			}
+			return nil
 		}
 
 		var sourceFiles []string
@@ -59,26 +90,6 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 				terragruntOptions.Logger.Noticef("%s: Copy %s to %s", importer.Name, strings.Join(fileBases, ", "), folderName)
 			}
 			sourceFiles = append(sourceFiles, files...)
-		}
-
-		// Local copy function used by both type of file copy
-		importerTarget := targetFolder
-		if importer.Target != "" {
-			if filepath.IsAbs(importer.Target) {
-				importerTarget = importer.Target
-			} else {
-				importerTarget = filepath.Join(targetFolder, importer.Target)
-			}
-		}
-
-		copy := func(source, target string) error {
-			target = filepath.Join(importerTarget, target)
-			if err := util.CopyFile(source, target); err == nil {
-				if importer.FileMode != nil {
-					err = os.Chmod(target, os.FileMode(*importer.FileMode))
-				}
-			}
-			return err
 		}
 
 		for _, source := range sourceFiles {

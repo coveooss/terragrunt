@@ -15,6 +15,7 @@ import (
 
 const DefaultTerragruntConfigPath = "terraform.tfvars"
 const OldTerragruntConfigPath = ".terragrunt"
+const TerragruntScriptFolder = ".terragrunt-scripts"
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
@@ -34,13 +35,19 @@ func (conf *TerragruntConfig) String() string {
 }
 
 // SubstituteAllVariables replace all remaining variables by the value
-func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions) {
+func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions, substituteFolders bool) {
+	scriptFolder := filepath.Join(terragruntOptions.WorkingDir, TerragruntScriptFolder)
 	substitute := func(value *string) *string {
 		if value == nil {
 			return nil
 		}
 
 		*value = SubstituteVars(*value, terragruntOptions)
+		if substituteFolders {
+			// We only substitute folders on the last substitute call
+			*value = strings.Replace(*value, GET_TEMP_FOLDER, terragruntOptions.DownloadDir, -1)
+			*value = strings.Replace(*value, GET_SCRIPT_FOLDER, scriptFolder, -1)
+		}
 		return value
 	}
 
@@ -347,7 +354,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		if include.Path == "" {
 			include.Path = DefaultTerragruntConfigPath
 		}
-		include.Path, configString, err = util.ReadFileAsStringFromSource(include.Source, include.Path, terragruntOptions.TerraformPath, terragruntOptions.EnvironmentVariables()...)
+		include.Path, configString, err = util.ReadFileAsStringFromSource(include.Source, include.Path, terragruntOptions.Logger)
 	}
 	if err != nil {
 		return nil, err

@@ -76,6 +76,11 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return nil, err
 	}
 
+	awsProfile, err := parseStringArg(args, OPT_AWS_PROFILE, "")
+	if err != nil {
+		return nil, err
+	}
+
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
@@ -92,6 +97,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.IgnoreDependencyErrors = ignoreDependencyErrors
 	opts.Env = map[string]string{}
 	opts.Variables = options.VariableList{}
+	opts.AwsProfile = awsProfile
 
 	parseEnvironmentVariables(opts, os.Environ())
 

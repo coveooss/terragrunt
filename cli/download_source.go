@@ -11,10 +11,10 @@ import (
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
+	"github.com/hashicorp/terraform/config/module"
 	"github.com/mattn/go-zglob"
 )
 
@@ -84,7 +84,8 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 		return err
 	}
 
-	if err := terraformInit(terraformSource, terragruntOptions); err != nil {
+	terragruntOptions.Logger.Noticef("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
+	if err := module.GetCopy(terraformSource.DownloadDir, terraformSource.CanonicalSourceURL.String()); err != nil {
 		return err
 	}
 
@@ -341,12 +342,4 @@ func getTerraformSourceURL(terragruntOptions *options.TerragruntOptions, terragr
 	} else {
 		return "", false
 	}
-}
-
-// Download the code from the Canonical Source URL into the Download Folder using the terraform init command
-func terraformInit(terraformSource *TerraformSource, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Noticef("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
-
-	// Backend and get configuration will be handled separately
-	return shell.RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions, "init", "-backend=false", "-get=false", terraformSource.CanonicalSourceURL.String(), terraformSource.DownloadDir)
 }
