@@ -117,7 +117,7 @@ func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remote
 		return shell.PromptUserForYesNo(prompt, terragruntOptions)
 	}
 
-	terragruntOptions.Logger.Warningf("Remote state is already configured for backend %s", existingBackend.Type)
+	terragruntOptions.Logger.Noticef("Remote state is already configured for backend %s", existingBackend.Type)
 	return false, nil
 }
 
