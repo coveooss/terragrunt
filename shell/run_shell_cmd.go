@@ -74,11 +74,12 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	}
 
 	cmd.Dir = terragruntOptions.WorkingDir
-
 	cmdChannel := make(chan error)
+
 	signalChannel := NewSignalsForwarder(forwardSignals, cmd, terragruntOptions.Logger, cmdChannel)
 	defer signalChannel.Close()
 
+	os.Setenv("PATH", terragruntOptions.Env["PATH"])
 	err := cmd.Run()
 	cmdChannel <- err
 

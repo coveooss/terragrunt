@@ -3,7 +3,9 @@ package remote
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -95,7 +97,8 @@ func shouldConfigureRemoteState(remoteStateFromTerragruntConfig RemoteState, ter
 // we should override the existing remote state setting.
 func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remoteStateFromTerragruntConfig RemoteState, terragruntOptions *options.TerragruntOptions) (bool, error) {
 	if existingBackend.Type != remoteStateFromTerragruntConfig.Backend {
-		prompt := fmt.Sprintf("WARNING: Terraform remote state is already configured, but for backend %s, whereas your Terragrunt configuration specifies %s. Overwrite?", existingBackend.Type, remoteStateFromTerragruntConfig.Backend)
+		terragruntOptions.Logger.Warningf("Terraform remote state is already configured for a different backend", existingBackend.Type)
+		prompt := fmt.Sprintf("Current backend = %s\nNew backend = %s\n\nOverwrite?", existingBackend.Type, remoteStateFromTerragruntConfig.Backend)
 		return shell.PromptUserForYesNo(prompt, terragruntOptions)
 	}
 
@@ -113,7 +116,20 @@ func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remote
 	}
 
 	if !reflect.DeepEqual(existingBackend.Config, remoteStateFromTerragruntConfig.Config) {
-		prompt := fmt.Sprintf("WARNING: Terraform remote state is already configured for backend %s with config %v, but your Terragrunt configuration specifies config %v. Overwrite?", existingBackend.Type, existingBackend.Config, remoteStateFromTerragruntConfig.Config)
+		getValues := func(config map[string]interface{}) string {
+			result := make([]string, 0, len(config))
+			for key := range config {
+				result = append(result, key)
+			}
+			sort.Strings(result)
+			for i, key := range result {
+				result[i] = fmt.Sprint(key, "=", config[key])
+			}
+			return strings.Join(result, "\n\t")
+		}
+
+		terragruntOptions.Logger.Warningf("Terraform remote state is already configured for backend %s", existingBackend.Type)
+		prompt := fmt.Sprintf("\n    Existing config:\n\t%v\n\n    New config:\n\t%v\n\nOverwrite?", getValues(existingBackend.Config), getValues(remoteStateFromTerragruntConfig.Config))
 		return shell.PromptUserForYesNo(prompt, terragruntOptions)
 	}
 
