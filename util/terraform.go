@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -129,17 +130,22 @@ func MarshalHCLVars(value interface{}, indent int) []byte {
 			}
 			for _, key := range keys {
 				buffer.WriteString(strings.Repeat(" ", indent*2))
-				buffer.WriteString(key)
+				if identifierRegex.MatchString(key) {
+					buffer.WriteString(key)
+				} else {
+					// The identifier contains characters that may be considered invalid, we have to quote it
+					buffer.WriteString(fmt.Sprintf("%q", key))
+				}
 				buffer.WriteString(" = ")
 				buffer.Write(MarshalHCLVars(value[key], indent+1))
 				buffer.WriteString("\n")
 			}
+
 			if indent > 0 {
 				buffer.WriteString(strings.Repeat(" ", (indent-1)*2))
 				buffer.WriteString("}")
 			}
 		}
-
 	default:
 		fmt.Printf("Unknown type %T %v : %v\n", value, typ.Kind(), value)
 		buffer.WriteString(fmt.Sprintf("%v", value))
@@ -147,6 +153,8 @@ func MarshalHCLVars(value interface{}, indent int) []byte {
 
 	return buffer.Bytes()
 }
+
+var identifierRegex = regexp.MustCompile(`^[A-za-z][\w-]*$`)
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)
 func getTerraformFiles(folder string) []string {
