@@ -48,7 +48,6 @@ func ResolveTerraformModules(terragruntConfigPaths []string, terragruntOptions *
 	if err != nil {
 		return []*TerraformModule{}, err
 	}
-
 	return crosslinkDependencies(mergeMaps(modules, externalDependencies), canonicalTerragruntConfigPaths)
 }
 
@@ -63,7 +62,9 @@ func resolveModules(canonicalTerragruntConfigPaths []string, terragruntOptions *
 		if err != nil {
 			return moduleMap, err
 		}
-		moduleMap[module.Path] = module
+		if module != nil {
+			moduleMap[module.Path] = module
+		}
 	}
 
 	return moduleMap, nil
@@ -82,6 +83,16 @@ func resolveTerraformModule(terragruntConfigPath string, terragruntOptions *opti
 	terragruntConfig, err := config.ParseConfigFile(opts, config.IncludeConfig{Path: terragruntConfigPath})
 	if err != nil {
 		return nil, err
+	}
+
+	// Fix for https://github.com/gruntwork-io/terragrunt/issues/208
+	matches, err := filepath.Glob(filepath.Join(filepath.Dir(terragruntConfigPath), "*.tf"))
+	if err != nil {
+		return nil, err
+	}
+	if (terragruntConfig.Terraform == nil || terragruntConfig.Terraform.Source == "") && matches == nil {
+		terragruntOptions.Logger.Printf("Module %s does not have an associated terraform configuration and will be skipped.", filepath.Dir(terragruntConfigPath))
+		return nil, nil
 	}
 
 	return &TerraformModule{Path: modulePath, Config: *terragruntConfig, TerragruntOptions: opts}, nil
