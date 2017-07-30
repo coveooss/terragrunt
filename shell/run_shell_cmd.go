@@ -52,7 +52,11 @@ func RunShellCommandExpandArgs(terragruntOptions *options.TerragruntOptions, com
 }
 
 func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bool, command string, args ...string) error {
-	terragruntOptions.Logger.Infof("Running command: %s %s", command, strings.Join(args, " "))
+	logger := terragruntOptions.Logger.Notice
+	if terragruntOptions.Writer != os.Stdout {
+		logger = terragruntOptions.Logger.Info
+	}
+	logger("Running command:", command, strings.Join(args, " "))
 
 	if expandArgs {
 		args = util.ExpandArguments(args, terragruntOptions.WorkingDir)

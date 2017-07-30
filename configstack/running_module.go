@@ -185,7 +185,7 @@ func (module *runningModule) runModuleWhenReady() {
 // Wait for all of this modules dependencies to finish executing. Return an error if any of those dependencies complete
 // with an error. Return immediately if this module has no dependencies.
 func (module *runningModule) waitForDependencies() error {
-	module.Module.TerragruntOptions.Logger.Noticef("Module %s must wait for %d dependencies to finish", module.Module.Path, len(module.Dependencies))
+	module.Module.TerragruntOptions.Logger.Debugf("Module %s must wait for %d dependencies to finish", module.Module.Path, len(module.Dependencies))
 	for len(module.Dependencies) > 0 {
 		doneDependency := <-module.DependencyDone
 		delete(module.Dependencies, doneDependency.Module.Path)
@@ -198,7 +198,7 @@ func (module *runningModule) waitForDependencies() error {
 				return DependencyFinishedWithError{module.Module, doneDependency.Module, doneDependency.Err}
 			}
 		} else {
-			module.Module.TerragruntOptions.Logger.Noticef("Dependency %s of module %s just finished successfully. Module %s must wait on %d more dependencies.", doneDependency.Module.Path, module.Module.Path, module.Module.Path, len(module.Dependencies))
+			module.Module.TerragruntOptions.Logger.Debugf("Dependency %s of module %s just finished successfully. Module %s must wait on %d more dependencies.", doneDependency.Module.Path, module.Module.Path, module.Module.Path, len(module.Dependencies))
 		}
 	}
 
@@ -210,10 +210,10 @@ func (module *runningModule) runNow() error {
 	module.Status = Running
 
 	if module.Module.AssumeAlreadyApplied {
-		module.Module.TerragruntOptions.Logger.Infof("Assuming module %s has already been applied and skipping it", module.Module.Path)
+		module.Module.TerragruntOptions.Logger.Debugf("Assuming module %s has already been applied and skipping it", module.Module.Path)
 		return nil
 	} else {
-		module.Module.TerragruntOptions.Logger.Noticef("Running module %s now", module.Module.Path)
+		module.Module.TerragruntOptions.Logger.Debugf("Running module %s now", module.Module.Path)
 		return module.Module.TerragruntOptions.RunTerragrunt(module.Module.TerragruntOptions)
 	}
 }
@@ -223,7 +223,7 @@ var separator = strings.Repeat("-", 132)
 // Record that a module has finished executing and notify all of this module's dependencies
 func (module *runningModule) moduleFinished(moduleErr error) {
 	status := "successfully!"
-	logFinish := module.Module.TerragruntOptions.Logger.Noticef
+	logFinish := module.Module.TerragruntOptions.Logger.Infof
 	if moduleErr != nil {
 		status = fmt.Sprintf("with an error: %v", moduleErr)
 		logFinish = module.Module.TerragruntOptions.Logger.Errorf
@@ -238,7 +238,7 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 	}
 	out := module.OutStream.String()
 	if out == "" {
-		module.Module.TerragruntOptions.Logger.Notice("No output")
+		module.Module.TerragruntOptions.Logger.Info("No output")
 	} else {
 		fmt.Fprintf(module.Writer, "%s\n%v\n\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path), module.OutStream.String())
 	}

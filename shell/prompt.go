@@ -18,7 +18,7 @@ func PromptUserForInput(prompt string, terragruntOptions *options.TerragruntOpti
 	fmt.Print(prompt)
 
 	if terragruntOptions.NonInteractive {
-		terragruntOptions.Logger.Notice("\nThe non-interactive flag is set to true, so assuming 'yes' for all prompts")
+		terragruntOptions.Logger.Info("\nThe non-interactive flag is set to true, so assuming 'yes' for all prompts")
 		return "yes", nil
 	}
 

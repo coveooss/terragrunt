@@ -113,7 +113,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 
-	err = util.InitLogging(loggingLevel, logging.INFO, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
+	err = util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	return opts, err
 }
 
@@ -152,7 +152,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
 			file = config.SubstituteVars(file, terragruntOptions)
 			importTfVarFile(terragruntOptions, file, options.VarFile)
-			terragruntOptions.Logger.Infof("Importing %s", file)
+			terragruntOptions.Logger.Info("Importing", file)
 			if currentCommandIncluded {
 				out = append(out, fmt.Sprintf("-var-file=%s", file))
 			}
@@ -166,10 +166,10 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 				if currentCommandIncluded {
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
 				}
-				terragruntOptions.Logger.Infof("Importing %s", file)
+				terragruntOptions.Logger.Info("Importing", file)
 				importTfVarFile(terragruntOptions, file, options.VarFile)
 			} else if currentCommandIncluded {
-				terragruntOptions.Logger.Infof("Skipping var-file %s as it does not exist", file)
+				terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
 			}
 		}
 	}
@@ -181,7 +181,7 @@ func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, env
 	const tfPrefix = "TF_VAR_"
 	for i := 0; i < len(environment); i++ {
 		if key, value, err := splitVariable(environment[i]); err != nil {
-			terragruntOptions.Logger.Warningf("Environment variable ignored: %v", err)
+			terragruntOptions.Logger.Warning("Environment variable ignored:", environment[i], err)
 		} else {
 			terragruntOptions.Env[key] = value
 			// All environment variables starting with TF_ENV_ are considered as variables
@@ -227,7 +227,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 	for i := 0; i < len(args); i++ {
 		if args[i] == varArg && i+1 < len(args) {
 			if key, value, err := splitVariable(args[i+1]); err != nil {
-				terragruntOptions.Logger.Warningf("-var ignored: %v", err)
+				terragruntOptions.Logger.Warning("-var ignored:", args[i+1], err)
 			} else {
 				terragruntOptions.Variables.SetValue(key, value, options.VarParameterExplicit)
 			}

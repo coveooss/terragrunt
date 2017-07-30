@@ -2,12 +2,13 @@ package configstack
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/shell"
-	"github.com/gruntwork-io/terragrunt/util"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/gruntwork-io/terragrunt/shell"
+	"github.com/gruntwork-io/terragrunt/util"
 )
 
 // The returned information for each module
@@ -104,8 +105,7 @@ func warnAboutMissingDependencies(module TerraformModule, output string) {
 		if len(module.Dependencies) > 0 {
 			dependenciesMsg = fmt.Sprintf(" contains dependencies to %v and", module.Config.Dependencies.Paths)
 		}
-		module.TerragruntOptions.Logger.Warningf("%v%v refers to remote state "+
-			"you may have to apply your changes in the dependencies prior running terragrunt plan-all.\n",
+		module.TerragruntOptions.Logger.Warningf("%v%v refers to remote state, you may have to apply your changes in the dependencies prior running terragrunt plan-all.\n",
 			module.Path,
 			dependenciesMsg,
 		)

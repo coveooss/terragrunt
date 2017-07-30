@@ -50,12 +50,12 @@ func downloadTerraformSource(source *TerraformSource, terragruntOptions *options
 		return err
 	}
 
-	terragruntOptions.Logger.Noticef("Copying files from %s into %s", terragruntOptions.WorkingDir, source.WorkingDir)
+	terragruntOptions.Logger.Debugf("Copying files from %s into %s", terragruntOptions.WorkingDir, source.WorkingDir)
 	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, source.WorkingDir); err != nil {
 		return err
 	}
 
-	terragruntOptions.Logger.Noticef("Setting working directory to %s", source.WorkingDir)
+	terragruntOptions.Logger.Info("Setting working directory to", source.WorkingDir)
 	terragruntOptions.WorkingDir = source.WorkingDir
 
 	return nil
@@ -76,7 +76,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 	}
 
 	if alreadyLatest {
-		terragruntOptions.Logger.Infof("Terraform files in %s are up to date. Will not download again.", terraformSource.WorkingDir)
+		terragruntOptions.Logger.Debugf("Terraform files in %s are up to date. Will not download again.", terraformSource.WorkingDir)
 		return nil
 	}
 
@@ -84,7 +84,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 		return err
 	}
 
-	terragruntOptions.Logger.Noticef("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
+	terragruntOptions.Logger.Infof("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
 	if err := module.GetCopy(terraformSource.DownloadDir, terraformSource.CanonicalSourceURL.String()); err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func splitSourceUrl(sourceUrl *url.URL, terragruntOptions *options.TerragruntOpt
 		sourceUrlModifiedPath.Path = pathSplitOnDoubleSlash[0]
 		return sourceUrlModifiedPath, pathSplitOnDoubleSlash[1], nil
 	} else {
-		terragruntOptions.Logger.Noticef("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
+		terragruntOptions.Logger.Debugf("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
 		return sourceUrl, "", nil
 	}
 }
@@ -312,7 +312,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 		return nil
 	}
 
-	terragruntOptions.Logger.Infof("Cleaning up existing *.tf files in %s", path)
+	terragruntOptions.Logger.Info("Cleaning up existing *.tf files in", path)
 
 	files, err := zglob.Glob(util.JoinPath(path, "**/*.tf"))
 	if err != nil {

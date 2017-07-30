@@ -2,6 +2,8 @@ package remote
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
@@ -10,7 +12,6 @@ import (
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/mitchellh/mapstructure"
-	"time"
 )
 
 // A representation of the configuration options available for S3 remote state
@@ -158,14 +159,14 @@ func WaitUntilS3BucketExists(s3Client *s3.S3, config *RemoteStateConfigS3, terra
 
 // Create the S3 bucket specified in the given config
 func CreateS3Bucket(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Infof("Creating S3 bucket %s", config.Bucket)
+	terragruntOptions.Logger.Notice("Creating S3 bucket", config.Bucket)
 	_, err := s3Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(config.Bucket)})
 	return errors.WithStackTrace(err)
 }
 
 // Enable versioning for the S3 bucket specified in the given config
 func EnableVersioningForS3Bucket(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Noticef("Enabling versioning on S3 bucket %s", config.Bucket)
+	terragruntOptions.Logger.Notice("Enabling versioning on S3 bucket", config.Bucket)
 	input := s3.PutBucketVersioningInput{
 		Bucket:                  aws.String(config.Bucket),
 		VersioningConfiguration: &s3.VersioningConfiguration{Status: aws.String(s3.BucketVersioningStatusEnabled)},

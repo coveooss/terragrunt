@@ -216,7 +216,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
-	if conf.Terraform != nil && conf.Terraform.ExtraArgs != nil && len(conf.Terraform.ExtraArgs) > 0 {
+	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
 		if util.ListContainsElement(TERRAFORM_COMMANDS_WITH_SUBCOMMAND, terragruntOptions.TerraformCliArgs[0]) {
 			commandLength = 2
@@ -273,7 +273,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
 	if conf.AssumeRole != nil && *conf.AssumeRole != "" {
-		terragruntOptions.Logger.Noticef("Assuming role %s", *conf.AssumeRole)
+		terragruntOptions.Logger.Notice("Assuming role", *conf.AssumeRole)
 		if err := setRoleEnvironmentVariables(terragruntOptions, *conf.AssumeRole); err != nil {
 			return err
 		}
@@ -338,7 +338,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// terraform init if it was necessary, and the below RunTerraformCommand would end up calling init without
 	// the correct remote state arguments, which is confusing.
 	if terragruntOptions.TerraformCliArgs[0] == CMD_INIT {
-		terragruntOptions.Logger.Info("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
+		terragruntOptions.Logger.Warning("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
 		return nil
 	}
 
@@ -487,7 +487,7 @@ func destroyAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Noticef("%s", stack.String())
+	terragruntOptions.Logger.Notice(stack)
 	shouldDestroyAll, err := shell.PromptUserForYesNo("WARNING: Are you sure you want to run `terragrunt destroy` in each folder of the stack described above? There is no undo!", terragruntOptions)
 	if err != nil {
 		return err
@@ -508,7 +508,7 @@ func outputAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Notice(stack.String())
+	terragruntOptions.Logger.Notice(stack)
 	return stack.Output(terragruntOptions)
 }
 

@@ -28,7 +28,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 
 	for _, importer := range importers {
 		if len(importer.OS) > 0 && !util.ListContainsElement(importer.OS, runtime.GOOS) {
-			terragruntOptions.Logger.Infof("Importer %s skipped, executed only on %v", importer.Name, importer.OS)
+			terragruntOptions.Logger.Debugf("Importer %s skipped, executed only on %v", importer.Name, importer.OS)
 			continue
 		}
 
@@ -89,7 +89,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 				for i, file := range files {
 					fileBases[i] = filepath.Base(file)
 				}
-				terragruntOptions.Logger.Noticef("%s: Copy %s to %s", importer.Name, strings.Join(fileBases, ", "), folderName)
+				terragruntOptions.Logger.Infof("%s: Copy %s to %s", importer.Name, strings.Join(fileBases, ", "), folderName)
 			} else if importer.Required {
 				return fmt.Errorf("Unable to import required file %s", pattern)
 			}
@@ -104,20 +104,20 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			} else if importer.Required {
 				return fmt.Errorf("Unable to import required file %s", source)
 			} else if !isModule {
-				terragruntOptions.Logger.Warningf("Skipping copy of %s to %s, the source is not found", source, folderName)
+				terragruntOptions.Logger.Debugf("Skipping copy of %s to %s, the source is not found", source, folderName)
 			}
 		}
 
 		for _, source := range importer.CopyAndRenameFiles {
 			if util.FileExists(source.Source) {
-				terragruntOptions.Logger.Noticef("Copy file %s to %s/%v", filepath.Base(source.Source), folderName, source.Target)
+				terragruntOptions.Logger.Infof("Copy file %s to %s/%v", filepath.Base(source.Source), folderName, source.Target)
 				if err := copy(source.Source, source.Target); err != nil {
 					return err
 				}
 			} else if importer.Required {
 				return fmt.Errorf("Unable to import required file %s", source.Source)
 			} else if !isModule {
-				terragruntOptions.Logger.Warningf("Skipping copy of %s to %s, the source is not found", source, folderName)
+				terragruntOptions.Logger.Debugf("Skipping copy of %s to %s, the source is not found", source, folderName)
 			}
 		}
 	}
@@ -133,12 +133,12 @@ func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook)
 			continue
 		}
 		if len(hook.OS) > 0 && !util.ListContainsElement(hook.OS, runtime.GOOS) {
-			terragruntOptions.Logger.Infof("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
+			terragruntOptions.Logger.Debugf("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
 			continue
 		}
 		hook.Command = strings.TrimSpace(hook.Command)
 		if len(hook.Command) == 0 {
-			terragruntOptions.Logger.Infof("Hook %s skipped, no command to execute", hook.Name)
+			terragruntOptions.Logger.Debugf("Hook %s skipped, no command to execute", hook.Name)
 			continue
 		}
 		cmd := shell.RunShellCommand
@@ -173,7 +173,7 @@ func getModulesFolders(terragruntOptions *options.TerragruntOptions) ([]string, 
 			return nil, err
 		}
 		if !stat.IsDir() {
-			terragruntOptions.Logger.Warningf("Unexpected file in .terraform/modules: %s", module)
+			terragruntOptions.Logger.Warning("Unexpected file in .terraform/modules:", module)
 			continue
 		}
 

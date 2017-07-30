@@ -469,7 +469,7 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 // 	for _, extra := range original {
 // 		for i, existing := range result {
 // 			if existing.Name == extra.Name {
-// 				terragruntOptions.Logger.Infof("Skipping extra_arguments %v as it is overridden in the current config", extra.Name)
+// 				terragruntOptions.Logger.Debugf("Skipping extra_arguments %v as it is overridden in the current config", extra.Name)
 // 				// For extra args, we want to keep the values specified in the child and put them after
 // 				// the parent ones, so if we encounter a duplicate, we just overwrite it.
 // 				result[i] = extra
@@ -488,7 +488,7 @@ addHook:
 	for _, hook := range original {
 		for i, existing := range result {
 			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Infof("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				terragruntOptions.Logger.Debug("Skipping Hook %v as it is overridden in the current config", hook.Name)
 				result[i] = hook
 				continue addHook
 			}
@@ -504,7 +504,7 @@ addHook:
 	for _, hook := range *newHooks {
 		for _, existing := range original {
 			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Infof("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				terragruntOptions.Logger.Debug("Skipping Hook %v as it is overridden in the current config", hook.Name)
 				continue addHook
 			}
 		}
@@ -519,7 +519,7 @@ add:
 	for _, command := range original {
 		for i, existing := range result {
 			if existing.Name == command.Name {
-				terragruntOptions.Logger.Infof("Skipping Extra Command %v as it is overridden in the current config", command.Name)
+				terragruntOptions.Logger.Debugf("Skipping Extra Command %v as it is overridden in the current config", command.Name)
 				result[i] = command
 				continue add
 			}
@@ -536,7 +536,7 @@ addImport:
 	for _, importer := range original {
 		for i, existing := range result {
 			if existing.Name == importer.Name {
-				terragruntOptions.Logger.Infof("Skipping ImportFiles %v as it is overridden in the current config", importer.Name)
+				terragruntOptions.Logger.Debugf("Skipping ImportFiles %v as it is overridden in the current config", importer.Name)
 				result[i] = importer
 				continue addImport
 			}
@@ -563,7 +563,7 @@ func mergeExtraArgs(terragruntOptions *options.TerragruntOptions, childExtraArgs
 		if parentExtraArgsWithSameName != -1 {
 			// If the parent contains an extra_arguments with the same name as the child,
 			// then override the parent's extra_arguments with the child's.
-			terragruntOptions.Logger.Infof("extra_arguments '%v' from child overriding parent", child.Name)
+			terragruntOptions.Logger.Debugf("extra_arguments '%v' from child overriding parent", child.Name)
 			result[parentExtraArgsWithSameName] = child
 		} else {
 			// If the parent does not contain an extra_arguments with the same name as the child
