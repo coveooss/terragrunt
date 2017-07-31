@@ -36,6 +36,16 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			continue
 		}
 
+		if importer.Prefix == nil {
+			prefix := importer.Name + "_"
+			importer.Prefix = &prefix
+		}
+
+		if importer.Required == nil {
+			def := true
+			importer.Required = &def
+		}
+
 		var sourceFolder string
 		if importer.Source != "" {
 			var err error
@@ -90,7 +100,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 					fileBases[i] = filepath.Base(file)
 				}
 				terragruntOptions.Logger.Infof("%s: Copy %s to %s", importer.Name, strings.Join(fileBases, ", "), folderName)
-			} else if importer.Required {
+			} else if *importer.Required {
 				return fmt.Errorf("Unable to import required file %s", pattern)
 			}
 			sourceFiles = append(sourceFiles, files...)
@@ -98,10 +108,10 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 
 		for _, source := range sourceFiles {
 			if util.FileExists(source) {
-				if err := copy(source, filepath.Base(source)); err != nil {
+				if err := copy(source, *importer.Prefix+filepath.Base(source)); err != nil {
 					return err
 				}
-			} else if importer.Required {
+			} else if *importer.Required {
 				return fmt.Errorf("Unable to import required file %s", source)
 			} else if !isModule {
 				terragruntOptions.Logger.Debugf("Skipping copy of %s to %s, the source is not found", source, folderName)
@@ -114,7 +124,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 				if err := copy(source.Source, source.Target); err != nil {
 					return err
 				}
-			} else if importer.Required {
+			} else if *importer.Required {
 				return fmt.Errorf("Unable to import required file %s", source.Source)
 			} else if !isModule {
 				terragruntOptions.Logger.Debugf("Skipping copy of %s to %s, the source is not found", source, folderName)
