@@ -212,10 +212,11 @@ type ImportConfig struct {
 	Source             string          `hcl:"source"`
 	Files              []string        `hcl:"files"`
 	CopyAndRenameFiles []CopyAndRename `hcl:"copy_and_rename"`
-	Required           bool            `hcl:"required,omitempty"`
+	Required           *bool           `hcl:"required,omitempty"`
 	ImportIntoModules  bool            `hcl:"import_into_modules"`
 	FileMode           *int            `hcl:"file_mode, omitempty"`
 	Target             string          `hcl:"target, omitempty"`
+	Prefix             *string         `hcl:"prefix, omitempty"`
 	OS                 []string        `hcl:"os,omitempty"`
 }
 
