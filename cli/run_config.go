@@ -155,7 +155,7 @@ func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook)
 		if hook.ExpandArgs {
 			cmd = shell.RunShellCommandExpandArgs
 		}
-		if err := cmd(terragruntOptions, hook.Command, hook.Arguments...); err != nil {
+		if err := cmd(terragruntOptions, hook.Command, hook.Arguments...); err != nil && !hook.IgnoreError {
 			return fmt.Errorf("%v while running command %s: %s %s", err, hook.Name, hook.Command, strings.Join(hook.Arguments, " "))
 		}
 	}
