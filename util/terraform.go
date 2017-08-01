@@ -57,15 +57,19 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 }
 
 // LoadTfVars returns a map of the variables defined in the tfvars file
-func LoadTfVars(path string) (map[string]interface{}, error) {
-	variables := map[string]interface{}{}
-
+func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return variables, err
+		return nil, err
 	}
 
-	err = hcl.Unmarshal(bytes, &variables)
+	return LoadVariables(string(bytes))
+}
+
+// LoadVars returns a map of the variables defined in the content provider
+func LoadVariables(content string) (map[string]interface{}, error) {
+	variables := map[string]interface{}{}
+	err := hcl.Unmarshal([]byte(content), &variables)
 	return FlattenHCL(variables), err
 }
 

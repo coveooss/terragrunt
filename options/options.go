@@ -199,6 +199,35 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 	return
 }
 
+// ImportVariablesFromFile loads variables from the file indicated by path
+func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, origin VariableSource) {
+	vars, err := util.LoadVariablesFromFile(path)
+	if err != nil {
+		terragruntOptions.Logger.Errorf("Unable to import variables from %s, %v", path, err)
+	}
+	terragruntOptions.importVariables(vars, origin)
+}
+
+// ImportVariables load variables from the content, source indicates the path from where the content has been loaded
+func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource) {
+	vars, err := util.LoadVariables(content)
+	if err != nil {
+		terragruntOptions.Logger.Errorf("Unable to import variables from %s, %v", source, err)
+	}
+	terragruntOptions.importVariables(vars, origin)
+}
+
+// ImportVariables load variables from the content, source indicates the path from where the content has been loaded
+func (terragruntOptions *TerragruntOptions) importVariables(vars map[string]interface{}, origin VariableSource) {
+	for key, value := range vars {
+		if key == "terragrunt" {
+			// We do not import the terragrunt variable
+			continue
+		}
+		terragruntOptions.Variables.SetValue(key, value, origin)
+	}
+}
+
 // AddDeferredSaveVariables - Add a path where to save the variable list
 func (terragruntOptions *TerragruntOptions) AddDeferredSaveVariables(filename string) {
 	if terragruntOptions.deferredSaveList == nil {
@@ -226,29 +255,36 @@ func (terragruntOptions *TerragruntOptions) EnvironmentVariables() (result []str
 	return
 }
 
-// Custom types
+// VariableList defines the list of all variables defined during the processing of config files
 type VariableList map[string]Variable
 
-func (this VariableList) SetValue(key string, value interface{}, source VariableSource) {
-	if this[key].Source <= source {
+// SetValue overwrites the value in the variables map only if the source is more significant than the original value
+func (variables VariableList) SetValue(key string, value interface{}, source VariableSource) {
+	if variables[key].Source <= source {
 		// We only override value if the source has less or equal precedence than the previous value
-		this[key] = Variable{source, value}
+		if source == ConfigVarFile && variables[key].Source == ConfigVarFile {
+			// Values defined in the lower config file have precedence to those defined in parents include
+			return
+		}
+		variables[key] = Variable{source, value}
 	}
 }
 
 type VariableSource byte
 
-// Value and origin of a variable (origin is important due to the precedence of the definition)
+// Variable defines value and origin of a variable (origin is important due to the precedence of the definition)
 // i.e. A value specified by -var has precedence over value defined in -var-file
 type Variable struct {
 	Source VariableSource
 	Value  interface{}
 }
 
+// The order indicates precedence (latest have the highest priority)
 const (
 	UndefinedSource VariableSource = iota
 	Default
 	Environment
+	ConfigVarFile
 	VarFile
 	VarFileExplicit
 	VarParameter
@@ -256,5 +292,4 @@ const (
 )
 
 // Custom error types
-
 var RunTerragruntCommandNotSet = fmt.Errorf("The RunTerragrunt option has not been set on this TerragruntOptions object")

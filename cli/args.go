@@ -151,7 +151,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
 		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
 			file = config.SubstituteVars(file, terragruntOptions)
-			importTfVarFile(terragruntOptions, file, options.VarFile)
+			terragruntOptions.ImportVariablesFromFile(file, options.VarFile)
 			terragruntOptions.Logger.Info("Importing", file)
 			if currentCommandIncluded {
 				out = append(out, fmt.Sprintf("-var-file=%s", file))
@@ -167,7 +167,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
 				}
 				terragruntOptions.Logger.Info("Importing", file)
-				importTfVarFile(terragruntOptions, file, options.VarFile)
+				terragruntOptions.ImportVariablesFromFile(file, options.VarFile)
 			} else if currentCommandIncluded {
 				terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
 			}
@@ -203,16 +203,6 @@ func splitVariable(str string) (key, value string, err error) {
 	return
 }
 
-func importTfVarFile(terragruntOptions *options.TerragruntOptions, path string, source options.VariableSource) {
-	vars, err := util.LoadTfVars(path)
-	if err != nil {
-		terragruntOptions.Logger.Errorf("Unable to read file %s, %v", path, err)
-	}
-	for key, value := range vars {
-		terragruntOptions.Variables.SetValue(key, value, source)
-	}
-}
-
 func filterVarsAndVarFiles(command string, terragruntOptions *options.TerragruntOptions, args []string) []string {
 	const varFile = "-var-file="
 	const varArg = "-var"
@@ -220,7 +210,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], varFile) {
 			path := args[i][len(varFile):]
-			importTfVarFile(terragruntOptions, path, options.VarFileExplicit)
+			terragruntOptions.ImportVariablesFromFile(path, options.VarFileExplicit)
 		}
 	}
 

@@ -162,7 +162,7 @@ func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook)
 	return nil
 }
 
-func importVariables(terragruntOptions *options.TerragruntOptions, folder string) error {
+func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder string) error {
 	// Retrieve the default variables from the terraform files
 	variables, err := util.LoadDefaultValues(folder)
 	if err != nil {

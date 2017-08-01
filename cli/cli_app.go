@@ -263,7 +263,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Retrieve the default variables from the terraform files
-	err = importVariables(terragruntOptions, terragruntOptions.WorkingDir)
+	err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir)
 	if err != nil {
 		return err
 	}
