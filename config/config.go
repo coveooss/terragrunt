@@ -495,7 +495,7 @@ addHook:
 	for _, hook := range original {
 		for i, existing := range result {
 			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Debug("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				terragruntOptions.Logger.Debugf("Skipping Hook %v as it is overridden in the current config", hook.Name)
 				result[i] = hook
 				continue addHook
 			}
@@ -511,7 +511,7 @@ addHook:
 	for _, hook := range *newHooks {
 		for _, existing := range original {
 			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Debug("Skipping Hook %v as it is overridden in the current config", hook.Name)
+				terragruntOptions.Logger.Debugf("Skipping Hook %v as it is overridden in the current config", hook.Name)
 				continue addHook
 			}
 		}
