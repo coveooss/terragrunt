@@ -229,7 +229,15 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 		match = true
 		matches := HELPER_VAR_REGEX.FindStringSubmatch(str)
 		if found, ok := context.options.Variables[matches[1]]; ok {
-			return fmt.Sprint(found.Value)
+			result := fmt.Sprint(found.Value)
+			if strings.Contains(result, "#{") {
+				delayedVar := strings.Replace(result, "#{", "${", 1)
+				if resolvedValue, ok := context.resolveTerragruntVars(delayedVar); ok {
+					context.options.Variables.SetValue(matches[1], resolvedValue, found.Source)
+					result = resolvedValue
+				}
+			}
+			return result
 		}
 		if context.ErrorOnUndefined() {
 			if !warningDone[matches[0]] {
