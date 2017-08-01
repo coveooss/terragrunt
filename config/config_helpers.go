@@ -329,10 +329,10 @@ func (context *resolveContext) getDefaultValue() (interface{}, error) {
 		return "", InvalidDefaultParameters(context.parameters)
 	}
 
-	if parameters[0] != "" && !strings.HasPrefix(parameters[0], "${") {
-		return parameters[0], nil
+	if strings.HasPrefix(parameters[0], "${") {
+		return parameters[1], nil
 	}
-	return parameters[1], nil
+	return parameters[0], nil
 }
 
 type InvalidDefaultParameters string
