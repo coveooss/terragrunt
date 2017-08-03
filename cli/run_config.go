@@ -40,7 +40,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 				return err
 			}
 		}
-
+		
 		var sourceFiles []string
 		for _, pattern := range importer.Files {
 			if sourceFolder != "" {
