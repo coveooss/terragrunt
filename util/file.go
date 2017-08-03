@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -176,7 +177,7 @@ func GetSource(source string, logger *logging.Logger) (string, error) {
 
 			err = module.GetCopy(cacheDir, path)
 			if err != nil {
-				return "", err
+				return "", fmt.Errorf("%v while copying source from %s", err, path)
 			}
 
 			aws_helper.SaveS3Status(source, cacheDir)

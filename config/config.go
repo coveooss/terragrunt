@@ -199,6 +199,7 @@ type ExtraCommand struct {
 	OnCommands []string `hcl:"on_commands,omitempty"`
 	OS         []string `hcl:"os,omitempty"`
 	UseState   *bool    `hcl:"use_state,omitempty"`
+	Aliases    []string `hcl:"aliases,omitempty"`
 	Arguments  []string `hcl:"arguments,omitempty"`
 }
 

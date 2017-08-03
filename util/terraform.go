@@ -84,7 +84,7 @@ func MarshalHCLVars(value interface{}, indent int) []byte {
 	switch typ.Kind() {
 	case reflect.String:
 		buffer.WriteByte('"')
-		buffer.WriteString(val.String())
+		buffer.WriteString(strings.Replace(val.String(), "\\", "\\\\", -1))
 		buffer.WriteByte('"')
 
 	case reflect.Int:
