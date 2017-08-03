@@ -5,11 +5,17 @@ go:
 sudo: false
 
 before_install:
-  go get github.com/Masterminds/glide;
-  go install github.com/Masterminds/glide;
-  cd ../..;
-  mv coveo/terragrunt gruntwork-io/terragrunt;
-  cd gruntwork-io/terragrunt;
+- ls -l
+- ls -l ..
+- ls -l ../..
+- if [ ${TRAVIS_TAG::1} = v ];
+  then
+    go get github.com/Masterminds/glide;
+    go install github.com/Masterminds/glide;
+    cd ../..;
+    mv coveo/terragrunt gruntwork-io/terragrunt;
+    cd gruntwork-io/terragrunt;
+  fi
 
 install:
 - if [ ${TRAVIS_TAG::1} = v ];
