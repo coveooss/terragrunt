@@ -7,26 +7,22 @@ sudo: false
 before_install:
 - if [ ${TRAVIS_TAG::1} = v ];
   then
-    go get github.com/Masterminds/glide;
-    go install github.com/Masterminds/glide;
-    cd ../..;
-    mv coveo gruntwork-io;
-    cd gruntwork-io/terragrunt;
+    go get github.com/Masterminds/glide &&
+    go install github.com/Masterminds/glide &&
+    cd ../.. &&
+    mv coveo gruntwork-io &&
+    cd gruntwork-io/terragrunt &&
   fi
 
 install:
 - if [ ${TRAVIS_TAG::1} = v ];
   then
-    glide up;
+    cp glide.lock glide.original &&
+    glide up &&
+    mv glide.original glide.lock;
   fi
 
 script:
-- if [ ${TRAVIS_TAG::1} = v ];
-  then
-    go test;
-  fi
-
-after_success:
 - if [ ${TRAVIS_TAG::1} = v ];
   then
     curl -sL https://git.io/goreleaser | bash;
