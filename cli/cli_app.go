@@ -367,7 +367,12 @@ func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *confi
 
 		if commands.Name == cmd && !util.ListContainsElement(commands.Commands, cmd) {
 			// The named command is not in the list of commands but match the commands name, in that case,
-			// we consider tha ame acts as an alias for the first command)
+			// we consider that the name acts as an alias for the first command)
+			cmd = commands.Commands[0]
+		}
+
+		if util.ListContainsElement(commands.Aliases, cmd) {
+			// The named command is in the list of aliases, so we map it to the first command
 			cmd = commands.Commands[0]
 		}
 
