@@ -11,7 +11,7 @@ before_install:
     go install github.com/Masterminds/glide &&
     cd ../.. &&
     mv coveo gruntwork-io &&
-    cd gruntwork-io/terragrunt &&
+    cd gruntwork-io/terragrunt;
   fi
 
 install:
