@@ -1,0 +1,33 @@
+language: go
+go:
+- 1.8.x
+
+sudo: false
+
+before_install:
+  go get github.com/Masterminds/glide
+  go install github.com/Masterminds/glide
+  cd ../..
+  mv coveo/terragrunt gruntwork-io/terragrunt
+  cd gruntwork-io/terragrunt
+
+install:
+- if [ ${TRAVIS_TAG::1} = v ];
+  then
+    glide up
+  fi
+
+script:
+- if [ ${TRAVIS_TAG::1} = v ];
+  then
+    go test
+  fi
+
+after_success:
+- if [ ${TRAVIS_TAG::1} = v ];
+  then
+    curl -sL https://git.io/goreleaser | bash;
+  fi
+
+notifications:
+  email: false
