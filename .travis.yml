@@ -17,9 +17,7 @@ before_install:
 install:
 - if [ ${TRAVIS_TAG::1} = v ];
   then
-    cp glide.lock glide.original &&
-    glide up &&
-    mv glide.original glide.lock;
+    glide install;
   fi
 
 script:
