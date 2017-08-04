@@ -1,7 +1,7 @@
 # Build customization
 builds:
   - binary: terragrunt
-    ldflags: -s -w -X main.VERSION={{.Version}}_Coveo
+    ldflags: -s -w -X main.VERSION={{.Version}}
     goos:
       - windows
       - darwin
