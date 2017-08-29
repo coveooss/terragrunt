@@ -74,7 +74,6 @@ var TERRAFORM_COMMANDS_THAT_USE_STATE = []string{
 
 var TERRAFORM_COMMANDS_WITH_SUBCOMMAND = []string{
 	"debug",
-	"force-unlock",
 	"state",
 }
 
@@ -226,7 +225,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		var args []string
 		args = append(args, terragruntOptions.TerraformCliArgs[:commandLength]...)
 		args = append(args, filterTerraformExtraArgs(terragruntOptions, conf)...)
-		args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
+		if commandLength <= len(terragruntOptions.TerraformCliArgs) {
+			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
+		}
 		terragruntOptions.TerraformCliArgs = args
 	}
 
