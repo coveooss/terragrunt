@@ -313,16 +313,16 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Set the temporary script folder as the first item of the PATH
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
+	// Executing the pre-hooks commands if there are
+	if err = runHooks(terragruntOptions, conf.PreHooks); err != nil {
+		return err
+	}
+
 	// Configure remote state if required
 	if conf.RemoteState != nil {
 		if err := configureRemoteState(conf.RemoteState, terragruntOptions); err != nil {
 			return err
 		}
-	}
-
-	// Executing the pre-hooks commands if there are
-	if err = runHooks(terragruntOptions, conf.PreHooks); err != nil {
-		return err
 	}
 
 	defer func() {
