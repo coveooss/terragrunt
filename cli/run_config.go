@@ -54,7 +54,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 				return err
 			}
 		}
-		
+
 		// Check if the importer has a specific target folder
 		importerTarget := targetFolder
 		if importer.Target != "" {
