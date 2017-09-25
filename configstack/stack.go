@@ -51,6 +51,12 @@ func (stack *Stack) Output(terragruntOptions *options.TerragruntOptions) error {
 	return RunModules(stack.Modules)
 }
 
+// Get all the modules in the given stack in their specified order.
+func (stack *Stack) Get(terragruntOptions *options.TerragruntOptions) error {
+	stack.setTerraformCommand([]string{"get"})
+	return RunModules(stack.Modules)
+}
+
 // Return an error if there is a dependency cycle in the modules of this stack.
 func (stack *Stack) CheckForCycles() error {
 	return CheckForCycles(stack.Modules)

@@ -36,6 +36,7 @@ const CMD_PLAN_ALL = "plan-all"
 const CMD_APPLY_ALL = "apply-all"
 const CMD_DESTROY_ALL = "destroy-all"
 const CMD_OUTPUT_ALL = "output-all"
+const CMD_GET_ALL = "get-all"
 
 const CMD_INIT = "init"
 
@@ -45,7 +46,7 @@ const CMD_SPIN_UP = "spin-up"
 // CMD_TEAR_DOWN is deprecated.
 const CMD_TEAR_DOWN = "tear-down"
 
-var MULTI_MODULE_COMMANDS = []string{CMD_APPLY_ALL, CMD_DESTROY_ALL, CMD_OUTPUT_ALL, CMD_PLAN_ALL}
+var MULTI_MODULE_COMMANDS = []string{CMD_APPLY_ALL, CMD_DESTROY_ALL, CMD_OUTPUT_ALL, CMD_PLAN_ALL, CMD_GET_ALL}
 
 // DEPRECATED_COMMANDS is a map of deprecated commands to the commands that replace them.
 var DEPRECATED_COMMANDS = map[string]string{
@@ -95,6 +96,7 @@ COMMANDS:
    apply-all            Apply a 'stack' by running 'terragrunt apply' in each subfolder
    output-all           Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder
    destroy-all          Destroy a 'stack' by running 'terragrunt destroy' in each subfolder
+   get-all              Get all modules of a 'stack' by running 'terragrunt get' in each subfolder
    *                    Terragrunt forwards all other commands directly to Terraform
 
 GLOBAL OPTIONS:
@@ -406,6 +408,8 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 		return destroyAll(terragruntOptions)
 	case CMD_OUTPUT_ALL:
 		return outputAll(terragruntOptions)
+	case CMD_GET_ALL:
+		return getAll(terragruntOptions)
 	default:
 		return errors.WithStackTrace(UnrecognizedCommand(command))
 	}
@@ -516,6 +520,19 @@ func outputAll(terragruntOptions *options.TerragruntOptions) error {
 
 	terragruntOptions.Logger.Notice(stack)
 	return stack.Output(terragruntOptions)
+}
+
+// Get modules for an entire "stack" by running 'terragrunt get' in each subfolder, processing them in the right order
+// based on terraform_remote_state dependencies.
+func getAll(terragruntOptions *options.TerragruntOptions) error {
+	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
+	if err != nil {
+		return err
+	}
+
+	terragruntOptions.Logger.Notice("I love bananas")
+	terragruntOptions.Logger.Notice(stack.String())
+	return stack.Get(terragruntOptions)
 }
 
 // Custom error types
