@@ -316,8 +316,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Set the temporary script folder as the first item of the PATH
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
-	// Executing the pre-hooks commands if there are
-	if err = runHooks(terragruntOptions, conf.PreHooks); err != nil {
+	// Executing the pre-hooks commands that should be ran before init state if there are
+	if err = runHooks(terragruntOptions, conf.PreHooks, func(hook config.Hook) bool { return !hook.AfterInitState }); err != nil {
 		return err
 	}
 
@@ -328,10 +328,15 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 	}
 
+	// Executing the pre-hooks that should be ran after init state if there are
+	if err = runHooks(terragruntOptions, conf.PreHooks, func(hook config.Hook) bool { return hook.AfterInitState }); err != nil {
+		return err
+	}
+
 	defer func() {
 		// Executing the post-hooks commands if there are and there is no error
 		if result == nil {
-			if err := runHooks(terragruntOptions, conf.PostHooks); err != nil {
+			if err := runHooks(terragruntOptions, conf.PostHooks, nil); err != nil {
 				result = err
 			}
 		}

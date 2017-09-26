@@ -44,7 +44,6 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
 1. Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
    and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example) 
    repos for fully-working sample code that demonstrates how to use Terragrunt.
-   
 
 ## Table of Contents
 
@@ -56,6 +55,9 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
    1. [Execute Terraform commands on multiple modules at once](#execute-terraform-commands-on-multiple-modules-at-once)
    1. [Assume a different AWS IAM role to execute Terraform commands](#assume-aws-iam-role)
    1. [Define extra commands](#define-extra-commands)
+   1. [Run code before and after the actual command](#define-hooks)
+   1. [Import files from external sources](#import-files)
+   1. [Define uniqueness criterial](#uniqueness-criteria)
 1. [Terragrunt details](#terragrunt-details)
    1. [AWS credentials](#aws-credentials)
    1. [AWS IAM policies](#aws-iam-policies)
@@ -359,10 +361,10 @@ In particular:
 
 #### Using Terragrunt with private Git repos
 
-The easiest way to use Terragrunt with private Git repos is to use SSH authentication. 
-Configure your Git account so you can use it with SSH 
+The easiest way to use Terragrunt with private Git repos is to use SSH authentication.
+Configure your Git account so you can use it with SSH
 (see the [guide for GitHub here](https://help.github.com/articles/connecting-to-github-with-ssh/))
-and use the SSH URL for your repo, prepended with `git::ssh://`: 
+and use the SSH URL for your repo, prepended with `git::ssh://`:
 
 ```hcl
 terragrunt = {
@@ -371,23 +373,22 @@ terragrunt = {
   }
 }
 ```
-Look up the Git repo for your repository to find the proper format. 
 
-Note: In automated pipelines, you may need to run the following command for your 
-Git repository prior to calling `terragrunt` to ensure that the ssh host is registered 
+Look up the Git repo for your repository to find the proper format.
+
+Note: In automated pipelines, you may need to run the following command for your
+Git repository prior to calling `terragrunt` to ensure that the ssh host is registered
 locally, e.g.:
 
 ```
 $ ssh -T -oStrictHostKeyChecking=no git@github.com || true
 ```
 
-
 ### Keep your remote state configuration DRY
 
 * [Motivation](#motivation-1)
 * [Filling in remote state settings with Terragrunt](#filling-in-remote-state-settings-with-terragrunt)
 * [Create remote state and locking resources automatically](#create-remote-state-and-locking-resources-automatically)
-
 
 #### Motivation
 
@@ -532,9 +533,6 @@ See [the Interpolation Syntax docs](#interpolation-syntax) for more info.
 Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
 and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example) 
 repos for fully-working sample code that demonstrates how to use Terragrunt to manage remote state.
-
-
-
 
 #### Create remote state and locking resources automatically
 
@@ -785,7 +783,7 @@ terraform apply -var bucket=example.bucket.name
 ### Execute Terraform commands on multiple modules at once
 
 * [Motivation](#motivation-3)
-* [The apply-all, destroy-all, output-all and plan-all commands](#the-apply-all-destroy-all-output-all-and-plan-all-commands)
+* [The apply-all, destroy-all, output-all, plan-all and get-all commands](#the-apply-all-destroy-all-output-all-and-plan-all-commands)
 * [Dependencies between modules](#dependencies-between-modules)
 
 
@@ -1030,6 +1028,107 @@ So the following commands do:
 
 The name `shell` used to name the extra_command group could also be used as a command. It acts as an alias for the first command in `commands` list.
 
+### Define hooks
+
+It may be useful to define some additional commands that should be ran before and after executing the actual terraform command. You can define hooks in any terragrunt configuration blocks. By default, pre hooks are executed the declaration order starting with hooks defined in the uppermost terragrunt configuration block (parents) and finishing with those defined in the leaf configuration block. You can alter the execution order by specifying a different order (non specified order are set to 0 by default).
+
+It is possible to override hooks defined in a parent configuration by specifying the exact same name.
+
+#### Configure hooks
+
+```hcl
+terragrunt = {
+  pre_hooks|post_hooks "name" {
+    command          = "command"                      # shell command to execute
+    on_commands      = [list of terraform commands]   # optional, default run on all terraform command
+    os               = [list of os]                   # optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
+    arguments        = [list of arguments]            # optional
+    expand_args      = false                          # optional, expand pattern like *, ? [] on arguments
+    ignore_error     = false                          # optional, continue execution on error
+    after_init_state = false                          # optional, run command after the state has been initialized
+    order            = 0                              # optional, default run hooks in declaration order (hooks defined in uppermost parent first, negative number are supported)
+  }
+}
+```
+
+#### Example of hook
+
+```hcl
+  # Do terraform get before plan
+  pre_hooks "get-before-plan" {
+    command          = "terraform"
+    arguments        = ["get"]
+    on_commands      = ["plan"]
+    after_init_state = true
+  }
+
+  # Print the outputs as json after successful apply
+  post_hooks "print-json-output" {
+    command          = "terraform"
+    arguments        = ["output", "-json"]
+    on_commands      = ["apply"]
+  }
+```
+
+### Import files
+
+When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file `terraform.tfvars`. It is also possible to import files from external sources that should be used by terraform to evaluate your project. One typical usage of this feature is to import global variables that are common to all your terraform projects.
+
+#### Configure import files
+
+```hcl
+terragrunt = {
+  import_files "name" {
+    source              = "path"                        # Specify the source of the copy (support any [module
+sources](https://www.terraform.io/docs/modules/sources.html).))
+    files               = ["*"]                         # Optional, copy all files matching one of the pattern
+    copy_and_rename     = []                            # Optional, specific rule to copy file from the source and rename it in the target
+    required            = false                         # Optional, generate an error if there is no matching file
+    import_into_modules = false                         # Optional, specify to apply the import files also on each module subfolder
+    file_mode           = mode                          # Optional, typically octal number such as 0755
+    target              = ""                            # Optional, default is current temporary folder
+    prefix              = ""                            # By default, imported file are prefixed by the "name" of the import rule, can be overridden by specifying a prefix
+    os                  = [list of os]                  # optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
+  }
+}
+```
+
+#### Example of import files
+
+```hcl
+  import_files "global-variables" {
+    source              = "s3://my_bucket-${var.env}/globals"
+    patterns            = ["*.tf", "*.tf.json", "*.tfvars"]
+    import_into_modules = true
+  }
+
+  # Rename file from the source to a specific name
+  import_files "various-file" {
+    source              = "s3://my_bucket-${var.env}/various.zip"
+    prefix              = ""
+    copy_and_rename = [
+      {
+        source = "source_file"
+        target = "target_file"
+      }
+    ]
+  }
+```
+
+### Uniqueness criteria
+
+When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file `terraform.tfvars`. It is also possible to import files from external sources that should be used by terraform to evaluate your project. One typical usage of this feature is to import global variables that are common to all your terraform projects.
+
+#### Configure uniqueness criteria
+
+Terragrunt create may temporary folders for each of your terraform project based on the path where your terraform source are located. But if you change variables such as your environment, your deployment region or your project name. You may face get conflicts between your current cached temporary folder and your execution context. To ensure that all your different environments get a distinct temporary folder, you may define a `uniqueness_criteria`. That criteria will be added to the source folder to generate a unique and distinct temporary folder name.
+
+```hcl
+terragrunt = {
+    uniqueness_criteria = "${var.env}${var.region}/${var.project}"
+}
+```
+
 ## Terragrunt details
 
 This section contains detailed documentation for the following aspects of Terragrunt:
@@ -1047,9 +1146,7 @@ This section contains detailed documentation for the following aspects of Terrag
 ### AWS credentials
 
 Terragrunt uses the official [AWS SDK for Go](https://aws.amazon.com/sdk-for-go/), which
-means that it will automatically load credentials using the 
-[AWS standard approach](https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/). If you need help configuring your credentials, please refer to the [Terraform docs](https://www.terraform.io/docs/providers/aws/#authentication).
-
+means that it will automatically load credentials using the [AWS standard approach](https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/). If you need help configuring your credentials, please refer to the [Terraform docs](https://www.terraform.io/docs/providers/aws/#authentication).
 
 ### AWS IAM policies
 
@@ -1500,7 +1597,7 @@ start with the prefix `--terragrunt-`. The currently available options are:
 * `--terragrunt-config`: A custom path to the `terraform.tfvars` file. May also be specified via the `TERRAGRUNT_CONFIG`
   environment variable. The default path is `terraform.tfvars` in the current directory (see
   [Configuration](#configuration) for a slightly more nuanced explanation). This argument is not
-  used with the `apply-all`, `destroy-all`, `output-all` and `plan-all` commands.
+  used with the `apply-all`, `destroy-all`, `output-all`, `plan-all` and `get-all` commands.
 
 * `--terragrunt-tfpath`: A custom path to the Terraform binary. May also be specified via the `TERRAGRUNT_TFPATH`
   environment variable. The default is `terraform` in a directory on your PATH.
@@ -1516,7 +1613,7 @@ start with the prefix `--terragrunt-`. The currently available options are:
 * `--terragrunt-source`: Download Terraform configurations from the specified source into a temporary folder, and run
   Terraform in that temporary folder. May also be specified via the `TERRAGRUNT_SOURCE` environment variable. The
   source should use the same syntax as the [Terraform module source](https://www.terraform.io/docs/modules/sources.html)
-  parameter. This argument is not used with the `apply-all`, `destroy-all`, `output-all` and `plan-all` commands.
+  parameter. This argument is not used with the `apply-all`, `destroy-all`, `output-all`, `plan-all` and `get-all` commands.
 
 * `--terragrunt-source-update`: Delete the contents of the temporary folder before downloading Terraform source code
   into it.
