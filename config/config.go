@@ -179,13 +179,15 @@ func (conf *TerraformExtraArguments) String() string {
 
 // Hook is a definition of user command that should be executed as part of the terragrunt process
 type Hook struct {
-	Name        string   `hcl:",key"`
-	Command     string   `hcl:"command"`
-	OnCommands  []string `hcl:"on_commands,omitempty"`
-	OS          []string `hcl:"os,omitempty"`
-	Arguments   []string `hcl:"arguments,omitempty"`
-	ExpandArgs  bool     `hcl:"expand_args,omitempty"`
-	IgnoreError bool     `hcl:"ignore_error,omitempty"`
+	Name           string   `hcl:",key"`
+	Command        string   `hcl:"command"`
+	OnCommands     []string `hcl:"on_commands,omitempty"`
+	OS             []string `hcl:"os,omitempty"`
+	Arguments      []string `hcl:"arguments,omitempty"`
+	ExpandArgs     bool     `hcl:"expand_args,omitempty"`
+	IgnoreError    bool     `hcl:"ignore_error,omitempty"`
+	AfterInitState bool     `hcl:"after_init_state,omitempty"`
+	Order          int      `hcl:"order,omitempty"`
 }
 
 func (hook *Hook) String() string {

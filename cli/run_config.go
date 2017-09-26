@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
@@ -134,10 +135,29 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 	return nil
 }
 
+// Used to filter the hook on supplied criteria
+type hookFilter func(config.Hook) bool
+
+// Define sorting methods to order hooks
+type hooksByOrder []config.Hook
+
+func (h hooksByOrder) Len() int      { return len(h) }
+func (h hooksByOrder) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
+func (h hooksByOrder) Less(i, j int) bool {
+	return h[i].Order < h[j].Order || i < j
+}
+
 // Execute the hooks. If OS is specified and the current OS is not listed, the command is ignored
-func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook) error {
+func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook, filter hookFilter) error {
 	cmd := firstArg(terragruntOptions.TerraformCliArgs)
+
+	sort.Sort(hooksByOrder(hooks))
+
 	for _, hook := range hooks {
+		if filter != nil && !filter(hook) {
+			continue
+		}
+
 		if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, cmd) {
 			// The current command is not in the list of command on which the hook should be applied
 			continue
