@@ -535,7 +535,6 @@ func getAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Notice("I love bananas")
 	terragruntOptions.Logger.Notice(stack.String())
 	return stack.Get(terragruntOptions)
 }
