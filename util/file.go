@@ -168,8 +168,9 @@ func GetSource(source string, logger *logging.Logger) (string, error) {
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
-	if _, ok := sharedContent[cacheDir]; !ok {
-		if !FileExists(cacheDir) || Expired(cacheDir) {
+	expired := Expired(cacheDir)
+	if _, ok := sharedContent[cacheDir]; !ok || expired {
+		if !FileExists(cacheDir) || expired {
 			if logger != nil {
 				logger.Info("Getting source files from", path)
 			}
