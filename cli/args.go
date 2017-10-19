@@ -99,6 +99,9 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.Variables = options.VariableList{}
 	opts.AwsProfile = awsProfile
 
+	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
+	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf("%d", level))
+
 	parseEnvironmentVariables(opts, os.Environ())
 
 	// We remove the -var and -var-file from the cli arguments if the target command does not require
@@ -113,8 +116,6 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 
-	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
-	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf(level))
 	return opts, err
 }
 
