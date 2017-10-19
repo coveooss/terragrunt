@@ -160,7 +160,9 @@ func resolveExternalDependenciesForModule(module *TerraformModule, canonicalTerr
 // Confirm with the user whether they want Terragrunt to assume the given dependency of the given module is already
 // applied. If the user selects "no", then Terragrunt will apply that module as well.
 func confirmExternalDependencyAlreadyApplied(module *TerraformModule, dependency *TerraformModule, terragruntOptions *options.TerragruntOptions) (bool, error) {
-	prompt := fmt.Sprintf("Module %s depends on module %s, which is an external dependency outside of the current working directory. Should Terragrunt skip over this external dependency? Warning, if you say 'no', Terragrunt will make changes in %s as well!", module.Path, dependency.Path, dependency.Path)
+	prompt := fmt.Sprintf("Module %s depends on module %s, which is an external dependency outside of the current working directory. "+
+		"Should Terragrunt skip over this external dependency? Warning, if you say 'no', Terragrunt will make changes in %s as well!",
+		module.Path, dependency.Path, dependency.Path)
 	return shell.PromptUserForYesNo(prompt, terragruntOptions)
 }
 

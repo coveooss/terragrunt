@@ -73,7 +73,10 @@ func FindStackInSubfolders(terragruntOptions *options.TerragruntOptions) (*Stack
 // Set the command in the TerragruntOptions object of each module in this stack to the given command.
 func (stack *Stack) setTerraformCommand(command []string) {
 	for _, module := range stack.Modules {
-		module.TerragruntOptions.TerraformCliArgs = append(command, module.TerragruntOptions.TerraformCliArgs...)
+		// We duplicate the args to make sure that each module gets its own copy of the args
+		newArgs := make([]string, len(command))
+		copy(newArgs, command)
+		module.TerragruntOptions.TerraformCliArgs = append(newArgs, module.TerragruntOptions.TerraformCliArgs...)
 	}
 }
 
