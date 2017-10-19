@@ -285,6 +285,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 	}
 
+	terragruntOptions.Env["TERRAGRUNT_COMMAND"] = terragruntOptions.TerraformCliArgs[0]
+	terragruntOptions.Env["TERRAGRUNT_EXTRA_COMMAND"] = extraCommand
+	terragruntOptions.Env["TERRAGRUNT_TFPATH"] = terragruntOptions.TerraformPath
 
 	// Temporary make the command behave as another command to initialize the folder properly
 	// (to be sure that the remote state file get initialized)

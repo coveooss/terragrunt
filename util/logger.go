@@ -1,10 +1,11 @@
 package util
 
 import (
-	"github.com/op/go-logging"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/op/go-logging"
 )
 
 // CreateLogger creates a logger with the given prefix
@@ -21,7 +22,7 @@ func SetWarningLoggingLevel() {
 }
 
 // InitLogging must be called to set the logging string, initialize color and logging level
-func InitLogging(levelName string, defaultLevel logging.Level, color bool) error {
+func InitLogging(levelName string, defaultLevel logging.Level, color bool) (int, error) {
 	var format string
 	if color {
 		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05} %{color}%{level:-8s} %{message}%{color:reset}`
@@ -34,7 +35,7 @@ func InitLogging(levelName string, defaultLevel logging.Level, color bool) error
 	level, err := getLoggingLevelFromString(levelName, defaultLevel)
 
 	logging.SetLevel(level, "")
-	return err
+	return int(level), err
 }
 
 func getLoggingLevelFromString(level string, defaultLevel logging.Level) (logging.Level, error) {
