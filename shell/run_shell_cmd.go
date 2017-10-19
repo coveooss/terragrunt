@@ -84,9 +84,14 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	defer signalChannel.Close()
 
 	os.Setenv("PATH", terragruntOptions.Env["PATH"])
-	err := cmd.Run()
-	cmdChannel <- err
+	_, err := exec.LookPath(command)
+	if err == nil {
+		err = cmd.Run()
+	} else {
+		terragruntOptions.Logger.Errorf("Unable to find command %s in PATH=%s", command, os.Getenv("PATH"))
+	}
 
+	cmdChannel <- err
 	return errors.WithStackTrace(err)
 }
 

@@ -26,9 +26,9 @@ type TerraformModule struct {
 func (module *TerraformModule) String() string {
 	dependencies := []string{}
 	for _, dependency := range module.Dependencies {
-		dependencies = append(dependencies, dependency.Path)
+		dependencies = append(dependencies, util.GetPathRelativeToWorkingDir(dependency.Path))
 	}
-	return fmt.Sprintf("Module %s (dependencies: [%s])", module.Path, strings.Join(dependencies, ", "))
+	return fmt.Sprintf("Module %s (dependencies: [%s])", util.GetPathRelativeToWorkingDir(module.Path), strings.Join(dependencies, ", "))
 }
 
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents

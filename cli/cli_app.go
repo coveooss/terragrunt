@@ -498,8 +498,8 @@ func applyAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Notice(stack.String())
-	shouldApplyAll, err := shell.PromptUserForYesNo("Are you sure you want to run 'terragrunt apply' in each folder of the stack described above?", terragruntOptions)
+	prompt := fmt.Sprintf("%s\nAre you sure you want to run 'terragrunt apply' in each folder of the stack described above?", stack)
+	shouldApplyAll, err := shell.PromptUserForYesNo(prompt, terragruntOptions)
 	if err != nil {
 		return err
 	}
@@ -519,8 +519,8 @@ func destroyAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	terragruntOptions.Logger.Notice(stack)
-	shouldDestroyAll, err := shell.PromptUserForYesNo("WARNING: Are you sure you want to run `terragrunt destroy` in each folder of the stack described above? There is no undo!", terragruntOptions)
+	prompt := fmt.Sprintf("%s\nWARNING: Are you sure you want to run `terragrunt destroy` in each folder of the stack described above? There is no undo!", stack)
+	shouldDestroyAll, err := shell.PromptUserForYesNo(prompt, terragruntOptions)
 	if err != nil {
 		return err
 	}
