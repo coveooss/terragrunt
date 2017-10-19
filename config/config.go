@@ -203,6 +203,7 @@ type ExtraCommand struct {
 	UseState   *bool    `hcl:"use_state,omitempty"`
 	Aliases    []string `hcl:"aliases,omitempty"`
 	Arguments  []string `hcl:"arguments,omitempty"`
+	ActAs      string   `hcl:"act_as,omitempty"`
 }
 
 func (command *ExtraCommand) String() string {

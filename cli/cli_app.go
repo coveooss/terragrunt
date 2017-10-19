@@ -217,6 +217,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
+	// Check if the current command is an extra command
+	extraCommand, behaveAs, extraArgs := getExtraCommand(terragruntOptions, conf)
+
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
 		if util.ListContainsElement(TERRAFORM_COMMANDS_WITH_SUBCOMMAND, terragruntOptions.TerraformCliArgs[0]) {
@@ -282,8 +285,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 	}
 
-	// Check if the current command is an extra command
-	extraCommand, extraArgs := getExtraCommand(terragruntOptions, conf)
+
+	// Temporary make the command behave as another command to initialize the folder properly
+	// (to be sure that the remote state file get initialized)
+	if behaveAs != "" {
+		terragruntOptions.TerraformCliArgs[0] = behaveAs
+	}
 
 	if err := downloadModules(terragruntOptions); err != nil {
 		return err
@@ -363,7 +370,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 // Returns the empty if the supplied command is not an extra command, otherwise, returns the command name
 // to execute and the default arguments
-func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) (string, []string) {
+func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) (string, string, []string) {
 	cmd := terragruntOptions.TerraformCliArgs[0]
 	for _, commands := range config.ExtraCommands {
 		if len(commands.OS) > 0 && !util.ListContainsElement(commands.OS, runtime.GOOS) {
@@ -385,15 +392,22 @@ func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *confi
 		}
 
 		if util.ListContainsElement(commands.Commands, cmd) {
+			var behaveAs string
+
 			if commands.UseState == nil || *commands.UseState {
 				// We simulate that the extra command acts as the plan command to init the state file
 				// and get the modules
-				terragruntOptions.TerraformCliArgs[0] = "plan"
+				behaveAs = "plan"
 			}
-			return cmd, commands.Arguments
+
+			if commands.ActAs != "" {
+				// The command must act as another command for extra argument validation
+				terragruntOptions.TerraformCliArgs[0] = commands.ActAs
+			}
+			return cmd, behaveAs, commands.Arguments
 		}
 	}
-	return "", nil
+	return "", "", nil
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
