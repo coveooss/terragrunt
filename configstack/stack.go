@@ -26,35 +26,32 @@ func (stack *Stack) String() string {
 }
 
 // Plan all the modules in the given stack in their specified order.
-func (stack *Stack) Plan(terragruntOptions *options.TerragruntOptions) error {
-	stack.setTerraformCommand([]string{"plan"})
+func (stack *Stack) Plan(command string, terragruntOptions *options.TerragruntOptions) error {
+	stack.setTerraformCommand([]string{command})
 	return stack.planWithSummary(terragruntOptions)
 }
 
-// Apply all the modules in the given stack, making sure to apply the dependencies of each module in the stack in the
-// proper order.
-func (stack *Stack) Apply(terragruntOptions *options.TerragruntOptions) error {
-	stack.setTerraformCommand([]string{"apply", "-input=false"})
-	return RunModules(stack.Modules)
-}
-
-// Destroy all the modules in the given stack, making sure to destroy the dependencies of each module in the stack in
-// the proper order.
-func (stack *Stack) Destroy(terragruntOptions *options.TerragruntOptions) error {
-	stack.setTerraformCommand([]string{"destroy", "-force", "-input=false"})
-	return RunModulesReverseOrder(stack.Modules)
-}
-
 // Output prints the outputs of all the modules in the given stack in their specified order.
-func (stack *Stack) Output(terragruntOptions *options.TerragruntOptions) error {
-	stack.setTerraformCommand([]string{"output"})
-	return RunModules(stack.Modules)
+func (stack *Stack) Output(command string, terragruntOptions *options.TerragruntOptions) error {
+	stack.setTerraformCommand([]string{command})
+	handler := func(module TerraformModule, output string, err error) (string, error) {
+		if err != nil && strings.Contains(output, "no outputs defined") {
+			return "", nil
+		}
+		return output, err
+	}
+	return RunModulesWithHandler(stack.Modules, handler, NormalOrder)
 }
 
-// Get all the modules in the given stack in their specified order.
-func (stack *Stack) Get(terragruntOptions *options.TerragruntOptions) error {
-	stack.setTerraformCommand([]string{"get"})
-	return RunModules(stack.Modules)
+// Run the specified command on all modules in the given stack in their specified order.
+func (stack *Stack) RunAll(command []string, terragruntOptions *options.TerragruntOptions, reverse bool) error {
+	stack.setTerraformCommand(command)
+	runner := RunModules
+	if reverse {
+		runner = RunModulesReverseOrder
+	}
+
+	return runner(stack.Modules)
 }
 
 // Return an error if there is a dependency cycle in the modules of this stack.

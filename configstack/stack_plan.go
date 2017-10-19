@@ -55,7 +55,7 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 
 // Returns the handler that will be executed after each completion of `terraform plan`
 func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHandler {
-	return func(module TerraformModule, output string, err error) error {
+	return func(module TerraformModule, output string, err error) (string, error) {
 		warnAboutMissingDependencies(module, output)
 		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == CHANGE_EXIT_CODE {
 			// We do not want to consider CHANGE_EXIT_CODE as an error and not execute the dependants because there is an "error" in the dependencies.
@@ -71,7 +71,7 @@ func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHand
 			*results = append(*results, moduleResult{module, err, message, count})
 		}
 
-		return err
+		return output, err
 	}
 }
 

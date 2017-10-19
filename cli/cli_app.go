@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
@@ -32,26 +33,14 @@ const OPT_AWS_PROFILE = "profile"
 var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
 var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE}
 
-const CMD_PLAN_ALL = "plan-all"
-const CMD_APPLY_ALL = "apply-all"
-const CMD_DESTROY_ALL = "destroy-all"
-const CMD_OUTPUT_ALL = "output-all"
-const CMD_GET_ALL = "get-all"
+const MULTI_MODULE_SUFFIX = "-all"
 
 const CMD_INIT = "init"
 
-// CMD_SPIN_UP is deprecated.
-const CMD_SPIN_UP = "spin-up"
-
-// CMD_TEAR_DOWN is deprecated.
-const CMD_TEAR_DOWN = "tear-down"
-
-var MULTI_MODULE_COMMANDS = []string{CMD_APPLY_ALL, CMD_DESTROY_ALL, CMD_OUTPUT_ALL, CMD_PLAN_ALL, CMD_GET_ALL}
-
 // DEPRECATED_COMMANDS is a map of deprecated commands to the commands that replace them.
 var DEPRECATED_COMMANDS = map[string]string{
-	CMD_SPIN_UP:   CMD_APPLY_ALL,
-	CMD_TEAR_DOWN: CMD_DESTROY_ALL,
+	"spin-up":   "apply-all",
+	"tear-down": "destroy-all",
 }
 
 var TERRAFORM_COMMANDS_THAT_USE_STATE = []string{
@@ -202,7 +191,7 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
 		return err
 	}
-	if isMultiModuleCommand(command) {
+	if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
 		return runMultiModuleCommand(command, terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
@@ -416,24 +405,26 @@ func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *confi
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
 // apply-all or destroy-all command.
 func isMultiModuleCommand(command string) bool {
-	return util.ListContainsElement(MULTI_MODULE_COMMANDS, command)
+	return strings.HasSuffix(command, MULTI_MODULE_SUFFIX)
 }
 
 // Execute a command that affects multiple Terraform modules, such as the apply-all or destroy-all command.
 func runMultiModuleCommand(command string, terragruntOptions *options.TerragruntOptions) error {
-	switch command {
-	case CMD_PLAN_ALL:
-		return planAll(terragruntOptions)
-	case CMD_APPLY_ALL:
-		return applyAll(terragruntOptions)
-	case CMD_DESTROY_ALL:
-		return destroyAll(terragruntOptions)
-	case CMD_OUTPUT_ALL:
-		return outputAll(terragruntOptions)
-	case CMD_GET_ALL:
-		return getAll(terragruntOptions)
-	default:
-		return errors.WithStackTrace(UnrecognizedCommand(command))
+	realCommand := strings.TrimSuffix(command, MULTI_MODULE_SUFFIX)
+	if strings.HasPrefix(command, "plan-") {
+		return planAll(realCommand, terragruntOptions)
+	} else if strings.HasPrefix(command, "apply-") {
+		return applyAll(realCommand, terragruntOptions)
+	} else if strings.HasPrefix(command, "destroy-") {
+		return destroyAll(realCommand, terragruntOptions)
+	} else if strings.HasPrefix(command, "output-") {
+		return outputAll(realCommand, terragruntOptions)
+	} else {
+		if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
+			return runAll(realCommand, terragruntOptions)
+		} else {
+			return errors.WithStackTrace(UnrecognizedCommand(command))
+		}
 	}
 }
 
@@ -478,21 +469,33 @@ func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *op
 	return nil
 }
 
+// runAll run the specified command on all configuration in a stack, in the order
+// specified in the terraform_remote_state dependencies
+func runAll(command string, terragruntOptions *options.TerragruntOptions) error {
+	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
+	if err != nil {
+		return err
+	}
+
+	terragruntOptions.Logger.Notice(stack)
+	return stack.RunAll([]string{command}, terragruntOptions, false)
+}
+
 // planAll prints the plans from all configuration in a stack, in the order
 // specified in the terraform_remote_state dependencies
-func planAll(terragruntOptions *options.TerragruntOptions) error {
+func planAll(command string, terragruntOptions *options.TerragruntOptions) error {
 	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
 	if err != nil {
 		return err
 	}
 
 	terragruntOptions.Logger.Notice(stack.String())
-	return stack.Plan(terragruntOptions)
+	return stack.Plan(command, terragruntOptions)
 }
 
 // Spin up an entire "stack" by running 'terragrunt apply' in each subfolder, processing them in the right order based
 // on terraform_remote_state dependencies.
-func applyAll(terragruntOptions *options.TerragruntOptions) error {
+func applyAll(command string, terragruntOptions *options.TerragruntOptions) error {
 	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
 	if err != nil {
 		return err
@@ -505,7 +508,7 @@ func applyAll(terragruntOptions *options.TerragruntOptions) error {
 	}
 
 	if shouldApplyAll {
-		return stack.Apply(terragruntOptions)
+		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, true)
 	}
 
 	return nil
@@ -513,7 +516,7 @@ func applyAll(terragruntOptions *options.TerragruntOptions) error {
 
 // Tear down an entire "stack" by running 'terragrunt destroy' in each subfolder, processing them in the right order
 // based on terraform_remote_state dependencies.
-func destroyAll(terragruntOptions *options.TerragruntOptions) error {
+func destroyAll(command string, terragruntOptions *options.TerragruntOptions) error {
 	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
 	if err != nil {
 		return err
@@ -526,7 +529,7 @@ func destroyAll(terragruntOptions *options.TerragruntOptions) error {
 	}
 
 	if shouldDestroyAll {
-		return stack.Destroy(terragruntOptions)
+		return stack.RunAll([]string{command, "-force", "-input=false"}, terragruntOptions, true)
 	}
 
 	return nil
@@ -534,26 +537,14 @@ func destroyAll(terragruntOptions *options.TerragruntOptions) error {
 
 // outputAll prints the outputs from all configuration in a stack, in the order
 // specified in the terraform_remote_state dependencies
-func outputAll(terragruntOptions *options.TerragruntOptions) error {
+func outputAll(command string, terragruntOptions *options.TerragruntOptions) error {
 	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
 	if err != nil {
 		return err
 	}
 
 	terragruntOptions.Logger.Notice(stack)
-	return stack.Output(terragruntOptions)
-}
-
-// Get modules for an entire "stack" by running 'terragrunt get' in each subfolder, processing them in the right order
-// based on terraform_remote_state dependencies.
-func getAll(terragruntOptions *options.TerragruntOptions) error {
-	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
-	if err != nil {
-		return err
-	}
-
-	terragruntOptions.Logger.Notice(stack.String())
-	return stack.Get(terragruntOptions)
+	return stack.Output(command, terragruntOptions)
 }
 
 // Custom error types

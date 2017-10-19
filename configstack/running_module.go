@@ -57,7 +57,7 @@ const (
 // The function receive the current module, its output and its error in parameter.
 // Normally, the handler should return the same error as received in parameter, but it is possible to
 // alter the normal course of the proccess by changing the error result.
-type ModuleHandler func(TerraformModule, string, error) error
+type ModuleHandler func(TerraformModule, string, error) (string, error)
 
 // Create a new RunningModule struct for the given module. This will initialize all fields to reasonable defaults,
 // except for the Dependencies and NotifyWhenDone, both of which will be empty. You should fill these using a
@@ -224,6 +224,12 @@ var separator = strings.Repeat("-", 132)
 func (module *runningModule) moduleFinished(moduleErr error) {
 	status := "successfully!"
 	logFinish := module.Module.TerragruntOptions.Logger.Infof
+	output := module.OutStream.String()
+
+	if module.Handler != nil {
+		output, moduleErr = module.Handler(*module.Module, output, moduleErr)
+	}
+
 	if moduleErr != nil {
 		status = fmt.Sprintf("with an error: %v", moduleErr)
 		logFinish = module.Module.TerragruntOptions.Logger.Errorf
@@ -233,14 +239,10 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 	defer module.Mutex.Unlock()
 	logFinish("Module %s has finished %s", module.Module.Path, status)
 
-	if module.Handler != nil {
-		moduleErr = module.Handler(*module.Module, module.OutStream.String(), moduleErr)
-	}
-	out := module.OutStream.String()
-	if out == "" {
+	if output == "" {
 		module.Module.TerragruntOptions.Logger.Info("No output")
 	} else {
-		fmt.Fprintf(module.Writer, "%s\n%v\n\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path), module.OutStream.String())
+		fmt.Fprintf(module.Writer, "%s\n%v\n\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path), output)
 	}
 
 	module.Status = Finished

@@ -110,8 +110,8 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	var cmd string
 	if len(args) > 0 {
 		cmd = args[0]
-		if util.ListContainsElement(MULTI_MODULE_COMMANDS, cmd) {
-			cmd = strings.TrimSuffix(cmd, "-all")
+		if strings.HasSuffix(cmd, MULTI_MODULE_SUFFIX) {
+			cmd = strings.TrimSuffix(cmd, MULTI_MODULE_SUFFIX)
 		}
 	}
 	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
@@ -255,8 +255,7 @@ func filterTerragruntArgs(args []string) []string {
 		arg := args[i]
 		argWithoutPrefix := strings.TrimPrefix(arg, "--")
 
-		if util.ListContainsElement(MULTI_MODULE_COMMANDS, arg) {
-			// Skip multi-module commands entirely
+		if strings.HasSuffix(arg, MULTI_MODULE_SUFFIX) {
 			continue
 		}
 
