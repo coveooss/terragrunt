@@ -508,7 +508,7 @@ func applyAll(command string, terragruntOptions *options.TerragruntOptions) erro
 	}
 
 	if shouldApplyAll {
-		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, true)
+		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, false)
 	}
 
 	return nil
