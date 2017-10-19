@@ -114,7 +114,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 
 	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
-	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", level)
+	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf(level))
 	return opts, err
 }
 
