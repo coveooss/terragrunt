@@ -52,7 +52,11 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			var err error
 			sourceFolder, err = util.GetSource(importer.Source, terragruntOptions.Logger)
 			if err != nil {
-				return err
+				if *importer.Required {
+					return err
+				} else {
+					terragruntOptions.Logger.Warningf("%s: %s doest not exist", importer.Name, importer.Source)
+				}
 			}
 		}
 
