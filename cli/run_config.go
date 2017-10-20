@@ -55,7 +55,7 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 				if *importer.Required {
 					return err
 				} else {
-					terragruntOptions.Logger.Warningf("%s: %s doest not exist", importer.Name, importer.Source)
+					terragruntOptions.Logger.Warningf("%s: %s doesn't exist", importer.Name, importer.Source)
 				}
 			}
 		}
