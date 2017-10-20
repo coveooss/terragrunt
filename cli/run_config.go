@@ -153,7 +153,7 @@ func (h hooksByOrder) Less(i, j int) bool {
 
 // Execute the hooks. If OS is specified and the current OS is not listed, the command is ignored
 func runHooks(terragruntOptions *options.TerragruntOptions, hooks []config.Hook, filter hookFilter) error {
-	cmd := firstArg(terragruntOptions.TerraformCliArgs)
+	cmd := terragruntOptions.Env["TERRAGRUNT_COMMAND"]
 
 	sort.Sort(hooksByOrder(hooks))
 

@@ -207,7 +207,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Check if the current command is an extra command
-	extraCommand, behaveAs, extraArgs := getExtraCommand(terragruntOptions, conf)
+	command := getExtraCommand(terragruntOptions, conf)
 
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
@@ -275,13 +275,15 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	terragruntOptions.Env["TERRAGRUNT_COMMAND"] = terragruntOptions.TerraformCliArgs[0]
-	terragruntOptions.Env["TERRAGRUNT_EXTRA_COMMAND"] = extraCommand
+	if command.IsExtra {
+		terragruntOptions.Env["TERRAGRUNT_EXTRA_COMMAND"] = command.Actual
+	}
 	terragruntOptions.Env["TERRAGRUNT_TFPATH"] = terragruntOptions.TerraformPath
 
 	// Temporary make the command behave as another command to initialize the folder properly
 	// (to be sure that the remote state file get initialized)
-	if behaveAs != "" {
-		terragruntOptions.TerraformCliArgs[0] = behaveAs
+	if command.BehaveAs != "" {
+		terragruntOptions.TerraformCliArgs[0] = command.BehaveAs
 	}
 
 	if err := downloadModules(terragruntOptions); err != nil {
@@ -349,20 +351,19 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return nil
 	}
 
-	// Check if the supplied command is an extra command. In that case, we execute that command instead of calling terraform.
-	if extraCommand != "" {
-		// We restore back the name of the command since it may have been temporary changed to support
-		// state file initialization and get modules
-		terragruntOptions.TerraformCliArgs[0] = extraCommand
-		return shell.RunShellCommand(terragruntOptions, extraCommand, append(extraArgs, terragruntOptions.TerraformCliArgs[1:]...)...)
+	if command.IsExtra {
+		// The command is not a terraform command
+		return shell.RunShellCommand(terragruntOptions, command.Actual, append(command.Args, terragruntOptions.TerraformCliArgs[1:]...)...)
 	}
 
+	// We restore back the name of the command since it may have been temporary changed to support state file initialization and get modules
+	terragruntOptions.TerraformCliArgs[0] = command.Actual
 	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
 }
 
 // Returns the empty if the supplied command is not an extra command, otherwise, returns the command name
 // to execute and the default arguments
-func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) (string, string, []string) {
+func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) extraCommand {
 	cmd := terragruntOptions.TerraformCliArgs[0]
 	for _, commands := range config.ExtraCommands {
 		if len(commands.OS) > 0 && !util.ListContainsElement(commands.OS, runtime.GOOS) {
@@ -386,20 +387,26 @@ func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *confi
 		if util.ListContainsElement(commands.Commands, cmd) {
 			var behaveAs string
 
-			if commands.UseState == nil || *commands.UseState {
+			if commands.ActAs != "" {
+				// The command must act as another command for extra argument validation
+				terragruntOptions.TerraformCliArgs[0] = commands.ActAs
+			} else if commands.UseState == nil || *commands.UseState {
 				// We simulate that the extra command acts as the plan command to init the state file
 				// and get the modules
 				behaveAs = "plan"
 			}
 
-			if commands.ActAs != "" {
-				// The command must act as another command for extra argument validation
-				terragruntOptions.TerraformCliArgs[0] = commands.ActAs
-			}
-			return cmd, behaveAs, commands.Arguments
+			return extraCommand{cmd, behaveAs, commands.Arguments, true}
 		}
 	}
-	return "", "", nil
+	return extraCommand{cmd, "", nil, false}
+}
+
+type extraCommand struct {
+	Actual   string
+	BehaveAs string
+	Args     []string
+	IsExtra  bool
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
