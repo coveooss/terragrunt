@@ -101,6 +101,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 
 	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf("%d", level))
+	os.Setenv("TERRAGRUNT_TFPATH", terraformPath)
 
 	parseEnvironmentVariables(opts, os.Environ())
 

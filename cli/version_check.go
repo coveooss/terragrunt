@@ -2,11 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"regexp"
+
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/hashicorp/go-version"
-	"regexp"
 )
 
 // The terraform --version output is of the format: Terraform v0.9.5-dev (cad024a5fe131a546936674ef85445215bbc4226+CHANGES)
@@ -21,6 +22,7 @@ func CheckTerraformVersion(constraint string, terragruntOptions *options.Terragr
 		return err
 	}
 
+	terraformVersion = currentVersion.String()
 	return checkTerraformVersionMeetsConstraint(currentVersion, constraint)
 }
 

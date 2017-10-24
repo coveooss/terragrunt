@@ -275,6 +275,7 @@ func ExpandArguments(args []string, folder string) (result []string) {
 	prefix := folder + string(filepath.Separator)
 
 	for _, arg := range args {
+		arg = os.ExpandEnv(arg)
 		if strings.ContainsAny(arg, "*?[]") {
 			if !filepath.IsAbs(arg) {
 				arg = prefix + arg

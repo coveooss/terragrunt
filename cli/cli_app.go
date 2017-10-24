@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
@@ -81,12 +80,17 @@ USAGE:
    {{.Usage}}
 
 COMMANDS:
-   plan-all             Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder
-   apply-all            Apply a 'stack' by running 'terragrunt apply' in each subfolder
-   output-all           Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder
-   destroy-all          Destroy a 'stack' by running 'terragrunt destroy' in each subfolder
-   get-all              Get all modules of a 'stack' by running 'terragrunt get' in each subfolder
-   *                    Terragrunt forwards all other commands directly to Terraform
+   print-doc     Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
+
+   -all operations:
+   plan-all      Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder (with a summary at the end)
+   apply-all     Apply a 'stack' by running 'terragrunt apply' in each subfolder
+   output-all    Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder (no error if a subfolder doesn't have outputs)
+   destroy-all   Destroy a 'stack' by running 'terragrunt destroy' in each subfolder in reverse dependency order
+   *-all         In fact, the -all could be applied on any terraform or custom commands (that's cool)
+
+   terraform commands:
+   *             Terragrunt forwards all other commands directly to Terraform
 
 GLOBAL OPTIONS:
    terragrunt-config                    Path to the Terragrunt config file. Default is terraform.tfvars.
@@ -114,6 +118,9 @@ const DEFAULT_TERRAFORM_VERSION_CONSTRAINT = ">= v0.9.3"
 
 const TERRAFORM_EXTENSION_GLOB = "*.tf"
 
+var terragruntVersion string
+var terraformVersion string
+
 // Create the Terragrunt CLI App
 func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) *cli.App {
 	cli.OsExiter = func(exitCode int) {
@@ -135,12 +142,15 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 	app.UsageText = `Terragrunt is a thin wrapper for Terraform that provides extra tools for working with multiple
    Terraform modules, remote state, and locking. For documentation, see https://github.com/gruntwork-io/terragrunt/.`
 
+	terragruntVersion = version
 	return app
 }
 
 // The sole action for the app
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
+
+	os.Setenv("TERRAGRUNT_CACHE_FOLDER", util.GetTempDownloadFolder("terragrunt-cache"))
 
 	terragruntOptions, err := ParseTerragruntOptions(cliContext)
 	if err != nil {
@@ -207,7 +217,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Check if the current command is an extra command
-	command := getExtraCommand(terragruntOptions, conf)
+	actualCommand := getActualCommand(terragruntOptions, conf)
 
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
@@ -266,6 +276,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	terragruntOptions.IgnoreRemainingInterpolation = false
 	conf.SubstituteAllVariables(terragruntOptions, true)
 
+	if actualCommand.Command == "print-doc" {
+		PrintDoc(terragruntOptions, conf)
+		os.Exit(0)
+	}
+
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
 	if conf.AssumeRole != nil && *conf.AssumeRole != "" {
 		terragruntOptions.Logger.Notice("Assuming role", *conf.AssumeRole)
@@ -275,15 +290,16 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	terragruntOptions.Env["TERRAGRUNT_COMMAND"] = terragruntOptions.TerraformCliArgs[0]
-	if command.IsExtra {
-		terragruntOptions.Env["TERRAGRUNT_EXTRA_COMMAND"] = command.Actual
+	if actualCommand.Extra != nil {
+		terragruntOptions.Env["TERRAGRUNT_EXTRA_COMMAND"] = actualCommand.Command
 	}
-	terragruntOptions.Env["TERRAGRUNT_TFPATH"] = terragruntOptions.TerraformPath
+	terragruntOptions.Env["TERRAGRUNT_VERSION"] = terragruntVersion
+	terragruntOptions.Env["TERRAFORM_VERSION"] = terraformVersion
 
 	// Temporary make the command behave as another command to initialize the folder properly
 	// (to be sure that the remote state file get initialized)
-	if command.BehaveAs != "" {
-		terragruntOptions.TerraformCliArgs[0] = command.BehaveAs
+	if actualCommand.BehaveAs != "" {
+		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 
 	if err := downloadModules(terragruntOptions); err != nil {
@@ -343,6 +359,16 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 	}()
 
+	if actualCommand.Extra != nil {
+		// The command is not a native terraform command
+		runner := shell.RunShellCommand
+		if *actualCommand.Extra.ExpandArgs {
+			runner = shell.RunShellCommandExpandArgs
+		}
+
+		return runner(terragruntOptions, actualCommand.Command, append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)...)
+	}
+
 	// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
 	// terraform init if it was necessary, and the below RunTerraformCommand would end up calling init without
 	// the correct remote state arguments, which is confusing.
@@ -351,62 +377,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return nil
 	}
 
-	if command.IsExtra {
-		// The command is not a terraform command
-		return shell.RunShellCommand(terragruntOptions, command.Actual, append(command.Args, terragruntOptions.TerraformCliArgs[1:]...)...)
-	}
-
 	// We restore back the name of the command since it may have been temporary changed to support state file initialization and get modules
-	terragruntOptions.TerraformCliArgs[0] = command.Actual
+	terragruntOptions.TerraformCliArgs[0] = actualCommand.Command
 	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
-}
-
-// Returns the empty if the supplied command is not an extra command, otherwise, returns the command name
-// to execute and the default arguments
-func getExtraCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) extraCommand {
-	cmd := terragruntOptions.TerraformCliArgs[0]
-	for _, commands := range config.ExtraCommands {
-		if len(commands.OS) > 0 && !util.ListContainsElement(commands.OS, runtime.GOOS) {
-			continue
-		}
-		if len(commands.Commands) == 0 {
-			commands.Commands = append(commands.Commands, commands.Name)
-		}
-
-		if commands.Name == cmd && !util.ListContainsElement(commands.Commands, cmd) {
-			// The named command is not in the list of commands but match the commands name, in that case,
-			// we consider that the name acts as an alias for the first command)
-			cmd = commands.Commands[0]
-		}
-
-		if util.ListContainsElement(commands.Aliases, cmd) {
-			// The named command is in the list of aliases, so we map it to the first command
-			cmd = commands.Commands[0]
-		}
-
-		if util.ListContainsElement(commands.Commands, cmd) {
-			var behaveAs string
-
-			if commands.ActAs != "" {
-				// The command must act as another command for extra argument validation
-				terragruntOptions.TerraformCliArgs[0] = commands.ActAs
-			} else if commands.UseState == nil || *commands.UseState {
-				// We simulate that the extra command acts as the plan command to init the state file
-				// and get the modules
-				behaveAs = "plan"
-			}
-
-			return extraCommand{cmd, behaveAs, commands.Arguments, true}
-		}
-	}
-	return extraCommand{cmd, "", nil, false}
-}
-
-type extraCommand struct {
-	Actual   string
-	BehaveAs string
-	Args     []string
-	IsExtra  bool
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the

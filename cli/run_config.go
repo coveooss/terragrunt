@@ -54,9 +54,8 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			if err != nil {
 				if *importer.Required {
 					return err
-				} else {
-					terragruntOptions.Logger.Warningf("%s: %s doesn't exist", importer.Name, importer.Source)
 				}
+				terragruntOptions.Logger.Warningf("%s: %s doesn't exist", importer.Name, importer.Source)
 			}
 		}
 
@@ -239,4 +238,60 @@ func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, r
 		terragruntOptions.Env[key] = value
 	}
 	return nil
+}
+
+func getActualCommand(terragruntOptions *options.TerragruntOptions, config *config.TerragruntConfig) actualCommand {
+	cmd := terragruntOptions.TerraformCliArgs[0]
+	for _, extraCommand := range config.ExtraCommands {
+		if len(extraCommand.OS) > 0 && !util.ListContainsElement(extraCommand.OS, runtime.GOOS) {
+			continue
+		}
+
+		if extraCommand.Command == "" {
+			// If there is no explicit command for this extra command, we consider it as to be either
+			// the first command listed in Commands or the name of the extra command
+			if len(extraCommand.Commands) != 0 {
+				extraCommand.Command = extraCommand.Commands[0]
+			} else {
+				extraCommand.Command = extraCommand.Name
+			}
+		}
+
+		if util.ListContainsElement(extraCommand.Aliases, cmd) {
+			// The named command is in the list of aliases, so we map it to the command
+			cmd = extraCommand.Name
+		}
+
+		if cmd == extraCommand.Name || util.ListContainsElement(extraCommand.Commands, cmd) {
+			var behaveAs string
+
+			if !util.ListContainsElement(extraCommand.Commands, cmd) {
+				// If the command is not in the allowed list of commands, we then default it to the default command
+				cmd = extraCommand.Command
+			}
+
+			if extraCommand.ExpandArgs == nil {
+				// We default the ExpandArgs to true if not set
+				expand := true
+				extraCommand.ExpandArgs = &expand
+			}
+			if extraCommand.ActAs != "" {
+				// The command must act as another command for extra argument validation
+				terragruntOptions.TerraformCliArgs[0] = extraCommand.ActAs
+			} else if extraCommand.UseState == nil || *extraCommand.UseState {
+				// We simulate that the extra command acts as the plan command to init the state file
+				// and get the modules
+				behaveAs = "plan"
+			}
+
+			return actualCommand{cmd, behaveAs, &extraCommand}
+		}
+	}
+	return actualCommand{cmd, "", nil}
+}
+
+type actualCommand struct {
+	Command  string
+	BehaveAs string
+	Extra    *config.ExtraCommand
 }

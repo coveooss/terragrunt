@@ -19,6 +19,7 @@ const TerragruntScriptFolder = ".terragrunt-scripts"
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
+	Description   string
 	Terraform     *TerraformConfig
 	RemoteState   *remote.RemoteState
 	Dependencies  *ModuleDependencies
@@ -35,7 +36,7 @@ func (conf *TerragruntConfig) String() string {
 }
 
 // SubstituteAllVariables replace all remaining variables by the value
-func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions, substituteFolders bool) {
+func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions, substituteFinal bool) {
 	scriptFolder := filepath.Join(terragruntOptions.WorkingDir, TerragruntScriptFolder)
 	substitute := func(value *string) *string {
 		if value == nil {
@@ -43,12 +44,19 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		}
 
 		*value = SubstituteVars(*value, terragruntOptions)
-		if substituteFolders {
+		if substituteFinal {
 			// We only substitute folders on the last substitute call
 			*value = strings.Replace(*value, GET_TEMP_FOLDER, terragruntOptions.DownloadDir, -1)
 			*value = strings.Replace(*value, GET_SCRIPT_FOLDER, scriptFolder, -1)
+			*value = strings.TrimSpace(util.UnIndent(*value))
 		}
+
 		return value
+	}
+
+	for i, extraArgs := range conf.Terraform.ExtraArgs {
+		substitute(&extraArgs.Description)
+		conf.Terraform.ExtraArgs[i] = extraArgs
 	}
 
 	substitute(conf.Uniqueness)
@@ -68,6 +76,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	substituteHooks := func(hooks []Hook) {
 		for i, hook := range hooks {
 			substitute(&hook.Command)
+			substitute(&hook.Description)
 			for i, arg := range hook.Arguments {
 				hook.Arguments[i] = *substitute(&arg)
 			}
@@ -78,6 +87,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	substituteHooks(conf.PostHooks)
 
 	for i, command := range conf.ExtraCommands {
+		substitute(&command.Description)
 		for i, cmd := range command.Commands {
 			command.Commands[i] = *substitute(&cmd)
 		}
@@ -88,6 +98,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	}
 
 	for i, importer := range conf.ImportFiles {
+		substitute(&importer.Description)
 		substitute(&importer.Source)
 		substitute(&importer.Target)
 		for i, value := range importer.Files {
@@ -104,6 +115,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 // terragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e.
 // terraform.tfvars or .terragrunt)
 type terragruntConfigFile struct {
+	Description   string              `hcl:"description,omitempty"`
 	Terraform     *TerraformConfig    `hcl:"terraform,omitempty"`
 	Include       *IncludeConfig      `hcl:"include,omitempty"`
 	Lock          *LockConfig         `hcl:"lock,omitempty"`
@@ -166,6 +178,7 @@ func (conf *TerraformConfig) String() string {
 // TerraformExtraArguments sets a list of arguments to pass to Terraform if command fits any in the `Commands` list
 type TerraformExtraArguments struct {
 	Name             string   `hcl:",key"`
+	Description      string   `hcl:"description"`
 	Arguments        []string `hcl:"arguments,omitempty"`
 	Vars             []string `hcl:"vars,omitempty"`
 	RequiredVarFiles []string `hcl:"required_var_files,omitempty"`
@@ -180,6 +193,7 @@ func (conf *TerraformExtraArguments) String() string {
 // Hook is a definition of user command that should be executed as part of the terragrunt process
 type Hook struct {
 	Name           string   `hcl:",key"`
+	Description    string   `hcl:"description"`
 	Command        string   `hcl:"command"`
 	OnCommands     []string `hcl:"on_commands,omitempty"`
 	OS             []string `hcl:"os,omitempty"`
@@ -196,14 +210,16 @@ func (hook *Hook) String() string {
 
 // ExtraCommand is a definition of user extra command that should be executed in place of terraform
 type ExtraCommand struct {
-	Name       string   `hcl:",key"`
-	Commands   []string `hcl:"commands,omitempty"`
-	OnCommands []string `hcl:"on_commands,omitempty"`
-	OS         []string `hcl:"os,omitempty"`
-	UseState   *bool    `hcl:"use_state,omitempty"`
-	Aliases    []string `hcl:"aliases,omitempty"`
-	Arguments  []string `hcl:"arguments,omitempty"`
-	ActAs      string   `hcl:"act_as,omitempty"`
+	Name        string   `hcl:",key"`
+	Description string   `hcl:"description"`
+	Command     string   `hcl:"command,omitempty"`
+	Commands    []string `hcl:"commands,omitempty"`
+	OS          []string `hcl:"os,omitempty"`
+	Aliases     []string `hcl:"aliases,omitempty"`
+	Arguments   []string `hcl:"arguments,omitempty"`
+	ExpandArgs  *bool    `hcl:"expand_args,omitempty"`
+	UseState    *bool    `hcl:"use_state,omitempty"`
+	ActAs       string   `hcl:"act_as,omitempty"`
 }
 
 func (command *ExtraCommand) String() string {
@@ -214,6 +230,7 @@ func (command *ExtraCommand) String() string {
 // prior executing terraform commands
 type ImportConfig struct {
 	Name               string          `hcl:",key"`
+	Description        string          `hcl:"description"`
 	Source             string          `hcl:"source"`
 	Files              []string        `hcl:"files"`
 	CopyAndRenameFiles []CopyAndRename `hcl:"copy_and_rename"`
@@ -637,6 +654,7 @@ func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, t
 		terragruntConfig.RemoteState = terragruntConfigFromFile.RemoteState
 	}
 
+	terragruntConfig.Description = terragruntConfigFromFile.Description
 	terragruntConfig.Terraform = terragruntConfigFromFile.Terraform
 	terragruntConfig.Dependencies = terragruntConfigFromFile.Dependencies
 	terragruntConfig.Uniqueness = terragruntConfigFromFile.Uniqueness
