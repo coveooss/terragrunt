@@ -91,7 +91,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 8ba8fc79c106dee098c625f4c40cd53d73660a92
+  version: a1d06eb97378d097d4175c3284ea026937618477
   subpackages:
   - config
   - config/module
