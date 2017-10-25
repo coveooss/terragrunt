@@ -168,11 +168,14 @@ func GetSource(source string, logger *logging.Logger) (string, error) {
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
-	expired := Expired(cacheDir)
-	if _, ok := sharedContent[cacheDir]; !ok || expired {
-		if !FileExists(cacheDir) || expired {
+	upToDate, err := aws_helper.CheckS3Status(cacheDir)
+	if _, ok := sharedContent[cacheDir]; !ok || !upToDate || err != nil {
+		if logger != nil {
+			logger.Infof("Adding %s to the cache, expired=%v", source, !upToDate)
+		}
+		if !FileExists(cacheDir) || !upToDate {
 			if logger != nil {
-				logger.Info("Getting source files from", path)
+				logger.Info("Getting source files", source, "from", path)
 			}
 			os.RemoveAll(cacheDir)
 
@@ -181,7 +184,13 @@ func GetSource(source string, logger *logging.Logger) (string, error) {
 				return "", fmt.Errorf("%v while copying source from %s", err, path)
 			}
 
-			aws_helper.SaveS3Status(source, cacheDir)
+			err = aws_helper.SaveS3Status(source, cacheDir)
+			if err != nil {
+				return "", fmt.Errorf("%v while saving status for %s", err, path)
+			}
+			if logger != nil {
+				logger.Info("Files from", source, "successfully added to the cache at", cacheDir)
+			}
 		}
 		sharedContent[cacheDir] = true
 	}
@@ -190,11 +199,6 @@ func GetSource(source string, logger *logging.Logger) (string, error) {
 
 var sharedMutex sync.Mutex
 var sharedContent = map[string]bool{}
-
-// ExpiredFolderContent returns false if the source does not need to be refreshed
-func Expired(folder string) bool {
-	return !aws_helper.CheckS3Status(folder)
-}
 
 // Copy the files and folders within the source folder into the destination folder. Note that hidden files and folders
 // (those starting with a dot) will be skipped.

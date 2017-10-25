@@ -46,6 +46,11 @@ func formatS3Path(bucket, region string, parts ...string) string {
 	if key != "" {
 		key = "/" + key
 	}
+	if region == "-us-east-1" {
+		// us-east-1 is considered as the default storage for S3, it is not necessary to specify it
+		// In fact, that caused a bug with terraform 0.10.3 and up (see https://github.com/hashicorp/terraform/issues/16442#issuecomment-339379748)
+		region = ""
+	}
 	return fmt.Sprintf("%s.s3%s.amazonaws.com%s", bucket, region, key)
 }
 
@@ -111,7 +116,7 @@ func SaveS3Status(url, folder string) (err error) {
 	}()
 	bucketInfo, err := GetBucketObjectInfoFromURL(url)
 	if err != nil {
-		return err
+		return
 	}
 
 	if !strings.HasSuffix(bucketInfo.Key, "/") {
@@ -128,29 +133,31 @@ func SaveS3Status(url, folder string) (err error) {
 		return
 	}
 	err = ioutil.WriteFile(filepath.Join(folder, cacheFile), jsonString, 0644)
-	return nil
+	return
 }
 
 // CheckS3Status compares the saved status with the current version of the bucket folder
 // returns true if the objects has not changed
-func CheckS3Status(folder string) bool {
+func CheckS3Status(folder string) (bool, error) {
 	content, err := ioutil.ReadFile(filepath.Join(folder, cacheFile))
 	if err != nil {
-		return false
+		return false, fmt.Errorf("Error reading file %s/%s: %v", folder, cacheFile, err)
 	}
 
 	var status bucketStatus
 	err = json.Unmarshal(content, &status)
+	fmt.Println("status =", status, err)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("Content of %s/%s is not valid JSON %v", folder, cacheFile, err)
 	}
 
 	s3Status, err := getS3Status(status.BucketInfo)
+	fmt.Println("s3Status =", status, err)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("Error while reading %v: %v", status.BucketInfo, err)
 	}
 
-	return reflect.DeepEqual(status, *s3Status)
+	return reflect.DeepEqual(status, *s3Status), nil
 }
 
 const cacheFile = ".terragrunt.cache"
