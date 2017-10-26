@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -57,6 +58,10 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 		logger = terragruntOptions.Logger.Info
 	}
 	logger("Running command:", command, strings.Join(args, " "))
+	command, err := LookPath(command, terragruntOptions.Env["PATH"])
+	if err != nil {
+		return errors.WithStackTrace(err)
+	}
 
 	if expandArgs {
 		args = util.ExpandArguments(args, terragruntOptions.WorkingDir)
@@ -83,13 +88,7 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	signalChannel := NewSignalsForwarder(forwardSignals, cmd, terragruntOptions.Logger, cmdChannel)
 	defer signalChannel.Close()
 
-	os.Setenv("PATH", terragruntOptions.Env["PATH"])
-	_, err := exec.LookPath(command)
-	if err == nil {
-		err = cmd.Run()
-	} else {
-		terragruntOptions.Logger.Errorf("Unable to find command %s in PATH=%s", command, os.Getenv("PATH"))
-	}
+	err = cmd.Run()
 
 	cmdChannel <- err
 	return errors.WithStackTrace(err)
@@ -116,6 +115,23 @@ func runShellCommandAndCaptureOutput(terragruntOptions *options.TerragruntOption
 	err := RunShellCommand(terragruntOptionsCopy, command, args...)
 	return stdout.String(), err
 }
+
+// LookPath search the supplied path to find the desired command
+// It uses a mutex since it has to temporary override the global PATH variable.
+func LookPath(command string, paths ...string) (string, error) {
+	originalPath := os.Getenv("PATH")
+
+	defer func() {
+		os.Setenv("PATH", originalPath)
+		lookPathMutex.Unlock()
+	}()
+
+	lookPathMutex.Lock()
+	os.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
+	return exec.LookPath(command)
+}
+
+var lookPathMutex sync.Mutex
 
 // Return the exit code of a command. If the error does not implement errors.IErrorCode or is not an exec.ExitError type,
 // the error is returned.

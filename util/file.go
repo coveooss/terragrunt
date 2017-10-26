@@ -11,6 +11,7 @@ import (
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
+	getter "github.com/hashicorp/go-getter"
 	"github.com/hashicorp/terraform/config/module"
 	logging "github.com/op/go-logging"
 )
@@ -159,7 +160,12 @@ func GetTempDownloadFolder(folders ...string) string {
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
 func GetSource(source string, logger *logging.Logger) (string, error) {
-	path, err := aws_helper.ConvertS3Path(source)
+	source, err := aws_helper.ConvertS3Path(source)
+	if err != nil {
+		return "", err
+	}
+
+	source, err = getter.Detect(source, "", getter.Detectors)
 	if err != nil {
 		return "", err
 	}
@@ -168,25 +174,47 @@ func GetSource(source string, logger *logging.Logger) (string, error) {
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
-	upToDate, err := aws_helper.CheckS3Status(cacheDir)
-	if _, ok := sharedContent[cacheDir]; !ok || !upToDate || err != nil {
+	s3Object, _ := aws_helper.GetBucketObjectInfoFromURL(source)
+	if s3Object != nil {
+		// This is an S3 bucket object, we make sure that the path is well formed
+		source = s3Object.String()
+		err = aws_helper.CheckS3Status(cacheDir)
+	} else if strings.HasPrefix(source, "file://") {
+		err = fmt.Errorf("Local path always copied")
+	}
+
+	_, alreadyInCache := sharedContent[cacheDir]
+	if !alreadyInCache || err != nil {
 		if logger != nil {
-			logger.Infof("Adding %s to the cache, expired=%v", source, !upToDate)
+			logger.Infof("Adding %s to the cache", source)
 		}
-		if !FileExists(cacheDir) || !upToDate {
+		if !FileExists(cacheDir) || err != nil {
 			if logger != nil {
-				logger.Info("Getting source files", source, "from", path)
+				var reason string
+				if err != nil {
+					reason = fmt.Sprintf("because status = %v", err)
+				}
+				logger.Info("Getting source files", source, reason)
 			}
-			os.RemoveAll(cacheDir)
-
-			err = module.GetCopy(cacheDir, path)
-			if err != nil {
-				return "", fmt.Errorf("%v while copying source from %s", err, path)
+			if !alreadyInCache {
+				err = os.RemoveAll(cacheDir)
+				if err != nil {
+					return "", fmt.Errorf("%v while deleting the cache for %s", err, source)
+				}
 			}
 
-			err = aws_helper.SaveS3Status(source, cacheDir)
+			err = module.GetCopy(cacheDir, source)
 			if err != nil {
-				return "", fmt.Errorf("%v while saving status for %s", err, path)
+				return "", fmt.Errorf("%v while copying source from %s", err, source)
+			}
+
+			if s3Object != nil {
+				// Since it is an S3 Bucket object, we save its md5 value
+				// to avoid multiple download of the same object
+				err = aws_helper.SaveS3Status(source, cacheDir)
+			}
+			if err != nil {
+				return "", fmt.Errorf("%v while saving status for %s", err, source)
 			}
 			if logger != nil {
 				logger.Info("Files from", source, "successfully added to the cache at", cacheDir)

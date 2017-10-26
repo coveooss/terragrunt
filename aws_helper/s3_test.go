@@ -17,6 +17,7 @@ func TestConvertS3Path(t *testing.T) {
 	}{
 		{"Non S3 path", args{"/folder/test"}, "/folder/test", false},
 		{"Non available S3", args{"s3://bucket/test"}, "bucket.s3.amazonaws.com/test", true},
+		{"Non available S3", args{"s3://bucket/test"}, "bucket.s3.amazonaws.com/test", true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,6 +53,7 @@ func TestGetBucketObjectInfoFromURL(t *testing.T) {
 		{"https://bucket.s3-us-east-1.amazonaws.com", &BucketInfo{"bucket", "us-east-1", ""}, false},
 		{"https://bucket.s3-us-west-2.amazonaws.com/key", &BucketInfo{"bucket", "us-west-2", "key"}, false},
 		{"https://s3-us-east-2.amazonaws.com/bucket", &BucketInfo{"bucket", "us-east-2", ""}, false},
+		{"s3::https://s3-us-east-2.amazonaws.com/bucket", &BucketInfo{"bucket", "us-east-2", ""}, false},
 	}
 	for _, tt := range tests {
 		t.Run(" ("+tt.url+")", func(t *testing.T) {

@@ -991,10 +991,13 @@ the terraform remote state has been configured.
 ```hcl
 terragrunt = {
   extra_command "name" {
-    commands  = [list of commands]  # optional (default use name as the command)
-    os        = [list of os]        # optional (default run on all os, os name are those supported by go, i.e. linux, darwin, windows)
-    use_state = true or false       # optional (default = true)
-    act_as    = "command"           # optional (default = empty, instructs to consider this extra command and its aliases as another command regarding extra_parameters evaluation)
+    description = ""                  # Description of the extra command action
+    command     = ""                  # optional (default use name as the command, actual command to use instead of name)
+    commands    = [list of commands]  # optional (list of other commands that should be included and are having the same behavior)
+    aliases     = [list of alias]     # optional (list of alias to ccommand or name or first item of commands)
+    os          = [list of os]        # optional (default run on all os, os name are those supported by go, i.e. linux, darwin, windows)
+    use_state   = true or false       # optional (default = true)
+    act_as      = "command"           # optional (default = empty, instructs to consider this extra command and its aliases as another command regarding extra_parameters evaluation)
   }
 }
 ```
@@ -1040,6 +1043,7 @@ It is possible to override hooks defined in a parent configuration by specifying
 ```hcl
 terragrunt = {
   pre_hooks|post_hooks "name" {
+    description      = ""                             # Description of the hook
     command          = "command"                      # shell command to execute
     on_commands      = [list of terraform commands]   # optional, default run on all terraform command
     os               = [list of os]                   # optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
@@ -1080,8 +1084,8 @@ When terragrunt execute, it creates a temporary folder containing the source of 
 ```hcl
 terragrunt = {
   import_files "name" {
-    source              = "path"                        # Specify the source of the copy (support any [module
-sources](https://www.terraform.io/docs/modules/sources.html).))
+    description         = ""                            # Description of the import files action
+    source              = "path"                        # Specify the source of the copy (currently only support [S3 sources](https://www.terraform.io/docs/modules/sources.html).))
     files               = ["*"]                         # Optional, copy all files matching one of the pattern
     copy_and_rename     = []                            # Optional, specific rule to copy file from the source and rename it in the target
     required            = false                         # Optional, generate an error if there is no matching file

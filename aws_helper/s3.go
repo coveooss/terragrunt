@@ -35,7 +35,7 @@ func ConvertS3Path(path string) (string, error) {
 
 	region := ""
 	if answer.LocationConstraint != nil {
-		region = "-" + *answer.LocationConstraint
+		region = *answer.LocationConstraint
 	}
 
 	return formatS3Path(parts[0], region, parts[1:]...), nil
@@ -46,9 +46,11 @@ func formatS3Path(bucket, region string, parts ...string) string {
 	if key != "" {
 		key = "/" + key
 	}
-	if region == "-us-east-1" {
+	if region != "" && region != "us-east-1" {
 		// us-east-1 is considered as the default storage for S3, it is not necessary to specify it
 		// In fact, that caused a bug with terraform 0.10.3 and up (see https://github.com/hashicorp/terraform/issues/16442#issuecomment-339379748)
+		region = "-" + region
+	} else {
 		region = ""
 	}
 	return fmt.Sprintf("%s.s3%s.amazonaws.com%s", bucket, region, key)
@@ -60,13 +62,13 @@ func GetBucketObjectInfoFromURL(url string) (*BucketInfo, error) {
 		s3Patterns = []*regexp.Regexp{
 			regexp.MustCompile(`^https?://(?P<bucket>[^/\.]+?).s3.amazonaws.com(?:/(?P<key>.*))?$`),
 			regexp.MustCompile(`^https?://(?P<bucket>[^/\.]+?).s3-(?P<region>.*?).amazonaws.com(?:/(?P<key>.*))?$`),
-			regexp.MustCompile(`^https?://s3.amazonaws.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
-			regexp.MustCompile(`^https?://s3-(?P<region>.*?).amazonaws.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
+			regexp.MustCompile(`^(s3::)?https?://s3.amazonaws.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
+			regexp.MustCompile(`^(s3::)?https?://s3-(?P<region>.*?).amazonaws.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
 		}
 	}
 
 	convertedURL, _ := ConvertS3Path(url)
-	if !strings.HasPrefix(convertedURL, "http") {
+	if !strings.HasPrefix(convertedURL, "http") && !strings.HasPrefix(convertedURL, "s3::") {
 		convertedURL = "https://" + convertedURL
 	}
 
@@ -96,6 +98,11 @@ type BucketInfo struct {
 	BucketName string
 	Region     string
 	Key        string
+}
+
+// Path returns a valid path from a bucket object
+func (b *BucketInfo) String() string {
+	return formatS3Path(b.BucketName, b.Region, b.Key)
 }
 
 type bucketStatus struct {
@@ -138,26 +145,27 @@ func SaveS3Status(url, folder string) (err error) {
 
 // CheckS3Status compares the saved status with the current version of the bucket folder
 // returns true if the objects has not changed
-func CheckS3Status(folder string) (bool, error) {
+func CheckS3Status(folder string) error {
 	content, err := ioutil.ReadFile(filepath.Join(folder, cacheFile))
 	if err != nil {
-		return false, fmt.Errorf("Error reading file %s/%s: %v", folder, cacheFile, err)
+		return err
 	}
 
 	var status bucketStatus
 	err = json.Unmarshal(content, &status)
-	fmt.Println("status =", status, err)
 	if err != nil {
-		return false, fmt.Errorf("Content of %s/%s is not valid JSON %v", folder, cacheFile, err)
+		return fmt.Errorf("Content of %s/%s (%s) is not valid JSON: %v", folder, cacheFile, content, err)
 	}
 
 	s3Status, err := getS3Status(status.BucketInfo)
-	fmt.Println("s3Status =", status, err)
 	if err != nil {
-		return false, fmt.Errorf("Error while reading %v: %v", status.BucketInfo, err)
+		return fmt.Errorf("Error while reading %s: %v", status.BucketInfo, err)
 	}
 
-	return reflect.DeepEqual(status, *s3Status), nil
+	if !reflect.DeepEqual(status, *s3Status) {
+		return fmt.Errorf("Checksum changed for %s", status.BucketInfo)
+	}
+	return nil
 }
 
 const cacheFile = ".terragrunt.cache"
