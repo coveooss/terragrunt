@@ -29,6 +29,10 @@ func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
 	}
 	if awsRegion != "" {
 		options.Config = aws.Config{Region: aws.String(awsRegion)}
+		if os.Getenv("AWS_REGION") == "" {
+			// If the default region is not set, we retain it
+			os.Setenv("AWS_REGION", awsRegion)
+		}
 	}
 	session, err := session.NewSessionWithOptions(options)
 
