@@ -29,15 +29,15 @@ func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
 	}
 	if awsRegion != "" {
 		options.Config = aws.Config{Region: aws.String(awsRegion)}
-		if os.Getenv("AWS_REGION") == "" {
-			// If the default region is not set, we retain it
-			os.Setenv("AWS_REGION", awsRegion)
-		}
 	}
 	session, err := session.NewSessionWithOptions(options)
-
 	if err != nil {
 		return nil, errors.WithStackTraceAndPrefix(err, "Error initializing session")
+	}
+
+	if os.Getenv("AWS_REGION") == "" && *session.Config.Region != "" {
+		// If the default region is not set, we retain it
+		os.Setenv("AWS_REGION", *session.Config.Region)
 	}
 
 	return session, nil
@@ -48,6 +48,13 @@ func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
 // properly. This also ensures that the session remains alive in case of MFA is required avoiding asking for
 // MFA on each AWS calls.
 func InitAwsSession(awsProfile string) (*session.Session, error) {
+	if awsProfile != "" {
+		// We unset the environment variables to not interfere with
+		// the supplied profile
+		os.Unsetenv("AWS_ACCESS_KEY_ID")
+		os.Unsetenv("AWS_SECRET_ACCESS_KEY")
+		os.Unsetenv("AWS_SESSION_TOKEN")
+	}
 	session, err := CreateAwsSession("", awsProfile)
 	if err != nil {
 		return nil, err
