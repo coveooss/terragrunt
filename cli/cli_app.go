@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
@@ -203,6 +206,8 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	}
 	if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
 		return runMultiModuleCommand(command, terragruntOptions)
+	} else if command == "get-stack" {
+		return getAll(terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
 }
@@ -359,6 +364,20 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		}
 	}()
 
+	// We define a filter to trap plan exit code that are not real error
+	filterPlanError := func(err error, command string) error {
+		if err == nil || command != "plan" {
+			return err
+		}
+		if exiterr, ok := errors.Unwrap(err).(*exec.ExitError); ok {
+			// For plan, an error with exit code 2 should not be considered as a real error
+			if exiterr.Sys().(syscall.WaitStatus).ExitStatus() == errors.CHANGE_EXIT_CODE {
+				return errors.PlanWithChanges{}
+			}
+		}
+		return err
+	}
+
 	if actualCommand.Extra != nil {
 		// The command is not a native terraform command
 		runner := shell.RunShellCommand
@@ -366,7 +385,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 			runner = shell.RunShellCommandExpandArgs
 		}
 
-		return runner(terragruntOptions, actualCommand.Command, append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)...)
+		err = runner(terragruntOptions, actualCommand.Command, append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)...)
+		return filterPlanError(err, actualCommand.Extra.ActAs)
 	}
 
 	// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
@@ -379,7 +399,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	// We restore back the name of the command since it may have been temporary changed to support state file initialization and get modules
 	terragruntOptions.TerraformCliArgs[0] = actualCommand.Command
-	return shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+	err = shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+	return filterPlanError(err, actualCommand.Command)
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
@@ -446,6 +467,38 @@ func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *op
 		return remoteState.ConfigureRemoteState(terragruntOptions)
 	}
 
+	return nil
+}
+
+// getAll returns the list of the stacks in sequential order which they should be executed
+func getAll(terragruntOptions *options.TerragruntOptions) error {
+	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
+	if err != nil {
+		return err
+	}
+
+	solver := make(map[string]float64, len(stack.Modules))
+
+	depOrderMax := func(modules []*configstack.TerraformModule) float64 {
+		max := 0.0
+		for _, module := range modules {
+			if current, ok := solver[module.Path]; ok && current > max {
+				max = current
+			}
+		}
+		return 0
+	}
+
+	sortedModules := make([]string, 0, len(stack.Modules))
+	base := 100.0
+	currentDir, _ := os.Getwd()
+	for _, module := range stack.Modules {
+		module.Path, _ = filepath.Rel(currentDir, module.Path)
+		sortedModules = append(sortedModules, module.Path)
+	}
+	sort.Strings(sortedModules)
+
+	fmt.Println(sortedModules)
 	return nil
 }
 

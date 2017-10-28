@@ -278,10 +278,13 @@ func getActualCommand(terragruntOptions *options.TerragruntOptions, config *conf
 			if extraCommand.ActAs != "" {
 				// The command must act as another command for extra argument validation
 				terragruntOptions.TerraformCliArgs[0] = extraCommand.ActAs
-			} else if extraCommand.UseState == nil || *extraCommand.UseState {
-				// We simulate that the extra command acts as the plan command to init the state file
-				// and get the modules
-				behaveAs = "plan"
+			} else {
+				extraCommand.ActAs = cmd
+				if extraCommand.UseState == nil || *extraCommand.UseState {
+					// We simulate that the extra command acts as the plan command to init the state file
+					// and get the modules
+					behaveAs = "plan"
+				}
 			}
 
 			return actualCommand{cmd, behaveAs, &extraCommand}

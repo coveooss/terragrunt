@@ -2,8 +2,11 @@ package errors
 
 import (
 	"fmt"
+
 	goerrors "github.com/go-errors/errors"
 )
+
+const CHANGE_EXIT_CODE = 2
 
 // Wrap the given error in an Error type that contains the stack trace. If the given error already has a stack trace,
 // it is used directly. If the given error is nil, return nil.
@@ -76,4 +79,14 @@ func Recover(onPanic func(cause error)) {
 // Interface to determine if we can retrieve an exit status from an error
 type IErrorCode interface {
 	ExitStatus() (int, error)
+}
+
+type PlanWithChanges struct{}
+
+func (err PlanWithChanges) Error() string {
+	return "There are changes in the plan"
+}
+
+func (err PlanWithChanges) ExitStatus() (int, error) {
+	return CHANGE_EXIT_CODE, nil
 }

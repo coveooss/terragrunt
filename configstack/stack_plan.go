@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -18,8 +19,6 @@ type moduleResult struct {
 	Message   string
 	NbChanges int
 }
-
-const CHANGE_EXIT_CODE = 2
 
 var planResultRegex = regexp.MustCompile(`(\d+) to add, (\d+) to change, (\d+) to destroy.`)
 
@@ -47,7 +46,14 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 		for _, status := range results {
 			sum += status.NbChanges
 		}
-		err = countError{sum}
+		if sum != 0 {
+			article, plural := "is", ""
+			if sum > 1 {
+				article, plural = "are", "s"
+			}
+			terragruntOptions.Logger.Noticef("There %s %v change%s to apply", article, sum, plural)
+			return errors.PlanWithChanges{}
+		}
 	}
 
 	return err
@@ -57,7 +63,7 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHandler {
 	return func(module TerraformModule, output string, err error) (string, error) {
 		warnAboutMissingDependencies(module, output)
-		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == CHANGE_EXIT_CODE {
+		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == errors.CHANGE_EXIT_CODE {
 			// We do not want to consider CHANGE_EXIT_CODE as an error and not execute the dependants because there is an "error" in the dependencies.
 			// CHANGE_EXIT_CODE is not an error in this case, it is simply a status. We will reintroduce the exit code at the very end to mimic the behaviour
 			// of the native terrafrom plan -detailed-exitcode to exit with CHANGE_EXIT_CODE if there are changes in any of the module in the stack.
@@ -138,26 +144,6 @@ func extractSummaryResultFromPlan(output string) (string, int) {
 	return "No effective change", 0
 }
 
-// This is used to return the total number of changes if -detail-exitcode is specified and return an exit code of 2
-// to be compliant with the terraform specification.
-type countError struct{ count int }
-
-func (err countError) Error() string {
-	article, plural := "is", ""
-	if err.count > 1 {
-		article, plural = "are", "s"
-	}
-	return fmt.Sprintf("There %s %v change%s to apply", article, err.count, plural)
-}
-
-// If there are changes, the exit status must be = 2
-func (err countError) ExitStatus() (int, error) {
-	if err.count > 0 {
-		return CHANGE_EXIT_CODE, nil
-	}
-	return NORMAL_EXIT_CODE, nil
-}
-
 // This is a specialized version of MultiError type
 // It handles the exit code differently from the base implementation
 type PlanMultiError struct {
@@ -169,7 +155,7 @@ func (this PlanMultiError) ExitStatus() (int, error) {
 	for i := range this.Errors {
 		if code, err := shell.GetExitCode(this.Errors[i]); err != nil {
 			return UNDEFINED_EXIT_CODE, this
-		} else if code == ERROR_EXIT_CODE || code == CHANGE_EXIT_CODE && exitCode == NORMAL_EXIT_CODE {
+		} else if code == ERROR_EXIT_CODE || code == errors.CHANGE_EXIT_CODE && exitCode == NORMAL_EXIT_CODE {
 			// The exit code 1 is more significant that the exit code 2 because it represents an error
 			// while 2 represent a warning.
 			return UNDEFINED_EXIT_CODE, this
