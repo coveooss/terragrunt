@@ -11,6 +11,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
@@ -162,10 +163,13 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 
 	// If someone calls us with no args at all, show the help text and exit
 	if !cliContext.Args().Present() {
+		title := color.New(color.FgYellow, color.Underline).SprintFunc()
+		fmt.Println(title("\nTERRAGRUNT\n"))
 		cli.ShowAppHelp(cliContext)
 
 		fmt.Fprintln(cliContext.App.Writer)
 		util.SetWarningLoggingLevel()
+		fmt.Println(title("TERRAFORM\n"))
 		shell.RunTerraformCommand(terragruntOptions, "--help")
 		return nil
 	}
@@ -477,20 +481,20 @@ func getAll(terragruntOptions *options.TerragruntOptions) error {
 		return err
 	}
 
-	solver := make(map[string]float64, len(stack.Modules))
+	// solver := make(map[string]float64, len(stack.Modules))
 
-	depOrderMax := func(modules []*configstack.TerraformModule) float64 {
-		max := 0.0
-		for _, module := range modules {
-			if current, ok := solver[module.Path]; ok && current > max {
-				max = current
-			}
-		}
-		return 0
-	}
+	// depOrderMax := func(modules []*configstack.TerraformModule) float64 {
+	// 	max := 0.0
+	// 	for _, module := range modules {
+	// 		if current, ok := solver[module.Path]; ok && current > max {
+	// 			max = current
+	// 		}
+	// 	}
+	// 	return 0
+	// }
 
 	sortedModules := make([]string, 0, len(stack.Modules))
-	base := 100.0
+	// base := 100.0
 	currentDir, _ := os.Getwd()
 	for _, module := range stack.Modules {
 		module.Path, _ = filepath.Rel(currentDir, module.Path)
