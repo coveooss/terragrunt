@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/gruntwork-io/terragrunt/cli"
@@ -33,7 +32,6 @@ func checkForErrorsAndExit(err error) {
 
 		if _, ok := errors.Unwrap(err).(errors.PlanWithChanges); !ok {
 			// Plan status are not considred as an error
-			fmt.Printf("Error type %T\n", err)
 			if os.Getenv("TERRAGRUNT_DEBUG") != "" {
 				logger.Error(errors.PrintErrorWithStackTrace(err))
 			} else {
