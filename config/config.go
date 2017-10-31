@@ -220,6 +220,7 @@ type ExtraCommand struct {
 	ExpandArgs  *bool    `hcl:"expand_args,omitempty"`
 	UseState    *bool    `hcl:"use_state,omitempty"`
 	ActAs       string   `hcl:"act_as,omitempty"`
+	VersionArg  string   `hcl:"version,omitempty"`
 }
 
 func (command *ExtraCommand) String() string {

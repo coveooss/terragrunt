@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -10,11 +11,39 @@ import (
 
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
 var title = color.New(color.FgHiWhite)
 var item = color.New(color.FgHiYellow).SprintFunc()
+
+// PrintVersions prints the version of all configured underlying tools
+func PrintVersions(terragruntOptions *options.TerragruntOptions, conf *config.TerragruntConfig) {
+	fmt.Println("Terragrunt version", terragruntVersion)
+	fmt.Println("Terraform version", terraformVersion)
+	for _, extraCmd := range conf.ExtraCommands {
+		if extraCmd.VersionArg == "" || len(extraCmd.OS) > 0 && !util.ListContainsElement(extraCmd.OS, runtime.GOOS) {
+			continue
+		}
+
+		fmt.Printf("\n%s\n", item(extraCmd.Name))
+		if extraCmd.Commands == nil {
+			if extraCmd.Command == "" {
+				extraCmd.Commands = []string{extraCmd.Name}
+			} else {
+				extraCmd.Commands = []string{extraCmd.Command}
+			}
+		}
+		for _, cmd := range extraCmd.Commands {
+			title.Printf("\n%s ", cmd)
+
+			if err := shell.RunShellCommand(terragruntOptions, cmd, extraCmd.VersionArg); err != nil {
+				terragruntOptions.Logger.Error(err)
+			}
+		}
+	}
+}
 
 // PrintDoc prints the contextual documentation relative to the current project
 func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.TerragruntConfig) {

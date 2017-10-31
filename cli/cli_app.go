@@ -84,14 +84,16 @@ USAGE:
    {{.Usage}}
 
 COMMANDS:
-   print-doc     Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
+   print-doc           Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
+   get-dependencies    Get a JSON representation of the dependencies between projects under the 'stack' (see -all operations)
+   get-versions        Get all versions of underlying tools (including extra_command)
 
    -all operations:
-   plan-all      Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder (with a summary at the end)
-   apply-all     Apply a 'stack' by running 'terragrunt apply' in each subfolder
-   output-all    Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder (no error if a subfolder doesn't have outputs)
-   destroy-all   Destroy a 'stack' by running 'terragrunt destroy' in each subfolder in reverse dependency order
-   *-all         In fact, the -all could be applied on any terraform or custom commands (that's cool)
+   plan-all            Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder (with a summary at the end)
+   apply-all           Apply a 'stack' by running 'terragrunt apply' in each subfolder
+   output-all          Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder (no error if a subfolder doesn't have outputs)
+   destroy-all         Destroy a 'stack' by running 'terragrunt destroy' in each subfolder in reverse dependency order
+   *-all               In fact, the -all could be applied on any terraform or custom commands (that's cool)
 
    terraform commands:
    *             Terragrunt forwards all other commands directly to Terraform
@@ -284,6 +286,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	terragruntOptions.IgnoreRemainingInterpolation = false
 	conf.SubstituteAllVariables(terragruntOptions, true)
+
+	if actualCommand.Command == "get-versions" {
+		PrintVersions(terragruntOptions, conf)
+		os.Exit(0)
+	}
 
 	if actualCommand.Command == "print-doc" {
 		PrintDoc(terragruntOptions, conf)

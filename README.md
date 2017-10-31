@@ -998,6 +998,7 @@ terragrunt = {
     os          = [list of os]        # optional (default run on all os, os name are those supported by go, i.e. linux, darwin, windows)
     use_state   = true or false       # optional (default = true)
     act_as      = "command"           # optional (default = empty, instructs to consider this extra command and its aliases as another command regarding extra_parameters evaluation)
+    version     = ""                  # optional (argument to get the version of the command, if many command are defined, they must all support the same argument to get the version)
   }
 }
 ```
