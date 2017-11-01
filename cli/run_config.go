@@ -257,12 +257,9 @@ func getActualCommand(terragruntOptions *options.TerragruntOptions, config *conf
 			}
 		}
 
-		if util.ListContainsElement(extraCommand.Aliases, cmd) {
-			// The named command is in the list of aliases, so we map it to the command
-			cmd = extraCommand.Name
-		}
+		cmd = resolveAlias(cmd, &extraCommand, terragruntOptions)
 
-		if cmd == extraCommand.Name || util.ListContainsElement(extraCommand.Commands, cmd) {
+		if cmd == extraCommand.Command || util.ListContainsElement(extraCommand.Commands, cmd) {
 			var behaveAs string
 
 			if !util.ListContainsElement(extraCommand.Commands, cmd) {
@@ -291,6 +288,48 @@ func getActualCommand(terragruntOptions *options.TerragruntOptions, config *conf
 		}
 	}
 	return actualCommand{cmd, "", nil}
+}
+
+func resolveAlias(cmd string, extra *config.ExtraCommand, terragruntOptions *options.TerragruntOptions) string {
+	for _, alias := range extra.Aliases {
+		split := strings.SplitN(alias, "=", 2)
+		if cmd != split[0] {
+			continue
+		}
+
+		if len(split) == 1 {
+			return extra.Command
+		}
+
+		cmd = split[1]
+		if strings.ContainsAny(split[1], " |,&$") {
+			cmd = "bash"
+
+			if !util.ListContainsElement(extra.Commands, cmd) {
+				extra.Commands = append(extra.Commands, cmd)
+			}
+
+			var args string
+			for _, arg := range append(extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...) {
+				if !strings.Contains(arg, " \t") {
+					args += " " + arg
+				} else {
+					args += fmt.Sprintf(` "%s"`, arg)
+				}
+			}
+
+			script := split[1]
+			if strings.Contains(script, " $*") {
+				script = strings.Replace(script, " $*", args, -1)
+			} else if !strings.Contains(script, "|") {
+				script += args
+			}
+
+			extra.Arguments = []string{"-c", script}
+			terragruntOptions.TerraformCliArgs = terragruntOptions.TerraformCliArgs[:1]
+		}
+	}
+	return cmd
 }
 
 type actualCommand struct {
