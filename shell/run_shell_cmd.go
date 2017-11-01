@@ -26,7 +26,7 @@ func RunTerraformCommand(terragruntOptions *options.TerragruntOptions, args ...s
 // like init and get during the preparation steps.
 // If the user redirect the stdout, he will only get the output for the terraform desired command.
 func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.TerragruntOptions, args ...string) error {
-	output, err := runShellCommandAndCaptureOutput(terragruntOptions, true, terragruntOptions.TerraformPath, args...)
+	output, err := RunShellCommandAndCaptureOutput(terragruntOptions, true, terragruntOptions.TerraformPath, args...)
 	if err != nil {
 		terragruntOptions.Logger.Error(output)
 	} else {
@@ -37,7 +37,7 @@ func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.Ter
 
 // Run the given Terraform command and return the stdout as a string
 func RunTerraformCommandAndCaptureOutput(terragruntOptions *options.TerragruntOptions, args ...string) (string, error) {
-	return runShellCommandAndCaptureOutput(terragruntOptions, false, terragruntOptions.TerraformPath, args...)
+	return RunShellCommandAndCaptureOutput(terragruntOptions, false, terragruntOptions.TerraformPath, args...)
 }
 
 // Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
@@ -96,7 +96,7 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 
 // Run the specified shell command with the specified arguments. Capture the command's stdout and return it as a
 // string.
-func runShellCommandAndCaptureOutput(terragruntOptions *options.TerragruntOptions, copyWorkingDir bool, command string, args ...string) (string, error) {
+func RunShellCommandAndCaptureOutput(terragruntOptions *options.TerragruntOptions, copyWorkingDir bool, command string, args ...string) (string, error) {
 	stdout := new(bytes.Buffer)
 
 	terragruntOptionsCopy := terragruntOptions.Clone(terragruntOptions.TerragruntConfigPath)
