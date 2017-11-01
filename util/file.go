@@ -307,8 +307,12 @@ func ExpandArguments(args []string, folder string) (result []string) {
 	prefix := folder + string(filepath.Separator)
 
 	for _, arg := range args {
-		arg = os.ExpandEnv(arg)
-		if strings.ContainsAny(arg, "*?[]") {
+		// We consider \$ as an escape char for $ and we do not want ExpandEnv to replace it right now
+		const stringEscape = "%StrEsc%"
+		arg = strings.Replace(arg, `\$`, stringEscape, -1)
+		arg = strings.Replace(os.ExpandEnv(arg), stringEscape, "$", -1)
+		if strings.ContainsAny(arg, "*?[]") && !strings.ContainsAny(arg, "$|`") {
+			// The string contains wildcard and is not a shell command
 			if !filepath.IsAbs(arg) {
 				arg = prefix + arg
 			}
