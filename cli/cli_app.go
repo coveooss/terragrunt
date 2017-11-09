@@ -77,7 +77,7 @@ var TERRAFORM_COMMANDS_WITH_SUBCOMMAND = []string{
 // TODO: this description text has copy/pasted versions of many Terragrunt constants, such as command names and file
 // names. It would be easy to make this code DRY using fmt.Sprintf(), but then it's hard to make the text align nicely.
 // Write some code to take generate this help text automatically, possibly leveraging code that's part of urfave/cli.
-var CUSTOM_USAGE_TEXT = `DESCRIPTION:
+const customUsageText = `DESCRIPTION:
    {{.Name}} - {{.UsageText}}
 
 USAGE:
@@ -85,7 +85,7 @@ USAGE:
 
 COMMANDS:
    get-doc [list]                        Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
-   get-dependencies                      Get a JSON representation of the dependencies between projects under the 'stack' (see -all operations)
+   get-stack                             Get a JSON representation of the dependencies between projects under the 'stack' (see -all operations)
    get-versions                          Get all versions of underlying tools (including extra_command)
 
    -all operations:
@@ -134,7 +134,7 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 		// kills the app (or any automated test) dead in its tracks.
 	}
 
-	cli.AppHelpTemplate = CUSTOM_USAGE_TEXT
+	cli.AppHelpTemplate = customUsageText
 
 	app := cli.NewApp()
 
@@ -228,7 +228,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Check if the current command is an extra command
-	actualCommand := getActualCommand(terragruntOptions, conf)
+	actualCommand := conf.ExtraCommands.ActualCommand(terragruntOptions.TerraformCliArgs[0])
 
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
@@ -274,7 +274,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder
-	if err := importFiles(terragruntOptions, conf.ImportFiles, terragruntOptions.WorkingDir, false); err != nil {
+	if err := conf.ImportFiles.Run(); err != nil {
 		return err
 	}
 
@@ -322,15 +322,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
-	// Resolve the links to check if we must copy files in them
-	modules, err := getModulesFolders(terragruntOptions)
-	if err != nil {
+	if err := conf.ImportFiles.RunOnModules(); err != nil {
 		return err
-	}
-	for _, moduleFolder := range modules {
-		if err := importFiles(terragruntOptions, conf.ImportFiles, moduleFolder, true); err != nil {
-			return err
-		}
 	}
 
 	// If there is no terraform file in the folder, we skip the command
@@ -350,7 +343,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
 	// Executing the pre-hooks commands that should be ran before init state if there are
-	if err = runHooks(terragruntOptions, conf.PreHooks, func(hook config.Hook) bool { return !hook.AfterInitState }); err != nil {
+	if err = conf.PreHooks.Run(config.BeforeInitState); err != nil {
 		return err
 	}
 
@@ -362,14 +355,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Executing the pre-hooks that should be ran after init state if there are
-	if err = runHooks(terragruntOptions, conf.PreHooks, func(hook config.Hook) bool { return hook.AfterInitState }); err != nil {
+	if err = conf.PreHooks.Run(config.AfterInitState); err != nil {
 		return err
 	}
 
 	defer func() {
 		// Executing the post-hooks commands if there are and there is no error
 		if result == nil {
-			if err := runHooks(terragruntOptions, conf.PostHooks, nil); err != nil {
+			if err := conf.PostHooks.Run(); err != nil {
 				result = err
 			}
 		}

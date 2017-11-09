@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
@@ -13,120 +14,86 @@ import (
 	"github.com/hashicorp/hcl"
 )
 
-const DefaultTerragruntConfigPath = "terraform.tfvars"
-const OldTerragruntConfigPath = ".terragrunt"
-const TerragruntScriptFolder = ".terragrunt-scripts"
+const (
+	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
+	DefaultTerragruntConfigPath = "terraform.tfvars"
+
+	// OldTerragruntConfigPath is the name of the legacy file name used to store terragrunt definitions
+	OldTerragruntConfigPath = ".terragrunt"
+
+	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
+	TerragruntScriptFolder = ".terragrunt-scripts"
+)
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Description   string
-	Terraform     *TerraformConfig
-	RemoteState   *remote.RemoteState
-	Dependencies  *ModuleDependencies
-	Uniqueness    *string
-	PreHooks      []Hook
-	PostHooks     []Hook
-	ExtraCommands []ExtraCommand
-	ImportFiles   []ImportConfig
-	AssumeRole    *string
+	Description  string
+	Terraform    *TerraformConfig
+	RemoteState  *remote.RemoteState
+	Dependencies *ModuleDependencies
+	Uniqueness   *string `hcl:"uniqueness_criteria"`
+	AssumeRole   *string `hcl:"assume_role"`
+
+	PreHooks      HookList
+	PostHooks     HookList
+	ExtraCommands ExtraCommandList
+	ImportFiles   ImportFilesList
+
+	options *options.TerragruntOptions
 }
 
-func (conf *TerragruntConfig) String() string {
-	return fmt.Sprintf("TerragruntConfig{Terraform = %v, RemoteState = %v, Dependencies = %v}", conf.Terraform, conf.RemoteState, conf.Dependencies)
+func (conf TerragruntConfig) String() string {
+	return util.PrettyPrintStruct(conf)
 }
 
-// SubstituteAllVariables replace all remaining variables by the value
-func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions, substituteFinal bool) {
-	scriptFolder := filepath.Join(terragruntOptions.WorkingDir, TerragruntScriptFolder)
-	substitute := func(value *string) *string {
-		if value == nil {
-			return nil
-		}
-
-		*value = SubstituteVars(*value, terragruntOptions)
-		if substituteFinal {
-			// We only substitute folders on the last substitute call
-			*value = strings.Replace(*value, GET_TEMP_FOLDER, terragruntOptions.DownloadDir, -1)
-			*value = strings.Replace(*value, GET_SCRIPT_FOLDER, scriptFolder, -1)
-			*value = strings.TrimSpace(util.UnIndent(*value))
-		}
-
-		return value
-	}
-
-	for i, extraArgs := range conf.Terraform.ExtraArgs {
-		substitute(&extraArgs.Description)
-		conf.Terraform.ExtraArgs[i] = extraArgs
-	}
-
-	substitute(conf.Uniqueness)
-	substitute(conf.AssumeRole)
-	if conf.Terraform != nil {
-		substitute(&conf.Terraform.Source)
-	}
-	if conf.RemoteState != nil && conf.RemoteState.Config != nil {
-		for key, value := range conf.RemoteState.Config {
-			switch val := value.(type) {
-			case string:
-				conf.RemoteState.Config[key] = *substitute(&val)
-			}
-		}
-	}
-
-	substituteHooks := func(hooks []Hook) {
-		for i, hook := range hooks {
-			substitute(&hook.Command)
-			substitute(&hook.Description)
-			for i, arg := range hook.Arguments {
-				hook.Arguments[i] = *substitute(&arg)
-			}
-			hooks[i] = hook
-		}
-	}
-	substituteHooks(conf.PreHooks)
-	substituteHooks(conf.PostHooks)
-
-	for i, command := range conf.ExtraCommands {
-		substitute(&command.Description)
-		for i, cmd := range command.Commands {
-			command.Commands[i] = *substitute(&cmd)
-		}
-		for i, arg := range command.Arguments {
-			command.Arguments[i] = *substitute(&arg)
-		}
-		conf.ExtraCommands[i] = command
-	}
-
-	for i, importer := range conf.ImportFiles {
-		substitute(&importer.Description)
-		substitute(&importer.Source)
-		substitute(&importer.Target)
-		for i, value := range importer.Files {
-			importer.Files[i] = *substitute(&value)
-		}
-		for _, value := range importer.CopyAndRenameFiles {
-			substitute(&value.Source)
-			substitute(&value.Target)
-		}
-		conf.ImportFiles[i] = importer
-	}
-}
-
-// terragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e.
-// terraform.tfvars or .terragrunt)
+// terragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terraform.tfvars or .terragrunt)
 type terragruntConfigFile struct {
-	Description   string              `hcl:"description,omitempty"`
-	Terraform     *TerraformConfig    `hcl:"terraform,omitempty"`
-	Include       *IncludeConfig      `hcl:"include,omitempty"`
-	Lock          *LockConfig         `hcl:"lock,omitempty"`
-	RemoteState   *remote.RemoteState `hcl:"remote_state,omitempty"`
-	Dependencies  *ModuleDependencies `hcl:"dependencies,omitempty"`
-	Uniqueness    *string             `hcl:"uniqueness_criteria"`
-	PreHooks      []Hook              `hcl:"pre_hooks,omitempty"`
-	PostHooks     []Hook              `hcl:"post_hooks,omitempty"`
-	ExtraCommands []ExtraCommand      `hcl:"extra_command,omitempty"`
-	ImportFiles   []ImportConfig      `hcl:"import_files,omitempty"`
-	AssumeRole    *string             `hcl:"assume_role"`
+	TerragruntConfig `hcl:",squash"`
+	PreHooks         []Hook         `hcl:"pre_hook"`
+	PostHooks        []Hook         `hcl:"post_hook"`
+	ExtraCommands    []ExtraCommand `hcl:"extra_command"`
+	ImportFiles      []ImportFiles  `hcl:"import_files"`
+	Include          *IncludeConfig
+	Lock             *LockConfig
+}
+
+func (tcf terragruntConfigFile) String() string {
+	return util.PrettyPrintStruct(tcf)
+}
+
+// Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
+func (tcf *terragruntConfigFile) convertToTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
+	if tcf.Lock != nil {
+		terragruntOptions.Logger.Warningf(""+
+			"Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as "+
+			"of version 0.9.0, so this feature has been removed from Terragrunt and will have no effect. See your Terraform "+
+			"backend docs for how to configure locking: https://www.terraform.io/docs/backends/types/index.html.",
+			terragruntOptions.TerragruntConfigPath)
+	}
+
+	if tcf.RemoteState != nil {
+		tcf.RemoteState.FillDefaults()
+		if err := tcf.RemoteState.Validate(); err != nil {
+			return nil, err
+		}
+	}
+
+	// Make the context available to sub-objects
+	tcf.options = terragruntOptions
+	for i := range tcf.ExtraCommands {
+		tcf.ExtraCommands[i].config = &tcf.TerragruntConfig
+	}
+	for i := range tcf.ImportFiles {
+		tcf.ImportFiles[i].config = &tcf.TerragruntConfig
+	}
+	for i := range *tcf.PreHooks.GetList() {
+		(*tcf.PreHooks.GetList())[i].config = &tcf.TerragruntConfig
+	}
+	for i := range *tcf.PostHooks.GetList() {
+		(*tcf.PostHooks.GetList())[i].config = &tcf.TerragruntConfig
+	}
+
+	return &tcf.TerragruntConfig, nil
 }
 
 // Older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -167,99 +134,12 @@ func (deps *ModuleDependencies) String() string {
 
 // TerraformConfig specifies where to find the Terraform configuration files
 type TerraformConfig struct {
-	ExtraArgs []TerraformExtraArguments `hcl:"extra_arguments"`
-	Source    string                    `hcl:"source"`
+	ExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments"`
+	Source    string                      `hcl:"source"`
 }
 
-func (conf *TerraformConfig) String() string {
-	return fmt.Sprintf("TerraformConfig{Source = %v}", conf.Source)
-}
-
-// TerraformExtraArguments sets a list of arguments to pass to Terraform if command fits any in the `Commands` list
-type TerraformExtraArguments struct {
-	Name             string   `hcl:",key"`
-	Description      string   `hcl:"description"`
-	Arguments        []string `hcl:"arguments,omitempty"`
-	Vars             []string `hcl:"vars,omitempty"`
-	RequiredVarFiles []string `hcl:"required_var_files,omitempty"`
-	OptionalVarFiles []string `hcl:"optional_var_files,omitempty"`
-	Commands         []string `hcl:"commands,omitempty"`
-}
-
-func (conf *TerraformExtraArguments) String() string {
-	return fmt.Sprintf("TerraformArguments{Name = %s, Arguments = %v, Commands = %v}", conf.Name, conf.Arguments, conf.Commands)
-}
-
-// Hook is a definition of user command that should be executed as part of the terragrunt process
-type Hook struct {
-	Name           string   `hcl:",key"`
-	Description    string   `hcl:"description"`
-	Command        string   `hcl:"command"`
-	OnCommands     []string `hcl:"on_commands,omitempty"`
-	OS             []string `hcl:"os,omitempty"`
-	Arguments      []string `hcl:"arguments,omitempty"`
-	ExpandArgs     bool     `hcl:"expand_args,omitempty"`
-	IgnoreError    bool     `hcl:"ignore_error,omitempty"`
-	AfterInitState bool     `hcl:"after_init_state,omitempty"`
-	Order          int      `hcl:"order,omitempty"`
-}
-
-func (hook *Hook) String() string {
-	return fmt.Sprintf("Hook %s: %s %s", hook.Name, hook.Command, strings.Join(hook.Arguments, " "))
-}
-
-// ExtraCommand is a definition of user extra command that should be executed in place of terraform
-type ExtraCommand struct {
-	Name        string   `hcl:",key"`
-	Description string   `hcl:"description"`
-	Command     string   `hcl:"command,omitempty"`
-	Commands    []string `hcl:"commands,omitempty"`
-	OS          []string `hcl:"os,omitempty"`
-	Aliases     []string `hcl:"aliases,omitempty"`
-	Arguments   []string `hcl:"arguments,omitempty"`
-	ExpandArgs  *bool    `hcl:"expand_args,omitempty"`
-	UseState    *bool    `hcl:"use_state,omitempty"`
-	ActAs       string   `hcl:"act_as,omitempty"`
-	VersionArg  string   `hcl:"version,omitempty"`
-}
-
-func (command *ExtraCommand) String() string {
-	return fmt.Sprintf("Extra Command %s: %s", command.Name, command.Commands)
-}
-
-// ImportConfig is a configuration of files that must be imported from another directory to the terraform directory
-// prior executing terraform commands
-type ImportConfig struct {
-	Name               string          `hcl:",key"`
-	Description        string          `hcl:"description"`
-	Source             string          `hcl:"source"`
-	Files              []string        `hcl:"files"`
-	CopyAndRenameFiles []CopyAndRename `hcl:"copy_and_rename"`
-	Required           *bool           `hcl:"required,omitempty"`
-	ImportIntoModules  bool            `hcl:"import_into_modules"`
-	FileMode           *int            `hcl:"file_mode, omitempty"`
-	Target             string          `hcl:"target, omitempty"`
-	Prefix             *string         `hcl:"prefix, omitempty"`
-	OS                 []string        `hcl:"os,omitempty"`
-}
-
-// CopyAndRename is a structure used by ImportConfig to rename the imported files
-type CopyAndRename struct {
-	Source string `hcl:"source"`
-	Target string `hcl:"target"`
-}
-
-func (importConfig ImportConfig) String() string {
-	files := importConfig.Files
-
-	for _, copy := range importConfig.CopyAndRenameFiles {
-		files = append(files, fmt.Sprintf("%s → %s", copy.Source, copy.Target))
-	}
-
-	return fmt.Sprintf("ImportConfig %s %s required=%v modules=%v : %s",
-		importConfig.Name, importConfig.Source,
-		importConfig.Required, importConfig.ImportIntoModules,
-		strings.Join(files, ", "))
+func (conf TerraformConfig) String() string {
+	return util.PrettyPrintStruct(conf)
 }
 
 // Returns the default path to use for the Terragrunt configuration file. The reason this is a method rather than a
@@ -358,7 +238,11 @@ func containsTerragruntBlock(configString string) bool {
 // Read the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", terragruntOptions.TerragruntConfigPath)
-	return ParseConfigFile(terragruntOptions, IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
+	config, err := ParseConfigFile(terragruntOptions, IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
+	if err == nil {
+		terragruntOptions.Logger.Debugf("Resulting configuration\n%v", config)
+	}
+	return config, err
 }
 
 // Parse the Terragrunt config file at the given path. If the include parameter is not nil, then treat this as a config
@@ -398,20 +282,24 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
-	resolvedConfigString, err := ResolveTerragruntConfigString(configString, include, terragruntOptions)
+	configString, err := ResolveTerragruntConfigString(configString, include, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(resolvedConfigString, include.Path)
+	configString = strings.Replace(configString, "pre_hooks", "pre_hook", -1)
+	configString = strings.Replace(configString, "post_hooks", "post_hook", -1)
+
+	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)
 	if err != nil {
 		return nil, err
 	}
 	if terragruntConfigFile == nil {
 		return nil, errors.WithStackTrace(CouldNotResolveTerragruntConfigInFile(include.Path))
 	}
+	terragruntOptions.Logger.Debugf("Loaded configuration\n%v", terragruntConfigFile)
 
-	config, err := convertToTerragruntConfig(terragruntConfigFile, terragruntOptions)
+	config, err := terragruntConfigFile.convertToTerragruntConfig(terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -439,13 +327,13 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 			return nil, errors.WithStackTrace(err)
 		}
 		return terragruntConfig, nil
-	} else {
-		tfvarsConfig := &tfvarsFileWithTerragruntConfig{}
-		if err := hcl.Decode(tfvarsConfig, configString); err != nil {
-			return nil, errors.WithStackTrace(err)
-		}
-		return tfvarsConfig.Terragrunt, nil
 	}
+
+	tfvarsConfig := &tfvarsFileWithTerragruntConfig{}
+	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
+		return nil, errors.WithStackTrace(err)
+	}
+	return tfvarsConfig.Terragrunt, nil
 }
 
 // Merge the given config with an included config. Anything specified in the current config will override the contents
@@ -482,8 +370,8 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 		includedConfig.AssumeRole = config.AssumeRole
 	}
 
-	mergePreHooks(terragruntOptions, config.PreHooks, &includedConfig.PreHooks)
-	mergePostHooks(terragruntOptions, config.PostHooks, &includedConfig.PostHooks)
+	mergePreHooks(terragruntOptions, *config.PreHooks.GetList(), includedConfig.PreHooks.GetList())
+	mergePostHooks(terragruntOptions, *config.PostHooks.GetList(), includedConfig.PostHooks.GetList())
 	mergeExtraCommands(terragruntOptions, config.ExtraCommands, &includedConfig.ExtraCommands)
 	mergeImports(terragruntOptions, config.ImportFiles, &includedConfig.ImportFiles)
 
@@ -510,7 +398,7 @@ func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *Ter
 // }
 
 // Merge the extra arguments priorising those defined in the leaf
-func mergePreHooks(terragruntOptions *options.TerragruntOptions, original []Hook, newHooks *[]Hook) {
+func mergePreHooks(terragruntOptions *options.TerragruntOptions, original HookList, newHooks *HookList) {
 	result := *newHooks
 addHook:
 	for _, hook := range original {
@@ -526,7 +414,7 @@ addHook:
 	*newHooks = result
 }
 
-func mergePostHooks(terragruntOptions *options.TerragruntOptions, original []Hook, newHooks *[]Hook) {
+func mergePostHooks(terragruntOptions *options.TerragruntOptions, original HookList, newHooks *HookList) {
 	result := original
 addHook:
 	for _, hook := range *newHooks {
@@ -541,7 +429,7 @@ addHook:
 	*newHooks = result
 }
 
-func mergeExtraCommands(terragruntOptions *options.TerragruntOptions, original []ExtraCommand, newCommands *[]ExtraCommand) {
+func mergeExtraCommands(terragruntOptions *options.TerragruntOptions, original ExtraCommandList, newCommands *ExtraCommandList) {
 	result := *newCommands
 add:
 	for _, command := range original {
@@ -558,7 +446,7 @@ add:
 }
 
 // Merge the import files priorising those defined in the leaf
-func mergeImports(terragruntOptions *options.TerragruntOptions, original []ImportConfig, newImports *[]ImportConfig) {
+func mergeImports(terragruntOptions *options.TerragruntOptions, original ImportFilesList, newImports *ImportFilesList) {
 	result := *newImports
 addImport:
 	for _, importer := range original {
@@ -584,7 +472,7 @@ addImport:
 // extra_arguments on the terraform cli.
 // Therefore, if .tfvar files from both the parent and child contain a variable
 // with the same name, the value from the child will win.
-func mergeExtraArgs(terragruntOptions *options.TerragruntOptions, childExtraArgs []TerraformExtraArguments, parentExtraArgs *[]TerraformExtraArguments) {
+func mergeExtraArgs(terragruntOptions *options.TerragruntOptions, childExtraArgs TerraformExtraArgumentsList, parentExtraArgs *TerraformExtraArgumentsList) {
 	result := *parentExtraArgs
 	for _, child := range childExtraArgs {
 		parentExtraArgsWithSameName := getIndexOfExtraArgsWithName(result, child.Name)
@@ -637,36 +525,6 @@ func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *optio
 	return ParseConfigFile(terragruntOptions, *includedConfig)
 }
 
-// Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
-func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
-	terragruntConfig := &TerragruntConfig{}
-
-	if terragruntConfigFromFile.Lock != nil {
-		terragruntOptions.Logger.Warningf("Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as of version 0.9.0, so this feature has been removed from Terragrunt and will have no effect. See your Terraform backend docs for how to configure locking: https://www.terraform.io/docs/backends/types/index.html.", terragruntOptions.TerragruntConfigPath)
-	}
-
-	if terragruntConfigFromFile.RemoteState != nil {
-		terragruntConfigFromFile.RemoteState.FillDefaults()
-		if err := terragruntConfigFromFile.RemoteState.Validate(); err != nil {
-			return nil, err
-		}
-
-		terragruntConfig.RemoteState = terragruntConfigFromFile.RemoteState
-	}
-
-	terragruntConfig.Description = terragruntConfigFromFile.Description
-	terragruntConfig.Terraform = terragruntConfigFromFile.Terraform
-	terragruntConfig.Dependencies = terragruntConfigFromFile.Dependencies
-	terragruntConfig.Uniqueness = terragruntConfigFromFile.Uniqueness
-	terragruntConfig.PreHooks = terragruntConfigFromFile.PreHooks
-	terragruntConfig.PostHooks = terragruntConfigFromFile.PostHooks
-	terragruntConfig.ExtraCommands = terragruntConfigFromFile.ExtraCommands
-	terragruntConfig.ImportFiles = terragruntConfigFromFile.ImportFiles
-	terragruntConfig.AssumeRole = terragruntConfigFromFile.AssumeRole
-
-	return terragruntConfig, nil
-}
-
 // Custom error types
 
 type IncludedConfigMissingPath string
@@ -680,3 +538,5 @@ type CouldNotResolveTerragruntConfigInFile string
 func (err CouldNotResolveTerragruntConfigInFile) Error() string {
 	return fmt.Sprintf("Could not find Terragrunt configuration settings in %s", string(err))
 }
+
+var item = color.New(color.FgHiYellow).SprintFunc()

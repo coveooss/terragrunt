@@ -13,17 +13,21 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
-const GET_SCRIPT_FOLDER = "<SCRIPT_FOLDER>"
+const (
+	GET_TEMP_FOLDER   = "<TEMP_FOLDER>"
+	GET_SCRIPT_FOLDER = "<SCRIPT_FOLDER>"
+)
 
-var INTERPOLATION_VARS = `\s*var\.([[:alpha:]][\w-]*)\s*`
-var INTERPOLATION_PARAMETERS = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
-var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
-var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
-var INTERPOLATION_SYNTAX_REGEX_REMAINING = regexp.MustCompile(`\$\{.*?\}`)
-var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`^\$\{\s*(.*?)\((.*?)\)\s*\}$`)
-var HELPER_VAR_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, INTERPOLATION_VARS))
-var MAX_PARENT_FOLDERS_TO_CHECK = 100
+var (
+	INTERPOLATION_VARS                   = `\s*var\.([[:alpha:]][\w-]*)\s*`
+	INTERPOLATION_PARAMETERS             = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
+	INTERPOLATION_SYNTAX_REGEX           = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
+	INTERPOLATION_SYNTAX_REGEX_SINGLE    = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
+	INTERPOLATION_SYNTAX_REGEX_REMAINING = regexp.MustCompile(`\$\{.*?\}`)
+	HELPER_FUNCTION_SYNTAX_REGEX         = regexp.MustCompile(`^\$\{\s*(.*?)\((.*?)\)\s*\}$`)
+	HELPER_VAR_REGEX                     = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, INTERPOLATION_VARS))
+	MAX_PARENT_FOLDERS_TO_CHECK          = 100
+)
 
 func getVarParams(count int) string {
 	const parameterRegexBase = `\s*(?:"(?P<string%d>[^\"]*?)"|var\.(?P<var%d>[[:alpha:]][\w-]*)|(?P<func%d>\w+\(.*?\)))\s*`
@@ -35,36 +39,38 @@ func getVarParams(count int) string {
 }
 
 // List of terraform commands that accept -lock-timeout
-var TERRAFORM_COMMANDS_NEED_LOCKING = []string{
-	"apply",
-	"destroy",
-	"import",
-	"init",
-	"plan",
-	"refresh",
-	"taint",
-	"untaint",
-}
+var (
+	TERRAFORM_COMMANDS_NEED_LOCKING = []string{
+		"apply",
+		"destroy",
+		"import",
+		"init",
+		"plan",
+		"refresh",
+		"taint",
+		"untaint",
+	}
 
-// List of terraform commands that accept -var or -var-file
-var TERRAFORM_COMMANDS_NEED_VARS = []string{
-	"apply",
-	"console",
-	"destroy",
-	"import",
-	"plan",
-	"push",
-	"refresh",
-}
+	// List of terraform commands that accept -var or -var-file
+	TERRAFORM_COMMANDS_NEED_VARS = []string{
+		"apply",
+		"console",
+		"destroy",
+		"import",
+		"plan",
+		"push",
+		"refresh",
+	}
 
-// List of terraform commands that accept -input=
-var TERRAFORM_COMMANDS_NEED_INPUT = []string{
-	"apply",
-	"import",
-	"init",
-	"plan",
-	"refresh",
-}
+	// List of terraform commands that accept -input=
+	TERRAFORM_COMMANDS_NEED_INPUT = []string{
+		"apply",
+		"import",
+		"init",
+		"plan",
+		"refresh",
+	}
+)
 
 type EnvVar struct {
 	Name         string
