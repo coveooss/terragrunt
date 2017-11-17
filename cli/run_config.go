@@ -206,7 +206,6 @@ func getModulesFolders(terragruntOptions *options.TerragruntOptions) ([]string, 
 			return nil, err
 		}
 		if !stat.IsDir() {
-			terragruntOptions.Logger.Warning("Unexpected file in .terraform/modules:", module)
 			continue
 		}
 
