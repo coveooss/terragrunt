@@ -23,7 +23,7 @@ func ParseTerragruntOptions(cliContext *cli.Context) (*options.TerragruntOptions
 	}
 
 	terragruntOptions.Writer = cliContext.App.Writer
-	terragruntOptions.ErrWriter = cliContext.App.ErrWriter
+	terragruntOptions.ErrWriter = logCatcher{cliContext.App.ErrWriter, terragruntOptions.Logger}
 
 	return terragruntOptions, nil
 }
