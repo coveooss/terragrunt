@@ -15,7 +15,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Parse command line options that are passed in for Terragrunt
+// ParseTerragruntOptions parses command line options that are passed in for Terragrunt
 func ParseTerragruntOptions(cliContext *cli.Context) (*options.TerragruntOptions, error) {
 	terragruntOptions, err := parseTerragruntOptionsFromArgs(cliContext.Args())
 	if err != nil {

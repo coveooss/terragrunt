@@ -71,8 +71,13 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 
 	// TODO: consider adding prefix from terragruntOptions logger to stdout and stderr
 	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
 	cmd.Stdout = terragruntOptions.Writer
-	cmd.Stderr = terragruntOptions.ErrWriter
+
+	if !strings.HasSuffix(command, "sh") || len(args) > 0 {
+		// We do not redirect stderr if the actual command is a shell
+		cmd.Stderr = terragruntOptions.ErrWriter
+	}
 	cmd.Env = terragruntOptions.EnvironmentVariables()
 
 	// Terragrunt can run some commands (such as terraform remote config) before running the actual terraform
