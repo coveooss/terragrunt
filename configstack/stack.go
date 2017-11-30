@@ -1,6 +1,7 @@
 package configstack
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -23,6 +24,43 @@ func (stack *Stack) String() string {
 		modules = append(modules, fmt.Sprintf("  => %s", module.String()))
 	}
 	return fmt.Sprintf("Stack at %s:\n%s", stack.Path, strings.Join(modules, "\n"))
+}
+
+// ToJSONString renders this stack as a JSON string
+func (stack *Stack) ToJSONString() (string, error) {
+	moduleMaps := make([]map[string]interface{}, 0)
+	for _, module := range stack.Modules {
+		moduleMaps = append(moduleMaps, module.ToMap())
+	}
+
+	json, err := json.Marshal(moduleMaps)
+	if err != nil {
+		return "", err
+	}
+
+	return string(json), err
+}
+
+// SortModules sorts in-place the list of modules topologically
+func (stack *Stack) SortModules() {
+	sortedModules := make([]*TerraformModule, 0)
+	visitedModules := make(map[string]bool)
+	for _, module := range stack.Modules {
+		if _, ok := visitedModules[module.Path]; !ok {
+			visitedModules, sortedModules = stack.topologicalSort(module, visitedModules, sortedModules)
+		}
+	}
+	stack.Modules = sortedModules
+}
+
+func (stack *Stack) topologicalSort(module *TerraformModule, visitedModules map[string]bool, sortedModules []*TerraformModule) (map[string]bool, []*TerraformModule) {
+	visitedModules[module.Path] = true
+	for _, dependency := range module.Dependencies {
+		if _, ok := visitedModules[dependency.Path]; !ok {
+			visitedModules, sortedModules = stack.topologicalSort(dependency, visitedModules, sortedModules)
+		}
+	}
+	return visitedModules, append(sortedModules, module)
 }
 
 // Plan all the modules in the given stack in their specified order.

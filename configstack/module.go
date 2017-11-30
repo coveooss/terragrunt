@@ -24,11 +24,21 @@ type TerraformModule struct {
 
 // Render this module as a human-readable string
 func (module *TerraformModule) String() string {
+	moduleMap := module.ToMap()
+	dependencies := moduleMap["dependencies"].([]string)
+	return fmt.Sprintf("Module %s (dependencies: [%s])", moduleMap["path"], strings.Join(dependencies, ", "))
+}
+
+// ToMap returns a map of this object's properties
+func (module *TerraformModule) ToMap() map[string]interface{} {
+	moduleMap := make(map[string]interface{})
 	dependencies := []string{}
 	for _, dependency := range module.Dependencies {
 		dependencies = append(dependencies, util.GetPathRelativeToWorkingDir(dependency.Path))
 	}
-	return fmt.Sprintf("Module %s (dependencies: [%s])", util.GetPathRelativeToWorkingDir(module.Path), strings.Join(dependencies, ", "))
+	moduleMap["path"] = util.GetPathRelativeToWorkingDir(module.Path)
+	moduleMap["dependencies"] = dependencies
+	return moduleMap
 }
 
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents

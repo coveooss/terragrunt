@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -85,7 +84,7 @@ USAGE:
 
 COMMANDS:
    get-doc [list]                        Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
-   get-dependencies                      Get a JSON representation of the dependencies between projects under the 'stack' (see -all operations)
+   get-stack [json]                      Get a list of terraform modules sorted by dependency order
    get-versions                          Get all versions of underlying tools (including extra_command)
 
    -all operations:
@@ -213,7 +212,7 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
 		return runMultiModuleCommand(command, terragruntOptions)
 	} else if command == "get-stack" {
-		return getAll(terragruntOptions)
+		return getStack(terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
 }
@@ -481,35 +480,25 @@ func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *op
 	return nil
 }
 
-// getAll returns the list of the stacks in sequential order which they should be executed
-func getAll(terragruntOptions *options.TerragruntOptions) error {
+// Get a list of terraform modules sorted by dependency order
+func getStack(terragruntOptions *options.TerragruntOptions) error {
 	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
 	if err != nil {
 		return err
 	}
+	stack.SortModules()
 
-	// solver := make(map[string]float64, len(stack.Modules))
-
-	// depOrderMax := func(modules []*configstack.TerraformModule) float64 {
-	// 	max := 0.0
-	// 	for _, module := range modules {
-	// 		if current, ok := solver[module.Path]; ok && current > max {
-	// 			max = current
-	// 		}
-	// 	}
-	// 	return 0
-	// }
-
-	sortedModules := make([]string, 0, len(stack.Modules))
-	// base := 100.0
-	currentDir, _ := os.Getwd()
-	for _, module := range stack.Modules {
-		module.Path, _ = filepath.Rel(currentDir, module.Path)
-		sortedModules = append(sortedModules, module.Path)
+	json := util.ListContainsElement(terragruntOptions.TerraformCliArgs[1:], "json")
+	if json {
+		json, err := stack.ToJSONString()
+		if err != nil {
+			return err
+		}
+		fmt.Println(json)
+	} else {
+		fmt.Println(stack.String())
 	}
-	sort.Strings(sortedModules)
 
-	fmt.Println(sortedModules)
 	return nil
 }
 
