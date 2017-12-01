@@ -255,40 +255,41 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 
 // Custom error types
 
+// DependencyFinishedWithError represents an error coming from a dependency
 type DependencyFinishedWithError struct {
 	Module     *TerraformModule
 	Dependency *TerraformModule
 	Err        error
 }
 
-func (err DependencyFinishedWithError) Error() string {
-	return fmt.Sprintf("Cannot process module %s because one of its dependencies, %s, finished with an error: %s", err.Module, err.Dependency, err.Err)
+func (e DependencyFinishedWithError) Error() string {
+	return fmt.Sprintf("Cannot process module %s because one of its dependencies, %s, finished with an error: %s", e.Module, e.Dependency, e.Err)
 }
 
-func (this DependencyFinishedWithError) ExitStatus() (int, error) {
-	if exitCode, err := shell.GetExitCode(this.Err); err == nil {
+func (e DependencyFinishedWithError) ExitStatus() (int, error) {
+	if exitCode, err := shell.GetExitCode(e.Err); err == nil {
 		return exitCode, nil
 	}
-	return -1, this
+	return -1, e
 }
 
 type MultiError struct {
 	Errors []error
 }
 
-func (err MultiError) Error() string {
+func (e MultiError) Error() string {
 	errorStrings := []string{}
-	for _, err := range err.Errors {
+	for _, err := range e.Errors {
 		errorStrings = append(errorStrings, err.Error())
 	}
 	return fmt.Sprintf("Encountered the following errors:\n%s", strings.Join(errorStrings, "\n"))
 }
 
-func (this MultiError) ExitStatus() (int, error) {
+func (e MultiError) ExitStatus() (int, error) {
 	exitCode := NORMAL_EXIT_CODE
-	for i := range this.Errors {
-		if code, err := shell.GetExitCode(this.Errors[i]); err != nil {
-			return UNDEFINED_EXIT_CODE, this
+	for i := range e.Errors {
+		if code, err := shell.GetExitCode(e.Errors[i]); err != nil {
+			return UNDEFINED_EXIT_CODE, e
 		} else if code > exitCode {
 			exitCode = code
 		}

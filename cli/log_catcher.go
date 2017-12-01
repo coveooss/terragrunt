@@ -53,8 +53,8 @@ func initLogCatcher() {
 	for level := logging.CRITICAL; level <= logging.DEBUG; level++ {
 		levelNames = append(levelNames, level.String())
 	}
-	// https://regex101.com/r/joriQk/1
-	logMessage = regexp.MustCompile(fmt.Sprintf(`(?i)\[(?P<type>%s)\]\s*(?P<message>.*)`, strings.Join(levelNames, "|")))
+	// https://regex101.com/r/joriQk/2
+	logMessage = regexp.MustCompile(fmt.Sprintf(`(?im)^\s*\[(?P<type>%s)\]\s*(?P<message>.*?)\s*$`, strings.Join(levelNames, "|")))
 }
 
 var logMessage *regexp.Regexp

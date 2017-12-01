@@ -37,14 +37,14 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			continue
 		}
 
-		if importer.Prefix == nil {
-			prefix := importer.Name + "_"
-			importer.Prefix = &prefix
-		}
-
 		if importer.Required == nil {
 			def := true
 			importer.Required = &def
+		}
+
+		if importer.Prefix == nil {
+			def := ""
+			importer.Prefix = &def
 		}
 
 		var sourceFolder string
@@ -86,28 +86,65 @@ func importFiles(terragruntOptions *options.TerragruntOptions, importers []confi
 			return nil
 		}
 
-		var sourceFiles []string
-		for _, pattern := range importer.Files {
-			if sourceFolder != "" {
-				pattern = filepath.Join(sourceFolder, pattern)
-			} else if !filepath.IsAbs(pattern) {
-				pattern = filepath.Join(terragruntOptions.WorkingDir, pattern)
+		ensureIsFile := func(file string) error {
+			if stat, err := os.Stat(file); err != nil {
+				return fmt.Errorf("Error %v while processing %s: %s", err, importer.Name, file)
+			} else if stat.IsDir() {
+				return fmt.Errorf("Folder ignored %s: %s", importer.Name, file)
 			}
-			files, err := filepath.Glob(pattern)
-			if err != nil {
-				return fmt.Errorf("Invalid pattern %s", filepath.Base(pattern))
-			}
+			return nil
+		}
 
-			if len(files) > 0 {
-				fileBases := make([]string, len(files))
-				for i, file := range files {
-					fileBases[i] = filepath.Base(file)
+		var sourceFiles []string
+		if len(importer.Files) == 0 {
+			importer.Files = []string{"*"}
+		}
+
+		var filePatterns, pathPatterns []string
+		for _, pattern := range importer.Files {
+			if filepath.IsAbs(pattern) {
+				files, err := filepath.Glob(pattern)
+				if err != nil {
+					return fmt.Errorf("Invalid pattern %s", filepath.Base(pattern))
 				}
-				terragruntOptions.Logger.Infof("%s: Copy %s to %s", importer.Name, strings.Join(fileBases, ", "), folderName)
-			} else if *importer.Required {
-				return fmt.Errorf("Unable to import required file %s", pattern)
+				if *importer.Required && len(files) == 0 {
+					return fmt.Errorf("Unable to import required file %s (%s)", importer.Name, pattern)
+				}
+
+				for _, file := range files {
+					if err := ensureIsFile(file); err == nil {
+						sourceFiles = append(sourceFiles, file)
+					}
+				}
+			} else if strings.ContainsAny(pattern, "*[]?") {
+				if strings.Contains(pattern, string(filepath.Separator)) {
+					pathPatterns = append(pathPatterns, pattern)
+				} else {
+					filePatterns = append(filePatterns, pattern)
+				}
 			}
-			sourceFiles = append(sourceFiles, files...)
+		}
+
+		_ = filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
+			if ensureIsFile(path) != nil || strings.HasSuffix(path, aws_helper.CacheFile) {
+				return nil
+			}
+			relName := strings.TrimPrefix(path, sourceFolder)[1:]
+			for _, pattern := range filePatterns {
+				if match, _ := filepath.Match(pattern, filepath.Base(relName)); match {
+					sourceFiles = append(sourceFiles, path)
+				}
+			}
+			for _, pattern := range pathPatterns {
+				if match, _ := filepath.Match(pattern, relName); match {
+					sourceFiles = append(sourceFiles, path)
+				}
+			}
+			return nil
+		})
+
+		if *importer.Required && len(sourceFiles) == 0 {
+			return fmt.Errorf("Unable to import required file %s (%s)", importer.Name, strings.Join(importer.Files, ", "))
 		}
 
 		for _, source := range sourceFiles {

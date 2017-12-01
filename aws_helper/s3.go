@@ -14,6 +14,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
+// CacheFile is the name of the file that hold the S3 source configuration for the folder
+const CacheFile = ".terragrunt.cache"
+
 // ConvertS3Path returns an S3 compatible path
 func ConvertS3Path(path string) (string, error) {
 	if !strings.HasPrefix(path, "s3://") {
@@ -139,14 +142,14 @@ func SaveS3Status(url, folder string) (err error) {
 	if err != nil {
 		return
 	}
-	err = ioutil.WriteFile(filepath.Join(folder, cacheFile), jsonString, 0644)
+	err = ioutil.WriteFile(filepath.Join(folder, CacheFile), jsonString, 0644)
 	return
 }
 
 // CheckS3Status compares the saved status with the current version of the bucket folder
 // returns true if the objects has not changed
 func CheckS3Status(folder string) error {
-	content, err := ioutil.ReadFile(filepath.Join(folder, cacheFile))
+	content, err := ioutil.ReadFile(filepath.Join(folder, CacheFile))
 	if err != nil {
 		return err
 	}
@@ -154,7 +157,7 @@ func CheckS3Status(folder string) error {
 	var status bucketStatus
 	err = json.Unmarshal(content, &status)
 	if err != nil {
-		return fmt.Errorf("Content of %s/%s (%s) is not valid JSON: %v", folder, cacheFile, content, err)
+		return fmt.Errorf("Content of %s/%s (%s) is not valid JSON: %v", folder, CacheFile, content, err)
 	}
 
 	s3Status, err := getS3Status(status.BucketInfo)
@@ -167,8 +170,6 @@ func CheckS3Status(folder string) error {
 	}
 	return nil
 }
-
-const cacheFile = ".terragrunt.cache"
 
 func getS3Status(info BucketInfo) (*bucketStatus, error) {
 	session, err := CreateAwsSession(info.Region, "")

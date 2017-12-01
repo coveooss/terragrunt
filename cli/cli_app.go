@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"syscall"
 
@@ -37,7 +36,6 @@ var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_S
 var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE}
 
 const MULTI_MODULE_SUFFIX = "-all"
-
 const CMD_INIT = "init"
 
 // DEPRECATED_COMMANDS is a map of deprecated commands to the commands that replace them.
@@ -85,7 +83,7 @@ USAGE:
 
 COMMANDS:
    get-doc [list]                        Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
-   get-dependencies                      Get a JSON representation of the dependencies between projects under the 'stack' (see -all operations)
+   get-stack [json]                      Get the list of stack to execute (optionally specify json to get the stack with its dependencies)
    get-versions                          Get all versions of underlying tools (including extra_command)
 
    -all operations:
@@ -210,10 +208,8 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
 		return err
 	}
-	if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
+	if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) || command == CMD_GET_STACK {
 		return runMultiModuleCommand(command, terragruntOptions)
-	} else if command == "get-stack" {
-		return getAll(terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
 }
@@ -230,6 +226,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Check if the current command is an extra command
 	actualCommand := getActualCommand(terragruntOptions, conf)
 
+	if actualCommand.Command == CMD_GET_STACK {
+		return stackHandler(terragruntOptions, conf)
+	}
+
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
 		if util.ListContainsElement(TERRAFORM_COMMANDS_WITH_SUBCOMMAND, terragruntOptions.TerraformCliArgs[0]) {
@@ -243,6 +243,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		if commandLength <= len(terragruntOptions.TerraformCliArgs) {
 			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
 		}
+
 		terragruntOptions.TerraformCliArgs = args
 	}
 
@@ -367,8 +368,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	defer func() {
+		// If there is an error but it is in fact a plan status, we run the post hooks normally
+		_, planStatusError := result.(errors.PlanWithChanges)
+
 		// Executing the post-hooks commands if there are and there is no error
-		if result == nil {
+		if result == nil || planStatusError {
 			if err := runHooks(terragruntOptions, conf.PostHooks, nil); err != nil {
 				result = err
 			}
@@ -423,7 +427,9 @@ func isMultiModuleCommand(command string) bool {
 // Execute a command that affects multiple Terraform modules, such as the apply-all or destroy-all command.
 func runMultiModuleCommand(command string, terragruntOptions *options.TerragruntOptions) error {
 	realCommand := strings.TrimSuffix(command, MULTI_MODULE_SUFFIX)
-	if strings.HasPrefix(command, "plan-") {
+	if command == CMD_GET_STACK {
+		return getStack(terragruntOptions)
+	} else if strings.HasPrefix(command, "plan-") {
 		return planAll(realCommand, terragruntOptions)
 	} else if strings.HasPrefix(command, "apply-") {
 		return applyAll(realCommand, terragruntOptions)
@@ -434,9 +440,8 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 	} else {
 		if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
 			return runAll(realCommand, terragruntOptions)
-		} else {
-			return errors.WithStackTrace(UnrecognizedCommand(command))
 		}
+		return errors.WithStackTrace(UnrecognizedCommand(command))
 	}
 }
 
@@ -481,38 +486,6 @@ func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *op
 	return nil
 }
 
-// getAll returns the list of the stacks in sequential order which they should be executed
-func getAll(terragruntOptions *options.TerragruntOptions) error {
-	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
-	if err != nil {
-		return err
-	}
-
-	// solver := make(map[string]float64, len(stack.Modules))
-
-	// depOrderMax := func(modules []*configstack.TerraformModule) float64 {
-	// 	max := 0.0
-	// 	for _, module := range modules {
-	// 		if current, ok := solver[module.Path]; ok && current > max {
-	// 			max = current
-	// 		}
-	// 	}
-	// 	return 0
-	// }
-
-	sortedModules := make([]string, 0, len(stack.Modules))
-	// base := 100.0
-	currentDir, _ := os.Getwd()
-	for _, module := range stack.Modules {
-		module.Path, _ = filepath.Rel(currentDir, module.Path)
-		sortedModules = append(sortedModules, module.Path)
-	}
-	sort.Strings(sortedModules)
-
-	fmt.Println(sortedModules)
-	return nil
-}
-
 // runAll run the specified command on all configuration in a stack, in the order
 // specified in the terraform_remote_state dependencies
 func runAll(command string, terragruntOptions *options.TerragruntOptions) error {
@@ -522,7 +495,7 @@ func runAll(command string, terragruntOptions *options.TerragruntOptions) error 
 	}
 
 	terragruntOptions.Logger.Notice(stack)
-	return stack.RunAll([]string{command}, terragruntOptions, false)
+	return stack.RunAll([]string{command}, terragruntOptions, configstack.NormalOrder)
 }
 
 // planAll prints the plans from all configuration in a stack, in the order
@@ -552,7 +525,7 @@ func applyAll(command string, terragruntOptions *options.TerragruntOptions) erro
 	}
 
 	if shouldApplyAll {
-		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, false)
+		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, configstack.NormalOrder)
 	}
 
 	return nil
@@ -573,7 +546,7 @@ func destroyAll(command string, terragruntOptions *options.TerragruntOptions) er
 	}
 
 	if shouldDestroyAll {
-		return stack.RunAll([]string{command, "-force", "-input=false"}, terragruntOptions, true)
+		return stack.RunAll([]string{command, "-force", "-input=false"}, terragruntOptions, configstack.ReverseOrder)
 	}
 
 	return nil

@@ -44,14 +44,9 @@ func (stack *Stack) Output(command string, terragruntOptions *options.Terragrunt
 }
 
 // Run the specified command on all modules in the given stack in their specified order.
-func (stack *Stack) RunAll(command []string, terragruntOptions *options.TerragruntOptions, reverse bool) error {
+func (stack *Stack) RunAll(command []string, terragruntOptions *options.TerragruntOptions, order DependencyOrder) error {
 	stack.setTerraformCommand(command)
-	runner := RunModules
-	if reverse {
-		runner = RunModulesReverseOrder
-	}
-
-	return runner(stack.Modules)
+	return RunModulesWithHandler(stack.Modules, nil, order)
 }
 
 // Return an error if there is a dependency cycle in the modules of this stack.
