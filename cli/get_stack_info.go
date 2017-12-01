@@ -1,53 +1,72 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"sync"
 
 	"github.com/gruntwork-io/terragrunt/config"
+	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-const CMD_GET_STACK = "get-stack"
+const getStackCommand = "get-stack"
 
-func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
-	type stack struct {
-		Path         string   `json:"path"`
-		Dependencies []string `json:"dependencies"`
+// Get a list of terraform modules sorted by dependency order
+func getStack(terragruntOptions *options.TerragruntOptions) error {
+	json := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "json")
+	run := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "run")
+
+	if run {
+		return getStackThroughExecution(terragruntOptions, json)
 	}
-	var stacks []stack
+
+	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
+	if err != nil {
+		return err
+	}
+	stack.SortModules()
+
+	if json {
+		fmt.Println(stack.JSON())
+	} else {
+		for _, module := range stack.Modules {
+			fmt.Println(util.GetPathRelativeToWorkingDir(module.Path))
+		}
+	}
+
+	return nil
+}
+
+// Get a list of terraform modules sorted by dependency order (but through real execution of the stack modules)
+// Should give the same result as getStack
+func getStackThroughExecution(terragruntOptions *options.TerragruntOptions, json bool) (err error) {
+	var stack configstack.SimpleTerraformModules
 
 	mutex := sync.Mutex{}
-	stackHandler = func(stackOptions *options.TerragruntOptions, stackConfig *config.TerragruntConfig) error {
+	runHandler = func(stackOptions *options.TerragruntOptions, stackConfig *config.TerragruntConfig) error {
 		mutex.Lock()
 		defer mutex.Unlock()
-		path, _ := filepath.Rel(terragruntOptions.WorkingDir, stackOptions.WorkingDir)
+		path := util.GetPathRelativeToWorkingDir(stackOptions.WorkingDir)
 		dependencies := make([]string, 0)
 		if stackConfig.Dependencies != nil {
 			for _, dep := range stackConfig.Dependencies.Paths {
-				path, _ := filepath.Rel(terragruntOptions.WorkingDir, filepath.Join(stackOptions.WorkingDir, dep))
-				dependencies = append(dependencies, path)
+				dependencies = append(dependencies, util.GetPathRelativeToWorkingDir(filepath.Join(stackOptions.WorkingDir, dep)))
 			}
 		}
-		stacks = append(stacks, stack{path, dependencies})
+		stack = append(stack, configstack.SimpleTerraformModule{Path: path, Dependencies: dependencies})
 		return nil
 	}
 
-	if err = runAll(CMD_GET_STACK, terragruntOptions); err == nil {
-		if util.ListContainsElement(terragruntOptions.TerraformCliArgs[1:], "json") {
-			if json, err := json.MarshalIndent(stacks, "", "  "); err == nil {
-				fmt.Println(string(json))
-			}
+	if err = runAll(getStackCommand, terragruntOptions); err == nil {
+		if json {
+			fmt.Println(stack.JSON())
 		} else {
-			for _, stack := range stacks {
-				fmt.Println(stack.Path)
+			for _, module := range stack {
+				fmt.Println(module.Path)
 			}
 		}
 	}
 	return
 }
-
-var stackHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error

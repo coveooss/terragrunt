@@ -83,7 +83,7 @@ USAGE:
 
 COMMANDS:
    get-doc [list]                        Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
-   get-stack [json]                      Get the list of stack to execute (optionally specify json to get the stack with its dependencies)
+   get-stack [json]                      Get the list of stack to execute sorted by dependency order (optionally specify json to get the stack with its dependencies)
    get-versions                          Get all versions of underlying tools (including extra_command)
 
    -all operations:
@@ -208,11 +208,13 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
 		return err
 	}
-	if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) || command == CMD_GET_STACK {
+	if command == getStackCommand || strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
 		return runMultiModuleCommand(command, terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
 }
+
+var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
@@ -223,12 +225,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
+	// If runHandler has been specified, we bypass the planned execution and defer the control // to the handler
+	if runHandler != nil {
+		return runHandler(terragruntOptions, conf)
+	}
+
 	// Check if the current command is an extra command
 	actualCommand := getActualCommand(terragruntOptions, conf)
-
-	if actualCommand.Command == CMD_GET_STACK {
-		return stackHandler(terragruntOptions, conf)
-	}
 
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
@@ -243,7 +246,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		if commandLength <= len(terragruntOptions.TerraformCliArgs) {
 			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
 		}
-
 		terragruntOptions.TerraformCliArgs = args
 	}
 
@@ -427,7 +429,7 @@ func isMultiModuleCommand(command string) bool {
 // Execute a command that affects multiple Terraform modules, such as the apply-all or destroy-all command.
 func runMultiModuleCommand(command string, terragruntOptions *options.TerragruntOptions) error {
 	realCommand := strings.TrimSuffix(command, MULTI_MODULE_SUFFIX)
-	if command == CMD_GET_STACK {
+	if command == getStackCommand {
 		return getStack(terragruntOptions)
 	} else if strings.HasPrefix(command, "plan-") {
 		return planAll(realCommand, terragruntOptions)
@@ -437,12 +439,10 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 		return destroyAll(realCommand, terragruntOptions)
 	} else if strings.HasPrefix(command, "output-") {
 		return outputAll(realCommand, terragruntOptions)
-	} else {
-		if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
-			return runAll(realCommand, terragruntOptions)
-		}
-		return errors.WithStackTrace(UnrecognizedCommand(command))
+	} else if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
+		return runAll(realCommand, terragruntOptions)
 	}
+	return errors.WithStackTrace(UnrecognizedCommand(command))
 }
 
 // A quick sanity check that calls `terraform get` to download modules, if they aren't already downloaded.

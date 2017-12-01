@@ -1,6 +1,7 @@
 package configstack
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -24,11 +25,35 @@ type TerraformModule struct {
 
 // Render this module as a human-readable string
 func (module *TerraformModule) String() string {
+	simple := module.Simple()
+	return fmt.Sprintf("Module %s (dependencies: [%s])", simple.Path, strings.Join(simple.Dependencies, ", "))
+}
+
+// Simple returns a simplified version of the module with paths relative to working dir
+func (module *TerraformModule) Simple() SimpleTerraformModule {
 	dependencies := []string{}
 	for _, dependency := range module.Dependencies {
 		dependencies = append(dependencies, util.GetPathRelativeToWorkingDir(dependency.Path))
 	}
-	return fmt.Sprintf("Module %s (dependencies: [%s])", util.GetPathRelativeToWorkingDir(module.Path), strings.Join(dependencies, ", "))
+	return SimpleTerraformModule{util.GetPathRelativeToWorkingDir(module.Path), dependencies}
+}
+
+// SimpleTerraformModule represents a simplified version of TerraformModule
+type SimpleTerraformModule struct {
+	Path         string   `json:"path"`
+	Dependencies []string `json:"dependencies"`
+}
+
+// SimpleTerraformModules represents a list of simplified version of TerraformModule
+type SimpleTerraformModules []SimpleTerraformModule
+
+// JSON renders a list of modules as a JSON string
+func (modules SimpleTerraformModules) JSON() string {
+	json, err := json.MarshalIndent(modules, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	return string(json)
 }
 
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents
