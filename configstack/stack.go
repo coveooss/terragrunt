@@ -137,8 +137,6 @@ func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []st
 		return nil, err
 	}
 
-	// We sort the result in alphabetical order to get predictive result
-	sort.Sort(SortedTerraformModules(stack.Modules))
 	return stack, nil
 }
 
@@ -151,10 +149,3 @@ type DependencyCycle []string
 func (err DependencyCycle) Error() string {
 	return fmt.Sprintf("Found a dependency cycle between modules: %s", strings.Join([]string(err), " -> "))
 }
-
-// SortedTerraformModules allows implement alphabetical sort of an array of modules based on the path
-type SortedTerraformModules []*TerraformModule
-
-func (modules SortedTerraformModules) Len() int           { return len(modules) }
-func (modules SortedTerraformModules) Swap(i, j int)      { modules[i], modules[j] = modules[j], modules[i] }
-func (modules SortedTerraformModules) Less(i, j int) bool { return modules[i].Path < modules[j].Path }

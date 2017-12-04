@@ -164,7 +164,7 @@ func (pd *printDoc) importers(importers []config.ImportConfig, cwd string) (out 
 }
 
 func (pd *printDoc) hooks(hooks []config.Hook, afterInitState ...bool) (out string) {
-	sort.Sort(hooksByOrder(hooks))
+	sort.Slice(hooks, func(i, j int) bool { return hooks[i].Order < hooks[j].Order || i < j })
 
 	for _, hook := range hooks {
 		if afterInitState != nil && hook.AfterInitState != afterInitState[0] {
@@ -195,16 +195,9 @@ func (pd *printDoc) hooks(hooks []config.Hook, afterInitState ...bool) (out stri
 	return
 }
 
-type extraCommandsByName []config.ExtraCommand
-
-func (e extraCommandsByName) Len() int      { return len(e) }
-func (e extraCommandsByName) Swap(i, j int) { e[i], e[j] = e[j], e[i] }
-func (e extraCommandsByName) Less(i, j int) bool {
-	return e[i].Name < e[j].Name
-}
-
 func (pd *printDoc) extraCommands(extraCommands []config.ExtraCommand) (out string) {
-	sort.Sort(extraCommandsByName(extraCommands))
+	sort.Slice(extraCommands, func(i, j int) bool { return extraCommands[i].Name < extraCommands[j].Name })
+
 	for _, cmd := range extraCommands {
 		var aliases string
 		for _, alias := range cmd.Aliases {
