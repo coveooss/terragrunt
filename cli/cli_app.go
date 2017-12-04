@@ -82,16 +82,21 @@ USAGE:
    {{.Usage}}
 
 COMMANDS:
-   get-doc [list]                        Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command
-   get-stack [json]                      Get the list of stack to execute sorted by dependency order (optionally specify json to get the stack with its dependencies)
-   get-versions                          Get all versions of underlying tools (including extra_command)
-
+   get-doc [list]                        Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command:
+     list                                  only list the element names.
+   get-versions                          Get all versions of underlying tools (including extra_command).
+   get-stack [json] [run] [absolute]     Get the list of stack to execute sorted by dependency order:
+     json                                  get the stack with its dependencies.
+     abs | absolute                        get absolute paths instead of relatives paths.
+     run                                   get the stack description by running the actual dependencies. It is used mostly to validate, should give the same result
+                                           as without run, but the order only respect dependencies constraints, not alphabetical order.
+	 
    -all operations:
-   plan-all                              Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder (with a summary at the end)
-   apply-all                             Apply a 'stack' by running 'terragrunt apply' in each subfolder
-   output-all                            Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder (no error if a subfolder doesn't have outputs)
-   destroy-all                           Destroy a 'stack' by running 'terragrunt destroy' in each subfolder in reverse dependency order
-   *-all                                 In fact, the -all could be applied on any terraform or custom commands (that's cool)
+   plan-all                              Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder (with a summary at the end).
+   apply-all                             Apply a 'stack' by running 'terragrunt apply' in each subfolder.
+   output-all                            Display the outputs of a 'stack' by running 'terragrunt output' in each subfolder (no error if a subfolder doesn't have outputs).
+   destroy-all                           Destroy a 'stack' by running 'terragrunt destroy' in each subfolder in reverse dependency order.
+   *-all                                 In fact, the -all could be applied on any terraform or custom commands (that's cool).
 
    terraform commands:
    *             Terragrunt forwards all other commands directly to Terraform
@@ -104,8 +109,8 @@ GLOBAL OPTIONS:
    terragrunt-source                    Download Terraform configurations from the specified source into a temporary folder, and run Terraform in that temporary folder.
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
-   terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5)
-   profile                              Specify an AWS profile to use
+   terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5).
+   profile                              Specify an AWS profile to use.
 
 VERSION:
    {{.Version}}{{if len .Authors}}
@@ -155,6 +160,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
 	os.Setenv("TERRAGRUNT_CACHE_FOLDER", util.GetTempDownloadFolder("terragrunt-cache"))
+	os.Setenv("TERRAGRUNT_ARGS", strings.Join(os.Args, " "))
 
 	terragruntOptions, err := ParseTerragruntOptions(cliContext)
 	if err != nil {

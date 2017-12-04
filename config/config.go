@@ -237,9 +237,9 @@ type ImportConfig struct {
 	CopyAndRenameFiles []CopyAndRename `hcl:"copy_and_rename"`
 	Required           *bool           `hcl:"required,omitempty"`
 	ImportIntoModules  bool            `hcl:"import_into_modules"`
-	FileMode           *int            `hcl:"file_mode, omitempty"`
-	Target             string          `hcl:"target, omitempty"`
-	Prefix             *string         `hcl:"prefix, omitempty"`
+	FileMode           *int            `hcl:"file_mode,omitempty"`
+	Target             string          `hcl:"target,omitempty"`
+	Prefix             *string         `hcl:"prefix,omitempty"`
 	OS                 []string        `hcl:"os,omitempty"`
 }
 
@@ -364,6 +364,19 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 // Parse the Terragrunt config file at the given path. If the include parameter is not nil, then treat this as a config
 // included in some other config file when resolving relative paths.
 func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
+	if include.Path == "" {
+		include.Path = DefaultTerragruntConfigPath
+	}
+
+	// Check if the config has already been loaded
+	key := include.Source + include.Path
+	if !filepath.IsAbs(include.Path) {
+
+	}
+	if config, ok := configFiles[key]; ok {
+		return config, nil
+	}
+
 	if isOldTerragruntConfig(include.Path) {
 		terragruntOptions.Logger.Warningf("DEPRECATION : Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
 	}
@@ -377,11 +390,8 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		configString, err = util.ReadFileAsString(include.Path)
 		source = include.Path
 	} else {
-		if include.Path == "" {
-			include.Path = DefaultTerragruntConfigPath
-		}
 		include.Path, configString, err = util.ReadFileAsStringFromSource(include.Source, include.Path, terragruntOptions.Logger)
-		source = filepath.Join(include.Source, include.Path)
+		source = include.Path
 	}
 	if err != nil {
 		return nil, err
@@ -393,41 +403,53 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return nil, err
 	}
 
+	if config.Dependencies != nil {
+		// We should convert all dependencies to absolute path
+		folder := filepath.Dir(source)
+		for i, dep := range config.Dependencies.Paths {
+			if !filepath.IsAbs(dep) {
+				dep, err = filepath.Abs(filepath.Join(folder, dep))
+				config.Dependencies.Paths[i] = dep
+			}
+		}
+	}
+
+	configFiles[key] = config
 	return config, nil
 }
 
+var configFiles = make(map[string]*TerragruntConfig)
+
 // Parse the Terragrunt config contained in the given string.
-func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
+func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
 	resolvedConfigString, err := ResolveTerragruntConfigString(configString, include, terragruntOptions)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(resolvedConfigString, include.Path)
 	if err != nil {
-		return nil, err
+		return
 	}
 	if terragruntConfigFile == nil {
-		return nil, errors.WithStackTrace(CouldNotResolveTerragruntConfigInFile(include.Path))
+		err = errors.WithStackTrace(CouldNotResolveTerragruntConfigInFile(include.Path))
+		return
 	}
 
-	config, err := convertToTerragruntConfig(terragruntConfigFile, terragruntOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	if terragruntConfigFile.Include == nil {
-		return config, nil
+	config, err = terragruntConfigFile.convertToTerragruntConfig(terragruntOptions)
+	if err != nil || terragruntConfigFile.Include == nil {
+		return
 	}
 
 	terragruntConfigFile.Include.IncludeBy = &include
 
 	includedConfig, err := parseIncludedConfig(terragruntConfigFile.Include, terragruntOptions)
 	if err != nil {
-		return nil, err
+		return
 	}
 
-	return mergeConfigWithIncludedConfig(config, includedConfig, terragruntOptions)
+	config.mergeIncludedConfig(*includedConfig, terragruntOptions)
+	return
 }
 
 // Parse the given config string, read from the given config file, as a terragruntConfigFile struct. This method solely
@@ -439,179 +461,258 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 			return nil, errors.WithStackTrace(err)
 		}
 		return terragruntConfig, nil
-	} else {
-		tfvarsConfig := &tfvarsFileWithTerragruntConfig{}
-		if err := hcl.Decode(tfvarsConfig, configString); err != nil {
-			return nil, errors.WithStackTrace(err)
-		}
-		return tfvarsConfig.Terragrunt, nil
 	}
+
+	tfvarsConfig := &tfvarsFileWithTerragruntConfig{}
+	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
+		return nil, errors.WithStackTrace(err)
+	}
+	return tfvarsConfig.Terragrunt, nil
 }
 
-// Merge the given config with an included config. Anything specified in the current config will override the contents
-// of the included config. If the included config is nil, just return the current config.
-func mergeConfigWithIncludedConfig(config *TerragruntConfig, includedConfig *TerragruntConfig, terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
-	if includedConfig == nil {
-		return config, nil
+// Merge an included config into the current config. Some elements specified in both config will be merged while
+// others will be overridded only if they are not already specified in the original config.
+func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfig, terragruntOptions *options.TerragruntOptions) {
+	if conf.RemoteState == nil {
+		conf.RemoteState = includedConfig.RemoteState
 	}
 
-	if config.RemoteState != nil {
-		includedConfig.RemoteState = config.RemoteState
-	}
+	logFunc := terragruntOptions.Logger.Debugf
 
-	if config.Terraform != nil {
-		if includedConfig.Terraform == nil {
-			includedConfig.Terraform = config.Terraform
+	if includedConfig.Terraform != nil {
+		if conf.Terraform == nil {
+			conf.Terraform = includedConfig.Terraform
 		} else {
-			if config.Terraform.Source != "" {
-				includedConfig.Terraform.Source = config.Terraform.Source
+			if conf.Terraform.Source == "" {
+				conf.Terraform.Source = includedConfig.Terraform.Source
 			}
-			mergeExtraArgs(terragruntOptions, config.Terraform.ExtraArgs, &includedConfig.Terraform.ExtraArgs)
+
+			conf.mergeExtraArgs(includedConfig.Terraform.ExtraArgs, logFunc)
 		}
 	}
 
-	if config.Dependencies != nil {
-		includedConfig.Dependencies = config.Dependencies
+	if conf.Dependencies == nil {
+		conf.Dependencies = includedConfig.Dependencies
+	} else if includedConfig.Dependencies != nil {
+		conf.Dependencies.Paths = append(conf.Dependencies.Paths, includedConfig.Dependencies.Paths...)
 	}
 
-	if config.Uniqueness != nil {
-		includedConfig.Uniqueness = config.Uniqueness
+	if conf.Uniqueness == nil {
+		conf.Uniqueness = includedConfig.Uniqueness
 	}
 
-	if config.AssumeRole != nil {
-		includedConfig.AssumeRole = config.AssumeRole
+	if conf.AssumeRole == nil {
+		conf.AssumeRole = includedConfig.AssumeRole
 	}
 
-	mergePreHooks(terragruntOptions, config.PreHooks, &includedConfig.PreHooks)
-	mergePostHooks(terragruntOptions, config.PostHooks, &includedConfig.PostHooks)
-	mergeExtraCommands(terragruntOptions, config.ExtraCommands, &includedConfig.ExtraCommands)
-	mergeImports(terragruntOptions, config.ImportFiles, &includedConfig.ImportFiles)
+	conf.mergeImports(includedConfig.ImportFiles, logFunc)
+	conf.mergeExtraCommands(includedConfig.ExtraCommands, logFunc)
+	conf.mergeHooks(&conf.PreHooks, includedConfig.PreHooks, mergeModePrepend, logFunc)
+	conf.mergeHooks(&conf.PostHooks, includedConfig.PreHooks, mergeModeAppend, logFunc)
+}
 
-	return includedConfig, nil
+type mergeMode int
+
+const (
+	mergeModePrepend mergeMode = iota
+	mergeModeAppend
+)
+
+// Merge the extra arguments priorising those defined in the leaf
+func (conf *TerragruntConfig) mergeHooks(hookSource *[]Hook, imported []Hook, mode mergeMode, log func(string, ...interface{})) {
+	source := *hookSource
+	defer func() { *hookSource = source }()
+	var argType string
+	if hookSource == &conf.PreHooks {
+		argType = "pre_hook"
+	} else {
+		argType = "post_hook"
+	}
+
+	if len(imported) == 0 {
+		return
+	} else if len(source) == 0 {
+		source = imported
+		return
+	}
+
+	// Create a map with existing elements
+	index := make(map[string]int, len(source))
+	for i, hook := range source {
+		index[hook.Name] = i
+	}
+
+	// Create a list of the hooks that should be added to the list
+	new := make([]Hook, 0, len(imported))
+	for _, element := range imported {
+		if pos, exist := index[element.Name]; exist {
+			// It already exist in the list, so is is an override, we remove it from its current position
+			// and add it to the list of newly addd elements to keep its original declaration ordering.
+			new = append(new, source[pos])
+			delete(index, element.Name)
+			log("Skipping %s %v as it is overridden in the current config", argType, element.Name)
+		} else {
+			new = append(new, element)
+		}
+	}
+
+	if len(index) != len(source) {
+		// Some elements must bre removed from the original list, we must
+		newSource := make([]Hook, 0, len(index))
+		for _, element := range source {
+			if _, found := index[element.Name]; found {
+				newSource = append(newSource, element)
+			}
+		}
+		source = newSource
+	}
+
+	if mode == mergeModeAppend {
+		source = append(source, new...)
+	} else {
+		source = append(new, source...)
+	}
 }
 
 // Merge the extra arguments priorising those defined in the leaf
-// func mergeExtraArgs(terragruntOptions *options.TerragruntOptions, original []TerraformExtraArguments, newExtra *[]TerraformExtraArguments) {
-// 	result := *newExtra
-// addExtra:
-// 	for _, extra := range original {
-// 		for i, existing := range result {
-// 			if existing.Name == extra.Name {
-// 				terragruntOptions.Logger.Debugf("Skipping extra_arguments %v as it is overridden in the current config", extra.Name)
-// 				// For extra args, we want to keep the values specified in the child and put them after
-// 				// the parent ones, so if we encounter a duplicate, we just overwrite it.
-// 				result[i] = extra
-// 				continue addExtra
-// 			}
-// 		}
-// 		result = append(result, extra)
-// 	}
-// 	*newExtra = result
-// }
+func (conf *TerragruntConfig) mergeExtraCommands(imported []ExtraCommand, log func(string, ...interface{})) {
+	source := conf.ExtraCommands
+	argType := "extra_command"
+	defer func() { conf.ExtraCommands = source }()
 
-// Merge the extra arguments priorising those defined in the leaf
-func mergePreHooks(terragruntOptions *options.TerragruntOptions, original []Hook, newHooks *[]Hook) {
-	result := *newHooks
-addHook:
-	for _, hook := range original {
-		for i, existing := range result {
-			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Debugf("Skipping Hook %v as it is overridden in the current config", hook.Name)
-				result[i] = hook
-				continue addHook
+	if len(imported) == 0 {
+		return
+	} else if len(source) == 0 {
+		source = imported
+		return
+	}
+
+	// Create a map with existing elements
+	index := make(map[string]int, len(source))
+	for i, hook := range source {
+		index[hook.Name] = i
+	}
+
+	// Create a list of the hooks that should be added to the list
+	new := make([]ExtraCommand, 0, len(imported))
+	for _, element := range imported {
+		if pos, exist := index[element.Name]; exist {
+			// It already exist in the list, so is is an override, we remove it from its current position
+			// and add it to the list of newly addd elements to keep its original declaration ordering.
+			new = append(new, source[pos])
+			delete(index, element.Name)
+			log("Skipping %s %v as it is overridden in the current config", argType, element.Name)
+		} else {
+			new = append(new, element)
+		}
+	}
+
+	if len(index) != len(source) {
+		// Some elements must bre removed from the original list, we must
+		newSource := make([]ExtraCommand, 0, len(index))
+		for _, element := range source {
+			if _, found := index[element.Name]; found {
+				newSource = append(newSource, element)
 			}
 		}
-		result = append(result, hook)
+		source = newSource
 	}
-	*newHooks = result
-}
 
-func mergePostHooks(terragruntOptions *options.TerragruntOptions, original []Hook, newHooks *[]Hook) {
-	result := original
-addHook:
-	for _, hook := range *newHooks {
-		for _, existing := range original {
-			if existing.Name == hook.Name {
-				terragruntOptions.Logger.Debugf("Skipping Hook %v as it is overridden in the current config", hook.Name)
-				continue addHook
-			}
-		}
-		result = append(result, hook)
-	}
-	*newHooks = result
-}
-
-func mergeExtraCommands(terragruntOptions *options.TerragruntOptions, original []ExtraCommand, newCommands *[]ExtraCommand) {
-	result := *newCommands
-add:
-	for _, command := range original {
-		for i, existing := range result {
-			if existing.Name == command.Name {
-				terragruntOptions.Logger.Debugf("Skipping Extra Command %v as it is overridden in the current config", command.Name)
-				result[i] = command
-				continue add
-			}
-		}
-		result = append(result, command)
-	}
-	*newCommands = result
+	source = append(new, source...)
 }
 
 // Merge the import files priorising those defined in the leaf
-func mergeImports(terragruntOptions *options.TerragruntOptions, original []ImportConfig, newImports *[]ImportConfig) {
-	result := *newImports
-addImport:
-	for _, importer := range original {
-		for i, existing := range result {
-			if existing.Name == importer.Name {
-				terragruntOptions.Logger.Debugf("Skipping ImportFiles %v as it is overridden in the current config", importer.Name)
-				result[i] = importer
-				continue addImport
+func (conf *TerragruntConfig) mergeImports(imported []ImportConfig, log func(string, ...interface{})) {
+	source := conf.ImportFiles
+	argType := "import_files"
+	defer func() { conf.ImportFiles = source }()
+
+	if len(imported) == 0 {
+		return
+	} else if len(source) == 0 {
+		source = imported
+		return
+	}
+
+	// Create a map with existing elements
+	index := make(map[string]int, len(source))
+	for i, hook := range source {
+		index[hook.Name] = i
+	}
+
+	// Create a list of the hooks that should be added to the list
+	new := make([]ImportConfig, 0, len(imported))
+	for _, element := range imported {
+		if pos, exist := index[element.Name]; exist {
+			// It already exist in the list, so is is an override, we remove it from its current position
+			// and add it to the list of newly addd elements to keep its original declaration ordering.
+			new = append(new, source[pos])
+			delete(index, element.Name)
+			log("Skipping %s %v as it is overridden in the current config", argType, element.Name)
+		} else {
+			new = append(new, element)
+		}
+	}
+
+	if len(index) != len(source) {
+		// Some elements must bre removed from the original list, we must
+		newSource := make([]ImportConfig, 0, len(index))
+		for _, element := range source {
+			if _, found := index[element.Name]; found {
+				newSource = append(newSource, element)
 			}
 		}
-		result = append(result, importer)
+		source = newSource
 	}
-	*newImports = result
+
+	source = append(new, source...)
 }
 
-// Merge the extra arguments.
-//
-// If a child's extra_arguments has the same name a parent's extra_arguments,
-// then the child's extra_arguments will be selected (and the parent's ignored)
-// If a child's extra_arguments has a different name from all of the parent's extra_arguments,
-// then the child's extra_arguments will be added to the end  of the parents.
-// Therefore, terragrunt will put the child extra_arguments after the parent's
-// extra_arguments on the terraform cli.
-// Therefore, if .tfvar files from both the parent and child contain a variable
-// with the same name, the value from the child will win.
-func mergeExtraArgs(terragruntOptions *options.TerragruntOptions, childExtraArgs []TerraformExtraArguments, parentExtraArgs *[]TerraformExtraArguments) {
-	result := *parentExtraArgs
-	for _, child := range childExtraArgs {
-		parentExtraArgsWithSameName := getIndexOfExtraArgsWithName(result, child.Name)
-		if parentExtraArgsWithSameName != -1 {
-			// If the parent contains an extra_arguments with the same name as the child,
-			// then override the parent's extra_arguments with the child's.
-			terragruntOptions.Logger.Debugf("extra_arguments '%v' from child overriding parent", child.Name)
-			result[parentExtraArgsWithSameName] = child
+// Merge the extra arguments priorising those defined in the leaf
+func (conf *TerragruntConfig) mergeExtraArgs(imported []TerraformExtraArguments, log func(string, ...interface{})) {
+	source := conf.Terraform.ExtraArgs
+	argType := "import_files"
+	defer func() { conf.Terraform.ExtraArgs = source }()
+
+	if len(imported) == 0 {
+		return
+	} else if len(source) == 0 {
+		source = imported
+		return
+	}
+
+	// Create a map with existing elements
+	index := make(map[string]int, len(source))
+	for i, hook := range source {
+		index[hook.Name] = i
+	}
+
+	// Create a list of the hooks that should be added to the list
+	new := make([]TerraformExtraArguments, 0, len(imported))
+	for _, element := range imported {
+		if pos, exist := index[element.Name]; exist {
+			// It already exist in the list, so is is an override, we remove it from its current position
+			// and add it to the list of newly addd elements to keep its original declaration ordering.
+			new = append(new, source[pos])
+			delete(index, element.Name)
+			log("Skipping %s %v as it is overridden in the current config", argType, element.Name)
 		} else {
-			// If the parent does not contain an extra_arguments with the same name as the child
-			// then add the child to the end.
-			// This ensures the child extra_arguments are added to the command line after the parent extra_arguments.
-			result = append(result, child)
+			new = append(new, element)
 		}
 	}
-	*parentExtraArgs = result
-}
 
-// Returns the index of the extraArgs with the given name,
-// or -1 if no extraArgs have the given name.
-func getIndexOfExtraArgsWithName(extraArgs []TerraformExtraArguments, name string) int {
-	for i, extra := range extraArgs {
-		if extra.Name == name {
-			return i
+	if len(index) != len(source) {
+		// Some elements must bre removed from the original list, we must
+		newSource := make([]TerraformExtraArguments, 0, len(index))
+		for _, element := range source {
+			if _, found := index[element.Name]; found {
+				newSource = append(newSource, element)
+			}
 		}
+		source = newSource
 	}
-	return -1
+
+	source = append(new, source...)
 }
 
 // Parse the config of the given include, if one is specified
@@ -638,31 +739,31 @@ func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *optio
 }
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
-func convertToTerragruntConfig(terragruntConfigFromFile *terragruntConfigFile, terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
+func (configFromFile terragruntConfigFile) convertToTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	terragruntConfig := &TerragruntConfig{}
 
-	if terragruntConfigFromFile.Lock != nil {
+	if configFromFile.Lock != nil {
 		terragruntOptions.Logger.Warningf("Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as of version 0.9.0, so this feature has been removed from Terragrunt and will have no effect. See your Terraform backend docs for how to configure locking: https://www.terraform.io/docs/backends/types/index.html.", terragruntOptions.TerragruntConfigPath)
 	}
 
-	if terragruntConfigFromFile.RemoteState != nil {
-		terragruntConfigFromFile.RemoteState.FillDefaults()
-		if err := terragruntConfigFromFile.RemoteState.Validate(); err != nil {
+	if configFromFile.RemoteState != nil {
+		configFromFile.RemoteState.FillDefaults()
+		if err := configFromFile.RemoteState.Validate(); err != nil {
 			return nil, err
 		}
 
-		terragruntConfig.RemoteState = terragruntConfigFromFile.RemoteState
+		terragruntConfig.RemoteState = configFromFile.RemoteState
 	}
 
-	terragruntConfig.Description = terragruntConfigFromFile.Description
-	terragruntConfig.Terraform = terragruntConfigFromFile.Terraform
-	terragruntConfig.Dependencies = terragruntConfigFromFile.Dependencies
-	terragruntConfig.Uniqueness = terragruntConfigFromFile.Uniqueness
-	terragruntConfig.PreHooks = terragruntConfigFromFile.PreHooks
-	terragruntConfig.PostHooks = terragruntConfigFromFile.PostHooks
-	terragruntConfig.ExtraCommands = terragruntConfigFromFile.ExtraCommands
-	terragruntConfig.ImportFiles = terragruntConfigFromFile.ImportFiles
-	terragruntConfig.AssumeRole = terragruntConfigFromFile.AssumeRole
+	terragruntConfig.Description = configFromFile.Description
+	terragruntConfig.Terraform = configFromFile.Terraform
+	terragruntConfig.Dependencies = configFromFile.Dependencies
+	terragruntConfig.Uniqueness = configFromFile.Uniqueness
+	terragruntConfig.PreHooks = configFromFile.PreHooks
+	terragruntConfig.PostHooks = configFromFile.PostHooks
+	terragruntConfig.ExtraCommands = configFromFile.ExtraCommands
+	terragruntConfig.ImportFiles = configFromFile.ImportFiles
+	terragruntConfig.AssumeRole = configFromFile.AssumeRole
 
 	return terragruntConfig, nil
 }

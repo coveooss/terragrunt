@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
 	"sync"
 
 	"github.com/gruntwork-io/terragrunt/config"
@@ -14,25 +13,35 @@ import (
 const getStackCommand = "get-stack"
 
 // Get a list of terraform modules sorted by dependency order
-func getStack(terragruntOptions *options.TerragruntOptions) error {
+func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
 	json := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "json")
 	run := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "run")
+	relative := !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "abs") && !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "absolute")
 
+	var modules configstack.SimpleTerraformModules
 	if run {
-		return getStackThroughExecution(terragruntOptions, json)
+		if modules, err = getStackThroughExecution(terragruntOptions); err != nil {
+			return
+		}
+	} else {
+		stack, err := configstack.FindStackInSubfolders(terragruntOptions)
+		if err != nil {
+			return err
+		}
+
+		stack.SortModules()
+		modules = stack.SimpleModules()
 	}
 
-	stack, err := configstack.FindStackInSubfolders(terragruntOptions)
-	if err != nil {
-		return err
+	if relative {
+		modules = modules.MakeRelative()
 	}
-	stack.SortModules()
 
 	if json {
-		fmt.Println(stack.JSON())
+		fmt.Println(modules.JSON())
 	} else {
-		for _, module := range stack.Modules {
-			fmt.Println(util.GetPathRelativeToWorkingDir(module.Path))
+		for _, module := range modules {
+			fmt.Println(module.Path)
 		}
 	}
 
@@ -41,32 +50,21 @@ func getStack(terragruntOptions *options.TerragruntOptions) error {
 
 // Get a list of terraform modules sorted by dependency order (but through real execution of the stack modules)
 // Should give the same result as getStack
-func getStackThroughExecution(terragruntOptions *options.TerragruntOptions, json bool) (err error) {
-	var stack configstack.SimpleTerraformModules
-
+func getStackThroughExecution(terragruntOptions *options.TerragruntOptions) (modules configstack.SimpleTerraformModules, err error) {
 	mutex := sync.Mutex{}
-	runHandler = func(stackOptions *options.TerragruntOptions, stackConfig *config.TerragruntConfig) error {
+	runHandler = func(stackOptions *options.TerragruntOptions, stackConfig *config.TerragruntConfig) (err error) {
 		mutex.Lock()
 		defer mutex.Unlock()
-		path := util.GetPathRelativeToWorkingDir(stackOptions.WorkingDir)
 		dependencies := make([]string, 0)
 		if stackConfig.Dependencies != nil {
 			for _, dep := range stackConfig.Dependencies.Paths {
-				dependencies = append(dependencies, util.GetPathRelativeToWorkingDir(filepath.Join(stackOptions.WorkingDir, dep)))
+				dependencies = append(dependencies, dep)
 			}
 		}
-		stack = append(stack, configstack.SimpleTerraformModule{Path: path, Dependencies: dependencies})
-		return nil
+		modules = append(modules, configstack.SimpleTerraformModule{Path: stackOptions.WorkingDir, Dependencies: dependencies})
+		return
 	}
 
-	if err = runAll(getStackCommand, terragruntOptions); err == nil {
-		if json {
-			fmt.Println(stack.JSON())
-		} else {
-			for _, module := range stack {
-				fmt.Println(module.Path)
-			}
-		}
-	}
+	err = runAll(getStackCommand, terragruntOptions)
 	return
 }

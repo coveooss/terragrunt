@@ -3,6 +3,7 @@ package configstack
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/config"
@@ -26,14 +27,18 @@ func (stack *Stack) String() string {
 	return fmt.Sprintf("Stack at %s:\n%s", stack.Path, strings.Join(modules, "\n"))
 }
 
-// JSON renders this stack as a JSON string
-func (stack Stack) JSON() string {
-	modules := make([]SimpleTerraformModule, len(stack.Modules))
+// SimpleModules returns the list of modules (simplified serializable version)
+func (stack Stack) SimpleModules() SimpleTerraformModules {
+	modules := make(SimpleTerraformModules, len(stack.Modules))
 	for i := range stack.Modules {
 		modules[i] = stack.Modules[i].Simple()
 	}
+	return modules
+}
 
-	json, err := json.MarshalIndent(modules, "", "  ")
+// JSON renders this stack as a JSON string
+func (stack Stack) JSON() string {
+	json, err := json.MarshalIndent(stack.SimpleModules(), "", "  ")
 	if err != nil {
 		panic(err)
 	}
@@ -129,6 +134,8 @@ func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []st
 		return nil, err
 	}
 
+	// We sort the result in alphabetical order to get predictive result
+	sort.Sort(SortedTerraformModules(stack.Modules))
 	return stack, nil
 }
 
@@ -141,3 +148,10 @@ type DependencyCycle []string
 func (err DependencyCycle) Error() string {
 	return fmt.Sprintf("Found a dependency cycle between modules: %s", strings.Join([]string(err), " -> "))
 }
+
+// SortedTerraformModules allows implement alphabetical sort of an array of modules based on the path
+type SortedTerraformModules []*TerraformModule
+
+func (modules SortedTerraformModules) Len() int           { return len(modules) }
+func (modules SortedTerraformModules) Swap(i, j int)      { modules[i], modules[j] = modules[j], modules[i] }
+func (modules SortedTerraformModules) Less(i, j int) bool { return modules[i].Path < modules[j].Path }

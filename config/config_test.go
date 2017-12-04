@@ -433,67 +433,55 @@ func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		config         *TerragruntConfig
-		includedConfig *TerragruntConfig
-		expected       *TerragruntConfig
+		config         TerragruntConfig
+		includedConfig TerragruntConfig
+		expected       TerragruntConfig
 	}{
 		{
-			&TerragruntConfig{},
-			nil,
-			&TerragruntConfig{},
+			TerragruntConfig{},
+			TerragruntConfig{},
+			TerragruntConfig{},
 		},
 		{
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}},
-			nil,
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}},
+			TerragruntConfig{},
+			TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
-			&TerragruntConfig{},
-			&TerragruntConfig{},
-			&TerragruntConfig{},
+			TerragruntConfig{},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
-			&TerragruntConfig{},
-			&TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
-			&TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
-			&TerragruntConfig{},
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
+			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
+			TerragruntConfig{Terraform: &TerraformConfig{}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
 		},
 		{
-			&TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
-			&TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}}}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}, TerraformExtraArguments{Name: "childArgs"}}}},
 		},
 		{
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
-			&TerragruntConfig{Terraform: &TerraformConfig{}},
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
-		},
-		{
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}}}},
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}, TerraformExtraArguments{Name: "childArgs"}}}},
-		},
-		{
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-parent"}}}}},
-			&TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-parent"}}}}},
+			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
 		},
 	}
 
 	for _, testCase := range testCases {
-		actual, err := mergeConfigWithIncludedConfig(testCase.config, testCase.includedConfig, mockOptions)
-		if assert.Nil(t, err, "Unexpected error for config %v and includeConfig %v: %v", testCase.config, testCase.includedConfig, err) {
-			assert.Equal(t, testCase.expected, actual, "For config %v and includeConfig %v", testCase.config, testCase.includedConfig)
-		}
+		testCase.config.mergeIncludedConfig(testCase.includedConfig, mockOptions)
+		assert.Equal(t, testCase.config, testCase.expected, "For config %v and includeConfig %v", testCase.config, testCase.includedConfig)
 	}
 }
 

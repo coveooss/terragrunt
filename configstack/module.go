@@ -33,9 +33,9 @@ func (module *TerraformModule) String() string {
 func (module *TerraformModule) Simple() SimpleTerraformModule {
 	dependencies := []string{}
 	for _, dependency := range module.Dependencies {
-		dependencies = append(dependencies, util.GetPathRelativeToWorkingDir(dependency.Path))
+		dependencies = append(dependencies, dependency.Path)
 	}
-	return SimpleTerraformModule{util.GetPathRelativeToWorkingDir(module.Path), dependencies}
+	return SimpleTerraformModule{module.Path, dependencies}
 }
 
 // SimpleTerraformModule represents a simplified version of TerraformModule
@@ -54,6 +54,19 @@ func (modules SimpleTerraformModules) JSON() string {
 		panic(err)
 	}
 	return string(json)
+}
+
+// MakeRelative transforms each absolute path in relative path
+func (modules SimpleTerraformModules) MakeRelative() (result SimpleTerraformModules) {
+	result = make(SimpleTerraformModules, len(modules))
+	for i := range modules {
+		result[i].Path = util.GetPathRelativeToWorkingDir(modules[i].Path)
+		result[i].Dependencies = make([]string, len(modules[i].Dependencies))
+		for j := range result[i].Dependencies {
+			result[i].Dependencies[j] = util.GetPathRelativeToWorkingDir(modules[i].Dependencies[j])
+		}
+	}
+	return
 }
 
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents
@@ -143,6 +156,24 @@ func resolveExternalDependenciesForModules(canonicalTerragruntConfigPaths []stri
 				continue
 			}
 
+			var expandDependencies []*TerraformModule
+			for key, existingModule := range moduleMap {
+				if strings.HasPrefix(key, externalDependency.Path) {
+					expandDependencies = append(expandDependencies, existingModule)
+				}
+			}
+			if len(expandDependencies) > 0 {
+				module.Dependencies = append(module.Dependencies, expandDependencies...)
+
+				subFoldersDependencies := make([]string, len(expandDependencies))
+				for i := range expandDependencies {
+					subFoldersDependencies[i] = expandDependencies[i].Path
+				}
+				module.Config.Dependencies.Paths = util.RemoveElementFromList(module.Config.Dependencies.Paths, externalDependency.Path)
+				module.Config.Dependencies.Paths = append(module.Config.Dependencies.Paths, subFoldersDependencies...)
+				continue
+			}
+
 			alreadyApplied, err := confirmExternalDependencyAlreadyApplied(module, externalDependency, terragruntOptions)
 			if err != nil {
 				return externalDependencies, err
@@ -178,7 +209,6 @@ func resolveExternalDependenciesForModule(module *TerraformModule, canonicalTerr
 			externalTerragruntConfigPaths = append(externalTerragruntConfigPaths, terragruntConfigPath)
 		}
 	}
-
 	return resolveModules(externalTerragruntConfigPaths, terragruntOptions)
 }
 
