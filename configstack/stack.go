@@ -47,6 +47,9 @@ func (stack Stack) JSON() string {
 
 // SortModules sorts in-place the list of modules topologically
 func (stack *Stack) SortModules() {
+	sort.Slice(stack.Modules, func(i, j int) bool {
+		return stack.Modules[i].Path < stack.Modules[j].Path
+	})
 	sortedModules := make([]*TerraformModule, 0)
 	visitedModules := make(map[string]bool)
 	for _, module := range stack.Modules {
