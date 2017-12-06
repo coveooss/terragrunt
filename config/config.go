@@ -508,7 +508,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 	conf.mergeImports(includedConfig.ImportFiles, logFunc)
 	conf.mergeExtraCommands(includedConfig.ExtraCommands, logFunc)
 	conf.mergeHooks(&conf.PreHooks, includedConfig.PreHooks, mergeModePrepend, logFunc)
-	conf.mergeHooks(&conf.PostHooks, includedConfig.PreHooks, mergeModeAppend, logFunc)
+	conf.mergeHooks(&conf.PostHooks, includedConfig.PostHooks, mergeModeAppend, logFunc)
 }
 
 type mergeMode int
