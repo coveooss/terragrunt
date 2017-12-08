@@ -96,6 +96,7 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	if CommandShouldBeApproved(command) {
 		err = RunCommandToApprove(cmd, terragruntOptions)
 	} else {
+		cmd.Stdin = os.Stdin
 		err = cmd.Run()
 	}
 
