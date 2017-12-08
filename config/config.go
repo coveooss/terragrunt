@@ -357,35 +357,36 @@ func containsTerragruntBlock(configString string) bool {
 
 // Read the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
-	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", terragruntOptions.TerragruntConfigPath)
 	return ParseConfigFile(terragruntOptions, IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
 }
 
 // Parse the Terragrunt config file at the given path. If the include parameter is not nil, then treat this as a config
 // included in some other config file when resolving relative paths.
-func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (*TerragruntConfig, error) {
+func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
 	if include.Path == "" {
 		include.Path = DefaultTerragruntConfigPath
 	}
 
-	// Check if the config has already been loaded
-	key := include.Source + include.Path
-	if !filepath.IsAbs(include.Path) {
-
-	}
-	if config, ok := configFiles[key]; ok {
-		return config, nil
+	if include.IncludeBy == nil {
+		// Check if the config has already been loaded
+		if include.Source == "" {
+			if include.Path, err = util.CanonicalPath(include.Path, ""); err != nil {
+				return
+			}
+		}
+		var exist bool
+		config, exist = configFiles[include.Path]
+		if exist {
+			terragruntOptions.Logger.Debugf("Config already in the cache %s", include.Path)
+			return
+		}
 	}
 
 	if isOldTerragruntConfig(include.Path) {
 		terragruntOptions.Logger.Warningf("DEPRECATION : Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
 	}
 
-	var (
-		configString string
-		source       string
-		err          error
-	)
+	var configString, source string
 	if include.Source == "" {
 		configString, err = util.ReadFileAsString(include.Path)
 		source = include.Path
@@ -397,10 +398,11 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return nil, err
 	}
 
+	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", util.GetPathRelativeToWorkingDirMax(source, 2))
+
 	terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile)
-	config, err := parseConfigString(configString, terragruntOptions, include)
-	if err != nil {
-		return nil, err
+	if config, err = parseConfigString(configString, terragruntOptions, include); err != nil {
+		return
 	}
 
 	if config.Dependencies != nil {
@@ -414,8 +416,11 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		}
 	}
 
-	configFiles[key] = config
-	return config, nil
+	if include.IncludeBy == nil {
+		configFiles[include.Path] = config
+	}
+
+	return
 }
 
 var configFiles = make(map[string]*TerragruntConfig)
@@ -473,6 +478,13 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 // Merge an included config into the current config. Some elements specified in both config will be merged while
 // others will be overridded only if they are not already specified in the original config.
 func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfig, terragruntOptions *options.TerragruntOptions) {
+	if includedConfig.Description != "" {
+		if conf.Description != "" {
+			conf.Description += "\n"
+		}
+		conf.Description += includedConfig.Description
+	}
+
 	if conf.RemoteState == nil {
 		conf.RemoteState = includedConfig.RemoteState
 	}
@@ -717,7 +729,6 @@ func (conf *TerragruntConfig) mergeExtraArgs(imported []TerraformExtraArguments,
 
 // Parse the config of the given include, if one is specified
 func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
-	terragruntOptions.Logger.Info("Reading included config file at", includedConfig.Source, includedConfig.Path)
 	if includedConfig.Path == "" && includedConfig.Source == "" {
 		return nil, errors.WithStackTrace(IncludedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
 	}

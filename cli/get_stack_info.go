@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/gruntwork-io/terragrunt/config"
@@ -38,10 +37,10 @@ func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
 	}
 
 	if json {
-		fmt.Println(modules.JSON())
+		terragruntOptions.Println(modules.JSON())
 	} else {
 		for _, module := range modules {
-			fmt.Println(module.Path)
+			terragruntOptions.Println(module.Path)
 		}
 	}
 

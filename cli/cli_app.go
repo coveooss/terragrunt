@@ -171,12 +171,12 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 	// If someone calls us with no args at all, show the help text and exit
 	if !cliContext.Args().Present() {
 		title := color.New(color.FgYellow, color.Underline).SprintFunc()
-		fmt.Println(title("\nTERRAGRUNT\n"))
+		terragruntOptions.Println(title("\nTERRAGRUNT\n"))
 		cli.ShowAppHelp(cliContext)
 
 		fmt.Fprintln(cliContext.App.Writer)
 		util.SetWarningLoggingLevel()
-		fmt.Println(title("TERRAFORM\n"))
+		terragruntOptions.Println(title("TERRAFORM\n"))
 		shell.RunTerraformCommand(terragruntOptions, "--help")
 		return nil
 	}
@@ -299,12 +299,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	if actualCommand.Command == "get-versions" {
 		PrintVersions(terragruntOptions, conf)
-		os.Exit(0)
+		return
 	}
 
 	if actualCommand.Command == "get-doc" {
 		PrintDoc(terragruntOptions, conf)
-		os.Exit(0)
+		return
 	}
 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.

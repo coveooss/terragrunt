@@ -22,8 +22,8 @@ var item = color.New(color.FgHiYellow).SprintFunc()
 
 // PrintVersions prints the version of all configured underlying tools
 func PrintVersions(terragruntOptions *options.TerragruntOptions, conf *config.TerragruntConfig) {
-	fmt.Println("Terragrunt version", terragruntVersion)
-	fmt.Println("Terraform version", terraformVersion)
+	terragruntOptions.Println("Terragrunt version", terragruntVersion)
+	terragruntOptions.Println("Terraform version", terraformVersion)
 
 	for _, extraCmd := range conf.ExtraCommands {
 		if extraCmd.VersionArg == "" || len(extraCmd.OS) > 0 && !util.ListContainsElement(extraCmd.OS, runtime.GOOS) {
@@ -31,7 +31,7 @@ func PrintVersions(terragruntOptions *options.TerragruntOptions, conf *config.Te
 		}
 
 		if strings.Contains(extraCmd.Name, " ") {
-			fmt.Printf("\n%s\n", item(extraCmd.Name))
+			terragruntOptions.Printf("\n%s\n", item(extraCmd.Name))
 		}
 		if extraCmd.Commands == nil {
 			if extraCmd.Command == "" {
@@ -56,7 +56,7 @@ func PrintVersions(terragruntOptions *options.TerragruntOptions, conf *config.Te
 			if err != nil {
 				terragruntOptions.Logger.Infof("Got %s %s while getting version for %s", color.RedString(err.Error()), out, cmd)
 			} else {
-				fmt.Println(strings.TrimSpace(out))
+				terragruntOptions.Println(strings.TrimSpace(out))
 			}
 		}
 	}
@@ -68,28 +68,28 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 		util.ListContainsElement(terragruntOptions.TerraformCliArgs[1:], "list"),
 	}
 
-	printTitle := title.Print
 	if !doc.listOnly {
-		printTitle = title.Println
-		fmt.Println(conf.Description)
+		terragruntOptions.Println(conf.Description)
 	}
 
-	printTitle("Extra arguments: (in evaluation order):")
-	fmt.Println(util.Indent(doc.extraArgs(conf.Terraform.ExtraArgs), 4))
+	print := func(section, content string) {
+		terragruntOptions.Printf(title.Sprint(section))
+		if !doc.listOnly {
+			terragruntOptions.Println()
+		}
 
-	printTitle("File importers (in execution order):")
-	fmt.Println(util.Indent(doc.importers(conf.ImportFiles, terragruntOptions.WorkingDir), 4))
+		terragruntOptions.Println(util.Indent(content, 4))
+		if doc.listOnly {
+			terragruntOptions.Println()
+		}
+	}
 
-	printTitle("Pre hooks (in execution order):")
-	fmt.Println(util.Indent(doc.hooks(conf.PreHooks, false), 4))
-	printTitle("Initialize Terraform state")
-	fmt.Println(util.Indent(doc.hooks(conf.PreHooks, true), 4))
-
-	printTitle("Post hooks (in execution order):")
-	fmt.Println(util.Indent(doc.hooks(conf.PostHooks), 4))
-
-	printTitle("Extra commands available:")
-	fmt.Println(util.Indent(doc.extraCommands(conf.ExtraCommands), 4))
+	print("Extra arguments: (in evaluation order):", doc.extraArgs(conf.Terraform.ExtraArgs))
+	print("File importers (in execution order):", doc.importers(conf.ImportFiles, terragruntOptions.WorkingDir))
+	print("Pre hooks (in execution order):", doc.hooks(conf.PreHooks, false))
+	print("Initialize Terraform state", doc.hooks(conf.PreHooks, true))
+	print("Post hooks (in execution order):", doc.hooks(conf.PostHooks))
+	print("Extra commands available:", doc.extraCommands(conf.ExtraCommands))
 }
 
 type printDoc struct {
