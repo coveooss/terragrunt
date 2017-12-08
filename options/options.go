@@ -255,6 +255,16 @@ func (terragruntOptions *TerragruntOptions) EnvironmentVariables() (result []str
 	return
 }
 
+// Println uses the embedded writer to print
+func (terragruntOptions *TerragruntOptions) Println(args ...interface{}) (n int, err error) {
+	return fmt.Fprintln(terragruntOptions.Writer, args...)
+}
+
+// Printf uses the embedded writer to print
+func (terragruntOptions *TerragruntOptions) Printf(format string, args ...interface{}) (n int, err error) {
+	return fmt.Fprintf(terragruntOptions.Writer, format, args...)
+}
+
 // VariableList defines the list of all variables defined during the processing of config files
 type VariableList map[string]Variable
 

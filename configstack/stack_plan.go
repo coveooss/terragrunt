@@ -83,7 +83,7 @@ func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHand
 
 // Print a little summary of the plan execution
 func printSummary(terragruntOptions *options.TerragruntOptions, results []moduleResult) {
-	fmt.Fprintf(terragruntOptions.Writer, "%s\nSummary:\n", separator)
+	terragruntOptions.Printf("%s\nSummary:\n", separator)
 
 	var length int
 	for _, result := range results {
@@ -100,7 +100,7 @@ func printSummary(terragruntOptions *options.TerragruntOptions, results []module
 			errMsg = fmt.Sprintf(", Error: %v", result.Err)
 		}
 
-		fmt.Fprintf(terragruntOptions.Writer, format, util.GetPathRelativeToWorkingDir(result.Module.Path), result.Message, errMsg)
+		terragruntOptions.Printf(format, util.GetPathRelativeToWorkingDir(result.Module.Path), result.Message, errMsg)
 	}
 }
 

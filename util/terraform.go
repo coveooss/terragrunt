@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -151,7 +152,7 @@ func MarshalHCLVars(value interface{}, indent int) []byte {
 			}
 		}
 	default:
-		fmt.Printf("Unknown type %T %v : %v\n", value, typ.Kind(), value)
+		fmt.Fprintf(os.Stderr, "Unknown type %T %v : %v\n", value, typ.Kind(), value)
 		buffer.WriteString(fmt.Sprintf("%v", value))
 	}
 

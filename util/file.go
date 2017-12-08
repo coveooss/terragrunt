@@ -123,6 +123,19 @@ func GetPathRelativeToWorkingDir(path string) (result string) {
 	return
 }
 
+// GetPathRelativeToWorkingDirMax returns either an absolute path or a relative path if it is not too far
+// from relatively to the current directory
+func GetPathRelativeToWorkingDirMax(path string, maxLevel uint) (result string) {
+	result = GetPathRelativeToWorkingDir(path)
+
+	sep := strings.Repeat(".."+string(os.PathSeparator), int(maxLevel+1))
+	if filepath.IsAbs(path) && strings.HasPrefix(result, sep) {
+		// If the path is absolute and it is too far from the current folder
+		result = path
+	}
+	return
+}
+
 // Return the contents of the file at the given path as a string
 func ReadFileAsString(path string) (string, error) {
 	bytes, err := ioutil.ReadFile(path)
