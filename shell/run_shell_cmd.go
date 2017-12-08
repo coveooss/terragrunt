@@ -58,6 +58,7 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 		logger = terragruntOptions.Logger.Info
 	}
 	logger("Running command:", command, strings.Join(args, " "))
+
 	command, err := LookPath(command, terragruntOptions.Env["PATH"])
 	if err != nil {
 		return errors.WithStackTrace(err)
@@ -70,7 +71,6 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	cmd := exec.Command(command, args...)
 
 	// TODO: consider adding prefix from terragruntOptions logger to stdout and stderr
-	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = terragruntOptions.Writer
 
@@ -93,7 +93,11 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	signalChannel := NewSignalsForwarder(forwardSignals, cmd, terragruntOptions.Logger, cmdChannel)
 	defer signalChannel.Close()
 
-	err = cmd.Run()
+	if CommandShouldBeApproved(command) {
+		err = RunCommandToApprove(cmd, terragruntOptions)
+	} else {
+		err = cmd.Run()
+	}
 
 	cmdChannel <- err
 	return errors.WithStackTrace(err)

@@ -27,6 +27,9 @@ type TerragruntOptions struct {
 	// Whether we should prompt the user for confirmation or always assume "yes"
 	NonInteractive bool
 
+	// The approval handler that will be used in a non interactive context
+	ApprovalHandler string
+
 	// CLI args that are intended for Terraform (i.e. all the CLI args except the --terragrunt ones)
 	TerraformCliArgs []string
 
@@ -112,6 +115,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		IgnoreDependencyErrors: false,
 		Writer:                 os.Stdout,
 		ErrWriter:              os.Stderr,
+		ApprovalHandler:        "",
 		RunTerragrunt: func(terragruntOptions *TerragruntOptions) error {
 			return errors.WithStackTrace(RunTerragruntCommandNotSet)
 		},
@@ -147,6 +151,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		IgnoreDependencyErrors:       terragruntOptions.IgnoreDependencyErrors,
 		Writer:                       terragruntOptions.Writer,
 		ErrWriter:                    terragruntOptions.ErrWriter,
+		ApprovalHandler:              terragruntOptions.ApprovalHandler,
 		RunTerragrunt:                terragruntOptions.RunTerragrunt,
 		Uniqueness:                   terragruntOptions.Uniqueness,
 		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,
