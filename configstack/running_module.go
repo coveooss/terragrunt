@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -26,7 +27,7 @@ const (
 )
 
 // Using CreateMultiErrors as a variable instead of a function allows us to override the function used to compose multi error object.
-// It is used if a command wants to change the default behaviour of the severity analysis that is implemented by default.
+// It is used if a command wants to change the default behavior of the severity analysis that is implemented by default.
 var CreateMultiErrors = func(errs []error) error {
 	return MultiError{Errors: errs}
 }
@@ -106,8 +107,9 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 		module.Handler = handler
 		go func(module *runningModule) {
 			defer waitGroup.Done()
-			module.Module.TerragruntOptions.Writer = &module.OutStream
-			module.Module.TerragruntOptions.ErrWriter = &module.OutStream
+			logCatcher := util.LogCatcher{&module.OutStream, module.Module.TerragruntOptions.Logger}
+			module.Module.TerragruntOptions.Writer = logCatcher
+			module.Module.TerragruntOptions.ErrWriter = logCatcher
 			module.runModuleWhenReady()
 		}(module)
 	}
@@ -168,9 +170,17 @@ func collectErrors(modules map[string]*runningModule) error {
 
 	if len(errs) == 0 {
 		return nil
-	} else {
-		return errors.WithStackTrace(CreateMultiErrors(errs))
 	}
+	return errors.WithStackTrace(CreateMultiErrors(errs))
+}
+
+// Run a module once all of its dependencies have finished executing.
+func (module *runningModule) dependencies() []string {
+	result := make([]string, 0, len(module.Dependencies))
+	for _, dep := range module.Dependencies {
+		result = append(result, util.GetPathRelativeToWorkingDirMax(dep.Module.Path, 3))
+	}
+	return result
 }
 
 // Run a module once all of its dependencies have finished executing.
@@ -185,20 +195,31 @@ func (module *runningModule) runModuleWhenReady() {
 // Wait for all of this modules dependencies to finish executing. Return an error if any of those dependencies complete
 // with an error. Return immediately if this module has no dependencies.
 func (module *runningModule) waitForDependencies() error {
-	module.Module.TerragruntOptions.Logger.Debugf("Module %s must wait for %d dependencies to finish", module.Module.Path, len(module.Dependencies))
+	log := module.Module.TerragruntOptions.Logger
+	if len(module.Dependencies) > 0 {
+		path := util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3)
+		log.Debugf("Module %s must wait for %s to finish", path, strings.Join(module.dependencies(), ", "))
+	}
 	for len(module.Dependencies) > 0 {
 		doneDependency := <-module.DependencyDone
 		delete(module.Dependencies, doneDependency.Module.Path)
 
+		path := util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3)
+		depPath := util.GetPathRelativeToWorkingDirMax(doneDependency.Module.Path, 3)
+
 		if doneDependency.Err != nil {
 			if module.Module.TerragruntOptions.IgnoreDependencyErrors {
-				module.Module.TerragruntOptions.Logger.Warningf("Dependency %s of module %s just finished with an error. Module %s will have to return an error too. However, because of --terragrunt-ignore-dependency-errors, module %s will run anyway.", doneDependency.Module.Path, module.Module.Path, module.Module.Path, module.Module.Path)
+				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too. However, because of --terragrunt-ignore-dependency-errors, module %[2]s will run anyway.", depPath, path)
 			} else {
-				module.Module.TerragruntOptions.Logger.Warningf("Dependency %s of module %s just finished with an error. Module %s will have to return an error too.", doneDependency.Module.Path, module.Module.Path, module.Module.Path)
+				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too.", depPath, path)
 				return DependencyFinishedWithError{module.Module, doneDependency.Module, doneDependency.Err}
 			}
 		} else {
-			module.Module.TerragruntOptions.Logger.Debugf("Dependency %s of module %s just finished successfully. Module %s must wait on %d more dependencies.", doneDependency.Module.Path, module.Module.Path, module.Module.Path, len(module.Dependencies))
+			var moreDependencies string
+			if len(module.Dependencies) > 0 {
+				moreDependencies = fmt.Sprintf(" Module %s must still wait for %s.", path, strings.Join(module.dependencies(), ", "))
+			}
+			log.Debugf("Dependency %s of module %s just finished successfully.%s", depPath, path, moreDependencies)
 		}
 	}
 
@@ -212,10 +233,9 @@ func (module *runningModule) runNow() error {
 	if module.Module.AssumeAlreadyApplied {
 		module.Module.TerragruntOptions.Logger.Debugf("Assuming module %s has already been applied and skipping it", module.Module.Path)
 		return nil
-	} else {
-		module.Module.TerragruntOptions.Logger.Debugf("Running module %s now", module.Module.Path)
-		return module.Module.TerragruntOptions.RunTerragrunt(module.Module.TerragruntOptions)
 	}
+	module.Module.TerragruntOptions.Logger.Debugf("Running module %s now", util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3))
+	return module.Module.TerragruntOptions.RunTerragrunt(module.Module.TerragruntOptions)
 }
 
 var separator = strings.Repeat("-", 132)
@@ -242,7 +262,8 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 	if output == "" {
 		module.Module.TerragruntOptions.Logger.Info("No output")
 	} else {
-		fmt.Fprintf(module.Writer, "%s\n%v\n\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path), output)
+		fmt.Fprintln(module.Writer, color.HiGreenString("%s\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path)))
+		fmt.Fprintln(module.Writer, output)
 	}
 
 	module.Status = Finished

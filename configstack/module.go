@@ -24,9 +24,17 @@ type TerraformModule struct {
 }
 
 // Render this module as a human-readable string
-func (module *TerraformModule) String() string {
-	simple := module.Simple()
-	return fmt.Sprintf("Module %s (dependencies: [%s])", simple.Path, strings.Join(simple.Dependencies, ", "))
+func (module TerraformModule) String() string {
+	return fmt.Sprintf("Module %s (dependencies: [%s])", util.GetPathRelativeToWorkingDirMax(module.Path, 3), strings.Join(module.dependencies(), ", "))
+}
+
+// Run a module once all of its dependencies have finished executing.
+func (module TerraformModule) dependencies() []string {
+	result := make([]string, 0, len(module.Dependencies))
+	for _, dep := range module.Dependencies {
+		result = append(result, util.GetPathRelativeToWorkingDirMax(dep.Path, 3))
+	}
+	return result
 }
 
 // Simple returns a simplified version of the module with paths relative to working dir
