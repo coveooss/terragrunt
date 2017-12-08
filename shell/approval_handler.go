@@ -2,12 +2,13 @@ package shell
 
 import (
 	"bufio"
-	"bytes"
 	goErrors "errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gruntwork-io/terragrunt/options"
@@ -24,7 +25,11 @@ func CommandShouldBeApproved(command string) bool {
 	return false
 }
 
+var sharedMutex = sync.Mutex{}
+
 func RunCommandToApprove(cmd *exec.Cmd, terragruntOptions *options.TerragruntOptions) error {
+	sharedMutex.Lock()
+	defer sharedMutex.Unlock()
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return err
@@ -41,8 +46,13 @@ func RunCommandToApprove(cmd *exec.Cmd, terragruntOptions *options.TerragruntOpt
 		i++
 	}
 	if i == 30 {
-		return goErrors.New("Waited 10 seconds for input prompt. Did not get it.")
+		return goErrors.New("Waited 30 seconds for input prompt. Did not get it.")
 	}
+
+	if isDashAllQuery(terragruntOptions.Env["TERRAGRUNT_ARGS"]) {
+		fmt.Println(stdOutInterceptor.GetBuffer())
+	}
+
 	if !stdOutInterceptor.IsComplete() {
 		var text string
 		if len(terragruntOptions.ApprovalHandler) > 0 {
@@ -60,18 +70,16 @@ func RunCommandToApprove(cmd *exec.Cmd, terragruntOptions *options.TerragruntOpt
 		return err
 	}
 
-	// Not checked for error since a refusal will return a non-zero status
-	cmd.Wait()
-
-	if _, ok := cmd.Stdout.(*bytes.Buffer); ok {
-		clearCmd := exec.Command("clear")
-		clearCmd.Stdout = os.Stdout
-		err = clearCmd.Run()
-		if err != nil {
-			return err
-		}
+	err = cmd.Wait()
+	if err != nil {
+		return goErrors.New("Terraform did not complete successfully.")
 	}
+
 	return nil
+}
+
+func isDashAllQuery(terragruntArgs string) bool {
+	return strings.Contains(terragruntArgs, "-all")
 }
 
 func approveInConsole() (string, error) {
@@ -92,6 +100,7 @@ func approveWithCustomHandler(terragruntOptions *options.TerragruntOptions, prom
 	approvalCmd := exec.Command(command, args...)
 	approvalCmd.Stderr = os.Stderr
 	resp, err := approvalCmd.Output()
+
 	if err != nil {
 		return "", err
 	}
@@ -119,9 +128,14 @@ func (interceptor *OutputInterceptor) GetBuffer() string {
 }
 
 func (interceptor *OutputInterceptor) WaitingForValue() bool {
-	return strings.Contains(interceptor.GetBuffer(), "Do you want to perform these actions") && !interceptor.IsComplete()
+	return interceptor.IsComplete() || strings.Contains(interceptor.GetBuffer(), "Do you want to perform these actions")
 }
 
 func (interceptor *OutputInterceptor) IsComplete() bool {
-	return strings.Contains(interceptor.GetBuffer(), "Apply complete!") || strings.Contains(interceptor.GetBuffer(), "Apply cancelled.")
+	for _, str := range []string{"Apply complete!", "Apply cancelled.", "Error:"} {
+		if strings.Contains(interceptor.GetBuffer(), str) {
+			return true
+		}
+	}
+	return false
 }
