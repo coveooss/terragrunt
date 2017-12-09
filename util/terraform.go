@@ -1,38 +1,15 @@
 package util
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-	"reflect"
-	"regexp"
 	"sort"
-	"strings"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/hashicorp/hcl"
 )
-
-// FlattenHCL - Convert array of map to single map if there is only one element in the array
-// By default, the hcl.Unmarshal returns array of map even if there is only a single map in the definition
-func FlattenHCL(source map[string]interface{}) map[string]interface{} {
-	for key, value := range source {
-		switch value := value.(type) {
-		case []map[string]interface{}:
-			switch len(value) {
-			case 1:
-				source[key] = FlattenHCL(value[0])
-			default:
-				for i, subMap := range value {
-					value[i] = FlattenHCL(subMap)
-				}
-			}
-		}
-	}
-	return source
-}
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
 func LoadDefaultValues(folder string) (result map[string]interface{}, err error) {
@@ -57,7 +34,7 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 	return result, nil
 }
 
-// LoadTfVars returns a map of the variables defined in the tfvars file
+// LoadVariablesFromFile returns a map of the variables defined in the tfvars file
 func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -67,99 +44,12 @@ func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 	return LoadVariables(string(bytes))
 }
 
-// LoadVars returns a map of the variables defined in the content provider
+// LoadVariables returns a map of the variables defined in the content provider
 func LoadVariables(content string) (map[string]interface{}, error) {
 	variables := map[string]interface{}{}
 	err := hcl.Unmarshal([]byte(content), &variables)
-	return FlattenHCL(variables), err
+	return utils.FlattenHCL(variables), err
 }
-
-// MarshalHCLVars serialize values to hcl variable definition format
-func MarshalHCLVars(value interface{}, indent int) []byte {
-	if indent == 0 {
-		value = FlattenHCL(value.(map[string]interface{}))
-	}
-	var buffer bytes.Buffer
-
-	typ, val := reflect.TypeOf(value), reflect.ValueOf(value)
-	switch typ.Kind() {
-	case reflect.String:
-		buffer.WriteByte('"')
-		buffer.WriteString(strings.Replace(val.String(), "\\", "\\\\", -1))
-		buffer.WriteByte('"')
-
-	case reflect.Int:
-		fallthrough
-	case reflect.Float64:
-		fallthrough
-	case reflect.Bool:
-		buffer.WriteString(fmt.Sprintf("%v", value))
-
-	case reflect.Slice:
-		fallthrough
-	case reflect.Array:
-		switch val.Len() {
-		case 0:
-			buffer.WriteString("[]")
-		case 1:
-			buffer.WriteByte('[')
-			buffer.Write(MarshalHCLVars(reflect.ValueOf(value).Index(0).Interface(), indent+1))
-			buffer.WriteByte(']')
-		default:
-			if indent > 0 {
-				buffer.WriteString("[\n")
-			}
-			for i := 0; i < val.Len(); i++ {
-				buffer.WriteString(strings.Repeat(" ", indent*2))
-				buffer.Write(MarshalHCLVars(val.Index(i).Interface(), indent+1))
-				buffer.WriteString(",\n")
-			}
-			if indent > 0 {
-				buffer.WriteString(strings.Repeat(" ", (indent-1)*2))
-				buffer.WriteString("]")
-			}
-		}
-
-	case reflect.Map:
-		switch value := value.(type) {
-		case map[string]interface{}:
-			keys := make([]string, 0, len(value))
-
-			for _, key := range val.MapKeys() {
-				keys = append(keys, key.String())
-			}
-			sort.Strings(keys)
-
-			if indent > 0 {
-				buffer.WriteString("{\n")
-			}
-			for _, key := range keys {
-				buffer.WriteString(strings.Repeat(" ", indent*2))
-				if identifierRegex.MatchString(key) {
-					buffer.WriteString(key)
-				} else {
-					// The identifier contains characters that may be considered invalid, we have to quote it
-					buffer.WriteString(fmt.Sprintf("%q", key))
-				}
-				buffer.WriteString(" = ")
-				buffer.Write(MarshalHCLVars(value[key], indent+1))
-				buffer.WriteString("\n")
-			}
-
-			if indent > 0 {
-				buffer.WriteString(strings.Repeat(" ", (indent-1)*2))
-				buffer.WriteString("}")
-			}
-		}
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown type %T %v : %v\n", value, typ.Kind(), value)
-		buffer.WriteString(fmt.Sprintf("%v", value))
-	}
-
-	return buffer.Bytes()
-}
-
-var identifierRegex = regexp.MustCompile(`^[A-za-z][\w-]*$`)
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)
 func getTerraformFiles(folder string) []string {

@@ -23,7 +23,10 @@ func ParseTerragruntOptions(cliContext *cli.Context) (*options.TerragruntOptions
 	}
 
 	terragruntOptions.Writer = cliContext.App.Writer
-	terragruntOptions.ErrWriter = util.LogCatcher{cliContext.App.ErrWriter, terragruntOptions.Logger}
+	terragruntOptions.ErrWriter = util.LogCatcher{
+		Writer: cliContext.App.ErrWriter,
+		Logger: terragruntOptions.Logger,
+	}
 
 	return terragruntOptions, nil
 }
@@ -45,45 +48,33 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return nil, errors.WithStackTrace(err)
 	}
 
-	workingDir, err := parseStringArg(args, OPT_WORKING_DIR, currentDir)
-	if err != nil {
-		return nil, err
+	parse := func(argName string, defaultValues ...string) (result string) {
+		if err == nil {
+			if result, err = parseStringArg(args, argName, ""); err == nil && result == "" {
+				for _, def := range defaultValues {
+					result = def
+					if result != "" {
+						break
+					}
+				}
+			}
+
+		}
+		return
 	}
 
-	terragruntConfigPath, err := parseStringArg(args, OPT_TERRAGRUNT_CONFIG, os.Getenv("TERRAGRUNT_CONFIG"))
-	if err != nil {
-		return nil, err
-	}
-	if terragruntConfigPath == "" {
-		terragruntConfigPath = config.DefaultConfigPath(workingDir)
-	}
-
-	terraformPath, err := parseStringArg(args, OPT_TERRAGRUNT_TFPATH, os.Getenv("TERRAGRUNT_TFPATH"))
-	if err != nil {
-		return nil, err
-	}
-	if terraformPath == "" {
-		terraformPath = "terraform"
-	}
-
-	terraformSource, err := parseStringArg(args, OPT_TERRAGRUNT_SOURCE, os.Getenv("TERRAGRUNT_SOURCE"))
-	if err != nil {
-		return nil, err
-	}
-
-	loggingLevel, err := parseStringArg(args, OPT_LOGGING_LEVEL, os.Getenv("TERRAGRUNT_LOGGING_LEVEL"))
-	if err != nil {
-		return nil, err
-	}
-
-	awsProfile, err := parseStringArg(args, OPT_AWS_PROFILE, "")
-	if err != nil {
-		return nil, err
-	}
-
+	workingDir := parse(OPT_WORKING_DIR, currentDir)
+	terragruntConfigPath := parse(OPT_TERRAGRUNT_CONFIG, os.Getenv("TERRAGRUNT_CONFIG"), config.DefaultConfigPath(workingDir))
+	terraformPath := parse(OPT_TERRAGRUNT_TFPATH, os.Getenv("TERRAGRUNT_TFPATH"), "terraform")
+	terraformSource := parse(OPT_TERRAGRUNT_SOURCE, os.Getenv("TERRAGRUNT_SOURCE"))
+	loggingLevel := parse(OPT_LOGGING_LEVEL, os.Getenv("TERRAGRUNT_LOGGING_LEVEL"))
+	awsProfile := parse(OPT_AWS_PROFILE)
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
-
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
+
+	if err != nil {
+		return nil, err
+	}
 
 	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
 	opts.TerraformPath = filepath.ToSlash(terraformPath)
@@ -227,7 +218,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 		}
 	}
 
-	if util.ListContainsElement(config.TERRAFORM_COMMANDS_NEED_VARS, command) {
+	if util.ListContainsElement(config.TerraformCommandWithVarFile, command) {
 		// The -var and -var-file are required by the terraform command, we return the args list unaltered
 		return args
 	}

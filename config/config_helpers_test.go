@@ -492,17 +492,17 @@ func TestResolveCommandsInterpolationConfigString(t *testing.T) {
 	}{
 		{
 			`"${get_terraform_commands_that_need_locking()}"`,
-			util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_LOCKING),
+			util.CommaSeparatedStrings(TerraformCommandWithLockTimeout),
 			nil,
 		},
 		{
 			`commands = ["${get_terraform_commands_that_need_vars()}"]`,
-			fmt.Sprintf("commands = [%s]", util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_VARS)),
+			fmt.Sprintf("commands = [%s]", util.CommaSeparatedStrings(TerraformCommandWithVarFile)),
 			nil,
 		},
 		{
 			`commands = "test-${get_terraform_commands_that_need_vars()}"`,
-			fmt.Sprintf(`commands = "test-%v"`, TERRAFORM_COMMANDS_NEED_VARS),
+			fmt.Sprintf(`commands = "test-%v"`, TerraformCommandWithVarFile),
 			nil,
 		},
 	}
@@ -541,17 +541,17 @@ func TestResolveMultipleInterpolationsConfigString(t *testing.T) {
 		{
 			// Malformed parameters
 			`${get_env("NON_EXISTING_VAR1", "default"-${get_terraform_commands_that_need_vars()}`,
-			fmt.Sprintf(`${get_env("NON_EXISTING_VAR1", "default"-%v`, TERRAFORM_COMMANDS_NEED_VARS),
+			fmt.Sprintf(`${get_env("NON_EXISTING_VAR1", "default"-%v`, TerraformCommandWithVarFile),
 			nil,
 		},
 		{
 			`test1 = "${get_env("NON_EXISTING_VAR1", "default")}" test2 = ["${get_terraform_commands_that_need_vars()}"]`,
-			fmt.Sprintf(`test1 = "default" test2 = [%v]`, util.CommaSeparatedStrings(TERRAFORM_COMMANDS_NEED_VARS)),
+			fmt.Sprintf(`test1 = "default" test2 = [%v]`, util.CommaSeparatedStrings(TerraformCommandWithVarFile)),
 			nil,
 		},
 		{
 			`${get_env("NON_EXISTING_VAR1", "default")}-${get_terraform_commands_that_need_vars()}`,
-			fmt.Sprintf("default-%v", TERRAFORM_COMMANDS_NEED_VARS),
+			fmt.Sprintf("default-%v", TerraformCommandWithVarFile),
 			nil,
 		},
 	}

@@ -34,8 +34,31 @@ func getVarParams(count int) string {
 	return strings.Join(params, ",")
 }
 
-// List of terraform commands that accept -lock-timeout
-var TERRAFORM_COMMANDS_NEED_LOCKING = []string{
+/*
+To help identifying terraform commands that requires specific args, you can use the following function in a bash shell:
+
+function find-tf-usage() {
+	local arg
+	for arg in "$@"
+	do
+		echo
+		local name="TerraformCommandWith$(echo ${arg} | sed -r 's/(^|[-_])([a-z])/\U\2/g')"
+		echo "// $name is the list of Terraform commands accepting -${arg}"
+		echo "var $name = []string{"
+		terraform |
+			sed -E "s/^\s{4}/CMD /g" |
+			grep "^CMD " |
+			cut -f2 -d' ' |
+			xargs -n1 -I{} sh -c 'f() { terraform {} --help 2>&1| grep -- "${1}[ =]" >/dev/null&& echo "    \"{}\",";}; f $1' - $arg
+		echo "}"
+	done
+}
+
+find-tf-usage -lock-timeout var-file -input
+*/
+
+// TerraformCommandWithLockTimeout is the list of Terraform commands accepting --lock-timeout
+var TerraformCommandWithLockTimeout = []string{
 	"apply",
 	"destroy",
 	"import",
@@ -46,8 +69,8 @@ var TERRAFORM_COMMANDS_NEED_LOCKING = []string{
 	"untaint",
 }
 
-// List of terraform commands that accept -var or -var-file
-var TERRAFORM_COMMANDS_NEED_VARS = []string{
+// TerraformCommandWithVarFile is the list of Terraform commands accepting -var-file
+var TerraformCommandWithVarFile = []string{
 	"apply",
 	"console",
 	"destroy",
@@ -55,10 +78,11 @@ var TERRAFORM_COMMANDS_NEED_VARS = []string{
 	"plan",
 	"push",
 	"refresh",
+	"validate",
 }
 
-// List of terraform commands that accept -input=
-var TERRAFORM_COMMANDS_NEED_INPUT = []string{
+// TerraformCommandWithInput is the list of Terraform commands accepting --input
+var TerraformCommandWithInput = []string{
 	"apply",
 	"import",
 	"init",
@@ -125,9 +149,9 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 			"get_parent_tfvars_dir":                    (*resolveContext).getParentTfVarsDir,
 			"get_aws_account_id":                       (*resolveContext).getAWSAccountID,
 			"save_variables":                           (*resolveContext).saveVariables,
-			"get_terraform_commands_that_need_vars":    TERRAFORM_COMMANDS_NEED_VARS,
-			"get_terraform_commands_that_need_locking": TERRAFORM_COMMANDS_NEED_LOCKING,
-			"get_terraform_commands_that_need_input":   TERRAFORM_COMMANDS_NEED_INPUT,
+			"get_terraform_commands_that_need_vars":    TerraformCommandWithVarFile,
+			"get_terraform_commands_that_need_locking": TerraformCommandWithLockTimeout,
+			"get_terraform_commands_that_need_input":   TerraformCommandWithInput,
 			"get_temp_folder":                          GET_TEMP_FOLDER,
 			"get_script_folder":                        GET_SCRIPT_FOLDER,
 		}

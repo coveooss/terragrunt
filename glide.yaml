@@ -27,3 +27,4 @@ import:
   - aws/service/dynamodb
   - aws/service/s3
 - package: github.com/op/go-logging
+- package: github.com/coveo/gotemplate

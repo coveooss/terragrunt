@@ -342,16 +342,3 @@ func ExpandArguments(args []string, folder string) (result []string) {
 	}
 	return
 }
-
-// FindFiles returns the list of files in the specified folder that match one of the supplied patterns
-func FindFiles(folder string, patterns ...string) ([]string, error) {
-	var tfFiles []string
-	for _, ext := range patterns {
-		files, err := filepath.Glob(filepath.Join(folder, ext))
-		if err != nil {
-			return nil, err
-		}
-		tfFiles = append(tfFiles, files...)
-	}
-	return tfFiles, nil
-}

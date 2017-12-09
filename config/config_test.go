@@ -566,7 +566,7 @@ terragrunt = {
 			},
 			terragruntConfig.Terraform.ExtraArgs[0].Arguments)
 		assert.Equal(t,
-			TERRAFORM_COMMANDS_NEED_VARS,
+			TerraformCommandWithVarFile,
 			terragruntConfig.Terraform.ExtraArgs[0].Commands)
 	}
 }
@@ -631,10 +631,10 @@ terragrunt = {
 		assert.Equal(t, []string{"fmt"}, terragruntConfig.Terraform.ExtraArgs[1].Commands)
 		assert.Equal(t, "required_tfvars", terragruntConfig.Terraform.ExtraArgs[2].Name)
 		assert.Equal(t, []string{"file1.tfvars", "file2.tfvars"}, terragruntConfig.Terraform.ExtraArgs[2].RequiredVarFiles)
-		assert.Equal(t, TERRAFORM_COMMANDS_NEED_VARS, terragruntConfig.Terraform.ExtraArgs[2].Commands)
+		assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.Terraform.ExtraArgs[2].Commands)
 		assert.Equal(t, "optional_tfvars", terragruntConfig.Terraform.ExtraArgs[3].Name)
 		assert.Equal(t, []string{"opt1.tfvars", "opt2.tfvars"}, terragruntConfig.Terraform.ExtraArgs[3].OptionalVarFiles)
-		assert.Equal(t, TERRAFORM_COMMANDS_NEED_VARS, terragruntConfig.Terraform.ExtraArgs[3].Commands)
+		assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.Terraform.ExtraArgs[3].Commands)
 	}
 }
 

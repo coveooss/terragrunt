@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
@@ -343,7 +344,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// If there is no terraform file in the folder, we skip the command
-	tfFiles, err := util.FindFiles(terragruntOptions.WorkingDir, "*.tf", "*.tf.json")
+	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, "*.tf", "*.tf.json")
 	if err != nil {
 		return err
 	}
