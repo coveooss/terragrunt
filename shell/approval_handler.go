@@ -5,19 +5,32 @@ import (
 	goErrors "errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/gruntwork-io/terragrunt/options"
 )
 
-var commandsWithApprovals = [...]string{"readable-apply"}
+// CommandShouldBeApproved returns true if the command to run should go through the approval process (expect style)
+// It will return false if -auto-approve is set and if the command is not in the commands list of the config.
+func CommandShouldBeApproved(command string, terragruntOptions *options.TerragruntOptions) bool {
+	for _, terraformArg := range terragruntOptions.TerraformCliArgs {
+		if terraformArg == "-auto-approve" {
+			return false
+		}
+	}
+	config, err := getApprovalConfig(terragruntOptions)
+	if err != nil {
+		panic(err)
+	}
 
-func CommandShouldBeApproved(command string) bool {
-	for _, commandToApprove := range commandsWithApprovals {
+	for _, commandToApprove := range config.Commands {
 		if strings.Contains(command, commandToApprove) {
 			return true
 		}
@@ -27,6 +40,7 @@ func CommandShouldBeApproved(command string) bool {
 
 var sharedMutex = sync.Mutex{}
 
+// RunCommandToApprove Runs a command with approval (expect style)
 func RunCommandToApprove(cmd *exec.Cmd, terragruntOptions *options.TerragruntOptions) error {
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
@@ -34,7 +48,7 @@ func RunCommandToApprove(cmd *exec.Cmd, terragruntOptions *options.TerragruntOpt
 	if err != nil {
 		return err
 	}
-	stdOutInterceptor := newOutputInterceptor(cmd.Stdout)
+	stdOutInterceptor := newOutputInterceptor(cmd.Stdout, terragruntOptions)
 	cmd.Stdout = stdOutInterceptor
 	err = cmd.Start()
 	if err != nil {
@@ -107,14 +121,25 @@ func approveWithCustomHandler(terragruntOptions *options.TerragruntOptions, prom
 	return string(resp), nil
 }
 
+// OutputInterceptor intercepts all writes to a io.Writer and writes them to a buffer while still letting them pass through.
+// Offers some functions to help the approval process.
 type OutputInterceptor struct {
-	subWriter io.Writer
-	buffer    []byte
+	subWriter          io.Writer
+	buffer             []byte
+	expectStatements   []string
+	completeStatements []string
 }
 
-func newOutputInterceptor(subWriter io.Writer) *OutputInterceptor {
+func newOutputInterceptor(subWriter io.Writer, terragruntOptions *options.TerragruntOptions) *OutputInterceptor {
+	config, err := getApprovalConfig(terragruntOptions)
+	if err != nil {
+		panic(err)
+	}
+
 	return &OutputInterceptor{
-		subWriter: subWriter,
+		subWriter:          subWriter,
+		expectStatements:   config.Expect,
+		completeStatements: config.Complete,
 	}
 }
 
@@ -123,19 +148,71 @@ func (interceptor *OutputInterceptor) Write(p []byte) (n int, err error) {
 	return interceptor.subWriter.Write(p)
 }
 
+// GetBuffer returns the string value of all intercepted data to the underlying writer.
 func (interceptor *OutputInterceptor) GetBuffer() string {
 	return string(interceptor.buffer)
 }
 
+// WaitingForValue returns true if the command is waiting for an input value based on its output.
 func (interceptor *OutputInterceptor) WaitingForValue() bool {
-	return interceptor.IsComplete() || strings.Contains(interceptor.GetBuffer(), "Do you want to perform these actions")
+	return interceptor.IsComplete() || interceptor.bufferContainsString(interceptor.expectStatements)
 }
 
+// IsComplete returns true if the command is complete and should exit.
 func (interceptor *OutputInterceptor) IsComplete() bool {
-	for _, str := range []string{"Apply complete!", "Apply cancelled.", "Error:"} {
+	return interceptor.bufferContainsString(interceptor.completeStatements)
+}
+
+func (interceptor *OutputInterceptor) bufferContainsString(listOfStrings []string) bool {
+	for _, str := range listOfStrings {
 		if strings.Contains(interceptor.GetBuffer(), str) {
 			return true
 		}
 	}
 	return false
 }
+
+// ApprovalConfig represents the config file that can be provided to modify the approval process. See the default config below for an example.
+type ApprovalConfig struct {
+	Initialized bool
+	Commands    []string
+	Expect      []string
+	Complete    []string
+}
+
+var approvalConfig ApprovalConfig
+
+func getApprovalConfig(terragruntOptions *options.TerragruntOptions) (ApprovalConfig, error) {
+	var configFileYaml []byte
+	var err error
+	if !approvalConfig.Initialized {
+		if len(terragruntOptions.ApprovalConfigFile) > 0 {
+			path, err := LookPath(terragruntOptions.ApprovalConfigFile, terragruntOptions.Env["PATH"])
+			if err != nil {
+				return approvalConfig, err
+			}
+			configFileYaml, err = ioutil.ReadFile(path)
+			if err != nil {
+				return approvalConfig, err
+			}
+		} else {
+			configFileYaml = []byte(defaultApprovalConfig)
+		}
+
+		if err = yaml.Unmarshal(configFileYaml, &approvalConfig); err != nil {
+			return approvalConfig, err
+		}
+		approvalConfig.Initialized = true
+	}
+	return approvalConfig, nil
+}
+
+const defaultApprovalConfig = `commands: 
+  - apply
+complete: 
+  - "Apply complete!"
+  - "Apply cancelled."
+  - "Error:"
+expect: 
+  - "Do you want to perform these actions"
+`

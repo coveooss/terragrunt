@@ -93,7 +93,7 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	signalChannel := NewSignalsForwarder(forwardSignals, cmd, terragruntOptions.Logger, cmdChannel)
 	defer signalChannel.Close()
 
-	if CommandShouldBeApproved(command) {
+	if CommandShouldBeApproved(command, terragruntOptions) {
 		err = RunCommandToApprove(cmd, terragruntOptions)
 	} else {
 		cmd.Stdin = os.Stdin

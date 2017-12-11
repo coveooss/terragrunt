@@ -30,6 +30,10 @@ type TerragruntOptions struct {
 	// The approval handler that will be used in a non interactive context
 	ApprovalHandler string
 
+	// The approval config file, this file must be YAML formatted and contains the input text to expect and the completion text.
+	// The default value is defined in the approval handler file
+	ApprovalConfigFile string
+
 	// CLI args that are intended for Terraform (i.e. all the CLI args except the --terragrunt ones)
 	TerraformCliArgs []string
 
@@ -152,6 +156,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		Writer:                       terragruntOptions.Writer,
 		ErrWriter:                    terragruntOptions.ErrWriter,
 		ApprovalHandler:              terragruntOptions.ApprovalHandler,
+		ApprovalConfigFile:           terragruntOptions.ApprovalConfigFile,
 		RunTerragrunt:                terragruntOptions.RunTerragrunt,
 		Uniqueness:                   terragruntOptions.Uniqueness,
 		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,
