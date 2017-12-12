@@ -1,7 +1,6 @@
 package configstack
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -54,15 +53,6 @@ type SimpleTerraformModule struct {
 
 // SimpleTerraformModules represents a list of simplified version of TerraformModule
 type SimpleTerraformModules []SimpleTerraformModule
-
-// JSON renders a list of modules as a JSON string
-func (modules SimpleTerraformModules) JSON() string {
-	json, err := json.MarshalIndent(modules, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	return string(json)
-}
 
 // MakeRelative transforms each absolute path in relative path
 func (modules SimpleTerraformModules) MakeRelative() (result SimpleTerraformModules) {

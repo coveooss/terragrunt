@@ -115,7 +115,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 	out := []string{}
 	cmd := firstArg(terragruntOptions.TerraformCliArgs)
 
-	for _, arg := range terragruntConfig.Terraform.ExtraArgs {
+	for _, arg := range terragruntConfig.Terraform.ExtraArgs.Enabled() {
 		currentCommandIncluded := util.ListContainsElement(arg.Commands, cmd)
 
 		if currentCommandIncluded {

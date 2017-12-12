@@ -13,17 +13,21 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-const GET_TEMP_FOLDER = "<TEMP_FOLDER>"
-const GET_SCRIPT_FOLDER = "<SCRIPT_FOLDER>"
+const (
+	GET_TEMP_FOLDER   = "<TEMP_FOLDER>"
+	GET_SCRIPT_FOLDER = "<SCRIPT_FOLDER>"
+)
 
-var INTERPOLATION_VARS = `\s*var\.([[:alpha:]][\w-]*)\s*`
-var INTERPOLATION_PARAMETERS = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
-var INTERPOLATION_SYNTAX_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
-var INTERPOLATION_SYNTAX_REGEX_SINGLE = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
-var INTERPOLATION_SYNTAX_REGEX_REMAINING = regexp.MustCompile(`\$\{.*?\}`)
-var HELPER_FUNCTION_SYNTAX_REGEX = regexp.MustCompile(`^\$\{\s*(.*?)\((.*?)\)\s*\}$`)
-var HELPER_VAR_REGEX = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, INTERPOLATION_VARS))
-var MAX_PARENT_FOLDERS_TO_CHECK = 100
+var (
+	INTERPOLATION_VARS                   = `\s*var\.([[:alpha:]][\w-]*)\s*`
+	INTERPOLATION_PARAMETERS             = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
+	INTERPOLATION_SYNTAX_REGEX           = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
+	INTERPOLATION_SYNTAX_REGEX_SINGLE    = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
+	INTERPOLATION_SYNTAX_REGEX_REMAINING = regexp.MustCompile(`\$\{.*?\}`)
+	HELPER_FUNCTION_SYNTAX_REGEX         = regexp.MustCompile(`^\$\{\s*(.*?)\((.*?)\)\s*\}$`)
+	HELPER_VAR_REGEX                     = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, INTERPOLATION_VARS))
+	MAX_PARENT_FOLDERS_TO_CHECK          = 100
+)
 
 func getVarParams(count int) string {
 	const parameterRegexBase = `\s*(?:"(?P<string%d>[^\"]*?)"|var\.(?P<var%d>[[:alpha:]][\w-]*)|(?P<func%d>\w+\(.*?\)))\s*`

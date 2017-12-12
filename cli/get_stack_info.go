@@ -1,24 +1,35 @@
 package cli
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const getStackCommand = "get-stack"
 
 // Get a list of terraform modules sorted by dependency order
 func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
-	json := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "json")
-	run := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "run")
-	relative := !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "abs") && !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "absolute")
+	var (
+		app      = kingpin.New("terragrunt get-stack", "Get stack detailed information")
+		absolute bool
+		modules  configstack.SimpleTerraformModules
+	)
 
-	var modules configstack.SimpleTerraformModules
-	if run {
+	run := app.Flag("run", "Run the full stack to get the result instead of just analysing the dependencies").Short('r').Bool()
+	jsonOut := app.Flag("json", "Output result in JSON format").Short('j').Bool()
+	yamlOut := app.Flag("yaml", "Output result in YAML format").Short('y').Bool()
+	app.Flag("absolute", "Output absolute path (--abs)").Short('a').BoolVar(&absolute)
+	app.Flag("abs", "").Hidden().BoolVar(&absolute)
+	app.HelpFlag.Short('h')
+	app.Parse(terragruntOptions.TerraformCliArgs[1:])
+
+	if *run {
 		if modules, err = getStackThroughExecution(terragruntOptions); err != nil {
 			return
 		}
@@ -32,12 +43,23 @@ func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
 		modules = stack.SimpleModules()
 	}
 
-	if relative {
+	if !absolute {
 		modules = modules.MakeRelative()
 	}
 
-	if json {
-		terragruntOptions.Println(modules.JSON())
+	if *jsonOut || *yamlOut {
+		var result []byte
+		var err error
+
+		if *jsonOut {
+			result, err = json.MarshalIndent(modules, "", "  ")
+		} else {
+			result, err = yaml.Marshal(modules)
+		}
+		if err != nil {
+			panic(err)
+		}
+		terragruntOptions.Println(string(result))
 	} else {
 		for _, module := range modules {
 			terragruntOptions.Println(module.Path)
