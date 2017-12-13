@@ -1,8 +1,14 @@
 hash: c0142c28f067bf30688beb3bbfaacd981eecff3d2e7dedb7bb9c671f684875b6
-updated: 2017-12-09T11:44:41.330903081-05:00
+updated: 2017-12-13T13:36:40.960428465-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+  subpackages:
+  - parse
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/aokoli/goutils
   version: 3391d3790d23d03408670993e957e8f408993c34
 - name: github.com/apparentlymart/go-cidr
@@ -16,7 +22,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: 6e00e954421b0deeec5b07d99f256f58eda69907
+  version: 25ef42b41b82230caae56ab23d872c81fb5c0eae
   subpackages:
   - aws
   - aws/awserr
@@ -57,8 +63,12 @@ imports:
   version: 4aabc24848ce5fd31929f7d1e4ea74d3709c14cd
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
+- name: github.com/cheekybits/genny
+  version: 9127e812e1e9e501ce899a18121d316ecb52e4ba
+  subpackages:
+  - generic
 - name: github.com/coveo/gotemplate
-  version: 738c7bd23dd24d996d896e2429627d96c7f7c256
+  version: 41b3684cbdecd1670035b045872818176e4e65d6
   subpackages:
   - errors
   - utils
@@ -227,12 +237,14 @@ imports:
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: be25de41fadfae372d6470bda81ca6beb55ef551
+  version: c4d099d611ac3ded35360abf03581e13d91c828f
   subpackages:
   - secure/bidirule
   - transform
   - unicode/bidi
   - unicode/norm
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: 1087e65c9441605df944fb12c33f0fe7072d18ca
 - name: gopkg.in/yaml.v2
   version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 testImports: []
