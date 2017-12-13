@@ -34,6 +34,7 @@ type TerragruntExtensionBase struct {
 	DisplayName string   `hcl:"display_name"`
 	Description string   `hcl:"description"`
 	OS          []string `hcl:"os"`
+	Disabled    bool     `hcl:"disabled"`
 }
 
 func (base TerragruntExtensionBase) String() string      { return base.id() }
@@ -83,7 +84,7 @@ func (base TerragruntExtensionBase) logger() *logging.Logger {
 
 // Determines if a command is enabled
 func (base TerragruntExtensionBase) enabled() bool {
-	return len(base.OS) == 0 || util.ListContainsElement(base.OS, runtime.GOOS)
+	return !base.Disabled && (len(base.OS) == 0 || util.ListContainsElement(base.OS, runtime.GOOS))
 }
 
 // TitleID add formating to the id of the elements

@@ -28,6 +28,13 @@ type TerragruntOptions struct {
 	// Whether we should prompt the user for confirmation or always assume "yes"
 	NonInteractive bool
 
+	// The approval handler that will be used in a non interactive context
+	ApprovalHandler string
+
+	// The approval config file, this file must be YAML formatted and contains the input text to expect and the completion text.
+	// The default value is defined in the approval handler file
+	ApprovalConfigFile string
+
 	// CLI args that are intended for Terraform (i.e. all the CLI args except the --terragrunt ones)
 	TerraformCliArgs []string
 
@@ -99,20 +106,16 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 	}
 
 	return &TerragruntOptions{
-		TerragruntConfigPath:   terragruntConfigPath,
-		TerraformPath:          "terraform",
-		NonInteractive:         false,
-		TerraformCliArgs:       []string{},
-		WorkingDir:             workingDir,
-		Logger:                 util.CreateLogger(""),
-		Env:                    map[string]string{},
-		Variables:              VariableList{},
-		Source:                 "",
-		SourceUpdate:           false,
-		DownloadDir:            downloadDir,
-		IgnoreDependencyErrors: false,
-		Writer:                 os.Stdout,
-		ErrWriter:              os.Stderr,
+		TerragruntConfigPath: terragruntConfigPath,
+		TerraformPath:        "terraform",
+		TerraformCliArgs:     []string{},
+		WorkingDir:           workingDir,
+		Logger:               util.CreateLogger(""),
+		Env:                  map[string]string{},
+		Variables:            VariableList{},
+		DownloadDir:          downloadDir,
+		Writer:               os.Stdout,
+		ErrWriter:            os.Stderr,
 		RunTerragrunt: func(terragruntOptions *TerragruntOptions) error {
 			return errors.WithStackTrace(RunTerragruntCommandNotSet)
 		},
@@ -148,6 +151,8 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		IgnoreDependencyErrors:       terragruntOptions.IgnoreDependencyErrors,
 		Writer:                       terragruntOptions.Writer,
 		ErrWriter:                    terragruntOptions.ErrWriter,
+		ApprovalHandler:              terragruntOptions.ApprovalHandler,
+		ApprovalConfigFile:           terragruntOptions.ApprovalConfigFile,
 		RunTerragrunt:                terragruntOptions.RunTerragrunt,
 		Uniqueness:                   terragruntOptions.Uniqueness,
 		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,

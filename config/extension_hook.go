@@ -20,11 +20,6 @@ type Hook struct {
 	IgnoreError    bool     `hcl:"ignore_error"`
 	AfterInitState bool     `hcl:"after_init_state"`
 	Order          int      `hcl:"order"`
-	Disabled       bool     `hcl:"disabled"`
-}
-
-func (hook Hook) enabled() bool {
-	return hook.TerragruntExtensionBase.enabled() && !hook.Disabled
 }
 
 func (hook Hook) help() (result string) {
