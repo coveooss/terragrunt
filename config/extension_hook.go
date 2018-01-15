@@ -77,7 +77,7 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 func (list *HookList) argName() string { return "hooks" }
 
 func (list HookList) sort() HookList {
-	sort.Slice(list, func(i, j int) bool { return list[i].Order < list[j].Order || i < j })
+	sort.SliceStable(list, func(i, j int) bool { return list[i].Order < list[j].Order })
 	return list
 }
 
