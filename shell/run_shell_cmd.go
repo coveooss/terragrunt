@@ -16,14 +16,19 @@ import (
 	"github.com/op/go-logging"
 )
 
-// Run the given Terraform command
+// RunTerraformCommand runs the given Terraform command
 func RunTerraformCommand(terragruntOptions *options.TerragruntOptions, args ...string) error {
-	return RunShellCommand(terragruntOptions, terragruntOptions.TerraformPath, args...)
+	return RunShellCommand(terragruntOptions, false, terragruntOptions.TerraformPath, args...)
 }
 
-// Run the given Terraform command but redirect all outputs (both stdout and stderr) to the logger instead of
-// the default stream. This allows us to isolate the true output of terraform command from the artefact of commands
-// like init and get during the preparation steps.
+// RunTerraformCommandWithApproval runs the given Terraform command expecting user input
+func RunTerraformCommandWithApproval(terragruntOptions *options.TerragruntOptions, expectedStatements []string, completedStatements []string, args ...string) error {
+	return RunShellCommandWithApproval(terragruntOptions, expectedStatements, completedStatements, false, terragruntOptions.TerraformPath, args...)
+}
+
+// RunTerraformCommandAndRedirectOutputToLogger runs the given Terraform command
+// but redirect all outputs (both stdout and stderr) to the logger instead of the default stream.
+// This allows us to isolate the true output of terraform command from the artefact of commands like init and get during the preparation steps.
 // If the user redirect the stdout, he will only get the output for the terraform desired command.
 func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.TerragruntOptions, args ...string) error {
 	output, err := RunShellCommandAndCaptureOutput(terragruntOptions, true, terragruntOptions.TerraformPath, args...)
@@ -35,24 +40,24 @@ func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.Ter
 	return err
 }
 
-// Run the given Terraform command and return the stdout as a string
+// RunTerraformCommandAndCaptureOutput runs the given Terraform command and return the stdout as a string
 func RunTerraformCommandAndCaptureOutput(terragruntOptions *options.TerragruntOptions, args ...string) (string, error) {
 	return RunShellCommandAndCaptureOutput(terragruntOptions, false, terragruntOptions.TerraformPath, args...)
 }
 
-// Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
-// the currently running app.
-func RunShellCommand(terragruntOptions *options.TerragruntOptions, command string, args ...string) error {
-	return runShellCommand(terragruntOptions, false, command, args...)
+// RunShellCommand runs the specified shell command with the specified arguments expecting user input
+// Connect the command's stdin, stdout, and stderr to the currently running app.
+func RunShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bool, command string, args ...string) error {
+	return runShellCommand(terragruntOptions, nil, nil, expandArgs, command, args...)
 }
 
-// Run the specified shell command with the specified arguments. Connect the command's stdin, stdout, and stderr to
-// the currently running app.
-func RunShellCommandExpandArgs(terragruntOptions *options.TerragruntOptions, command string, args ...string) error {
-	return runShellCommand(terragruntOptions, true, command, args...)
+// RunShellCommandWithApproval runs the specified shell command with the specified arguments expecting user input
+// Connect the command's stdin, stdout, and stderr to the currently running app.
+func RunShellCommandWithApproval(terragruntOptions *options.TerragruntOptions, expectedStatements []string, completedStatements []string, expandArgs bool, command string, args ...string) error {
+	return runShellCommand(terragruntOptions, expectedStatements, completedStatements, expandArgs, command, args...)
 }
 
-func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bool, command string, args ...string) error {
+func runShellCommand(terragruntOptions *options.TerragruntOptions, expectedStatements []string, completedStatements []string, expandArgs bool, command string, args ...string) error {
 	logger := terragruntOptions.Logger.Notice
 	if terragruntOptions.Writer != os.Stdout {
 		logger = terragruntOptions.Logger.Info
@@ -93,8 +98,8 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bo
 	signalChannel := NewSignalsForwarder(forwardSignals, cmd, terragruntOptions.Logger, cmdChannel)
 	defer signalChannel.Close()
 
-	if CommandShouldBeApproved(command, terragruntOptions) {
-		err = RunCommandToApprove(cmd, terragruntOptions)
+	if expectedStatements != nil && completedStatements != nil {
+		err = RunCommandToApprove(cmd, expectedStatements, completedStatements, terragruntOptions)
 	} else {
 		cmd.Stdin = os.Stdin
 		err = cmd.Run()
@@ -122,7 +127,7 @@ func RunShellCommandAndCaptureOutput(terragruntOptions *options.TerragruntOption
 		args = append(args, noColor)
 	}
 
-	err := RunShellCommand(terragruntOptionsCopy, command, args...)
+	err := RunShellCommand(terragruntOptionsCopy, false, command, args...)
 	return stdout.String(), err
 }
 
@@ -143,7 +148,7 @@ func LookPath(command string, paths ...string) (string, error) {
 
 var lookPathMutex sync.Mutex
 
-// Return the exit code of a command. If the error does not implement errors.IErrorCode or is not an exec.ExitError type,
+// GetExitCode returns the exit code of a command. If the error does not implement errors.IErrorCode or is not an exec.ExitError type,
 // the error is returned.
 func GetExitCode(err error) (int, error) {
 	if exiterr, ok := errors.Unwrap(err).(errors.IErrorCode); ok {
@@ -157,9 +162,10 @@ func GetExitCode(err error) (int, error) {
 	return 0, err
 }
 
+// SignalsForwarder forwards signals to a command, waiting for the command to finish.
 type SignalsForwarder chan os.Signal
 
-// Forwards signals to a command, waiting for the command to finish.
+// NewSignalsForwarder returns a new SignalsForwarder
 func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *logging.Logger, cmdChannel chan error) SignalsForwarder {
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, signals...)

@@ -61,12 +61,10 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 		return
 	}
 
-	cmd := shell.RunShellCommand
-	if hook.ExpandArgs {
-		cmd = shell.RunShellCommandExpandArgs
-	}
-	if err = cmd(hook.options(), hook.Command, hook.Arguments...); err != nil && !hook.IgnoreError {
-		err = fmt.Errorf("%v while running command %s: %s %s", err, hook.Name, hook.Command, strings.Join(hook.Arguments, " "))
+	if shouldBeApproved, approvalConfig := hook._config.ApprovalConfig.ShouldBeApproved(hook.Command); shouldBeApproved {
+		err = shell.RunShellCommandWithApproval(hook.options(), approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, hook.ExpandArgs, hook.Command, hook.Arguments...)
+	} else {
+		err = shell.RunShellCommand(hook.options(), hook.ExpandArgs, hook.Command, hook.Arguments...)
 	}
 	return
 }

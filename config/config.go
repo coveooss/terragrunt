@@ -26,16 +26,17 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Description   string              `hcl:"description"`
-	Terraform     *TerraformConfig    `hcl:"terraform"`
-	RemoteState   *remote.RemoteState `hcl:"remote_state"`
-	Dependencies  *ModuleDependencies `hcl:"dependencies"`
-	Uniqueness    *string             `hcl:"uniqueness_criteria"`
-	AssumeRole    *string             `hcl:"assume_role"`
-	PreHooks      HookList            `hcl:"pre_hook"`
-	PostHooks     HookList            `hcl:"post_hook"`
-	ExtraCommands ExtraCommandList    `hcl:"extra_command"`
-	ImportFiles   ImportFilesList     `hcl:"import_files"`
+	Description    string              `hcl:"description"`
+	Terraform      *TerraformConfig    `hcl:"terraform"`
+	RemoteState    *remote.RemoteState `hcl:"remote_state"`
+	Dependencies   *ModuleDependencies `hcl:"dependencies"`
+	Uniqueness     *string             `hcl:"uniqueness_criteria"`
+	AssumeRole     *string             `hcl:"assume_role"`
+	PreHooks       HookList            `hcl:"pre_hook"`
+	PostHooks      HookList            `hcl:"post_hook"`
+	ExtraCommands  ExtraCommandList    `hcl:"extra_command"`
+	ImportFiles    ImportFilesList     `hcl:"import_files"`
+	ApprovalConfig ApprovalConfigList  `hcl:"approval_config"`
 
 	options *options.TerragruntOptions
 }
@@ -122,6 +123,29 @@ type ModuleDependencies struct {
 
 func (deps *ModuleDependencies) String() string {
 	return fmt.Sprintf("ModuleDependencies{Paths = %v}", deps.Paths)
+}
+
+// ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
+// and to exit the command on a CompletedStatement
+type ApprovalConfig struct {
+	Command             string   `hcl:"command"`
+	ExpectStatements    []string `hcl:"expect_statements"`
+	CompletedStatements []string `hcl:"completed_statements"`
+}
+
+func (conf ApprovalConfig) String() string {
+	return util.PrettyPrintStruct(conf)
+}
+
+type ApprovalConfigList []*ApprovalConfig
+
+func (list ApprovalConfigList) ShouldBeApproved(command string) (bool, *ApprovalConfig) {
+	for _, approvalConfig := range list {
+		if approvalConfig.Command == command {
+			return true, approvalConfig
+		}
+	}
+	return false, nil
 }
 
 // TerraformConfig specifies where to find the Terraform configuration files

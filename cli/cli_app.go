@@ -396,12 +396,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	if actualCommand.Extra != nil {
 		// The command is not a native terraform command
-		runner := shell.RunShellCommand
-		if *actualCommand.Extra.ExpandArgs {
-			runner = shell.RunShellCommandExpandArgs
+		expandArgs := *actualCommand.Extra.ExpandArgs
+		command := actualCommand.Command
+		args := append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)
+		if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
+			err = shell.RunShellCommandWithApproval(terragruntOptions, approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, expandArgs, command, args...)
+		} else {
+			err = shell.RunShellCommand(terragruntOptions, expandArgs, command, args...)
 		}
-
-		err = runner(terragruntOptions, actualCommand.Command, append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)...)
 		return filterPlanError(err, actualCommand.Extra.ActAs)
 	}
 
@@ -415,7 +417,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	// We restore back the name of the command since it may have been temporary changed to support state file initialization and get modules
 	terragruntOptions.TerraformCliArgs[0] = actualCommand.Command
-	err = shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+
+	if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
+		err = shell.RunTerraformCommandWithApproval(terragruntOptions, approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, terragruntOptions.TerraformCliArgs...)
+	} else {
+		err = shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+	}
 	return filterPlanError(err, actualCommand.Command)
 }
 
