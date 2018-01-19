@@ -70,7 +70,6 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	loggingLevel := parse(OPT_LOGGING_LEVEL, os.Getenv("TERRAGRUNT_LOGGING_LEVEL"))
 	awsProfile := parse(OPT_AWS_PROFILE)
 	approvalHandler := parse(OPT_APPROVAL_HANDLER)
-	approvalConfigFile := parse(OPT_APPROVAL_CONFIG)
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
 
@@ -92,7 +91,6 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.Variables = options.VariableList{}
 	opts.AwsProfile = awsProfile
 	opts.ApprovalHandler = approvalHandler
-	opts.ApprovalConfigFile = approvalConfigFile
 
 	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf("%d", level))
