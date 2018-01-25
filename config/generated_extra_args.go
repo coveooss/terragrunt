@@ -150,7 +150,7 @@ func (list TerraformExtraArgumentsList) Run(args ...interface{}) (result []inter
 	}
 
 	for _, item := range list {
-		iItem := IImportFiles(&item)
+		iItem := ITerraformExtraArguments(&item)
 		var temp interface{}
 		if temp, err = iItem.run(args...); err != nil {
 			return
