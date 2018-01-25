@@ -16,6 +16,10 @@ type TerraformExtraArguments struct {
 	Commands         []string `hcl:"commands"`
 }
 
+func (item TerraformExtraArguments) itemType() (result string) {
+	return TerraformExtraArgumentsList{}.argName()
+}
+
 func (item TerraformExtraArguments) help() (result string) {
 	if item.Description != "" {
 		result += fmt.Sprintf("\n%s\n", item.Description)
@@ -32,7 +36,7 @@ func (item TerraformExtraArguments) help() (result string) {
 // ----------------------- TerraformExtraArgumentsList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_extra_args.go gen "GenericItem=TerraformExtraArguments"
-func (list *TerraformExtraArgumentsList) argName() string                  { return "extra_arguments" }
+func (list TerraformExtraArgumentsList) argName() string                   { return "extra_arguments" }
 func (list TerraformExtraArgumentsList) sort() TerraformExtraArgumentsList { return list }
 
 // Merge elements from an imported list to the current list

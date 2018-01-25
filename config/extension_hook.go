@@ -22,6 +22,8 @@ type Hook struct {
 	Order          int      `hcl:"order"`
 }
 
+func (hook Hook) itemType() (result string) { return HookList{}.argName() }
+
 func (hook Hook) help() (result string) {
 	if hook.Description != "" {
 		result += fmt.Sprintf("\n%s\n", hook.Description)
@@ -72,7 +74,7 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 // ----------------------- HookList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_hooks.go gen "GenericItem=Hook"
-func (list *HookList) argName() string { return "hooks" }
+func (list HookList) argName() string { return "hooks" }
 
 func (list HookList) sort() HookList {
 	sort.SliceStable(list, func(i, j int) bool { return list[i].Order < list[j].Order })

@@ -3,10 +3,10 @@ package cli
 import (
 	"fmt"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -50,7 +50,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 			}
 		}
 
-		terragruntOptions.Printf(format, util.Indent(content, 4))
+		terragruntOptions.Printf(format, utils.IndentN(content, 4))
 		if *listOnly && content != "" {
 			terragruntOptions.Println()
 		}

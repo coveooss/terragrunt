@@ -1,5 +1,5 @@
 hash: c0142c28f067bf30688beb3bbfaacd981eecff3d2e7dedb7bb9c671f684875b6
-updated: 2017-12-13T13:36:40.960428465-05:00
+updated: 2018-01-24T07:19:48.805882-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -22,7 +22,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: 25ef42b41b82230caae56ab23d872c81fb5c0eae
+  version: decd990ddc5dcdf2f73309cbcab90d06b996ca28
   subpackages:
   - aws
   - aws/awserr
@@ -68,9 +68,10 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 41b3684cbdecd1670035b045872818176e4e65d6
+  version: f3cca0db1cdc7031e44ed3b916754aa0c62068ef
   subpackages:
   - errors
+  - hcl
   - utils
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
@@ -110,7 +111,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/hashicorp/hcl2
-  version: 44bad6dbf5490f5da17ec991e664df3d017b706f
+  version: f87600a7d93ee66499e0566bc9ce0bb43e91a28a
   subpackages:
   - gohcl
   - hcl
@@ -124,7 +125,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: a42fdb08a43c7fabb8898fe8c286b793bbaa4835
+  version: a6008b8a48a749c7c167453b9cf55ffd572b9a5d
   subpackages:
   - config
   - config/hcl2shim
@@ -132,6 +133,7 @@ imports:
   - dag
   - helper/hilmapstructure
   - plugin/discovery
+  - registry
   - registry/regsrc
   - registry/response
   - svchost
@@ -148,7 +150,7 @@ imports:
 - name: github.com/Masterminds/semver
   version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
-  version: b217b9c388de2cacde4354c536e520c52c055563
+  version: 9d9aa1f74c86fd9d36ecfe3f2a44a3093c3d4c15
 - name: github.com/mattn/go-colorable
   version: 5411d3eea5978e6cdc258b30de592b60df6aba96
   repo: https://github.com/mattn/go-colorable
@@ -188,9 +190,9 @@ imports:
   - cmd/install
   - match
 - name: github.com/satori/go.uuid
-  version: 879c5887cd475cd7864858769793b2ceb0d44feb
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
   subpackages:
   - assert
 - name: github.com/ulikunitz/xz
@@ -202,7 +204,7 @@ imports:
 - name: github.com/urfave/cli
   version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
 - name: github.com/zclconf/go-cty
-  version: 8bf222d6d03b7b336d013978f3acbfd877da428f
+  version: 709e4033eeb037dc543dbc2048065dfb814ce316
   subpackages:
   - cty
   - cty/convert
@@ -237,14 +239,14 @@ imports:
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: c4d099d611ac3ded35360abf03581e13d91c828f
+  version: e19ae1496984b1c655b8044a65c0300a3c878dd3
   subpackages:
   - secure/bidirule
   - transform
   - unicode/bidi
   - unicode/norm
 - name: gopkg.in/alecthomas/kingpin.v2
-  version: 1087e65c9441605df944fb12c33f0fe7072d18ca
+  version: 947dcec5ba9c011838740e680966fd7087a71d0d
 - name: gopkg.in/yaml.v2
   version: eb3733d160e74a9c7e442f435eb3bea458e1d19f
 testImports: []

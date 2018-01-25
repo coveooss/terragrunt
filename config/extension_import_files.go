@@ -30,6 +30,8 @@ type copyAndRename struct {
 	Target string `hcl:"target"`
 }
 
+func (item ImportFiles) itemType() (result string) { return ImportFilesList{}.argName() }
+
 func (item ImportFiles) help() (result string) {
 	if item.Description != "" {
 		result += fmt.Sprintf("\n%s\n", item.Description)
@@ -88,7 +90,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 
 	var sourceFolder string
 	if item.Source != "" {
-		sourceFolder, err = util.GetSource(item.Source, logger)
+		sourceFolder, err = util.GetSource(item.Source, filepath.Dir(item.config().Path), logger)
 		if err != nil {
 			if *item.Required {
 				return
@@ -195,7 +197,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 // ----------------------- ImportFilesList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_import_files.go gen "GenericItem=ImportFiles"
-func (list *ImportFilesList) argName() string      { return "import_files" }
+func (list ImportFilesList) argName() string       { return "import_files" }
 func (list ImportFilesList) sort() ImportFilesList { return list }
 
 // Merge elements from an imported list to the current list

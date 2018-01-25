@@ -26,6 +26,8 @@ type ExtraCommand struct {
 	VersionArg string   `hcl:"version"`
 }
 
+func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
+
 func (item ExtraCommand) extraInfo() string {
 	return fmt.Sprintf("[%s]", strings.Join(util.RemoveElementFromList(item.list(), item.Name), ", "))
 }
@@ -145,7 +147,7 @@ func (item *ExtraCommand) resolveAlias(cmd string) string {
 // ----------------------- ExtraCommandList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_extra_command.go gen "GenericItem=ExtraCommand"
-func (list *ExtraCommandList) argName() string { return "extra_command" }
+func (list ExtraCommandList) argName() string { return "extra_command" }
 
 func (list ExtraCommandList) sort() ExtraCommandList {
 	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })

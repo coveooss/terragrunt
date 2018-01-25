@@ -7,8 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/coveo/gotemplate/utils"
-	"github.com/hashicorp/hcl"
+	"github.com/coveo/gotemplate/hcl"
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
@@ -48,7 +47,7 @@ func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 func LoadVariables(content string) (map[string]interface{}, error) {
 	variables := map[string]interface{}{}
 	err := hcl.Unmarshal([]byte(content), &variables)
-	return utils.FlattenHCL(variables), err
+	return hcl.Flatten(variables), err
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)

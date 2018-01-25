@@ -12,15 +12,16 @@ import (
 
 // TerragruntExtensioner defines the interface that must be implemented by Terragrunt Extension objects
 type TerragruntExtensioner interface {
-	config() *TerragruntConfig
+	config() *TerragruntConfigFile
 	description() string
 	enabled() bool
 	extraInfo() string
 	help() string
 	id() string
-	init(*TerragruntConfig)
+	init(*TerragruntConfigFile)
 	logger() *logging.Logger
 	name() string
+	itemType() string
 	normalize()
 	options() *options.TerragruntOptions
 	run(args ...interface{}) ([]interface{}, error)
@@ -28,7 +29,7 @@ type TerragruntExtensioner interface {
 
 // TerragruntExtensionBase is the base object to define object used to extend the behavior of terragrunt
 type TerragruntExtensionBase struct {
-	_config *TerragruntConfig
+	_config *TerragruntConfigFile
 
 	Name        string   `hcl:",key"`
 	DisplayName string   `hcl:"display_name"`
@@ -43,7 +44,7 @@ func (base TerragruntExtensionBase) description() string { return base.Descripti
 func (base TerragruntExtensionBase) extraInfo() string   { return "" }
 func (base TerragruntExtensionBase) normalize()          {}
 
-func (base *TerragruntExtensionBase) init(config *TerragruntConfig) {
+func (base *TerragruntExtensionBase) init(config *TerragruntConfigFile) {
 	base._config = config
 }
 
@@ -59,7 +60,7 @@ func (base TerragruntExtensionBase) name() string {
 }
 
 // Config returns the current config associated with the object
-func (base TerragruntExtensionBase) config() *TerragruntConfig {
+func (base TerragruntExtensionBase) config() *TerragruntConfigFile {
 	if base._config != nil {
 		return base._config
 	}

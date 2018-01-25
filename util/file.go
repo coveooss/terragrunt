@@ -150,7 +150,7 @@ func ReadFileAsString(path string) (string, error) {
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
 func ReadFileAsStringFromSource(source, path string, logger *logging.Logger) (localFile, content string, err error) {
-	cacheDir, err := GetSource(source, logger)
+	cacheDir, err := GetSource(source, "", logger)
 	if err != nil {
 		return "", "", err
 	}
@@ -172,13 +172,13 @@ func GetTempDownloadFolder(folders ...string) string {
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
-func GetSource(source string, logger *logging.Logger) (string, error) {
+func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 	source, err := aws_helper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
 	}
 
-	source, err = getter.Detect(source, "", getter.Detectors)
+	source, err = getter.Detect(source, pwd, getter.Detectors)
 	if err != nil {
 		return "", err
 	}

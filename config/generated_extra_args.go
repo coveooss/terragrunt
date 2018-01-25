@@ -17,7 +17,7 @@ func ITerraformExtraArguments(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list TerraformExtraArgumentsList) init(config *TerragruntConfig) {
+func (list TerraformExtraArgumentsList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		ITerraformExtraArguments(&list[i]).init(config)
 	}
@@ -150,8 +150,9 @@ func (list TerraformExtraArgumentsList) Run(args ...interface{}) (result []inter
 	}
 
 	for _, item := range list {
-		iItem := IImportFiles(&item)
+		iItem := ITerraformExtraArguments(&item)
 		var temp interface{}
+		iItem.logger().Infof("Running %s: %s (%s)", iItem.itemType(), iItem.id(), iItem.name())
 		if temp, err = iItem.run(args...); err != nil {
 			return
 		}
