@@ -150,7 +150,7 @@ func (list ExtraCommandList) Run(args ...interface{}) (result []interface{}, err
 	}
 
 	for _, item := range list {
-		iItem := IImportFiles(&item)
+		iItem := IExtraCommand(&item)
 		var temp interface{}
 		if temp, err = iItem.run(args...); err != nil {
 			return

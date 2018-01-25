@@ -150,7 +150,7 @@ func (list HookList) Run(args ...interface{}) (result []interface{}, err error) 
 	}
 
 	for _, item := range list {
-		iItem := IImportFiles(&item)
+		iItem := IHook(&item)
 		var temp interface{}
 		if temp, err = iItem.run(args...); err != nil {
 			return

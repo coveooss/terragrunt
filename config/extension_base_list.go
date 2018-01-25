@@ -151,7 +151,7 @@ func (list GenericItemList) Run(args ...interface{}) (result []interface{}, err 
 	}
 
 	for _, item := range list {
-		iItem := IImportFiles(&item)
+		iItem := IGenericItem(&item)
 		var temp interface{}
 		if temp, err = iItem.run(args...); err != nil {
 			return

@@ -352,7 +352,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
 	// Executing the pre-hooks commands that should be ran before init state if there are
-	if _, err = conf.PreHooks.Run(config.BeforeInitState); err != nil {
+	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(); err != nil {
 		return err
 	}
 
@@ -364,7 +364,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Executing the pre-hooks that should be ran after init state if there are
-	if _, err = conf.PreHooks.Run(config.AfterInitState); err != nil {
+	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(); err != nil {
 		return err
 	}
 
