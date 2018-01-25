@@ -331,7 +331,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
-	if _, err := conf.ImportFiles.RunOnModules(); err != nil {
+	if _, err := conf.ImportFiles.RunOnModules(terragruntOptions); err != nil {
 		return err
 	}
 
