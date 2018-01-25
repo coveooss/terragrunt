@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
@@ -18,7 +19,7 @@ type ImportFiles struct {
 	Files             []string        `hcl:"files"`
 	CopyAndRename     []copyAndRename `hcl:"copy_and_remove"`
 	Required          *bool           `hcl:"required,omitempty"`
-	ImportIntoModules bool            `hcl:"import_into_module"`
+	ImportIntoModules bool            `hcl:"import_into_modules"`
 	FileMode          *int            `hcl:"file_mode"`
 	Target            string          `hcl:"target"`
 	Prefix            *string         `hcl:"prefix"`
@@ -206,12 +207,12 @@ func (list *ImportFilesList) Merge(imported ImportFilesList) {
 }
 
 // RunOnModules executes list configuration on module folders
-func (list ImportFilesList) RunOnModules() (result interface{}, err error) {
+func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOptions) (result interface{}, err error) {
 	if len(list) == 0 {
 		return
 	}
 
-	modules, _ := filepath.Glob(filepath.Join(".terraform", "modules", "*"))
+	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
 	folders := make(map[string]int)
 	for _, module := range modules {
 		stat, err := os.Stat(module)
