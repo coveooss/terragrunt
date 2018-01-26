@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
@@ -22,7 +23,7 @@ type ImportFiles struct {
 	ImportIntoModules bool            `hcl:"import_into_modules"`
 	FileMode          *int            `hcl:"file_mode"`
 	Target            string          `hcl:"target"`
-	Prefix            *string         `hcl:"prefix"`
+	Prefix            string          `hcl:"prefix"`
 }
 
 // CopyAndRename is a structure used by ImportFiles to rename the imported files
@@ -32,6 +33,13 @@ type copyAndRename struct {
 }
 
 func (item ImportFiles) itemType() (result string) { return ImportFilesList{}.argName() }
+
+func (item *ImportFiles) normalize() {
+	if item.Required == nil {
+		def := true
+		item.Required = &def
+	}
+}
 
 func (item ImportFiles) help() (result string) {
 	if item.Description != "" {
@@ -43,14 +51,9 @@ func (item ImportFiles) help() (result string) {
 		result += fmt.Sprint("\nFile(s):\n")
 	}
 
-	prefix := item.Name + "_"
-	if item.Prefix != nil {
-		prefix = *item.Prefix
-	}
-
 	target, _ := filepath.Rel(item.options().WorkingDir, item.Target)
 	for _, file := range item.Files {
-		target := filepath.Join(target, fmt.Sprintf("%s%s", prefix, filepath.Base(file)))
+		target := filepath.Join(target, fmt.Sprintf("%s%s", item.Prefix, filepath.Base(file)))
 		if strings.Contains(file, "/terragrunt-cache/") {
 			file = filepath.Base(file)
 		}
@@ -74,22 +77,19 @@ func (item ImportFiles) help() (result string) {
 }
 
 func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err error) {
+	logger := item.logger()
+
+	if !item.enabled() {
+		logger.Debugf("Import file %s skipped, executed only on %v", item.Name, item.OS)
+		return
+	}
+
+	// If no folders are specified, we only copy elements to the working folder
 	if len(folders) == 0 {
 		folders = []interface{}{item.options().WorkingDir}
 	}
-	logger := item.logger()
 
-	if item.Prefix == nil {
-		prefix := item.Name + "_"
-		item.Prefix = &prefix
-	}
-
-	if item.Required == nil {
-		def := true
-		item.Required = &def
-	}
-
-	var sourceFolder string
+	var sourceFolder, sourceFolderPrefix string
 	if item.Source != "" {
 		sourceFolder, err = util.GetSource(item.Source, filepath.Dir(item.config().Path), logger)
 		if err != nil {
@@ -98,24 +98,27 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			}
 			logger.Warningf("%s: %s doesn't exist", item.Name, item.Source)
 		}
+		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
 	}
 
 	for _, folder := range folders {
+		var messages []string
+
+		if sourceFolder != "" {
+			messages = append(messages, fmt.Sprintf("from %s", item.Source))
+		}
 		folder := folder.(string)
-		folderName := "Temporary folder"
 		isModule := item.options().WorkingDir != folder
 		if isModule {
 			if !item.ImportIntoModules {
 				// We skip import in the folder if the item doesn't require to be applied on modules
 				continue
 			}
-			folderName = filepath.Base(folder)
 		}
 
 		// Check if the item has a specific target folder
 		importerTarget := folder
 		if item.Target != "" {
-			folderName = item.Target
 			if filepath.IsAbs(item.Target) {
 				importerTarget = item.Target
 			} else {
@@ -126,10 +129,23 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 				return
 			}
 		}
+		relativeTarget := util.GetPathRelativeToMax(importerTarget, item.options().WorkingDir, 2)
+		if relativeTarget != "" && relativeTarget != "." {
+			messages = append(messages, fmt.Sprintf("to %s", relativeTarget))
+		}
+
+		if item.Prefix != "" {
+			messages = append(messages, fmt.Sprintf("prefixed by %s", item.Prefix))
+		}
+		contextMessage := fmt.Sprintf(" %s", strings.Join(messages, " "))
 
 		// Local copy function used by both type of file copy
 		copy := func(source, target string) error {
 			target = filepath.Join(importerTarget, target)
+
+			folder, file := filepath.Split(target)
+			target = filepath.Join(folder, item.Prefix+file)
+			os.MkdirAll(folder, os.ModePerm)
 			if err := util.CopyFile(source, target); err != nil {
 				return err
 			}
@@ -139,48 +155,107 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			return nil
 		}
 
-		var sourceFiles []string
+		type fileCopy struct {
+			source, target string
+		}
+		var sourceFiles []fileCopy
+
+		if len(item.Files) == 0 {
+			item.Files = []string{"*"}
+		}
+
+		var filePatterns, pathPatterns []string
 		for _, pattern := range item.Files {
-			if sourceFolder != "" {
-				pattern = filepath.Join(sourceFolder, pattern)
-			} else if !filepath.IsAbs(pattern) {
-				pattern = filepath.Join(item.options().WorkingDir, pattern)
+			var newFiles []fileCopy
+			if filepath.IsAbs(pattern) {
+				var files []string
+				files, err = filepath.Glob(pattern)
+				if err != nil {
+					err = fmt.Errorf("Invalid pattern in %s", pattern)
+					return
+				}
+				if *item.Required && len(files) == 0 {
+					err = fmt.Errorf("Unable to import required file %s", pattern)
+					return
+				}
+
+				for _, file := range files {
+					if err := ensureIsFile(file); err != nil {
+						logger.Warningf("%s(%s): %v", item.itemType(), item.id(), err)
+					} else {
+						newFiles = append(newFiles, fileCopy{source: file})
+					}
+				}
+			} else if strings.ContainsAny(pattern, "*[]?") {
+				if strings.Contains(pattern, string(filepath.Separator)) {
+					pathPatterns = append(pathPatterns, pattern)
+				} else {
+					filePatterns = append(filePatterns, pattern)
+				}
 			}
-			var files []string
-			if files, err = filepath.Glob(pattern); err != nil {
-				err = fmt.Errorf("Invalid pattern %s", filepath.Base(pattern))
+
+			_ = filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
+				if ensureIsFile(path) != nil || strings.HasSuffix(path, aws_helper.CacheFile) {
+					return nil
+				}
+				relName := strings.TrimPrefix(path, sourceFolder)[1:]
+				for _, pattern := range filePatterns {
+					if match, _ := filepath.Match(pattern, filepath.Base(relName)); match {
+						newFiles = append(newFiles, fileCopy{source: path})
+					}
+				}
+				for _, pattern := range pathPatterns {
+					if match, _ := filepath.Match(pattern, relName); match {
+						newFiles = append(newFiles, fileCopy{source: path})
+					}
+				}
+				return nil
+			})
+
+			if *item.Required && len(newFiles) == 0 {
+				err = fmt.Errorf("Unable to import required file %s", strings.Join(item.Files, ", "))
 				return
 			}
 
-			if len(files) > 0 {
-				fileBases := make([]string, len(files))
-				for i, file := range files {
-					fileBases[i] = filepath.Base(file)
+			for i := range newFiles {
+				var target string
+				if item.Target != "" || sourceFolder == "" {
+					newFiles[i].target = filepath.Base(newFiles[i].source)
+				} else {
+					target = strings.TrimPrefix(newFiles[i].source, sourceFolderPrefix)
+					folder, base := filepath.Split(target)
+					newFiles[i].target = filepath.Join(folder, base)
 				}
-				logger.Infof("%s: Copy %s to %s", item.Name, strings.Join(fileBases, ", "), folderName)
-			} else if *item.Required {
-				err = fmt.Errorf("Unable to import required file %s", pattern)
-				return
 			}
-			sourceFiles = append(sourceFiles, files...)
+			sourceFiles = append(sourceFiles, newFiles...)
+
+			if len(newFiles) == 1 {
+				logger.Infof("Import file %s%s", newFiles[0].target, contextMessage)
+			} else {
+				copiedFiles := make([]string, len(newFiles))
+				for i := range newFiles {
+					copiedFiles[i] = newFiles[i].target
+				}
+				logger.Infof("Import file %s: %s%s", pattern, strings.Join(copiedFiles, ", "), contextMessage)
+			}
 		}
 
 		for _, source := range sourceFiles {
-			if util.FileExists(source) {
-				if err = copy(source, *item.Prefix+filepath.Base(source)); err != nil {
+			if util.FileExists(source.source) {
+				if err = copy(source.source, source.target); err != nil {
 					return
 				}
 			} else if *item.Required {
 				err = fmt.Errorf("Unable to import required file %s", source)
 				return
 			} else if !isModule {
-				logger.Debugf("Skipping copy of %s to %s, the source is not found", source, folderName)
+				logger.Debugf("Skipping copy of %s, the source is not found", source)
 			}
 		}
 
 		for _, source := range item.CopyAndRename {
 			if util.FileExists(source.Source) {
-				logger.Infof("Copy file %s to %s/%v", filepath.Base(source.Source), folderName, source.Target)
+				logger.Infof("Import file %s to %s%s", filepath.Base(source.Source), source.Target, contextMessage)
 				if err = copy(source.Source, source.Target); err != nil {
 					return
 				}
@@ -188,11 +263,20 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 				err = fmt.Errorf("Unable to import required file %s", source.Source)
 				return
 			} else if !isModule {
-				logger.Debugf("Skipping copy of %s to %s, the source is not found", source, folderName)
+				logger.Debugf("Skipping copy of %s, the source is not found", source)
 			}
 		}
 	}
 	return
+}
+
+func ensureIsFile(file string) error {
+	if stat, err := os.Stat(file); err != nil {
+		return err
+	} else if stat.IsDir() {
+		return fmt.Errorf("Folder ignored %s", file)
+	}
+	return nil
 }
 
 // ----------------------- ImportFilesList -----------------------

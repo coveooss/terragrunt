@@ -2,14 +2,17 @@ package shell
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
 	"syscall"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -62,18 +65,33 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expectedState
 	if terragruntOptions.Writer != os.Stdout {
 		logger = terragruntOptions.Logger.Info
 	}
-	logger("Running command:", command, strings.Join(args, " "))
 
-	command, err := LookPath(command, terragruntOptions.Env["PATH"])
-	if err != nil {
-		return errors.WithStackTrace(err)
+	if !strings.Contains(command, " ") {
+		if resolved, err := LookPath(command, terragruntOptions.Env["PATH"]); err == nil {
+			command = resolved
+		} else {
+			return errors.WithStackTrace(err)
+		}
 	}
 
 	if expandArgs {
 		args = util.ExpandArguments(args, terragruntOptions.WorkingDir)
 	}
 
-	cmd := exec.Command(command, args...)
+	argList := make([]interface{}, len(args))
+	for i := range args {
+		argList[i] = args[i]
+	}
+	cmd, tempFile, err := utils.GetCommandFromString(command, argList...)
+	if err != nil {
+		return errors.WithStackTrace(err)
+	}
+	logger("Running command:", filepath.Base(cmd.Args[0]), strings.Join(cmd.Args[1:], " "))
+	if tempFile != "" {
+		content, _ := ioutil.ReadFile(tempFile)
+		terragruntOptions.Logger.Debugf("\n%s", string(content))
+		defer func() { os.Remove(tempFile) }()
+	}
 
 	// TODO: consider adding prefix from terragruntOptions logger to stdout and stderr
 	cmd.Stderr = os.Stderr

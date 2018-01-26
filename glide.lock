@@ -1,5 +1,5 @@
 hash: c0142c28f067bf30688beb3bbfaacd981eecff3d2e7dedb7bb9c671f684875b6
-updated: 2018-01-24T07:19:48.805882-05:00
+updated: 2018-01-25T19:53:06.673569-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -22,7 +22,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: decd990ddc5dcdf2f73309cbcab90d06b996ca28
+  version: d7ca0344c929a6e28bf7e1dd17ea32f800634374
   subpackages:
   - aws
   - aws/awserr
@@ -68,7 +68,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: f3cca0db1cdc7031e44ed3b916754aa0c62068ef
+  version: c5c5634c4c19c0eac8fc896587aa52a45e85fc32
   subpackages:
   - errors
   - hcl

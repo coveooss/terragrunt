@@ -4,8 +4,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/coveo/gotemplate/utils"
+	"github.com/gruntwork-io/terragrunt/options"
 )
 
 // SubstituteAllVariables replace all remaining variables by the value
