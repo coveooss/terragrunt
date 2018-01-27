@@ -1,5 +1,5 @@
-hash: c0142c28f067bf30688beb3bbfaacd981eecff3d2e7dedb7bb9c671f684875b6
-updated: 2018-01-26T15:43:54.870839-05:00
+hash: 9f894e8dfc12e5603a8b829989d592355971f743ad1cd8fac15b10d46e274faa
+updated: 2018-01-27T09:13:35.299885-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -22,7 +22,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: 094c4e4e03d9f1c2c7d25a17b5df5f2685ae922a
+  version: 1b176c5c6b57adb03bb982c21930e708ebca5a77
   subpackages:
   - aws
   - aws/awserr
@@ -68,7 +68,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 3b36d589a9a1b985de47e974c301214a17ec538a
+  version: b1507b3d4e6cd8df865f4243c2d99cf08bab1d3f
   subpackages:
   - errors
   - hcl
@@ -189,6 +189,8 @@ imports:
   - cmd
   - cmd/install
   - match
+- name: github.com/rs/xid
+  version: 02dd45c33376f85d1064355dc790dcc4850596b1
 - name: github.com/satori/go.uuid
   version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/stretchr/testify

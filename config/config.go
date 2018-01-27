@@ -319,6 +319,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles = make(map[string]*TerragruntConfig)
+var hookWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
@@ -331,7 +332,9 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	before := configString
 	configString = strings.Replace(configString, "pre_hooks", "pre_hook", -1)
 	configString = strings.Replace(configString, "post_hooks", "post_hook", -1)
-	if before != configString {
+	if !hookWarningGiven && before != configString {
+		// We should issue this warning only once
+		hookWarningGiven = true
 		terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
 	}
 

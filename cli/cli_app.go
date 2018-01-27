@@ -20,6 +20,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/rs/xid"
 	"github.com/urfave/cli"
 )
 
@@ -128,6 +129,7 @@ const DEFAULT_TERRAFORM_VERSION_CONSTRAINT = ">= v0.9.3"
 const TERRAFORM_EXTENSION_GLOB = "*.tf"
 
 var terragruntVersion string
+var terragruntRunId string
 var terraformVersion string
 
 // Create the Terragrunt CLI App
@@ -159,8 +161,11 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
+	terragruntRunId = fmt.Sprint(xid.New())
+
 	os.Setenv("TERRAGRUNT_CACHE_FOLDER", util.GetTempDownloadFolder("terragrunt-cache"))
 	os.Setenv("TERRAGRUNT_ARGS", strings.Join(os.Args, " "))
+	os.Setenv("TERRAGRUNT_RUN_ID", terragruntRunId)
 
 	terragruntOptions, err := ParseTerragruntOptions(cliContext)
 	if err != nil {
