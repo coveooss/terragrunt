@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -110,8 +111,35 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 			logCatcher := util.LogCatcher{&module.OutStream, module.Module.TerragruntOptions.Logger}
 			module.Module.TerragruntOptions.Writer = logCatcher
 			module.Module.TerragruntOptions.ErrWriter = logCatcher
+
+			go func(logCatcher *util.LogCatcher, outStream *bytes.Buffer) {
+				// Output stream every minutes for long processes
+				for {
+					time.Sleep(2 * time.Second)
+
+					for {
+						line, err := outStream.ReadString('\n')
+
+						if err != nil && err != io.EOF {
+							logCatcher.Logger.Errorf("Error reading project output: %v", err)
+							break
+						}
+
+						if strings.TrimSpace(strings.TrimSuffix(line, "\n")) != "" {
+							logCatcher.Logger.Noticef("Autolog: %v", line)
+						}
+
+						if err == io.EOF {
+							break
+						}
+
+					}
+				}
+			}(&logCatcher, &module.OutStream)
+
 			module.runModuleWhenReady()
 		}(module)
+
 	}
 
 	waitGroup.Wait()
