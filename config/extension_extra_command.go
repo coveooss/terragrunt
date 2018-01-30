@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -82,8 +83,8 @@ func (item *ExtraCommand) list() []string {
 }
 
 func (item *ExtraCommand) resolve(cmd string) *ActualCommand {
-	cmd = item.resolveAlias(cmd)
-	if !util.ListContainsElement(item.Commands, cmd) {
+	cmd, ok := item.resolveAlias(cmd)
+	if !util.ListContainsElement(item.Commands, cmd) && !ok {
 		return nil
 	}
 
@@ -104,44 +105,20 @@ func (item *ExtraCommand) resolve(cmd string) *ActualCommand {
 	return &ActualCommand{cmd, behaveAs, item}
 }
 
-func (item *ExtraCommand) resolveAlias(cmd string) string {
-	options := item.options()
-
+func (item *ExtraCommand) resolveAlias(cmd string) (result string, found bool) {
 	for _, alias := range item.Aliases {
-		split := strings.SplitN(alias, "=", 2)
-		if cmd != split[0] {
+		name, command := utils.Split2(alias, "=")
+		if name != cmd {
 			continue
 		}
 
-		if len(split) == 1 {
-			return item.Commands[0]
+		if command == "" {
+			return item.Commands[0], true
 		}
 
-		cmd = split[1]
-		if strings.ContainsAny(split[1], " |,&$") {
-			cmd = "bash"
-
-			var args string
-			for _, arg := range append(item.Arguments, options.TerraformCliArgs[1:]...) {
-				if !strings.Contains(arg, " \t") {
-					args += " " + arg
-				} else {
-					args += fmt.Sprintf(` "%s"`, arg)
-				}
-			}
-
-			script := split[1]
-			if strings.Contains(script, " $*") {
-				script = strings.Replace(script, " $*", args, -1)
-			} else if !strings.Contains(script, "|") {
-				script += args
-			}
-
-			item.Arguments = []string{"-c", script}
-			options.TerraformCliArgs = options.TerraformCliArgs[:1]
-		}
+		return command, true
 	}
-	return cmd
+	return cmd, false
 }
 
 // ----------------------- ExtraCommandList -----------------------

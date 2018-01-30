@@ -186,7 +186,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 						newFiles = append(newFiles, fileCopy{source: file})
 					}
 				}
-			} else if strings.ContainsAny(pattern, "*[]?") {
+			} else {
 				if strings.Contains(pattern, string(filepath.Separator)) {
 					pathPatterns = append(pathPatterns, pattern)
 				} else {
