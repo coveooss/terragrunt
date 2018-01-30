@@ -24,3 +24,8 @@ archive:
 
   files:
     - nothing.*
+
+# GitHub release customization
+release:
+  draft: true
+  prerelease: true
