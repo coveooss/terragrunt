@@ -84,6 +84,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	tcf.Terraform.ExtraArgs.init(tcf)
 	tcf.ExtraCommands.init(tcf)
 	tcf.ImportFiles.init(tcf)
+	tcf.ApprovalConfig.init(tcf)
 	tcf.PreHooks.init(tcf)
 	tcf.PostHooks.init(tcf)
 	return &tcf.TerragruntConfig, nil
@@ -123,29 +124,6 @@ type ModuleDependencies struct {
 
 func (deps *ModuleDependencies) String() string {
 	return fmt.Sprintf("ModuleDependencies{Paths = %v}", deps.Paths)
-}
-
-// ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
-// and to exit the command on a CompletedStatement
-type ApprovalConfig struct {
-	Command             string   `hcl:"command"`
-	ExpectStatements    []string `hcl:"expect_statements"`
-	CompletedStatements []string `hcl:"completed_statements"`
-}
-
-func (conf ApprovalConfig) String() string {
-	return utils.PrettyPrintStruct(conf)
-}
-
-type ApprovalConfigList []*ApprovalConfig
-
-func (list ApprovalConfigList) ShouldBeApproved(command string) (bool, *ApprovalConfig) {
-	for _, approvalConfig := range list {
-		if approvalConfig.Command == command {
-			return true, approvalConfig
-		}
-	}
-	return false, nil
 }
 
 // TerraformConfig specifies where to find the Terraform configuration files
@@ -425,6 +403,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 
 	conf.ImportFiles.Merge(includedConfig.ImportFiles)
 	conf.ExtraCommands.Merge(includedConfig.ExtraCommands)
+	conf.ApprovalConfig.Merge(includedConfig.ApprovalConfig)
 	conf.PreHooks.MergePrepend(includedConfig.PreHooks)
 	conf.PostHooks.MergeAppend(includedConfig.PostHooks)
 }
