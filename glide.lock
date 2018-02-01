@@ -1,5 +1,5 @@
 hash: 9f894e8dfc12e5603a8b829989d592355971f743ad1cd8fac15b10d46e274faa
-updated: 2018-01-30T15:16:07.359827-05:00
+updated: 2018-02-01T12:17:03.545597-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -68,7 +68,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 7af81d06ad47358934f9a3fe621588a0443df7b5
+  version: 875aec14556bc6229d50e1f7f5d6c31524343cbe
   subpackages:
   - errors
   - hcl
@@ -125,7 +125,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: a6008b8a48a749c7c167453b9cf55ffd572b9a5d
+  version: 3802b14260603f90c7a1faf55994dcc8933e2069
   subpackages:
   - config
   - config/hcl2shim
@@ -194,7 +194,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/stretchr/testify
-  version: b91bfb9ebec76498946beb6af7c0230c7cc7ba6c
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
 - name: github.com/ulikunitz/xz
@@ -230,7 +230,7 @@ imports:
   - pbkdf2
   - scrypt
 - name: golang.org/x/net
-  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  version: 309822c5b9b9f80db67f016069a12628d94fad34
   subpackages:
   - html
   - html/atom
