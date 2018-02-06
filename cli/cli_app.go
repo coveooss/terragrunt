@@ -404,6 +404,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		expandArgs := *actualCommand.Extra.ExpandArgs
 		command := actualCommand.Command
 		args := append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)
+
+		if actualCommand.Extra.ShellCommand {
+			// We must not redirect the stderr on shell command, doing so, remove the prompt
+			currentErrWriter := terragruntOptions.ErrWriter
+			terragruntOptions.ErrWriter = os.Stderr
+			defer func() { terragruntOptions.ErrWriter = currentErrWriter }()
+		}
+
 		if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
 			err = shell.RunShellCommandWithApproval(terragruntOptions, approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, expandArgs, command, args...)
 		} else {

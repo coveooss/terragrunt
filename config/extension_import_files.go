@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
@@ -99,6 +98,8 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			logger.Warningf("%s: %s doesn't exist", item.Name, item.Source)
 		}
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
+	} else {
+		sourceFolder = item.options().WorkingDir
 	}
 
 	for _, folder := range folders {
@@ -164,53 +165,26 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			item.Files = []string{"*"}
 		}
 
-		var filePatterns, pathPatterns []string
 		for _, pattern := range item.Files {
+			name := pattern
+			if !filepath.IsAbs(pattern) {
+				pattern = filepath.Join(sourceFolder, pattern)
+			}
 			var newFiles []fileCopy
-			if filepath.IsAbs(pattern) {
-				var files []string
-				files, err = filepath.Glob(pattern)
-				if err != nil {
-					err = fmt.Errorf("Invalid pattern in %s", pattern)
-					return
-				}
-				if *item.Required && len(files) == 0 {
-					err = fmt.Errorf("Unable to import required file %s", pattern)
-					return
-				}
-
-				for _, file := range files {
-					if err := ensureIsFile(file); err != nil {
-						logger.Warningf("%s(%s): %v", item.itemType(), item.id(), err)
-					} else {
-						newFiles = append(newFiles, fileCopy{source: file})
-					}
-				}
-			} else {
-				if strings.Contains(pattern, string(filepath.Separator)) {
-					pathPatterns = append(pathPatterns, pattern)
-				} else {
-					filePatterns = append(filePatterns, pattern)
-				}
+			var files []string
+			files, err = filepath.Glob(pattern)
+			if err != nil {
+				err = fmt.Errorf("Invalid pattern in %s", pattern)
+				return
 			}
 
-			_ = filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
-				if ensureIsFile(path) != nil || strings.HasSuffix(path, aws_helper.CacheFile) {
-					return nil
+			for _, file := range files {
+				if err := ensureIsFile(file); err != nil {
+					logger.Warningf("%s(%s): %v", item.itemType(), item.id(), err)
+				} else {
+					newFiles = append(newFiles, fileCopy{source: file})
 				}
-				relName := strings.TrimPrefix(path, sourceFolder)[1:]
-				for _, pattern := range filePatterns {
-					if match, _ := filepath.Match(pattern, filepath.Base(relName)); match {
-						newFiles = append(newFiles, fileCopy{source: path})
-					}
-				}
-				for _, pattern := range pathPatterns {
-					if match, _ := filepath.Match(pattern, relName); match {
-						newFiles = append(newFiles, fileCopy{source: path})
-					}
-				}
-				return nil
-			})
+			}
 
 			if *item.Required && len(newFiles) == 0 {
 				err = fmt.Errorf("Unable to import required file %s", strings.Join(item.Files, ", "))
@@ -236,7 +210,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 				for i := range newFiles {
 					copiedFiles[i] = newFiles[i].target
 				}
-				logger.Infof("Import file %s: %s%s", pattern, strings.Join(copiedFiles, ", "), contextMessage)
+				logger.Infof("Import file %s: %s%s", name, strings.Join(copiedFiles, ", "), contextMessage)
 			}
 		}
 

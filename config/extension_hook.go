@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 
@@ -20,6 +21,7 @@ type Hook struct {
 	IgnoreError    bool     `hcl:"ignore_error"`
 	AfterInitState bool     `hcl:"after_init_state"`
 	Order          int      `hcl:"order"`
+	ShellCommand   bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
 }
 
 func (hook Hook) itemType() (result string) { return HookList{}.argName() }
@@ -63,7 +65,13 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 		return
 	}
 
-	if shouldBeApproved, approvalConfig := hook._config.ApprovalConfig.ShouldBeApproved(hook.Command); shouldBeApproved {
+	if hook.ShellCommand {
+		// We must not redirect the stderr on shell command, doing so, remove the prompt
+		currentErrWriter := hook.options().ErrWriter
+		hook.options().ErrWriter = os.Stderr
+		defer func() { hook.options().ErrWriter = currentErrWriter }()
+	}
+	if shouldBeApproved, approvalConfig := hook.config().ApprovalConfig.ShouldBeApproved(hook.Command); shouldBeApproved {
 		err = shell.RunShellCommandWithApproval(hook.options(), approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, hook.ExpandArgs, hook.Command, hook.Arguments...)
 	} else {
 		err = shell.RunShellCommand(hook.options(), hook.ExpandArgs, hook.Command, hook.Arguments...)

@@ -18,13 +18,14 @@ import (
 type ExtraCommand struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Commands   []string `hcl:"commands"`
-	Aliases    []string `hcl:"aliases"`
-	Arguments  []string `hcl:"arguments"`
-	ExpandArgs *bool    `hcl:"expand_args"`
-	UseState   *bool    `hcl:"use_state"`
-	ActAs      string   `hcl:"act_as"`
-	VersionArg string   `hcl:"version"`
+	Commands     []string `hcl:"commands"`
+	Aliases      []string `hcl:"aliases"`
+	Arguments    []string `hcl:"arguments"`
+	ExpandArgs   *bool    `hcl:"expand_args"`
+	UseState     *bool    `hcl:"use_state"`
+	ActAs        string   `hcl:"act_as"`
+	VersionArg   string   `hcl:"version"`
+	ShellCommand bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
 }
 
 func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
@@ -177,7 +178,7 @@ func (list ExtraCommandList) ActualCommand(cmd string) ActualCommand {
 			return *match
 		}
 	}
-	return ActualCommand{cmd, "", nil}
+	return ActualCommand{Command: cmd}
 }
 
 // ActualCommand represents the command that should be executed
