@@ -108,57 +108,14 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 		module.Handler = handler
 		go func(module *runningModule) {
 			defer waitGroup.Done()
-			logCatcher := util.LogCatcher{&module.OutStream, module.Module.TerragruntOptions.Logger}
+			logCatcher := util.LogCatcher{
+				Writer: &module.OutStream,
+				Logger: module.Module.TerragruntOptions.Logger,
+			}
 			module.Module.TerragruntOptions.Writer = logCatcher
 			module.Module.TerragruntOptions.ErrWriter = logCatcher
 
-			go func(module *runningModule) {
-				for {
-					time.Sleep(2 * time.Second)
-
-					lines, err := module.readOutStream()
-
-					writer := module.Module.TerragruntOptions.Writer.(util.LogCatcher).Logger.Noticef
-					msg := "Autolog: %v"
-
-					if err != nil {
-						writer = module.Module.TerragruntOptions.ErrWriter.(util.LogCatcher).Logger.Errorf
-						msg = "Error reading project output: %v"
-						lines = fmt.Sprint(err)
-					}
-
-					if strings.TrimSpace(strings.TrimSuffix(lines, "\n")) != "" {
-						writer(msg, lines)
-					}
-
-				}
-			}(module)
-
-			// go func(logCatcher *util.LogCatcher, outStream *bytes.Buffer) {
-			// 	// Output stream every minutes for long processes
-			// 	for {
-			// 		time.Sleep(2 * time.Second)
-
-			// 		for {
-
-			// 			line, err := outStream.ReadString('\n')
-
-			// 			if err != nil && err != io.EOF {
-			// 				logCatcher.Logger.Errorf("Error reading project output: %v", err)
-			// 				break
-			// 			}
-
-			// 			if strings.TrimSpace(strings.TrimSuffix(line, "\n")) != "" {
-			// 				logCatcher.Logger.Noticef("Autolog: %v", line)
-			// 			}
-
-			// 			if err == io.EOF {
-			// 				break
-			// 			}
-
-			// 		}
-			// 	}
-			// }(&logCatcher, &module.OutStream)
+			go OutputPeriodicLogs(module)
 
 			module.runModuleWhenReady()
 		}(module)
@@ -168,6 +125,28 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 	waitGroup.Wait()
 
 	return collectErrors(runningModules)
+}
+
+// OutputPeriodicLogs displays current module output for long running request
+func OutputPeriodicLogs(module *runningModule) {
+	for {
+		time.Sleep(2 * time.Second)
+
+		lines, err := module.readOutStream()
+
+		writer := module.Module.TerragruntOptions.Writer.(util.LogCatcher).Logger.Noticef
+		msg := "%v"
+
+		if err != nil {
+			writer = module.Module.TerragruntOptions.ErrWriter.(util.LogCatcher).Logger.Errorf
+			msg = "Error reading project output: %v"
+			lines = fmt.Sprint(err)
+		}
+
+		if strings.TrimSpace(strings.TrimSuffix(lines, "\n")) != "" {
+			writer(msg, lines)
+		}
+	}
 }
 
 func (module *runningModule) readOutStream() (string, error) {
