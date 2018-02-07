@@ -119,7 +119,6 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 
 			module.runModuleWhenReady()
 		}(module)
-
 	}
 
 	waitGroup.Wait()
@@ -127,52 +126,26 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 	return collectErrors(runningModules)
 }
 
-// OutputPeriodicLogs displays current module output for long running request
-func OutputPeriodicLogs(module *runningModule) {
-	for {
-		time.Sleep(2 * time.Second)
-
-		lines, err := module.readOutStream()
-
-		writer := module.Module.TerragruntOptions.Writer.(util.LogCatcher).Logger.Noticef
-		msg := "%v"
-
-		if err != nil {
-			writer = module.Module.TerragruntOptions.ErrWriter.(util.LogCatcher).Logger.Errorf
-			msg = "Error reading project output: %v"
-			lines = fmt.Sprint(err)
-		}
-
-		if strings.TrimSpace(strings.TrimSuffix(lines, "\n")) != "" {
-			writer(msg, lines)
-		}
-	}
-}
-
+// Reads logs written into module's OutStream buffer
 func (module *runningModule) readOutStream() (string, error) {
 	var mutex = &sync.Mutex{}
 	var lines string
+
+	defer mutex.Unlock()
 	mutex.Lock()
-
 	for {
-
 		line, err := module.OutStream.ReadString('\n')
 
 		if err != nil && err != io.EOF {
 			return "", err
 		}
 
-		if strings.TrimSpace(strings.TrimSuffix(line, "\n")) != "" {
-			lines += line
-		}
+		lines += line
 
 		if err == io.EOF {
 			break
 		}
-
 	}
-
-	mutex.Unlock()
 	return lines, nil
 }
 
@@ -328,6 +301,30 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 
 	for _, toNotify := range module.NotifyWhenDone {
 		toNotify.DependencyDone <- module
+	}
+}
+
+// OutputPeriodicLogs displays current module output for long running request
+func OutputPeriodicLogs(module *runningModule) {
+	for {
+		time.Sleep(60 * time.Second)
+
+		lines, err := module.readOutStream()
+
+		writer := module.Module.TerragruntOptions.Writer.(util.LogCatcher).Logger.Noticef
+		msg := "%v"
+
+		if err != nil {
+			writer = module.Module.TerragruntOptions.ErrWriter.(util.LogCatcher).Logger.Errorf
+			msg = "Error reading project output: %v"
+			lines = fmt.Sprint(err)
+		}
+
+		for _, line := range strings.Split(lines, "\n") {
+			if strings.TrimSpace(line) != "" {
+				writer(msg, line)
+			}
+		}
 	}
 }
 
