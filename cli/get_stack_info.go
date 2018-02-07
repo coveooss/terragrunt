@@ -2,8 +2,10 @@ package cli
 
 import (
 	"encoding/json"
+	"strings"
 	"sync"
 
+	"github.com/coveo/gotemplate/hcl"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -22,12 +24,13 @@ func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
 	)
 
 	run := app.Flag("run", "Run the full stack to get the result instead of just analysing the dependencies").Short('r').Bool()
-	jsonOut := app.Flag("json", "Output result in JSON format").Short('j').Bool()
-	yamlOut := app.Flag("yaml", "Output result in YAML format").Short('y').Bool()
+	output := app.Flag("output", "Specify format of the output (hcl, json, yaml)").Short('o').Enum("h", "hcl", "H", "HCL", "j", "json", "J", "JSON", "y", "yml", "yaml", "Y", "YML", "YAML")
 	app.Flag("absolute", "Output absolute path (--abs)").Short('a').BoolVar(&absolute)
 	app.Flag("abs", "").Hidden().BoolVar(&absolute)
 	app.HelpFlag.Short('h')
-	app.Parse(terragruntOptions.TerraformCliArgs[1:])
+	if _, err = app.Parse(terragruntOptions.TerraformCliArgs[1:]); err != nil {
+		return
+	}
 
 	if *run {
 		if modules, err = getStackThroughExecution(terragruntOptions); err != nil {
@@ -47,25 +50,27 @@ func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
 		modules = modules.MakeRelative()
 	}
 
-	if *jsonOut || *yamlOut {
-		var result []byte
+	switch {
+	case *output != "":
 		var err error
-
-		if *jsonOut {
+		var result []byte
+		switch strings.ToLower(*output) {
+		case "h", "hcl":
+			result, err = hcl.MarshalIndent(modules, "", "  ")
+		case "j", "json":
 			result, err = json.MarshalIndent(modules, "", "  ")
-		} else {
+		case "y", "yml", "yaml":
 			result, err = yaml.Marshal(modules)
 		}
 		if err != nil {
 			panic(err)
 		}
 		terragruntOptions.Println(string(result))
-	} else {
+	default:
 		for _, module := range modules {
 			terragruntOptions.Println(module.Path)
 		}
 	}
-
 	return nil
 }
 

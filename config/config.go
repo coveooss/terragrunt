@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
@@ -42,22 +43,23 @@ type TerragruntConfig struct {
 }
 
 func (conf TerragruntConfig) String() string {
-	return util.PrettyPrintStruct(conf)
+	return utils.PrettyPrintStruct(conf)
 }
 
-// terragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terraform.tfvars or .terragrunt)
-type terragruntConfigFile struct {
+// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terraform.tfvars or .terragrunt)
+type TerragruntConfigFile struct {
 	TerragruntConfig `hcl:",squash"`
 	Include          *IncludeConfig
 	Lock             *LockConfig
+	Path             string
 }
 
-func (tcf terragruntConfigFile) String() string {
-	return util.PrettyPrintStruct(tcf)
+func (tcf TerragruntConfigFile) String() string {
+	return utils.PrettyPrintStruct(tcf)
 }
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
-func (tcf *terragruntConfigFile) convertToTerragruntConfig(terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
+func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
 	if tcf.Lock != nil {
 		terragruntOptions.Logger.Warningf(""+
 			"Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as "+
@@ -79,14 +81,13 @@ func (tcf *terragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 		tcf.Terraform = &TerraformConfig{}
 	}
 
-	config = &tcf.TerragruntConfig
-	tcf.Terraform.ExtraArgs.init(config)
-	tcf.ExtraCommands.init(config)
-	tcf.ImportFiles.init(config)
-	tcf.PreHooks.init(config)
-	tcf.PostHooks.init(config)
-
-	return
+	tcf.Terraform.ExtraArgs.init(tcf)
+	tcf.ExtraCommands.init(tcf)
+	tcf.ImportFiles.init(tcf)
+	tcf.ApprovalConfig.init(tcf)
+	tcf.PreHooks.init(tcf)
+	tcf.PostHooks.init(tcf)
+	return &tcf.TerragruntConfig, nil
 }
 
 // Older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -96,7 +97,7 @@ type LockConfig map[interface{}]interface{}
 
 // tfvarsFileWithTerragruntConfig represents a .tfvars file that contains a terragrunt = { ... } block
 type tfvarsFileWithTerragruntConfig struct {
-	Terragrunt *terragruntConfigFile `hcl:"terragrunt,omitempty"`
+	Terragrunt *TerragruntConfigFile `hcl:"terragrunt,omitempty"`
 }
 
 // IncludeConfig represents the configuration settings for a parent Terragrunt configuration file that you can
@@ -125,29 +126,6 @@ func (deps *ModuleDependencies) String() string {
 	return fmt.Sprintf("ModuleDependencies{Paths = %v}", deps.Paths)
 }
 
-// ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
-// and to exit the command on a CompletedStatement
-type ApprovalConfig struct {
-	Command             string   `hcl:"command"`
-	ExpectStatements    []string `hcl:"expect_statements"`
-	CompletedStatements []string `hcl:"completed_statements"`
-}
-
-func (conf ApprovalConfig) String() string {
-	return util.PrettyPrintStruct(conf)
-}
-
-type ApprovalConfigList []*ApprovalConfig
-
-func (list ApprovalConfigList) ShouldBeApproved(command string) (bool, *ApprovalConfig) {
-	for _, approvalConfig := range list {
-		if approvalConfig.Command == command {
-			return true, approvalConfig
-		}
-	}
-	return false, nil
-}
-
 // TerraformConfig specifies where to find the Terraform configuration files
 type TerraformConfig struct {
 	ExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments"`
@@ -155,7 +133,7 @@ type TerraformConfig struct {
 }
 
 func (conf TerraformConfig) String() string {
-	return util.PrettyPrintStruct(conf)
+	return utils.PrettyPrintStruct(conf)
 }
 
 // DefaultConfigPath returns the default path to use for the Terragrunt configuration file. The reason this is a method
@@ -319,6 +297,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles = make(map[string]*TerragruntConfig)
+var hookWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
@@ -327,8 +306,15 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 
+	// pre_hooks & post_hooks have been renamed to pre_hook & post_hook, we support old naming to avoid breaking change\
+	before := configString
 	configString = strings.Replace(configString, "pre_hooks", "pre_hook", -1)
 	configString = strings.Replace(configString, "post_hooks", "post_hook", -1)
+	if !hookWarningGiven && before != configString {
+		// We should issue this warning only once
+		hookWarningGiven = true
+		terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
+	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)
 	if err != nil {
@@ -358,9 +344,9 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 
 // Parse the given config string, read from the given config file, as a terragruntConfigFile struct. This method solely
 // converts the HCL syntax in the string to the terragruntConfigFile struct; it does not process any interpolations.
-func parseConfigStringAsTerragruntConfigFile(configString string, configPath string) (*terragruntConfigFile, error) {
+func parseConfigStringAsTerragruntConfigFile(configString string, configPath string) (*TerragruntConfigFile, error) {
 	if isOldTerragruntConfig(configPath) {
-		terragruntConfig := &terragruntConfigFile{}
+		terragruntConfig := &TerragruntConfigFile{Path: configPath}
 		if err := hcl.Decode(terragruntConfig, configString); err != nil {
 			return nil, errors.WithStackTrace(err)
 		}
@@ -371,6 +357,7 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
+	tfvarsConfig.Terragrunt.Path = configPath
 	return tfvarsConfig.Terragrunt, nil
 }
 
@@ -416,6 +403,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 
 	conf.ImportFiles.Merge(includedConfig.ImportFiles)
 	conf.ExtraCommands.Merge(includedConfig.ExtraCommands)
+	conf.ApprovalConfig.Merge(includedConfig.ApprovalConfig)
 	conf.PreHooks.MergePrepend(includedConfig.PreHooks)
 	conf.PostHooks.MergeAppend(includedConfig.PostHooks)
 }

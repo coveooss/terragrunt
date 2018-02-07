@@ -3,10 +3,10 @@ package cli
 import (
 	"fmt"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -25,12 +25,13 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	imports := app.Flag("imports", "List the import_files configurations").Short('I').Bool()
 	hooks := app.Flag("hooks", "List the pre_hook & post_hook configurations").Short('H').Bool()
 	commands := app.Flag("commands", "List the extra_command configurations").Short('C').Bool()
+	approvalConfigs := app.Flag("approval-configs", "List the approval configurations").Bool()
 	useColor := app.Flag("color", "Enable colors").Short('c').Bool()
 	noColor := app.Flag("no-color", "Disable colors").Short('0').Bool()
 	filters := app.Arg("filters", "Filter the result").Strings()
 	app.HelpFlag.Short('h')
 	app.Parse(terragruntOptions.TerraformCliArgs[1:])
-	all := !(*hooks || *extraArgs || *imports || *commands)
+	all := !(*hooks || *extraArgs || *imports || *commands || *approvalConfigs)
 	if *noColor {
 		color.NoColor = true
 	} else if *useColor {
@@ -50,7 +51,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 			}
 		}
 
-		terragruntOptions.Printf(format, util.Indent(content, 4))
+		terragruntOptions.Printf(format, utils.IndentN(content, 4))
 		if *listOnly && content != "" {
 			terragruntOptions.Println()
 		}
@@ -73,4 +74,5 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 		print("Post hooks (in execution order)", "%s\n", post, true)
 	}
 	print("Extra commands available", "%s\n", conf.ExtraCommands.Help(*listOnly, *filters...), *commands)
+	print("Approval configurations", "%s\n", conf.ApprovalConfig.Help(*listOnly, *filters...), *approvalConfigs)
 }

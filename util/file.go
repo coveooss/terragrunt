@@ -86,8 +86,8 @@ func Grep(regex *regexp.Regexp, glob string) (bool, error) {
 	return false, nil
 }
 
-// Return the relative path you would have to take to get from basePath to path
-func GetPathRelativeTo(path string, basePath string) (string, error) {
+// GetPathRelativeTo returns the relative path you would have to take to get from basePath to path
+func GetPathRelativeTo(path, basePath string) (string, error) {
 	if path == "" {
 		path = "."
 	}
@@ -113,7 +113,7 @@ func GetPathRelativeTo(path string, basePath string) (string, error) {
 	return filepath.ToSlash(relPath), nil
 }
 
-// Return the path relative to the current working directory
+// GetPathRelativeToWorkingDir returns the path relative to the current working directory
 func GetPathRelativeToWorkingDir(path string) (result string) {
 	currentDir, err := os.Getwd()
 	result = path
@@ -136,7 +136,23 @@ func GetPathRelativeToWorkingDirMax(path string, maxLevel uint) (result string) 
 	return
 }
 
-// Return the contents of the file at the given path as a string
+// GetPathRelativeToMax returns either an absolute path or a relative path if it is not too far
+// from relatively to the base path
+func GetPathRelativeToMax(path, basePath string, maxLevel uint) (result string) {
+	result, err := GetPathRelativeTo(path, basePath)
+	if err != nil {
+		result = path
+	} else {
+		sep := strings.Repeat(".."+string(os.PathSeparator), int(maxLevel+1))
+		if filepath.IsAbs(path) && strings.HasPrefix(result, sep) {
+			// If the path is absolute and it is too far from the current folder
+			result = path
+		}
+	}
+	return
+}
+
+// ReadFileAsString returns the contents of the file at the given path as a string
 func ReadFileAsString(path string) (string, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -150,7 +166,7 @@ func ReadFileAsString(path string) (string, error) {
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
 func ReadFileAsStringFromSource(source, path string, logger *logging.Logger) (localFile, content string, err error) {
-	cacheDir, err := GetSource(source, logger)
+	cacheDir, err := GetSource(source, "", logger)
 	if err != nil {
 		return "", "", err
 	}
@@ -172,13 +188,13 @@ func GetTempDownloadFolder(folders ...string) string {
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
-func GetSource(source string, logger *logging.Logger) (string, error) {
+func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 	source, err := aws_helper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
 	}
 
-	source, err = getter.Detect(source, "", getter.Detectors)
+	source, err = getter.Detect(source, pwd, getter.Detectors)
 	if err != nil {
 		return "", err
 	}

@@ -48,7 +48,7 @@ func (module *TerraformModule) Simple() SimpleTerraformModule {
 // SimpleTerraformModule represents a simplified version of TerraformModule
 type SimpleTerraformModule struct {
 	Path         string   `json:"path"`
-	Dependencies []string `json:"dependencies"`
+	Dependencies []string `json:"dependencies,omitempty" yaml:",omitempty"`
 }
 
 // SimpleTerraformModules represents a list of simplified version of TerraformModule
@@ -262,6 +262,9 @@ func getDependenciesForModule(module *TerraformModule, moduleMap map[string]*Ter
 	}
 
 	for _, dependencyPath := range module.Config.Dependencies.Paths {
+		if module.Path == dependencyPath {
+			continue
+		}
 		dependencyModulePath, err := util.CanonicalPath(dependencyPath, module.Path)
 		if err != nil {
 			return dependencies, nil

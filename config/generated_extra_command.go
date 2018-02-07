@@ -17,7 +17,7 @@ func IExtraCommand(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list ExtraCommandList) init(config *TerragruntConfig) {
+func (list ExtraCommandList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		IExtraCommand(&list[i]).init(config)
 	}
@@ -103,7 +103,7 @@ func (list ExtraCommandList) Help(listOnly bool, lookups ...string) (result stri
 	}
 
 	for _, item := range list.Enabled() {
-		item := ITerraformExtraArguments(&item)
+		item := IExtraCommand(&item)
 		match := len(lookups) == 0
 		for i := 0; !match && i < len(lookups); i++ {
 			match = strings.Contains(item.name(), lookups[i]) || strings.Contains(item.id(), lookups[i]) || strings.Contains(item.extraInfo(), lookups[i])
@@ -152,7 +152,10 @@ func (list ExtraCommandList) Run(args ...interface{}) (result []interface{}, err
 	for _, item := range list {
 		iItem := IExtraCommand(&item)
 		var temp interface{}
+		iItem.logger().Infof("Running %s(%s): %s", iItem.itemType(), iItem.id(), iItem.name())
+		iItem.normalize()
 		if temp, err = iItem.run(args...); err != nil {
+			err = fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), err)
 			return
 		}
 		result = append(result, temp)

@@ -20,13 +20,13 @@ import (
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/rs/xid"
 	"github.com/urfave/cli"
 )
 
 const OPT_TERRAGRUNT_CONFIG = "terragrunt-config"
 const OPT_TERRAGRUNT_TFPATH = "terragrunt-tfpath"
 const OPT_APPROVAL_HANDLER = "terragrunt-approval"
-const OPT_APPROVAL_CONFIG = "terragrunt-approval-config"
 const OPT_NON_INTERACTIVE = "terragrunt-non-interactive"
 const OPT_WORKING_DIR = "terragrunt-working-dir"
 const OPT_TERRAGRUNT_SOURCE = "terragrunt-source"
@@ -36,7 +36,7 @@ const OPT_LOGGING_LEVEL = "terragrunt-logging-level"
 const OPT_AWS_PROFILE = "profile"
 
 var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
-var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER, OPT_APPROVAL_CONFIG}
+var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER}
 
 const MULTI_MODULE_SUFFIX = "-all"
 const CMD_INIT = "init"
@@ -110,6 +110,7 @@ GLOBAL OPTIONS:
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5).
+   terragrunt-approval                  Program to use for approval. {val} will be replaced by the current terragrunt output. Ex: approval.py --value {val}
    profile                              Specify an AWS profile to use.
 
 VERSION:
@@ -128,6 +129,7 @@ const DEFAULT_TERRAFORM_VERSION_CONSTRAINT = ">= v0.9.3"
 const TERRAFORM_EXTENSION_GLOB = "*.tf"
 
 var terragruntVersion string
+var terragruntRunId string
 var terraformVersion string
 
 // Create the Terragrunt CLI App
@@ -159,8 +161,11 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
+	terragruntRunId = fmt.Sprint(xid.New())
+
 	os.Setenv("TERRAGRUNT_CACHE_FOLDER", util.GetTempDownloadFolder("terragrunt-cache"))
 	os.Setenv("TERRAGRUNT_ARGS", strings.Join(os.Args, " "))
+	os.Setenv("TERRAGRUNT_RUN_ID", terragruntRunId)
 
 	terragruntOptions, err := ParseTerragruntOptions(cliContext)
 	if err != nil {
@@ -399,6 +404,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		expandArgs := *actualCommand.Extra.ExpandArgs
 		command := actualCommand.Command
 		args := append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)
+
+		if actualCommand.Extra.ShellCommand {
+			// We must not redirect the stderr on shell command, doing so, remove the prompt
+			currentErrWriter := terragruntOptions.ErrWriter
+			terragruntOptions.ErrWriter = os.Stderr
+			defer func() { terragruntOptions.ErrWriter = currentErrWriter }()
+		}
+
 		if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
 			err = shell.RunShellCommandWithApproval(terragruntOptions, approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, expandArgs, command, args...)
 		} else {

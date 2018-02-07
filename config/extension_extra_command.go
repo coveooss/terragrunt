@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -17,14 +18,17 @@ import (
 type ExtraCommand struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Commands   []string `hcl:"commands"`
-	Aliases    []string `hcl:"aliases"`
-	Arguments  []string `hcl:"arguments"`
-	ExpandArgs *bool    `hcl:"expand_args"`
-	UseState   *bool    `hcl:"use_state"`
-	ActAs      string   `hcl:"act_as"`
-	VersionArg string   `hcl:"version"`
+	Commands     []string `hcl:"commands"`
+	Aliases      []string `hcl:"aliases"`
+	Arguments    []string `hcl:"arguments"`
+	ExpandArgs   *bool    `hcl:"expand_args"`
+	UseState     *bool    `hcl:"use_state"`
+	ActAs        string   `hcl:"act_as"`
+	VersionArg   string   `hcl:"version"`
+	ShellCommand bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
 }
+
+func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
 
 func (item ExtraCommand) extraInfo() string {
 	return fmt.Sprintf("[%s]", strings.Join(util.RemoveElementFromList(item.list(), item.Name), ", "))
@@ -80,8 +84,8 @@ func (item *ExtraCommand) list() []string {
 }
 
 func (item *ExtraCommand) resolve(cmd string) *ActualCommand {
-	cmd = item.resolveAlias(cmd)
-	if !util.ListContainsElement(item.Commands, cmd) {
+	cmd, ok := item.resolveAlias(cmd)
+	if !util.ListContainsElement(item.Commands, cmd) && !ok {
 		return nil
 	}
 
@@ -102,50 +106,26 @@ func (item *ExtraCommand) resolve(cmd string) *ActualCommand {
 	return &ActualCommand{cmd, behaveAs, item}
 }
 
-func (item *ExtraCommand) resolveAlias(cmd string) string {
-	options := item.options()
-
+func (item *ExtraCommand) resolveAlias(cmd string) (result string, found bool) {
 	for _, alias := range item.Aliases {
-		split := strings.SplitN(alias, "=", 2)
-		if cmd != split[0] {
+		name, command := utils.Split2(alias, "=")
+		if name != cmd {
 			continue
 		}
 
-		if len(split) == 1 {
-			return item.Commands[0]
+		if command == "" {
+			return item.Commands[0], true
 		}
 
-		cmd = split[1]
-		if strings.ContainsAny(split[1], " |,&$") {
-			cmd = "bash"
-
-			var args string
-			for _, arg := range append(item.Arguments, options.TerraformCliArgs[1:]...) {
-				if !strings.Contains(arg, " \t") {
-					args += " " + arg
-				} else {
-					args += fmt.Sprintf(` "%s"`, arg)
-				}
-			}
-
-			script := split[1]
-			if strings.Contains(script, " $*") {
-				script = strings.Replace(script, " $*", args, -1)
-			} else if !strings.Contains(script, "|") {
-				script += args
-			}
-
-			item.Arguments = []string{"-c", script}
-			options.TerraformCliArgs = options.TerraformCliArgs[:1]
-		}
+		return command, true
 	}
-	return cmd
+	return cmd, false
 }
 
 // ----------------------- ExtraCommandList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_extra_command.go gen "GenericItem=ExtraCommand"
-func (list *ExtraCommandList) argName() string { return "extra_command" }
+func (list ExtraCommandList) argName() string { return "extra_command" }
 
 func (list ExtraCommandList) sort() ExtraCommandList {
 	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })
@@ -198,7 +178,7 @@ func (list ExtraCommandList) ActualCommand(cmd string) ActualCommand {
 			return *match
 		}
 	}
-	return ActualCommand{cmd, "", nil}
+	return ActualCommand{Command: cmd}
 }
 
 // ActualCommand represents the command that should be executed

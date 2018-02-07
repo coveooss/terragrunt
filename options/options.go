@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/coveo/gotemplate/utils"
+	"github.com/coveo/gotemplate/hcl"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/op/go-logging"
@@ -182,18 +182,17 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 			switch strings.ToLower(filepath.Ext(file)) {
 			case ".yml", ".yaml":
 				content, err = yaml.Marshal(variables)
-				if err != nil {
-					return
-				}
 			case ".tfvars", ".hcl":
-				content = utils.ToPrettyHCL(variables)
+				content, err = hcl.MarshalIndent(variables, "", "  ")
 			default:
 				content, err = json.MarshalIndent(variables, "", "  ")
-				if err != nil {
-					return
-				}
 			}
-
+			if err != nil {
+				return
+			}
+			if content[len(content)-1] != '\n' {
+				content = append(content, '\n')
+			}
 			err = ioutil.WriteFile(filepath.Join(terragruntOptions.WorkingDir, file), content, 0644)
 		}
 	}

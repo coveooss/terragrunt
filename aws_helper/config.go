@@ -67,6 +67,7 @@ func InitAwsSession(awsProfile string) (*session.Session, error) {
 	os.Setenv("AWS_SECRET_ACCESS_KEY", creds.SecretAccessKey)
 	os.Setenv("AWS_SESSION_TOKEN", creds.SessionToken)
 	os.Unsetenv("AWS_PROFILE")
+	os.Unsetenv("AWS_DEFAULT_PROFILE")
 	return session, nil
 }
 

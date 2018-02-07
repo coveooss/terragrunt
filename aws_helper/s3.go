@@ -129,7 +129,7 @@ func SaveS3Status(url, folder string) (err error) {
 		return
 	}
 
-	if !strings.HasSuffix(bucketInfo.Key, "/") {
+	if !strings.HasSuffix(bucketInfo.Key, "/") && !strings.HasSuffix(bucketInfo.Key, ".zip") {
 		bucketInfo.Key += "/"
 	}
 
