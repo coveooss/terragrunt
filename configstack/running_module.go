@@ -112,30 +112,53 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 			module.Module.TerragruntOptions.Writer = logCatcher
 			module.Module.TerragruntOptions.ErrWriter = logCatcher
 
-			go func(logCatcher *util.LogCatcher, outStream *bytes.Buffer) {
-				// Output stream every minutes for long processes
+			go func(module *runningModule) {
 				for {
 					time.Sleep(2 * time.Second)
 
-					for {
-						line, err := outStream.ReadString('\n')
+					lines, err := module.readOutStream()
 
-						if err != nil && err != io.EOF {
-							logCatcher.Logger.Errorf("Error reading project output: %v", err)
-							break
-						}
+					writer := module.Module.TerragruntOptions.Writer.(util.LogCatcher).Logger.Noticef
+					msg := "Autolog: %v"
 
-						if strings.TrimSpace(strings.TrimSuffix(line, "\n")) != "" {
-							logCatcher.Logger.Noticef("Autolog: %v", line)
-						}
-
-						if err == io.EOF {
-							break
-						}
-
+					if err != nil {
+						writer = module.Module.TerragruntOptions.ErrWriter.(util.LogCatcher).Logger.Errorf
+						msg = "Error reading project output: %v"
+						lines = fmt.Sprint(err)
 					}
+
+					if strings.TrimSpace(strings.TrimSuffix(lines, "\n")) != "" {
+						writer(msg, lines)
+					}
+
 				}
-			}(&logCatcher, &module.OutStream)
+			}(module)
+
+			// go func(logCatcher *util.LogCatcher, outStream *bytes.Buffer) {
+			// 	// Output stream every minutes for long processes
+			// 	for {
+			// 		time.Sleep(2 * time.Second)
+
+			// 		for {
+
+			// 			line, err := outStream.ReadString('\n')
+
+			// 			if err != nil && err != io.EOF {
+			// 				logCatcher.Logger.Errorf("Error reading project output: %v", err)
+			// 				break
+			// 			}
+
+			// 			if strings.TrimSpace(strings.TrimSuffix(line, "\n")) != "" {
+			// 				logCatcher.Logger.Noticef("Autolog: %v", line)
+			// 			}
+
+			// 			if err == io.EOF {
+			// 				break
+			// 			}
+
+			// 		}
+			// 	}
+			// }(&logCatcher, &module.OutStream)
 
 			module.runModuleWhenReady()
 		}(module)
@@ -145,6 +168,33 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 	waitGroup.Wait()
 
 	return collectErrors(runningModules)
+}
+
+func (module *runningModule) readOutStream() (string, error) {
+	var mutex = &sync.Mutex{}
+	var lines string
+	mutex.Lock()
+
+	for {
+
+		line, err := module.OutStream.ReadString('\n')
+
+		if err != nil && err != io.EOF {
+			return "", err
+		}
+
+		if strings.TrimSpace(strings.TrimSuffix(line, "\n")) != "" {
+			lines += line
+		}
+
+		if err == io.EOF {
+			break
+		}
+
+	}
+
+	mutex.Unlock()
+	return lines, nil
 }
 
 // Convert the list of modules to a map from module path to a runningModule struct. This struct contains information
