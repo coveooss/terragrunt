@@ -17,6 +17,8 @@ import (
 )
 
 // FileStat calls os.Stat with retries
+// When multiple projects are running in parallel, the os.Stat() function
+// returns 'bad file descriptor' if the file is being overwritten while being read.
 func FileStat(path string) (os.FileInfo, error) {
 
 	var retries int
