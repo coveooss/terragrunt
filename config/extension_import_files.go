@@ -245,7 +245,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 }
 
 func ensureIsFile(file string) error {
-	if stat, err := os.Stat(file); err != nil {
+	if stat, err := util.FileStat(file); err != nil {
 		return err
 	} else if stat.IsDir() {
 		return fmt.Errorf("Folder ignored %s", file)
@@ -273,7 +273,7 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
 	folders := make(map[string]int)
 	for _, module := range modules {
-		stat, err := os.Stat(module)
+		stat, err := util.FileStat(module)
 		if err != nil {
 			return nil, err
 		}

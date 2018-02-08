@@ -16,9 +16,30 @@ import (
 	logging "github.com/op/go-logging"
 )
 
+// FileStat calls os.Stat with retries
+func FileStat(path string) (os.FileInfo, error) {
+
+	var retries int
+	var fileInfo os.FileInfo
+	var err error
+
+	for {
+		fileInfo, err = os.Stat(path)
+
+		if strings.Contains(fmt.Sprint(err), "bad file descriptor") {
+			if retries < 100 {
+				retries++
+				continue
+			}
+		}
+
+		return fileInfo, err
+	}
+}
+
 // Return true if the given file exists
 func FileExists(path string) bool {
-	_, err := os.Stat(path)
+	_, err := FileStat(path)
 	return err == nil
 }
 
@@ -311,7 +332,8 @@ func CopyFile(source string, destination string) error {
 
 // Write a file to the given destination with the given contents using the same permissions as the file at source
 func WriteFileWithSamePermissions(source string, destination string, contents []byte) error {
-	fileInfo, err := os.Stat(source)
+	fileInfo, err := FileStat(source)
+
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}
