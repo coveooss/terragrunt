@@ -128,11 +128,8 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 
 // Reads logs written into module's OutStream buffer
 func (module *runningModule) readOutStream() (string, error) {
-	var mutex = &sync.Mutex{}
 	var lines string
 
-	defer mutex.Unlock()
-	mutex.Lock()
 	for {
 		line, err := module.OutStream.ReadString('\n')
 
