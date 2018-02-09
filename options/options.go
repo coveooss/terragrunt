@@ -293,11 +293,11 @@ type Variable struct {
 const (
 	UndefinedSource VariableSource = iota
 	Default
-	Environment
 	ConfigVarFile
 	VarFile
 	VarFileExplicit
 	VarParameter
+	Environment
 	VarParameterExplicit
 )
 
