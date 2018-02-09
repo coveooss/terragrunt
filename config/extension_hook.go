@@ -65,17 +65,20 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 		return
 	}
 
+	cmd := shell.NewCmd(hook.options(), hook.Command).Args(hook.Arguments...)
 	if hook.ShellCommand {
 		// We must not redirect the stderr on shell command, doing so, remove the prompt
-		currentErrWriter := hook.options().ErrWriter
-		hook.options().ErrWriter = os.Stderr
-		defer func() { hook.options().ErrWriter = currentErrWriter }()
+		cmd.Stderr = os.Stderr
 	}
+
+	if hook.ExpandArgs {
+		cmd = cmd.ExpandArgs()
+	}
+
 	if shouldBeApproved, approvalConfig := hook.config().ApprovalConfig.ShouldBeApproved(hook.Command); shouldBeApproved {
-		err = shell.RunShellCommandWithApproval(hook.options(), approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, hook.ExpandArgs, hook.Command, hook.Arguments...)
-	} else {
-		err = shell.RunShellCommand(hook.options(), hook.ExpandArgs, hook.Command, hook.Arguments...)
+		cmd = cmd.Expect(approvalConfig.ExpectStatements, approvalConfig.CompletedStatements)
 	}
+	err = cmd.Run()
 	return
 }
 

@@ -42,7 +42,7 @@ func checkTerraformVersionMeetsConstraint(currentVersion *version.Version, const
 
 // Get the currently installed version of Terraform
 func getTerraformVersion(terragruntOptions *options.TerragruntOptions) (*version.Version, error) {
-	output, err := shell.RunTerraformCommandAndCaptureOutput(terragruntOptions, "--version")
+	output, err := shell.NewTFCmd(terragruntOptions).Args("--version").Output()
 	if err != nil {
 		return nil, err
 	}

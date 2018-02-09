@@ -11,9 +11,9 @@ func TestRunShellCommand(t *testing.T) {
 	t.Parallel()
 
 	terragruntOptions := options.NewTerragruntOptionsForTest("")
-	cmd := RunShellCommand(terragruntOptions, "terraform", "--version")
+	cmd := NewTFCmd(terragruntOptions).Args("--version").Run()
 	assert.Nil(t, cmd)
 
-	cmd = RunShellCommand(terragruntOptions, "terraform", "not-a-real-command")
+	cmd = NewTFCmd(terragruntOptions).Args("not-a-real-command").Run()
 	assert.Error(t, cmd)
 }

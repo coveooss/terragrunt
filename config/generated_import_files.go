@@ -152,7 +152,7 @@ func (list ImportFilesList) Run(args ...interface{}) (result []interface{}, err 
 	for _, item := range list {
 		iItem := IImportFiles(&item)
 		var temp interface{}
-		iItem.logger().Infof("Running %s(%s): %s", iItem.itemType(), iItem.id(), iItem.name())
+		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
 		iItem.normalize()
 		if temp, err = iItem.run(args...); err != nil {
 			err = fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), err)

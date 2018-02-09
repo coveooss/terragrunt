@@ -181,7 +181,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		fmt.Fprintln(cliContext.App.Writer)
 		util.SetWarningLoggingLevel()
 		terragruntOptions.Println(title("TERRAFORM\n"))
-		shell.RunTerraformCommand(terragruntOptions, "--help")
+		shell.NewTFCmd(terragruntOptions).Args("--help").Run()
 		return nil
 	}
 
@@ -399,43 +399,44 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
+	var cmd *shell.CommandContext
+
 	if actualCommand.Extra != nil {
 		// The command is not a native terraform command
 		expandArgs := *actualCommand.Extra.ExpandArgs
 		command := actualCommand.Command
 		args := append(actualCommand.Extra.Arguments, terragruntOptions.TerraformCliArgs[1:]...)
 
+		cmd = shell.NewCmd(terragruntOptions, command).Args(args...)
 		if actualCommand.Extra.ShellCommand {
 			// We must not redirect the stderr on shell command, doing so, remove the prompt
-			currentErrWriter := terragruntOptions.ErrWriter
-			terragruntOptions.ErrWriter = os.Stderr
-			defer func() { terragruntOptions.ErrWriter = currentErrWriter }()
+			cmd.Stderr = os.Stderr
 		}
 
-		if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
-			err = shell.RunShellCommandWithApproval(terragruntOptions, approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, expandArgs, command, args...)
-		} else {
-			err = shell.RunShellCommand(terragruntOptions, expandArgs, command, args...)
+		if expandArgs {
+			cmd = cmd.ExpandArgs()
 		}
-		return filterPlanError(err, actualCommand.Extra.ActAs)
-	}
 
-	// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
-	// terraform init if it was necessary, and the below RunTerraformCommand would end up calling init without
-	// the correct remote state arguments, which is confusing.
-	if terragruntOptions.TerraformCliArgs[0] == CMD_INIT {
-		terragruntOptions.Logger.Warning("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
-		return nil
-	}
-
-	// We restore back the name of the command since it may have been temporary changed to support state file initialization and get modules
-	terragruntOptions.TerraformCliArgs[0] = actualCommand.Command
-
-	if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
-		err = shell.RunTerraformCommandWithApproval(terragruntOptions, approvalConfig.ExpectStatements, approvalConfig.CompletedStatements, terragruntOptions.TerraformCliArgs...)
+		actualCommand.Command = actualCommand.Extra.ActAs
 	} else {
-		err = shell.RunTerraformCommand(terragruntOptions, terragruntOptions.TerraformCliArgs...)
+		// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
+		// terraform init if it was necessary, and the below RunTerraformCommand would end up calling init without
+		// the correct remote state arguments, which is confusing.
+		if terragruntOptions.TerraformCliArgs[0] == CMD_INIT {
+			terragruntOptions.Logger.Warning("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
+			return nil
+		}
+
+		// We restore back the name of the command since it may have been temporary changed to support state file initialization and get modules
+		terragruntOptions.TerraformCliArgs[0] = actualCommand.Command
+
+		cmd = shell.NewTFCmd(terragruntOptions).Args(terragruntOptions.TerraformCliArgs...)
 	}
+	if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
+		cmd = cmd.Expect(approvalConfig.ExpectStatements, approvalConfig.CompletedStatements)
+	}
+	err = cmd.Run()
+
 	return filterPlanError(err, actualCommand.Command)
 }
 
@@ -473,7 +474,7 @@ func downloadModules(terragruntOptions *options.TerragruntOptions) error {
 			return err
 		}
 		if shouldDownload {
-			return shell.RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions, "get", "-update")
+			return shell.NewTFCmd(terragruntOptions).Args("get", "-update").LogOutput()
 		}
 	}
 

@@ -2,6 +2,8 @@ package shell
 
 import (
 	"bytes"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -19,100 +21,159 @@ import (
 	"github.com/op/go-logging"
 )
 
-// RunTerraformCommand runs the given Terraform command
-func RunTerraformCommand(terragruntOptions *options.TerragruntOptions, args ...string) error {
-	return RunShellCommand(terragruntOptions, false, terragruntOptions.TerraformPath, args...)
+// CommandContext is the description of the command that must be executed
+type CommandContext struct {
+	Stdout, Stderr io.Writer // If these variables are left unset, the default value from current options set will be used
+	DisplayCommand string    // If not specified, the actual command will be displayed
+
+	command             string
+	options             *options.TerragruntOptions
+	args                []interface{}
+	expandArgs          bool
+	expectedStatements  []string
+	completedStatements []string
+	log                 *logging.Logger
+	env                 []string
+	workingDir          string
 }
 
-// RunTerraformCommandWithApproval runs the given Terraform command expecting user input
-func RunTerraformCommandWithApproval(terragruntOptions *options.TerragruntOptions, expectedStatements []string, completedStatements []string, args ...string) error {
-	return RunShellCommandWithApproval(terragruntOptions, expectedStatements, completedStatements, false, terragruntOptions.TerraformPath, args...)
+// NewCmd initializes the ShellCommand object
+func NewCmd(options *options.TerragruntOptions, cmd string) *CommandContext {
+	context := CommandContext{
+		command:    cmd,
+		options:    options,
+		log:        options.Logger,
+		env:        options.EnvironmentVariables(),
+		workingDir: options.WorkingDir,
+	}
+	return &context
 }
 
-// RunTerraformCommandAndRedirectOutputToLogger runs the given Terraform command
-// but redirect all outputs (both stdout and stderr) to the logger instead of the default stream.
-// This allows us to isolate the true output of terraform command from the artefact of commands like init and get during the preparation steps.
-// If the user redirect the stdout, he will only get the output for the terraform desired command.
-func RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions *options.TerragruntOptions, args ...string) error {
-	output, err := RunShellCommandAndCaptureOutput(terragruntOptions, true, terragruntOptions.TerraformPath, args...)
+// NewTFCmd initializes the ShellCommand object with terraform as the command
+func NewTFCmd(options *options.TerragruntOptions) *CommandContext {
+	return NewCmd(options, options.TerraformPath)
+}
+
+// Args add arguments to the CommandContext
+func (c *CommandContext) Args(args ...string) *CommandContext {
+	for i := range args {
+		c.args = append(c.args, args[i])
+	}
+	return c
+}
+
+// ExpandArgs instructs that arguments should be expanded before run
+func (c *CommandContext) ExpandArgs() *CommandContext {
+	c.expandArgs = true
+	return c
+}
+
+// Expect instructs that a special behavior should be done on some outputs
+func (c *CommandContext) Expect(expected []string, completed []string) *CommandContext {
+	c.expectedStatements = expected
+	c.completedStatements = completed
+	return c
+}
+
+// Env set additional environment variables in the CommandContext
+func (c *CommandContext) Env(values ...string) *CommandContext {
+	c.env = append(c.env, values...)
+	return c
+}
+
+// WorkingDir changes the default working directory for the command
+func (c *CommandContext) WorkingDir(wd string) *CommandContext {
+	c.workingDir = wd
+	return c
+}
+
+// Output runs the current command and returns the output (stdout and stderr)
+func (c CommandContext) Output() (string, error) {
+	out := new(bytes.Buffer)
+	c.Stdout, c.Stderr = out, out
+	err := c.Run()
+	return out.String(), err
+}
+
+// LogOutput runs the current command and log the output (stdout and stderr)
+func (c CommandContext) LogOutput() error {
+	out, err := c.Output()
 	if err != nil {
-		terragruntOptions.Logger.Error(output)
+		c.log.Error(out)
 	} else {
-		terragruntOptions.Logger.Info(output)
+		c.log.Info(out)
 	}
 	return err
 }
 
-// RunTerraformCommandAndCaptureOutput runs the given Terraform command and return the stdout as a string
-func RunTerraformCommandAndCaptureOutput(terragruntOptions *options.TerragruntOptions, args ...string) (string, error) {
-	return RunShellCommandAndCaptureOutput(terragruntOptions, false, terragruntOptions.TerraformPath, args...)
-}
-
-// RunShellCommand runs the specified shell command with the specified arguments expecting user input
-// Connect the command's stdin, stdout, and stderr to the currently running app.
-func RunShellCommand(terragruntOptions *options.TerragruntOptions, expandArgs bool, command string, args ...string) error {
-	return runShellCommand(terragruntOptions, nil, nil, expandArgs, command, args...)
-}
-
-// RunShellCommandWithApproval runs the specified shell command with the specified arguments expecting user input
-// Connect the command's stdin, stdout, and stderr to the currently running app.
-func RunShellCommandWithApproval(terragruntOptions *options.TerragruntOptions, expectedStatements []string, completedStatements []string, expandArgs bool, command string, args ...string) error {
-	return runShellCommand(terragruntOptions, expectedStatements, completedStatements, expandArgs, command, args...)
-}
-
-func runShellCommand(terragruntOptions *options.TerragruntOptions, expectedStatements []string, completedStatements []string, expandArgs bool, command string, args ...string) error {
-	logger := terragruntOptions.Logger.Notice
-	if terragruntOptions.Writer != os.Stdout {
-		logger = terragruntOptions.Logger.Info
+// Run executes the command
+func (c CommandContext) Run() error {
+	if c.options == nil {
+		return errors.WithStackTrace(fmt.Errorf("Options not configured for command"))
 	}
 
-	if !strings.Contains(command, " ") {
-		if resolved, err := LookPath(command, terragruntOptions.Env["PATH"]); err == nil {
-			command = resolved
-		} else {
-			return errors.WithStackTrace(err)
+	// If the output is captured, we use a different logging level
+	c.Stdout = iif(c.Stdout, c.Stdout, c.options.Writer).(io.Writer)
+	c.Stderr = iif(c.Stderr, c.Stderr, c.options.ErrWriter).(io.Writer)
+	logger := iif(c.Stdout == c.options.Writer, c.log.Notice, c.log.Info).(func(...interface{}))
+
+	if c.command == c.options.TerraformPath {
+		const noColor = "-no-color"
+		if util.ListContainsElement(c.options.TerraformCliArgs, noColor) {
+			// If the user specified -no-color, we should respect it in intermediate calls too
+			c.args = append(c.args, noColor)
+		}
+		// Terragrunt can run some commands (such as terraform remote config) before running the actual terraform
+		// command requested by the user. The output of these other commands should not end up on stdout as this
+		// breaks scripts relying on terraform's output.
+		if !reflect.DeepEqual(c.options.TerraformCliArgs, c.args) {
+			c.Stdout = c.Stderr
 		}
 	}
 
-	if expandArgs {
-		args = util.ExpandArguments(args, terragruntOptions.WorkingDir)
+	if c.expandArgs {
+		c.args = util.ExpandArguments(c.args, c.options.WorkingDir)
 	}
 
-	argList := make([]interface{}, len(args))
-	for i := range args {
-		argList[i] = args[i]
+	if utils.IsCommand(c.command) {
+		// We try to resolve the command with the options PATH since it is not necessary equal to the actual PATH
+		// and therefore, the resolution of the command name may be altered
+		if resolvedCommand, err := LookPath(c.command, c.options.Env["PATH"]); err == nil && resolvedCommand != c.command {
+			c.command = resolvedCommand
+		}
 	}
-	cmd, tempFile, err := utils.GetCommandFromString(command, argList...)
+	cmd, tempFile, err := utils.GetCommandFromString(c.command, c.args...)
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}
-	logger("Running command:", filepath.Base(cmd.Args[0]), strings.Join(cmd.Args[1:], " "))
+
+	if cmd.Args[0], err = LookPath(cmd.Args[0], c.options.Env["PATH"]); err != nil {
+		return errors.WithStackTrace(err)
+	}
+
+	if c.DisplayCommand == "" {
+		logger("Running command:", filepath.Base(cmd.Args[0]), strings.Join(cmd.Args[1:], " "))
+	} else {
+		logger("Running command:", c.DisplayCommand)
+	}
+
 	if tempFile != "" {
 		content, _ := ioutil.ReadFile(tempFile)
-		terragruntOptions.Logger.Debugf("\n%s", string(content))
+		if c.DisplayCommand == "" {
+			c.options.Logger.Debugf("\n%s", string(content))
+		}
 		defer func() { os.Remove(tempFile) }()
 	}
 
-	// TODO: consider adding prefix from terragruntOptions logger to stdout and stderr
-	cmd.Stderr = terragruntOptions.ErrWriter
-	cmd.Stdout = terragruntOptions.Writer
-	cmd.Env = terragruntOptions.EnvironmentVariables()
-
-	// Terragrunt can run some commands (such as terraform remote config) before running the actual terraform
-	// command requested by the user. The output of these other commands should not end up on stdout as this
-	// breaks scripts relying on terraform's output.
-	if !reflect.DeepEqual(terragruntOptions.TerraformCliArgs, args) {
-		cmd.Stdout = cmd.Stderr
-	}
-
-	cmd.Dir = terragruntOptions.WorkingDir
+	cmd.Stdout, cmd.Stderr, cmd.Env = c.Stdout, c.Stderr, c.env
+	cmd.Dir = c.options.WorkingDir
 	cmdChannel := make(chan error)
 
-	signalChannel := NewSignalsForwarder(forwardSignals, cmd, terragruntOptions.Logger, cmdChannel)
+	signalChannel := NewSignalsForwarder(forwardSignals, cmd, c.log, cmdChannel)
 	defer signalChannel.Close()
 
-	if expectedStatements != nil && completedStatements != nil {
-		err = RunCommandToApprove(cmd, expectedStatements, completedStatements, terragruntOptions)
+	if c.expectedStatements != nil && c.completedStatements != nil {
+		err = RunCommandToApprove(cmd, c.expectedStatements, c.completedStatements, c.options)
 	} else {
 		cmd.Stdin = os.Stdin
 		err = cmd.Run()
@@ -122,40 +183,21 @@ func runShellCommand(terragruntOptions *options.TerragruntOptions, expectedState
 	return errors.WithStackTrace(err)
 }
 
-// Run the specified shell command with the specified arguments. Capture the command's stdout and return it as a
-// string.
-func RunShellCommandAndCaptureOutput(terragruntOptions *options.TerragruntOptions, copyWorkingDir bool, command string, args ...string) (string, error) {
-	stdout := new(bytes.Buffer)
-
-	terragruntOptionsCopy := terragruntOptions.Clone(terragruntOptions.TerragruntConfigPath)
-	if copyWorkingDir {
-		terragruntOptionsCopy.WorkingDir = terragruntOptions.WorkingDir
-	}
-	terragruntOptionsCopy.Writer = stdout
-	terragruntOptionsCopy.ErrWriter = stdout
-
-	// If the user specified -no-color, we should respect it in intermediate calls too
-	const noColor = "-no-color"
-	if util.ListContainsElement(terragruntOptions.TerraformCliArgs, noColor) {
-		args = append(args, noColor)
-	}
-
-	err := RunShellCommand(terragruntOptionsCopy, false, command, args...)
-	return stdout.String(), err
-}
-
 // LookPath search the supplied path to find the desired command
 // It uses a mutex since it has to temporary override the global PATH variable.
 func LookPath(command string, paths ...string) (string, error) {
 	originalPath := os.Getenv("PATH")
+	testPath := strings.Join(paths, string(os.PathListSeparator))
 
-	defer func() {
-		os.Setenv("PATH", originalPath)
-		lookPathMutex.Unlock()
-	}()
+	if testPath != "" {
+		defer func() {
+			os.Setenv("PATH", originalPath)
+			lookPathMutex.Unlock()
+		}()
 
-	lookPathMutex.Lock()
-	os.Setenv("PATH", strings.Join(paths, string(os.PathListSeparator)))
+		lookPathMutex.Lock()
+		os.Setenv("PATH", testPath)
+	}
 	return exec.LookPath(command)
 }
 
@@ -201,9 +243,12 @@ func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *logging.Logge
 	return signalChannel
 }
 
+// Close closes the signal channel
 func (signalChannel *SignalsForwarder) Close() error {
 	signal.Stop(*signalChannel)
 	*signalChannel <- nil
 	close(*signalChannel)
 	return nil
 }
+
+var iif = utils.IIf

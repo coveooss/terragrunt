@@ -105,7 +105,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 	for _, folder := range folders {
 		var messages []string
 
-		if sourceFolder != "" {
+		if item.Source != "" {
 			messages = append(messages, fmt.Sprintf("from %s", item.Source))
 		}
 		folder := folder.(string)
@@ -146,6 +146,8 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 
 			folder, file := filepath.Split(target)
 			target = filepath.Join(folder, item.Prefix+file)
+
+			logger.Debugf("Copy file %s to %s", source, target)
 			os.MkdirAll(folder, os.ModePerm)
 			if err := util.CopyFile(source, target); err != nil {
 				return err
@@ -193,7 +195,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 
 			for i := range newFiles {
 				var target string
-				if item.Target != "" || sourceFolder == "" {
+				if item.Target != "" || filepath.IsAbs(newFiles[i].source) {
 					newFiles[i].target = filepath.Base(newFiles[i].source)
 				} else {
 					target = strings.TrimPrefix(newFiles[i].source, sourceFolderPrefix)
@@ -204,11 +206,11 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			sourceFiles = append(sourceFiles, newFiles...)
 
 			if len(newFiles) == 1 {
-				logger.Infof("Import file %s%s", newFiles[0].target, contextMessage)
+				logger.Infof("Import file %s%s", util.GetPathRelativeToMax(newFiles[0].target, item.options().WorkingDir, 2), contextMessage)
 			} else {
 				copiedFiles := make([]string, len(newFiles))
 				for i := range newFiles {
-					copiedFiles[i] = newFiles[i].target
+					copiedFiles[i] = util.GetPathRelativeToMax(newFiles[i].target, item.options().WorkingDir, 2)
 				}
 				logger.Infof("Import file %s: %s%s", name, strings.Join(copiedFiles, ", "), contextMessage)
 			}

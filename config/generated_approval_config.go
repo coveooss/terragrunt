@@ -152,7 +152,7 @@ func (list ApprovalConfigList) Run(args ...interface{}) (result []interface{}, e
 	for _, item := range list {
 		iItem := IApprovalConfig(&item)
 		var temp interface{}
-		iItem.logger().Infof("Running %s(%s): %s", iItem.itemType(), iItem.id(), iItem.name())
+		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
 		iItem.normalize()
 		if temp, err = iItem.run(args...); err != nil {
 			err = fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), err)

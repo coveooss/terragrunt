@@ -19,8 +19,8 @@ type RemoteState struct {
 	Config  map[string]interface{} `hcl:"config"`
 }
 
-func (state *RemoteState) String() string {
-	return fmt.Sprintf("RemoteState{Backend = %v, Config = %v}", state.Backend, state.Config)
+func (remoteState *RemoteState) String() string {
+	return fmt.Sprintf("RemoteState{Backend = %v, Config = %v}", remoteState.Backend, remoteState.Config)
 }
 
 type RemoteStateInitializer func(map[string]interface{}, *options.TerragruntOptions) error
@@ -44,7 +44,7 @@ func (remoteState *RemoteState) Validate() error {
 	return nil
 }
 
-// Perform any actions necessary to initialize the remote state before it's used for storage. For example, if you're
+// Initialize performs any actions necessary to initialize the remote state before it's used for storage. For example, if you're
 // using S3 for remote state storage, this may create the S3 bucket if it doesn't exist already.
 func (remoteState *RemoteState) Initialize(terragruntOptions *options.TerragruntOptions) error {
 	initializer, hasInitializer := remoteStateInitializers[remoteState.Backend]
@@ -55,7 +55,7 @@ func (remoteState *RemoteState) Initialize(terragruntOptions *options.Terragrunt
 	return nil
 }
 
-// Configure Terraform remote state
+// ConfigureRemoteState configures Terraform remote state
 func (remoteState RemoteState) ConfigureRemoteState(terragruntOptions *options.TerragruntOptions) error {
 	shouldConfigure, err := shouldConfigureRemoteState(remoteState, terragruntOptions)
 	if err != nil {
@@ -69,7 +69,7 @@ func (remoteState RemoteState) ConfigureRemoteState(terragruntOptions *options.T
 		}
 
 		terragruntOptions.Logger.Infof("Configuring remote state for the %s backend", remoteState.Backend)
-		return shell.RunTerraformCommandAndRedirectOutputToLogger(terragruntOptions, initCommand(remoteState)...)
+		return shell.NewTFCmd(terragruntOptions).Args(initCommand(remoteState)...).LogOutput()
 	}
 
 	return nil
@@ -87,9 +87,8 @@ func shouldConfigureRemoteState(remoteStateFromTerragruntConfig RemoteState, ter
 
 	if state != nil && state.IsRemote() {
 		return shouldOverrideExistingRemoteState(state.Backend, remoteStateFromTerragruntConfig, terragruntOptions)
-	} else {
-		return true, nil
 	}
+	return true, nil
 }
 
 // Check if the remote state that is already configured matches the one specified in the Terragrunt config. If it does,
@@ -141,9 +140,9 @@ func initCommand(remoteState RemoteState) []string {
 	return append([]string{"init"}, remoteState.ToTerraformInitArgs()...)
 }
 
-// Convert the RemoteState config into the format used by the terraform init command
+// ToTerraformInitArgs converts the RemoteState config into the format used by the terraform init command
 func (remoteState RemoteState) ToTerraformInitArgs() []string {
-	backendConfigArgs := []string{}
+	backendConfigArgs := make([]string, 0, len(remoteState.Config))
 	for key, value := range remoteState.Config {
 		arg := fmt.Sprintf("-backend-config=%s=%v", key, value)
 		backendConfigArgs = append(backendConfigArgs, arg)

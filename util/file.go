@@ -332,12 +332,13 @@ func CleanPath(path string) string {
 }
 
 // ExpandArguments expands the list of arguments like x shell do
-func ExpandArguments(args []string, folder string) (result []string) {
+func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 	prefix := folder + string(filepath.Separator)
 
-	for _, arg := range args {
+	for _, argI := range args {
 		// We consider \$ as an escape char for $ and we do not want ExpandEnv to replace it right now
 		const stringEscape = "%StrEsc%"
+		arg := fmt.Sprint(argI)
 		arg = strings.Replace(arg, `\$`, stringEscape, -1)
 		arg = strings.Replace(os.ExpandEnv(arg), stringEscape, "$", -1)
 		if strings.ContainsAny(arg, "*?[]") && !strings.ContainsAny(arg, "$|`") {
@@ -349,10 +350,10 @@ func ExpandArguments(args []string, folder string) (result []string) {
 				for i := range expanded {
 					// We remove the prefix from the result as if it was executed directly in the folder directory
 					expanded[i] = strings.TrimPrefix(expanded[i], prefix)
+					result = append(result, expanded[i])
 				}
-				result = append(result, expanded...)
-				continue
 			}
+			continue
 		}
 		result = append(result, arg)
 	}

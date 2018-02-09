@@ -153,16 +153,31 @@ func (list ExtraCommandList) GetVersions() string {
 			if logLevel == logging.NOTICE {
 				logging.SetLevel(logging.WARNING, "")
 			}
-			os.Setenv("TERRAGRUNT_COMMAND", cmd)
-			args := []string{item.VersionArg}
-			if strings.ContainsAny(item.VersionArg, " |,&$") {
-				cmd = "bash"
-				args = util.ExpandArguments([]string{"-c", item.VersionArg}, item.options().WorkingDir)
+
+			actualCmd := item.VersionArg
+			if strings.HasPrefix(actualCmd, "-") {
+				// If the command is just a parameter to the actual command, we prefix it with the actual command
+				actualCmd = fmt.Sprintf("%s %s", cmd, actualCmd)
 			}
-			out, err := shell.RunShellCommandAndCaptureOutput(item.options(), false, cmd, args...)
+			command, tempFile, err := utils.GetCommandFromString(actualCmd)
+			if tempFile != "" {
+				defer func() { os.Remove(tempFile) }()
+				if strings.Contains(actualCmd, "\n") {
+					actualCmd = "\n" + actualCmd
+				}
+			}
+
+			var out string
+			if err == nil {
+				c := shell.NewCmd(item.options(), command.Args[0])
+				c = c.Env(fmt.Sprintf("TERRAGRUNT_COMMAND=%s", cmd))
+				c = c.Args(append(command.Args[1:], item.options().WorkingDir)...)
+				c.DisplayCommand = actualCmd
+				out, err = c.Output()
+			}
 			logging.SetLevel(logLevel, "")
 			if err != nil {
-				item.logger().Infof("Got %s %s while getting version for %s", color.RedString(err.Error()), out, cmd)
+				item.logger().Infof("Got %s %s while getting version for %s", color.RedString(err.Error()), out, item.id())
 			} else {
 				result += fmt.Sprintln(strings.TrimSpace(out))
 			}
