@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -73,7 +74,8 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	approvalHandler := parse(OPT_APPROVAL_HANDLER)
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
-	flushDelay := parse(OPT_FLUSH_DELAY, "60s")
+	flushDelay := parse(OPT_FLUSH_DELAY, os.Getenv("TERRAGRUNT_FLUSH_DELAY"), "60s")
+	nbWorkers := parse(OPT_NB_WORKERS, os.Getenv("TERRAGRUNT_WORKERS"), "10")
 
 	if err != nil {
 		return nil, err
@@ -95,7 +97,11 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.ApprovalHandler = approvalHandler
 
 	if opts.RefreshOutputDelay, err = time.ParseDuration(flushDelay); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Refresh delay must be expressed with unit (i.e. 45s)")
+	}
+
+	if opts.NbWorkers, err = strconv.Atoi(nbWorkers); err != nil {
+		return nil, fmt.Errorf("Number of workers must be expressed as integer")
 	}
 
 	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))

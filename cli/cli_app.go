@@ -34,10 +34,11 @@ const OPT_TERRAGRUNT_SOURCE_UPDATE = "terragrunt-source-update"
 const OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS = "terragrunt-ignore-dependency-errors"
 const OPT_LOGGING_LEVEL = "terragrunt-logging-level"
 const OPT_FLUSH_DELAY = "terragrunt-flush-delay"
+const OPT_NB_WORKERS = "terragrunt-workers"
 const OPT_AWS_PROFILE = "profile"
 
 var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
-var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER, OPT_FLUSH_DELAY}
+var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER, OPT_FLUSH_DELAY, OPT_NB_WORKERS}
 
 const MULTI_MODULE_SUFFIX = "-all"
 const CMD_INIT = "init"
@@ -112,8 +113,19 @@ GLOBAL OPTIONS:
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5).
    terragrunt-approval                  Program to use for approval. {val} will be replaced by the current terragrunt output. Ex: approval.py --value {val}
-   terragrunt-flush-delay               Maximum delay on -all commands before printing out traces (NOTICE) indicating that the process is still alive (default 60 seconds)
+   terragrunt-flush-delay               Maximum delay on -all commands before printing out traces (NOTICE) indicating that the process is still alive (default 60s).
+   terragrunt-workers                   Number of concurrent workers (default 10).
    profile                              Specify an AWS profile to use.
+
+ENVIRONMENT VARIABLES:
+   The following environment variables could be set to avoid specifying parameters on command line:
+	  TERRAGRUNT_CONFIG, TERRAGRUNT_TFPATH, TERRAGRUNT_SOURCE, TERRAGRUNT_LOGGING_LEVEL, TERRAGRUNT_FLUSH_DELAY, TERRAGRUNT_WORKERS
+	  
+   TERRAGRUNT_DEBUG  If set, this enable detailed stack trace in case of application crash
+   TERRAGRUNT_CACHE  If set, it defines the root folder used to store temporary files
+
+   The following AWS variables are used to determine the default configuration.
+      AWS_PROFILE, AWS_REGION, AWS_ACCESS_KEY_ID
 
 VERSION:
    {{.Version}}{{if len .Authors}}

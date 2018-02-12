@@ -1,32 +1,30 @@
 package configstack
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-const (
-	maxThreadSimultaneousLaunch = 10
-	waitTimeBetweenThread       = 2
-)
+const waitTimeBetweenThread = 2500
+const defaultWorkersLimit = 10
 
-func initSlowDown() {
-	burstyLimiter = make(chan int, maxThreadSimultaneousLaunch)
-	for i := 0; i < maxThreadSimultaneousLaunch; i++ {
+func initWorkers(n int) {
+	if n <= 0 {
+		panic(fmt.Errorf("The number of workers must be greater than 0 (%d)", n))
+	}
+	burstyLimiter = make(chan int, n)
+	for i := 1; i <= n; i++ {
+		time.Sleep(waitTimeBetweenThread * time.Millisecond) // Start workers progressively to avoid throttling
 		burstyLimiter <- i
 	}
-
-	go func() {
-		// Help avoiding all treads trying to start at the same moment
-		for _ = range time.Tick(waitTimeBetweenThread * time.Second) {
-			burstyLimiter <- -1
-		}
-	}()
 }
 
-func slowDown() { <-burstyLimiter }
+func nbWorkers() int       { return cap(burstyLimiter) }
+func waitWorker() int      { return <-burstyLimiter }
+func freeWorker(token int) { burstyLimiter <- token }
 
 var burstyLimiter chan int
 
@@ -45,7 +43,7 @@ func (module *runningModule) OutputPeriodicLogs(completed *bool) {
 		if len(partialOutput) > module.bufferIndex {
 			end := len(partialOutput)
 			partialOutput = partialOutput[module.bufferIndex:end]
-			message := color.New(color.FgHiCyan).Sprintf("Still waiting for task to complete\n%s\n%s (partial output):\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path))
+			message := color.New(color.FgHiCyan).Sprintf("Still waiting for task to complete\n%s\n%s (partial output):\n", separator, module.displayName())
 			writer("%s\n%s\n", message, partialOutput)
 			module.bufferIndex = end
 		}

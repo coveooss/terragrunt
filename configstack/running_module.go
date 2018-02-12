@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"strings"
 	"sync"
 
@@ -46,6 +47,12 @@ type runningModule struct {
 	Mutex          *sync.Mutex // A shared mutex pointer to ensure that there is no concurrency problem when job finish and report
 
 	bufferIndex int // Indicates the position of the buffer that has been flushed to the logger
+	workerID    int
+}
+
+func (module runningModule) displayName() string {
+	format := int(math.Log10(math.Min(float64(nbWorkers()), 1)) + 1)
+	return fmt.Sprintf("Worker #%0*d: %s", format, module.workerID, util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3))
 }
 
 // This controls in what order dependencies should be enforced between modules
@@ -102,21 +109,31 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 		return err
 	}
 
-	var waitGroup sync.WaitGroup
-	initSlowDown() // starts mechanism that control the maximum number of threads launched simultaneously
+	for _, module := range runningModules {
+		// Starts mechanism that control the maximum number of active workers
+		if module.Module.TerragruntOptions.NbWorkers <= 0 {
+			module.Module.TerragruntOptions.NbWorkers = len(runningModules)
+		}
+		initWorkers(module.Module.TerragruntOptions.NbWorkers)
+		break
+	}
 
+	var waitGroup sync.WaitGroup
 	for _, module := range runningModules {
 		waitGroup.Add(1)
 		module.Handler = handler
 		go func(module *runningModule) {
-			defer waitGroup.Done()
+			var completed bool
+			defer func() {
+				waitGroup.Done()
+				completed = true
+			}()
 			logCatcher := util.LogCatcher{
 				Writer: &module.OutStream,
 				Logger: module.Module.TerragruntOptions.Logger,
 			}
 			module.Module.TerragruntOptions.Writer = logCatcher
 			module.Module.TerragruntOptions.ErrWriter = logCatcher
-			var completed bool
 			go module.OutputPeriodicLogs(&completed) // Flush the output buffers periodically to confirm that the process is still alive
 			module.runModuleWhenReady()
 			completed = true
@@ -196,7 +213,8 @@ func (module *runningModule) dependencies() []string {
 func (module *runningModule) runModuleWhenReady() {
 	err := module.waitForDependencies()
 	if err == nil {
-		slowDown() // Just avoid starting all threads at the same moment
+		module.workerID = waitWorker()
+		defer func() { freeWorker(module.workerID) }()
 		err = module.runNow()
 	}
 	module.moduleFinished(err)
@@ -207,29 +225,27 @@ func (module *runningModule) runModuleWhenReady() {
 func (module *runningModule) waitForDependencies() error {
 	log := module.Module.TerragruntOptions.Logger
 	if len(module.Dependencies) > 0 {
-		path := util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3)
-		log.Debugf("Module %s must wait for %s to finish", path, strings.Join(module.dependencies(), ", "))
+		log.Debugf("Module %s must wait for %s to finish", module.displayName(), strings.Join(module.dependencies(), ", "))
 	}
 	for len(module.Dependencies) > 0 {
 		doneDependency := <-module.DependencyDone
 		delete(module.Dependencies, doneDependency.Module.Path)
 
-		path := util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3)
 		depPath := util.GetPathRelativeToWorkingDirMax(doneDependency.Module.Path, 3)
 
 		if doneDependency.Err != nil {
 			if module.Module.TerragruntOptions.IgnoreDependencyErrors {
-				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too. However, because of --terragrunt-ignore-dependency-errors, module %[2]s will run anyway.", depPath, path)
+				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too. However, because of --terragrunt-ignore-dependency-errors, module %[2]s will run anyway.", depPath, module.displayName())
 			} else {
-				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too.", depPath, path)
+				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too.", depPath, module.displayName())
 				return DependencyFinishedWithError{module.Module, doneDependency.Module, doneDependency.Err}
 			}
 		} else {
 			var moreDependencies string
 			if len(module.Dependencies) > 0 {
-				moreDependencies = fmt.Sprintf(" Module %s must still wait for %s.", path, strings.Join(module.dependencies(), ", "))
+				moreDependencies = fmt.Sprintf(" Module %s must still wait for %s.", module.displayName(), strings.Join(module.dependencies(), ", "))
 			}
-			log.Debugf("Dependency %s of module %s just finished successfully.%s", depPath, path, moreDependencies)
+			log.Debugf("Dependency %s of module %s just finished successfully.%s", depPath, module.displayName(), moreDependencies)
 		}
 	}
 
@@ -241,10 +257,10 @@ func (module *runningModule) runNow() error {
 	module.Status = Running
 
 	if module.Module.AssumeAlreadyApplied {
-		module.Module.TerragruntOptions.Logger.Debugf("Assuming module %s has already been applied and skipping it", module.Module.Path)
+		module.Module.TerragruntOptions.Logger.Debugf("Assuming module %s has already been applied and skipping it", module.displayName())
 		return nil
 	}
-	module.Module.TerragruntOptions.Logger.Debugf("Running module %s now", util.GetPathRelativeToWorkingDirMax(module.Module.Path, 3))
+	module.Module.TerragruntOptions.Logger.Debugf("Running module %s now", module.displayName())
 	return module.Module.TerragruntOptions.RunTerragrunt(module.Module.TerragruntOptions)
 }
 
@@ -267,12 +283,12 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 
 	module.Mutex.Lock()
 	defer module.Mutex.Unlock()
-	logFinish("Module %s has finished %s", module.Module.Path, status)
+	logFinish("Module %s has finished %s", module.displayName(), status)
 
 	if output == "" {
 		module.Module.TerragruntOptions.Logger.Info("No output")
 	} else {
-		fmt.Fprintln(module.Writer, color.HiGreenString("%s\n%v\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path)))
+		fmt.Fprintln(module.Writer, color.HiGreenString("%s\n%v\n", separator, module.displayName()))
 		fmt.Fprintln(module.Writer, output)
 	}
 
