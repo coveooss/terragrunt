@@ -88,6 +88,9 @@ type TerragruntOptions struct {
 	// Indicates the maximum wait time before flushing the output of a background job
 	RefreshOutputDelay time.Duration
 
+	// Indicates the number of concurrent workers
+	NbWorkers int
+
 	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
 	deferredSaveList map[string]bool
 }
@@ -156,6 +159,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		Uniqueness:                   terragruntOptions.Uniqueness,
 		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,
 		RefreshOutputDelay:           terragruntOptions.RefreshOutputDelay,
+		NbWorkers:                    terragruntOptions.NbWorkers,
 		deferredSaveList:             terragruntOptions.deferredSaveList,
 	}
 
