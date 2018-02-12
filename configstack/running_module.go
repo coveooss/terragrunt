@@ -119,6 +119,7 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 			var completed bool
 			go module.OutputPeriodicLogs(&completed) // Flush the output buffers periodically to confirm that the process is still alive
 			module.runModuleWhenReady()
+			completed = true
 		}(module)
 	}
 
