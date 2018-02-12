@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -72,6 +73,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	approvalHandler := parse(OPT_APPROVAL_HANDLER)
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
+	flushDelay := parse(OPT_FLUSH_DELAY, "60s")
 
 	if err != nil {
 		return nil, err
@@ -91,6 +93,10 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.Variables = options.VariableList{}
 	opts.AwsProfile = awsProfile
 	opts.ApprovalHandler = approvalHandler
+
+	if opts.RefreshOutputDelay, err = time.ParseDuration(flushDelay); err != nil {
+		return nil, err
+	}
 
 	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf("%d", level))
@@ -271,8 +277,9 @@ func filterTerragruntArgs(args []string) []string {
 // Find a boolean argument (e.g. --foo) of the given name in the given list of arguments. If it's present, return true.
 // If it isn't, return defaultValue.
 func parseBooleanArg(args []string, argName string, defaultValue bool) bool {
+	argName = fmt.Sprintf("--%s", argName)
 	for _, arg := range args {
-		if arg == fmt.Sprintf("--%s", argName) {
+		if arg == argName {
 			return true
 		}
 	}
@@ -282,13 +289,13 @@ func parseBooleanArg(args []string, argName string, defaultValue bool) bool {
 // Find a string argument (e.g. --foo "VALUE") of the given name in the given list of arguments. If it's present,
 // return its value. If it is present, but has no value, return an error. If it isn't present, return defaultValue.
 func parseStringArg(args []string, argName string, defaultValue string) (string, error) {
+	argName = fmt.Sprintf("--%s", argName)
 	for i, arg := range args {
-		if arg == fmt.Sprintf("--%s", argName) {
+		if arg == argName {
 			if (i + 1) < len(args) {
 				return args[i+1], nil
-			} else {
-				return "", errors.WithStackTrace(ArgMissingValue(argName))
 			}
+			return "", errors.WithStackTrace(ArgMissingValue(argName))
 		}
 	}
 	return defaultValue, nil

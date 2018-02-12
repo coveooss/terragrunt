@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/coveo/gotemplate/hcl"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -84,6 +85,9 @@ type TerragruntOptions struct {
 	// resolving process. This allows further resolution of variables that are not initially defined.
 	IgnoreRemainingInterpolation bool
 
+	// Indicates the maximum wait time before flushing the output of a background job
+	RefreshOutputDelay time.Duration
+
 	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
 	deferredSaveList map[string]bool
 }
@@ -151,6 +155,7 @@ func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *
 		RunTerragrunt:                terragruntOptions.RunTerragrunt,
 		Uniqueness:                   terragruntOptions.Uniqueness,
 		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,
+		RefreshOutputDelay:           terragruntOptions.RefreshOutputDelay,
 		deferredSaveList:             terragruntOptions.deferredSaveList,
 	}
 

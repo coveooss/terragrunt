@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -16,9 +17,25 @@ import (
 	logging "github.com/op/go-logging"
 )
 
+// FileStat calls os.Stat with retries
+// When multiple projects are running in parallel, the os.Stat() function
+// returns 'bad file descriptor' if the file is being overwritten while being read.
+func FileStat(path string) (result os.FileInfo, err error) {
+	for retries := 0; ; {
+		if result, err = os.Stat(path); err != nil && strings.Contains(fmt.Sprint(err), "bad file descriptor") {
+			if retries < 5 {
+				time.Sleep(10 * time.Millisecond)
+				retries++
+				continue
+			}
+		}
+		return
+	}
+}
+
 // Return true if the given file exists
 func FileExists(path string) bool {
-	_, err := os.Stat(path)
+	_, err := FileStat(path)
 	return err == nil
 }
 
@@ -311,7 +328,8 @@ func CopyFile(source string, destination string) error {
 
 // Write a file to the given destination with the given contents using the same permissions as the file at source
 func WriteFileWithSamePermissions(source string, destination string, contents []byte) error {
-	fileInfo, err := os.Stat(source)
+	fileInfo, err := FileStat(source)
+
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}

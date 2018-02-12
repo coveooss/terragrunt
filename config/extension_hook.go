@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 )
@@ -73,6 +74,10 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 
 	if hook.ExpandArgs {
 		cmd = cmd.ExpandArgs()
+	}
+
+	if !utils.IsCommand(hook.Command) {
+		cmd.DisplayCommand = fmt.Sprintf("%s %s", hook.name(), strings.Join(hook.Arguments, " "))
 	}
 
 	if shouldBeApproved, approvalConfig := hook.config().ApprovalConfig.ShouldBeApproved(hook.Command); shouldBeApproved {

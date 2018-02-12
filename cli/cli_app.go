@@ -33,10 +33,11 @@ const OPT_TERRAGRUNT_SOURCE = "terragrunt-source"
 const OPT_TERRAGRUNT_SOURCE_UPDATE = "terragrunt-source-update"
 const OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS = "terragrunt-ignore-dependency-errors"
 const OPT_LOGGING_LEVEL = "terragrunt-logging-level"
+const OPT_FLUSH_DELAY = "terragrunt-flush-delay"
 const OPT_AWS_PROFILE = "profile"
 
 var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
-var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER}
+var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER, OPT_FLUSH_DELAY}
 
 const MULTI_MODULE_SUFFIX = "-all"
 const CMD_INIT = "init"
@@ -85,11 +86,11 @@ USAGE:
    {{.Usage}}
 
 COMMANDS:
+   <command> --help | -h               Print the command detailed help 
+
    get-doc [options...] [filters...] Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command.
    get-versions                      Get all versions of underlying tools (including extra_command).
    get-stack [options]               Get the list of stack to execute sorted by dependency order.
-
-   command --help | -h               Print the command detailed help 
 
    -all operations:
    plan-all                          Display the plans of a 'stack' by running 'terragrunt plan' in each subfolder (with a summary at the end).
@@ -111,6 +112,7 @@ GLOBAL OPTIONS:
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5).
    terragrunt-approval                  Program to use for approval. {val} will be replaced by the current terragrunt output. Ex: approval.py --value {val}
+   terragrunt-flush-delay               Maximum delay on -all commands before printing out traces (NOTICE) indicating that the process is still alive (default 60 seconds)
    profile                              Specify an AWS profile to use.
 
 VERSION:

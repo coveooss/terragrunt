@@ -44,6 +44,8 @@ type runningModule struct {
 	Writer         io.Writer
 	Handler        ModuleHandler
 	Mutex          *sync.Mutex // A shared mutex pointer to ensure that there is no concurrency problem when job finish and report
+
+	bufferIndex int // Indicates the position of the buffer that has been flushed to the logger
 }
 
 // This controls in what order dependencies should be enforced between modules
@@ -101,15 +103,21 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 	}
 
 	var waitGroup sync.WaitGroup
+	initSlowDown() // starts mechanism that control the maximum number of threads launched simultaneously
 
 	for _, module := range runningModules {
 		waitGroup.Add(1)
 		module.Handler = handler
 		go func(module *runningModule) {
 			defer waitGroup.Done()
-			logCatcher := util.LogCatcher{&module.OutStream, module.Module.TerragruntOptions.Logger}
+			logCatcher := util.LogCatcher{
+				Writer: &module.OutStream,
+				Logger: module.Module.TerragruntOptions.Logger,
+			}
 			module.Module.TerragruntOptions.Writer = logCatcher
 			module.Module.TerragruntOptions.ErrWriter = logCatcher
+			var completed bool
+			go module.OutputPeriodicLogs(&completed) // Flush the output buffers periodically to confirm that the process is still alive
 			module.runModuleWhenReady()
 		}(module)
 	}
@@ -187,6 +195,7 @@ func (module *runningModule) dependencies() []string {
 func (module *runningModule) runModuleWhenReady() {
 	err := module.waitForDependencies()
 	if err == nil {
+		slowDown() // Just avoid starting all threads at the same moment
 		err = module.runNow()
 	}
 	module.moduleFinished(err)

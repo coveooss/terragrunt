@@ -129,6 +129,8 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			if err != nil {
 				return
 			}
+		} else {
+			importerTarget = folder
 		}
 		relativeTarget := util.GetPathRelativeToMax(importerTarget, item.options().WorkingDir, 2)
 		if relativeTarget != "" && relativeTarget != "." {
@@ -142,12 +144,13 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 
 		// Local copy function used by both type of file copy
 		copy := func(source, target string) error {
-			target = filepath.Join(importerTarget, target)
+			if item.Prefix != "" {
+				// If the target should be prefixed, we change the targget to insert the prefix before the base name
+				folder, file := filepath.Split(target)
+				target = filepath.Join(folder, item.Prefix+file)
+			}
 
-			folder, file := filepath.Split(target)
-			target = filepath.Join(folder, item.Prefix+file)
-
-			logger.Debugf("Copy file %s to %s", source, target)
+			logger.Debugf("Copy file %s to %s", util.GetPathRelativeToMax(source, item.options().WorkingDir, 2), util.GetPathRelativeToMax(target, item.options().WorkingDir, 2))
 			os.MkdirAll(folder, os.ModePerm)
 			if err := util.CopyFile(source, target); err != nil {
 				return err
@@ -194,19 +197,16 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			}
 
 			for i := range newFiles {
-				var target string
 				if item.Target != "" || filepath.IsAbs(newFiles[i].source) {
-					newFiles[i].target = filepath.Base(newFiles[i].source)
+					newFiles[i].target = filepath.Join(importerTarget, filepath.Base(newFiles[i].source))
 				} else {
-					target = strings.TrimPrefix(newFiles[i].source, sourceFolderPrefix)
-					folder, base := filepath.Split(target)
-					newFiles[i].target = filepath.Join(folder, base)
+					newFiles[i].target = filepath.Join(importerTarget, strings.TrimPrefix(newFiles[i].source, sourceFolderPrefix))
 				}
 			}
 			sourceFiles = append(sourceFiles, newFiles...)
 
 			if len(newFiles) == 1 {
-				logger.Infof("Import file %s%s", util.GetPathRelativeToMax(newFiles[0].target, item.options().WorkingDir, 2), contextMessage)
+				logger.Infof("Import file %s%s", util.GetPathRelativeToMax(newFiles[0].source, item.options().WorkingDir, 2), contextMessage)
 			} else {
 				copiedFiles := make([]string, len(newFiles))
 				for i := range newFiles {
@@ -231,6 +231,9 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 
 		for _, source := range item.CopyAndRename {
 			if util.FileExists(source.Source) {
+				if !filepath.IsAbs(source.Target) {
+					source.Target = filepath.Join(importerTarget, source.Target)
+				}
 				logger.Infof("Import file %s to %s%s", filepath.Base(source.Source), source.Target, contextMessage)
 				if err = copy(source.Source, source.Target); err != nil {
 					return
@@ -247,7 +250,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 }
 
 func ensureIsFile(file string) error {
-	if stat, err := os.Stat(file); err != nil {
+	if stat, err := util.FileStat(file); err != nil {
 		return err
 	} else if stat.IsDir() {
 		return fmt.Errorf("Folder ignored %s", file)
@@ -275,7 +278,7 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
 	folders := make(map[string]int)
 	for _, module := range modules {
-		stat, err := os.Stat(module)
+		stat, err := util.FileStat(module)
 		if err != nil {
 			return nil, err
 		}
