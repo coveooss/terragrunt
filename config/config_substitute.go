@@ -61,8 +61,12 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 
 	for i, command := range conf.ExtraCommands {
 		substitute(&command.Description)
+		substitute(&command.VersionArg)
 		for i, cmd := range command.Commands {
 			command.Commands[i] = *substitute(&cmd)
+		}
+		for i, alias := range command.Aliases {
+			command.Aliases[i] = *substitute(&alias)
 		}
 		for i, arg := range command.Arguments {
 			command.Arguments[i] = *substitute(&arg)
