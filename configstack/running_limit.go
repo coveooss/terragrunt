@@ -45,7 +45,8 @@ func (module *runningModule) OutputPeriodicLogs(completed *bool) {
 		if len(partialOutput) > module.bufferIndex {
 			end := len(partialOutput)
 			partialOutput = partialOutput[module.bufferIndex:end]
-			writer("%s\n%s", color.CyanString("Still waiting for task to complete, partial output:"), partialOutput)
+			message := color.New(color.FgHiCyan).Sprintf("Still waiting for task to complete\n%s\n%s (partial output):\n", separator, util.GetPathRelativeToWorkingDir(module.Module.Path))
+			writer("%s\n%s\n", message, partialOutput)
 			module.bufferIndex = end
 		}
 	}
