@@ -8,6 +8,7 @@ import (
 	"sort"
 
 	"github.com/coveo/gotemplate/hcl"
+	"github.com/coveo/gotemplate/utils"
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
@@ -18,19 +19,26 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 		switch filepath.Ext(file) {
 		case ".tf":
 			fileVars, err = getDefaultVars(file, hcl.Unmarshal)
+			fileVars = hcl.Flatten(fileVars)
 		case ".json":
 			fileVars, err = getDefaultVars(file, json.Unmarshal)
 		}
-		if err != nil {
-			return
-		}
 
 		for key, value := range fileVars {
+			if old, exist := result[key]; exist {
+				switch old := old.(type) {
+				case map[string]interface{}:
+					if result[key], err = utils.MergeMaps(old, value.(map[string]interface{})); err != nil {
+						return
+					}
+					continue
+				}
+			}
 			result[key] = value
 		}
 	}
 
-	return result, nil
+	return
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
@@ -90,37 +98,44 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 		return nil, err
 	}
 
-	content := map[string]interface{}{}
+	content := make(map[string]interface{})
 	if err := unmarshal(bytes, &content); err != nil {
 		_, filename = filepath.Split(filename)
 		return nil, fmt.Errorf("%v %v", filename, err)
 	}
 
-	result := map[string]interface{}{}
+	result := make(map[string]interface{})
 
 	switch variables := content["variable"].(type) {
 	case map[string]interface{}:
-		for name, value := range variables {
-			value := value.(map[string]interface{})
-
-			if value := value["default"]; value != nil {
-				result[name] = value
-			}
-		}
-		return result, nil
+		addVariables(variables, result)
 	case []map[string]interface{}:
 		for _, value := range variables {
-			for name, value := range value {
-				value := value.([]map[string]interface{})[0]
-
-				if value := value["default"]; value != nil {
-					result[name] = value
-				}
-			}
+			addVariables(hcl.Flatten(value), result)
 		}
 	case nil:
 	default:
-		return nil, fmt.Errorf("%v: Unknown type %T", filename, variables)
+		return nil, fmt.Errorf("%v: Unknown variable type %T", filename, variables)
 	}
-	return result, nil
+
+	switch locals := content["locals"].(type) {
+	case map[string]interface{}:
+		result["local"] = locals
+	case []map[string]interface{}:
+		result["local"], err = utils.MergeMaps(locals[0], locals[1:]...)
+	case nil:
+	default:
+		return nil, fmt.Errorf("%v: Unknown local type %T", filename, locals)
+	}
+
+	return result, err
+}
+
+func addVariables(source, target map[string]interface{}) {
+	for name, value := range source {
+		value := value.(map[string]interface{})
+		if value := value["default"]; value != nil {
+			target[name] = value
+		}
+	}
 }

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/coveo/gotemplate/hcl"
+	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/op/go-logging"
@@ -48,7 +49,7 @@ type TerragruntOptions struct {
 	Env map[string]string
 
 	// Terraform variables at runtime
-	Variables VariableList
+	Variables map[string]Variable
 
 	// Download Terraform configurations from the specified source location into a temporary folder and run
 	// Terraform in that temporary folder
@@ -95,7 +96,7 @@ type TerragruntOptions struct {
 	deferredSaveList map[string]bool
 }
 
-// Create a new TerragruntOptions object with reasonable defaults for real usage
+// NewTerragruntOptions creates a new TerragruntOptions object with reasonable defaults for real usage
 func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 	workingDir := filepath.Dir(terragruntConfigPath)
 
@@ -114,63 +115,42 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		TerraformCliArgs:     []string{},
 		WorkingDir:           workingDir,
 		Logger:               util.CreateLogger(""),
-		Env:                  map[string]string{},
-		Variables:            VariableList{},
+		Env:                  make(map[string]string),
+		Variables:            make(map[string]Variable),
 		DownloadDir:          downloadDir,
 		Writer:               os.Stdout,
 		ErrWriter:            os.Stderr,
 		RunTerragrunt: func(terragruntOptions *TerragruntOptions) error {
-			return errors.WithStackTrace(RunTerragruntCommandNotSet)
+			return errors.WithStackTrace(ErrRunTerragruntCommandNotSet)
 		},
 	}
 }
 
-// Create a new TerragruntOptions object with reasonable defaults for test usage
+// NewTerragruntOptionsForTest creates a new TerragruntOptions object with reasonable defaults for test usage
 func NewTerragruntOptionsForTest(terragruntConfigPath string) *TerragruntOptions {
 	opts := NewTerragruntOptions(terragruntConfigPath)
-
 	opts.NonInteractive = true
-
 	return opts
 }
 
-// Create a copy of this TerragruntOptions, but with different values for the given variables. This is useful for
+// Clone creates a copy of this TerragruntOptions, but with different values for the given variables. This is useful for
 // creating a TerragruntOptions that behaves the same way, but is used for a Terraform module in a different folder.
-func (terragruntOptions *TerragruntOptions) Clone(terragruntConfigPath string) *TerragruntOptions {
-	workingDir := filepath.Dir(terragruntConfigPath)
-
-	newOptions := TerragruntOptions{
-		TerragruntConfigPath:         terragruntConfigPath,
-		TerraformPath:                terragruntOptions.TerraformPath,
-		NonInteractive:               terragruntOptions.NonInteractive,
-		TerraformCliArgs:             terragruntOptions.TerraformCliArgs,
-		WorkingDir:                   workingDir,
-		Logger:                       util.CreateLogger(util.GetPathRelativeToWorkingDir(workingDir)),
-		Env:                          map[string]string{},
-		Variables:                    VariableList{},
-		Source:                       terragruntOptions.Source,
-		SourceUpdate:                 terragruntOptions.SourceUpdate,
-		DownloadDir:                  terragruntOptions.DownloadDir,
-		IgnoreDependencyErrors:       terragruntOptions.IgnoreDependencyErrors,
-		Writer:                       terragruntOptions.Writer,
-		ErrWriter:                    terragruntOptions.ErrWriter,
-		ApprovalHandler:              terragruntOptions.ApprovalHandler,
-		RunTerragrunt:                terragruntOptions.RunTerragrunt,
-		Uniqueness:                   terragruntOptions.Uniqueness,
-		IgnoreRemainingInterpolation: terragruntOptions.IgnoreRemainingInterpolation,
-		RefreshOutputDelay:           terragruntOptions.RefreshOutputDelay,
-		NbWorkers:                    terragruntOptions.NbWorkers,
-		deferredSaveList:             terragruntOptions.deferredSaveList,
-	}
+func (terragruntOptions TerragruntOptions) Clone(terragruntConfigPath string) *TerragruntOptions {
+	newOptions := terragruntOptions
+	newOptions.TerragruntConfigPath = terragruntConfigPath
+	newOptions.WorkingDir = filepath.Dir(terragruntConfigPath)
+	newOptions.Logger = util.CreateLogger(util.GetPathRelativeToWorkingDir(newOptions.WorkingDir))
+	newOptions.Env = make(map[string]string, len(terragruntOptions.Env))
+	newOptions.Variables = make(map[string]Variable, len(terragruntOptions.Variables))
 
 	// We create a distinct map for the environment variables
 	for key, value := range terragruntOptions.Env {
 		newOptions.Env[key] = value
 	}
 
-	// We do a deep copy of the variables since they must be disctint from the original
+	// We do a deep copy of the variables since they must be distinct from the original
 	for key, value := range terragruntOptions.Variables {
-		newOptions.Variables.SetValue(key, value.Value, value.Source)
+		newOptions.SetVariable(key, value.Value, value.Source)
 	}
 	return &newOptions
 }
@@ -233,7 +213,7 @@ func (terragruntOptions *TerragruntOptions) importVariables(vars map[string]inte
 			// We do not import the terragrunt variable
 			continue
 		}
-		terragruntOptions.Variables.SetValue(key, value, origin)
+		terragruntOptions.SetVariable(key, value, origin)
 	}
 }
 
@@ -274,22 +254,43 @@ func (terragruntOptions *TerragruntOptions) Printf(format string, args ...interf
 	return fmt.Fprintf(terragruntOptions.Writer, format, args...)
 }
 
-// VariableList defines the list of all variables defined during the processing of config files
-type VariableList map[string]Variable
+// SetVariable overwrites the value in the variables map only if the source is more significant than the original value
+func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) {
+	target := terragruntOptions.Variables[key]
+	old, oldIsMap := target.Value.(map[string]interface{})
+	new, newIsMap := value.(map[string]interface{})
 
-// SetValue overwrites the value in the variables map only if the source is more significant than the original value
-func (variables VariableList) SetValue(key string, value interface{}, source VariableSource) {
-	if variables[key].Source <= source {
-		// We only override value if the source has less or equal precedence than the previous value
-		if source == ConfigVarFile && variables[key].Source == ConfigVarFile {
-			// Values defined in the lower config file have precedence to those defined in parents include
+	if oldIsMap && newIsMap {
+		// Map variables have a special treatment since we merge them instead of simply overwriting them
+
+		if source > target.Source || target.Source == source && source != ConfigVarFile {
+			// Values defined at the same level overwrite the previous values except for those defined in config file
+			old, new = new, old
+		}
+		newValue, err := utils.MergeMaps(old, new)
+		if err != nil {
+			terragruntOptions.Logger.Warningf("Unable to merge variable %s: %v and %v", key, target.Value, value)
+		} else {
+			terragruntOptions.Logger.Infof("Merge value for %s %v <= %v", key, old, new)
+			terragruntOptions.Variables[key] = Variable{source, newValue}
 			return
 		}
-		variables[key] = Variable{source, value}
+	} else if target.Value != nil && (oldIsMap || newIsMap) {
+		terragruntOptions.Logger.Warningf("Different types for %s: %v vs %v", key, target.Value, value)
+	}
+
+	if target.Source <= source {
+		// We only override value if the source has less or equal precedence than the previous value
+		if source == ConfigVarFile && target.Source == ConfigVarFile {
+			// Values defined at the same level overwrite the previous values except for those defined in config file
+			return
+		}
+		if target.Source != UndefinedSource {
+			terragruntOptions.Logger.Infof("Overwriting value for %s with %v", key, value)
+		}
+		terragruntOptions.Variables[key] = Variable{source, value}
 	}
 }
-
-type VariableSource byte
 
 // Variable defines value and origin of a variable (origin is important due to the precedence of the definition)
 // i.e. A value specified by -var has precedence over value defined in -var-file
@@ -297,6 +298,9 @@ type Variable struct {
 	Source VariableSource
 	Value  interface{}
 }
+
+// VariableSource is an enum defining the priority of the source for variable definition
+type VariableSource byte
 
 // The order indicates precedence (latest have the highest priority)
 const (
@@ -310,5 +314,5 @@ const (
 	VarParameterExplicit
 )
 
-// Custom error types
-var RunTerragruntCommandNotSet = fmt.Errorf("The RunTerragrunt option has not been set on this TerragruntOptions object")
+// ErrRunTerragruntCommandNotSet is a custom error
+var ErrRunTerragruntCommandNotSet = fmt.Errorf("The RunTerragrunt option has not been set on this TerragruntOptions object")
