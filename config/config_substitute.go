@@ -33,7 +33,14 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	}
 
 	substitute(conf.Uniqueness)
-	substitute(conf.AssumeRole)
+
+	if roles, ok := conf.AssumeRole.([]string); ok {
+		for i := range roles {
+			substitute(&roles[i])
+		}
+		conf.AssumeRole = roles
+	}
+
 	if conf.Terraform != nil {
 		substitute(&conf.Terraform.Source)
 	}
