@@ -149,6 +149,8 @@ func (list HookList) Run(args ...interface{}) (result []interface{}, err error) 
 		return
 	}
 
+	list.sort()
+
 	for _, item := range list {
 		iItem := IHook(&item)
 		var temp interface{}

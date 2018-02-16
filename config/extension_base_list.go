@@ -150,6 +150,8 @@ func (list GenericItemList) Run(args ...interface{}) (result []interface{}, err 
 		return
 	}
 
+	list.sort()
+
 	for _, item := range list {
 		iItem := IGenericItem(&item)
 		var temp interface{}

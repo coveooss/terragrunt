@@ -149,6 +149,8 @@ func (list ApprovalConfigList) Run(args ...interface{}) (result []interface{}, e
 		return
 	}
 
+	list.sort()
+
 	for _, item := range list {
 		iItem := IApprovalConfig(&item)
 		var temp interface{}

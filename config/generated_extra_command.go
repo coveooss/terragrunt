@@ -149,6 +149,8 @@ func (list ExtraCommandList) Run(args ...interface{}) (result []interface{}, err
 		return
 	}
 
+	list.sort()
+
 	for _, item := range list {
 		iItem := IExtraCommand(&item)
 		var temp interface{}

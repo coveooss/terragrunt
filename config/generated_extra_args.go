@@ -149,6 +149,8 @@ func (list TerraformExtraArgumentsList) Run(args ...interface{}) (result []inter
 		return
 	}
 
+	list.sort()
+
 	for _, item := range list {
 		iItem := ITerraformExtraArguments(&item)
 		var temp interface{}

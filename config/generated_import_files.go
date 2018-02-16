@@ -149,6 +149,8 @@ func (list ImportFilesList) Run(args ...interface{}) (result []interface{}, err 
 		return
 	}
 
+	list.sort()
+
 	for _, item := range list {
 		iItem := IImportFiles(&item)
 		var temp interface{}
