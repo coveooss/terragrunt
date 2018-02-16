@@ -1,5 +1,5 @@
 hash: 891315442bc4f4dbfcb69771b513994112b7489ccd3dbe11f5eddeac0ab5ca78
-updated: 2018-02-14T16:01:46.093939-05:00
+updated: 2018-02-16T16:01:27.80254-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -22,7 +22,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: 35d933260a22b7435667bd957f422029f6012e98
+  version: bff41fb23b7550368282029f6478819d6a99ae0f
   subpackages:
   - aws
   - aws/awserr
@@ -42,6 +42,7 @@ imports:
   - aws/service/s3
   - aws/session
   - aws/signer/v4
+  - internal/sdkrand
   - internal/shareddefaults
   - private/protocol
   - private/protocol/json/jsonutil
@@ -68,7 +69,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 778efbbd07cccc9508b98f8f9ec6e2e07fb9b9b0
+  version: 37b23f06fb17138682165e92c8513303cb605fc7
   subpackages:
   - errors
   - hcl
@@ -228,7 +229,7 @@ imports:
   - pbkdf2
   - scrypt
 - name: golang.org/x/net
-  version: f5dfe339be1d06f81b22525fe34671ee7d2c8904
+  version: 136a25c244d3019482a795d728110278d6ba09a4
   subpackages:
   - html
   - html/atom

@@ -171,7 +171,9 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 			switch strings.ToLower(filepath.Ext(file)) {
 			case ".yml", ".yaml":
 				content, err = yaml.Marshal(variables)
-			case ".tfvars", ".hcl":
+			case ".tfvars":
+				content, err = hcl.MarshalTFVarsIndent(variables, "", "  ")
+			case ".hcl":
 				content, err = hcl.MarshalIndent(variables, "", "  ")
 			default:
 				content, err = json.MarshalIndent(variables, "", "  ")
