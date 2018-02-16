@@ -41,18 +41,18 @@ func (list *ImportFilesList) merge(imported ImportFilesList, mode mergeMode, arg
 	}
 
 	// Create a list of the hooks that should be added to the list
-	new := make(ImportFilesList, 0, len(imported))
+	newList := make(ImportFilesList, 0, len(imported))
 	for _, item := range imported {
 		name := IImportFiles(&item).id()
 		if pos, exist := index[name]; exist {
 			// It already exist in the list, so is is an override
 			// We remove it from its current position and add it to the list of newly added elements to keep its original declaration ordering.
-			new = append(new, (*list)[pos])
+			newList = append(newList, (*list)[pos])
 			delete(index, name)
 			log("Skipping %s %v as it is overridden in the current config", argName, name)
 			continue
 		}
-		new = append(new, item)
+		newList = append(newList, item)
 	}
 
 	if len(index) != len(*list) {
@@ -69,9 +69,9 @@ func (list *ImportFilesList) merge(imported ImportFilesList, mode mergeMode, arg
 	}
 
 	if mode == mergeModeAppend {
-		*list = append(*list, new...)
+		*list = append(*list, newList...)
 	} else {
-		*list = append(new, *list...)
+		*list = append(newList, *list...)
 	}
 }
 

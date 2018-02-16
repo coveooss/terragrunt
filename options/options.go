@@ -259,21 +259,21 @@ func (terragruntOptions *TerragruntOptions) Printf(format string, args ...interf
 // SetVariable overwrites the value in the variables map only if the source is more significant than the original value
 func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) {
 	target := terragruntOptions.Variables[key]
-	old, oldIsMap := target.Value.(map[string]interface{})
-	new, newIsMap := value.(map[string]interface{})
+	oldMap, oldIsMap := target.Value.(map[string]interface{})
+	newMap, newIsMap := value.(map[string]interface{})
 
 	if oldIsMap && newIsMap {
 		// Map variables have a special treatment since we merge them instead of simply overwriting them
 
 		if source > target.Source || target.Source == source && source != ConfigVarFile {
 			// Values defined at the same level overwrite the previous values except for those defined in config file
-			old, new = new, old
+			oldMap, newMap = newMap, oldMap
 		}
-		newValue, err := utils.MergeMaps(old, new)
+		newValue, err := utils.MergeMaps(oldMap, newMap)
 		if err != nil {
 			terragruntOptions.Logger.Warningf("Unable to merge variable %s: %v and %v", key, target.Value, value)
 		} else {
-			terragruntOptions.Logger.Infof("Merge value for %s %v <= %v", key, old, new)
+			terragruntOptions.Logger.Infof("Merge value for %s %v <= %v", key, oldMap, newMap)
 			terragruntOptions.Variables[key] = Variable{source, newValue}
 			return
 		}
