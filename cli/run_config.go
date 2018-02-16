@@ -13,7 +13,7 @@ func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder
 		return err
 	}
 	for key, value := range variables {
-		terragruntOptions.Variables.SetValue(key, value, options.Default)
+		terragruntOptions.SetVariable(key, value, options.Default)
 	}
 	return nil
 }

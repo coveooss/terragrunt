@@ -261,7 +261,7 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 			if strings.Contains(result, "#{") {
 				delayedVar := strings.Replace(result, "#{", "${", 1)
 				if resolvedValue, ok := context.resolveTerragruntVars(delayedVar); ok {
-					context.options.Variables.SetValue(matches[1], resolvedValue, found.Source)
+					context.options.SetVariable(matches[1], resolvedValue, found.Source)
 					result = resolvedValue
 				}
 			}

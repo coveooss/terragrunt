@@ -41,22 +41,23 @@ func (list *HookList) merge(imported HookList, mode mergeMode, argName string) {
 	}
 
 	// Create a list of the hooks that should be added to the list
-	new := make(HookList, 0, len(imported))
+	newList := make(HookList, 0, len(imported))
 	for _, item := range imported {
 		name := IHook(&item).id()
 		if pos, exist := index[name]; exist {
-			// It already exist in the list, so is is an override, we remove it from its current position
-			// and add it to the list of newly addd elements to keep its original declaration ordering.
-			new = append(new, (*list)[pos])
+			// It already exist in the list, so is is an override
+			// We remove it from its current position and add it to the list of newly added elements to keep its original declaration ordering.
+			newList = append(newList, (*list)[pos])
 			delete(index, name)
 			log("Skipping %s %v as it is overridden in the current config", argName, name)
-		} else {
-			new = append(new, item)
+			continue
 		}
+		newList = append(newList, item)
 	}
 
 	if len(index) != len(*list) {
-		// Some elements must bre removed from the original list, we must
+		// Some elements must be removed from the original list, we simply regenerate the list
+		// including only elements that are still in the index.
 		newList := make(HookList, 0, len(index))
 		for _, item := range *list {
 			name := IHook(&item).id()
@@ -68,9 +69,9 @@ func (list *HookList) merge(imported HookList, mode mergeMode, argName string) {
 	}
 
 	if mode == mergeModeAppend {
-		*list = append(*list, new...)
+		*list = append(*list, newList...)
 	} else {
-		*list = append(new, *list...)
+		*list = append(newList, *list...)
 	}
 }
 

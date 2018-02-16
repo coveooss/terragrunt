@@ -32,7 +32,7 @@ type TerragruntConfig struct {
 	RemoteState    *remote.RemoteState `hcl:"remote_state"`
 	Dependencies   *ModuleDependencies `hcl:"dependencies"`
 	Uniqueness     *string             `hcl:"uniqueness_criteria"`
-	AssumeRole     *string             `hcl:"assume_role"`
+	AssumeRole     interface{}         `hcl:"assume_role"`
 	PreHooks       HookList            `hcl:"pre_hook"`
 	PostHooks      HookList            `hcl:"post_hook"`
 	ExtraCommands  ExtraCommandList    `hcl:"extra_command"`
@@ -73,6 +73,23 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 		if err = tcf.RemoteState.Validate(); err != nil {
 			return
 		}
+	}
+
+	switch role := tcf.AssumeRole.(type) {
+	case nil:
+		break
+	case string:
+		// A single role is specified, we convert it in an array of roles ending with error if the role cannot be assumed
+		tcf.AssumeRole = []string{role, "error"}
+	case []interface{}:
+		// We convert the array to an array of string
+		roles := make([]string, len(role))
+		for i := range role {
+			roles[i] = fmt.Sprint(role[i])
+		}
+		tcf.AssumeRole = roles
+	default:
+		terragruntOptions.Logger.Errorf("Invalid configuration for assume_role, must be either a string or a list of strings: %[1]v (%[1]T)", role)
 	}
 
 	// Make the context available to sub-objects

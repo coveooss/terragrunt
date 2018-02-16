@@ -86,13 +86,10 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.NonInteractive = parseBooleanArg(args, OPT_NON_INTERACTIVE, false)
 	opts.TerraformCliArgs = filterTerragruntArgs(args)
 	opts.WorkingDir = filepath.ToSlash(workingDir)
-	opts.Logger = util.CreateLogger("")
 	opts.RunTerragrunt = runTerragrunt
 	opts.Source = terraformSource
 	opts.SourceUpdate = sourceUpdate
 	opts.IgnoreDependencyErrors = ignoreDependencyErrors
-	opts.Env = map[string]string{}
-	opts.Variables = options.VariableList{}
 	opts.AwsProfile = awsProfile
 	opts.ApprovalHandler = approvalHandler
 
@@ -149,7 +146,7 @@ func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terr
 				if util.ListContainsElement(variablesExplicitlyProvided, key) {
 					continue
 				}
-				terragruntOptions.Variables.SetValue(key, value, options.VarParameter)
+				terragruntOptions.SetVariable(key, value, options.VarParameter)
 			}
 			if currentCommandIncluded {
 				out = append(out, "-var", varDef)
@@ -194,7 +191,7 @@ func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, env
 			terragruntOptions.Env[key] = value
 			// All environment variables starting with TF_ENV_ are considered as variables
 			if strings.HasPrefix(key, tfPrefix) {
-				terragruntOptions.Variables.SetValue(key[len(tfPrefix):], value, options.Environment)
+				terragruntOptions.SetVariable(key[len(tfPrefix):], value, options.Environment)
 			}
 		}
 	}
@@ -227,7 +224,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 			if key, value, err := splitVariable(args[i+1]); err != nil {
 				terragruntOptions.Logger.Warning("-var ignored:", args[i+1], err)
 			} else {
-				terragruntOptions.Variables.SetValue(key, value, options.VarParameterExplicit)
+				terragruntOptions.SetVariable(key, value, options.VarParameterExplicit)
 			}
 		}
 	}
