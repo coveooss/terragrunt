@@ -340,8 +340,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 				if err := setRoleEnvironmentVariables(terragruntOptions, roles[i]); err == nil {
 					terragruntOptions.Logger.Notice("Assuming role", roles[i])
 					roleAssumed = true
-					break
 				}
+			}
+			if roleAssumed {
+				break
 			}
 		}
 		if !roleAssumed {
