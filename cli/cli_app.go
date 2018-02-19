@@ -431,6 +431,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		return err
 	}
 
+	// Run an init in case there are new modules or plugins to import
+	shell.NewTFCmd(terragruntOptions).Args([]string{"init", "--backend=false"}...).WithRetries(3).Output()
+
 	var cmd *shell.CommandContext
 
 	if actualCommand.Extra != nil {

@@ -35,6 +35,7 @@ type CommandContext struct {
 	log                 *logging.Logger
 	env                 []string
 	workingDir          string
+	retries             int
 }
 
 // NewCmd initializes the ShellCommand object
@@ -78,6 +79,12 @@ func (c *CommandContext) Expect(expected []string, completed []string) *CommandC
 // Env set additional environment variables in the CommandContext
 func (c *CommandContext) Env(values ...string) *CommandContext {
 	c.env = append(c.env, values...)
+	return c
+}
+
+// WithRetries adds a number retries to commands before failing
+func (c *CommandContext) WithRetries(retries int) *CommandContext {
+	c.retries = retries
 	return c
 }
 
@@ -142,44 +149,60 @@ func (c CommandContext) Run() error {
 			c.command = resolvedCommand
 		}
 	}
-	cmd, tempFile, err := utils.GetCommandFromString(c.command, c.args...)
-	if err != nil {
-		return errors.WithStackTrace(err)
-	}
 
-	if cmd.Args[0], err = LookPath(cmd.Args[0], c.options.Env["PATH"]); err != nil {
-		return errors.WithStackTrace(err)
-	}
-
-	if c.DisplayCommand == "" {
-		logger("Running command:", filepath.Base(cmd.Args[0]), strings.Join(cmd.Args[1:], " "))
-	} else {
-		logger("Running command:", c.DisplayCommand)
-	}
-
-	if tempFile != "" {
-		content, _ := ioutil.ReadFile(tempFile)
-		if c.DisplayCommand == "" {
-			c.options.Logger.Debugf("\n%s", string(content))
+	var err error
+	tries := 0
+	for tries <= c.retries {
+		cmd, tempFile, err := utils.GetCommandFromString(c.command, c.args...)
+		if err != nil {
+			return errors.WithStackTrace(err)
 		}
-		defer func() { os.Remove(tempFile) }()
+
+		if cmd.Args[0], err = LookPath(cmd.Args[0], c.options.Env["PATH"]); err != nil {
+			return errors.WithStackTrace(err)
+		}
+
+		verb := "Running"
+		if tries > 0 {
+			verb = fmt.Sprintf("Trying(#%d)", tries+1)
+		}
+
+		if c.DisplayCommand == "" {
+			logger(verb, "command:", filepath.Base(cmd.Args[0]), strings.Join(cmd.Args[1:], " "))
+		} else {
+			logger(verb, "command:", c.DisplayCommand)
+		}
+
+		if tempFile != "" {
+			content, _ := ioutil.ReadFile(tempFile)
+			if c.DisplayCommand == "" {
+				c.options.Logger.Debugf("\n%s", string(content))
+			}
+			defer func() { os.Remove(tempFile) }()
+		}
+
+		cmd.Stdout, cmd.Stderr, cmd.Env = c.Stdout, c.Stderr, c.env
+		cmd.Dir = c.options.WorkingDir
+		cmdChannel := make(chan error)
+
+		signalChannel := NewSignalsForwarder(forwardSignals, cmd, c.log, cmdChannel)
+		defer signalChannel.Close()
+
+		if c.expectedStatements != nil && c.completedStatements != nil {
+			err = RunCommandToApprove(cmd, c.expectedStatements, c.completedStatements, c.options)
+		} else {
+			cmd.Stdin = os.Stdin
+			err = cmd.Run()
+		}
+
+		if err == nil {
+			tries = c.retries
+		}
+
+		tries++
+		cmdChannel <- err
 	}
 
-	cmd.Stdout, cmd.Stderr, cmd.Env = c.Stdout, c.Stderr, c.env
-	cmd.Dir = c.options.WorkingDir
-	cmdChannel := make(chan error)
-
-	signalChannel := NewSignalsForwarder(forwardSignals, cmd, c.log, cmdChannel)
-	defer signalChannel.Close()
-
-	if c.expectedStatements != nil && c.completedStatements != nil {
-		err = RunCommandToApprove(cmd, c.expectedStatements, c.completedStatements, c.options)
-	} else {
-		cmd.Stdin = os.Stdin
-		err = cmd.Run()
-	}
-
-	cmdChannel <- err
 	return errors.WithStackTrace(err)
 }
 
