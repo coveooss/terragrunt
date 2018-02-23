@@ -19,7 +19,6 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 		switch filepath.Ext(file) {
 		case ".tf":
 			fileVars, err = getDefaultVars(file, hcl.Unmarshal)
-			fileVars = hcl.Flatten(fileVars)
 		case ".json":
 			fileVars, err = getDefaultVars(file, json.Unmarshal)
 		}
@@ -55,7 +54,7 @@ func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 func LoadVariables(content string) (map[string]interface{}, error) {
 	variables := map[string]interface{}{}
 	err := hcl.Unmarshal([]byte(content), &variables)
-	return hcl.Flatten(variables), err
+	return variables, err
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)
@@ -111,7 +110,7 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 		addVariables(variables, result)
 	case []map[string]interface{}:
 		for _, value := range variables {
-			addVariables(hcl.Flatten(value), result)
+			addVariables(value, result)
 		}
 	case nil:
 	default:

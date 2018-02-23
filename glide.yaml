@@ -5,7 +5,6 @@ owners:
 import:
 - package: github.com/urfave/cli
   version: ^1.19.1
-- package: github.com/hashicorp/hcl
 - package: github.com/hashicorp/go-getter
 - package: github.com/hashicorp/go-version
 - package: github.com/hashicorp/terraform
