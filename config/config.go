@@ -374,7 +374,9 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
-	tfvarsConfig.Terragrunt.Path = configPath
+	if tfvarsConfig.Terragrunt != nil {
+		tfvarsConfig.Terragrunt.Path = configPath
+	}
 	return tfvarsConfig.Terragrunt, nil
 }
 
