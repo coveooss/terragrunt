@@ -295,9 +295,9 @@ func parseBooleanArg(args []string, argName string, defaultValue bool) bool {
 // Find a string argument (e.g. --foo "VALUE") of the given name in the given list of arguments. If it's present,
 // return its value. If it is present, but has no value, return an error. If it isn't present, return defaultValue.
 func parseStringArg(args []string, argName string, defaultValue string) (string, error) {
-	argName = fmt.Sprintf("--%s", argName)
+	givenArg := fmt.Sprintf("--%s", argName)
 	for i, arg := range args {
-		if arg == argName {
+		if arg == givenArg {
 			if (i + 1) < len(args) {
 				return args[i+1], nil
 			}

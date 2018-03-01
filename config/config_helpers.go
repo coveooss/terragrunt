@@ -486,12 +486,12 @@ func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
 func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 	cursor := &context.include
 	for {
-		resolvedPath, _ := ResolveTerragruntConfigString(cursor.Path, context.include, context.options)
+		includePath, _ := ResolveTerragruntConfigString(cursor.Path, context.include, context.options)
 		if cursor.Source == "" {
-			if path.IsAbs(cursor.Path) {
-				return filepath.Dir(resolvedPath)
+			if !path.IsAbs(includePath) {
+				includePath = util.JoinPath(context.options.WorkingDir, includePath)
 			}
-			return path.Join(context.options.WorkingDir, filepath.Dir(resolvedPath))
+			return filepath.Dir(includePath)
 		}
 		cursor = cursor.IncludeBy
 	}
