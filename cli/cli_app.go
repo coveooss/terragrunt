@@ -329,25 +329,20 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	if roles, ok := conf.AssumeRole.([]string); ok {
 		var roleAssumed bool
 		for i := range roles {
-			switch strings.ToLower(strings.TrimSpace(roles[i])) {
-			case "":
+			role := strings.TrimSpace(roles[i])
+			if role == "" {
+				terragruntOptions.Logger.Notice("Not assuming any role, continuing with the current user credentials", role)
+				roleAssumed = true
 				break
-			case "error":
-				// We have not been able to assume any of the preceding roles and the last role is error
-				// so we raise an error
-				return fmt.Errorf("Unable to assume a role from %s", strings.Join(roles[:i], " "))
-			default:
-				if err := setRoleEnvironmentVariables(terragruntOptions, roles[i]); err == nil {
-					terragruntOptions.Logger.Notice("Assuming role", roles[i])
-					roleAssumed = true
-				}
 			}
-			if roleAssumed {
+			if err := setRoleEnvironmentVariables(terragruntOptions, role); err == nil {
+				terragruntOptions.Logger.Notice("Assuming role", role)
+				roleAssumed = true
 				break
 			}
 		}
 		if !roleAssumed {
-			terragruntOptions.Logger.Notice("Unable to assume any of the roles:", strings.Join(roles, " "))
+			return fmt.Errorf("Unable to assume any of the roles: %s", strings.Join(roles, " "))
 		}
 	}
 

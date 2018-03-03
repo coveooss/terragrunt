@@ -79,8 +79,8 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	case nil:
 		break
 	case string:
-		// A single role is specified, we convert it in an array of roles ending with error if the role cannot be assumed
-		tcf.AssumeRole = []string{role, "error"}
+		// A single role is specified, we convert it in an array of roles
+		tcf.AssumeRole = []string{role}
 	case []interface{}:
 		// We convert the array to an array of string
 		roles := make([]string, len(role))

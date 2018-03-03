@@ -986,13 +986,13 @@ terragrunt = {
   assume_role = [
     "arn:aws:iam::9999999999999:role/read-write",
     "arn:aws:iam::9999999999999:role/read-only",
-    "error",
+    "",
   ]
 }
 ```
 
-Then, terragrunt will try to assume the roles until it succeeded. Note that the last role could be optionally set to `error` to ensure that at least one role
-is satisfied. If there is no `error` at the end, the process will continue with the user original credentials.
+Then, terragrunt will try to assume the roles until it succeeded. Note that the last role could be optionally set to an empty string to ensure that at least one role
+is satisfied. Empty strings means to continue with the user current role.
 
 The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf configuration will prevail.
 
