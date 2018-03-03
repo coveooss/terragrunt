@@ -402,7 +402,7 @@ terraform {
     key        = "frontend-app/terraform.tfstate"
     region     = "us-east-1"
     encrypt    = true
-    lock_table = "my-lock-table"
+    dynamodb_table = "my-lock-table"
   }
 }
 ```
@@ -473,7 +473,7 @@ terragrunt = {
       key        = "${path_relative_to_include()}/terraform.tfstate"
       region     = "us-east-1"
       encrypt    = true
-      lock_table = "my-lock-table"
+      dynamodb_table = "my-lock-table"
     }
   }
 }
@@ -544,8 +544,8 @@ they don't already exist:
   automatically, with [versioning enabled](http://docs.aws.amazon.com/AmazonS3/latest/dev/Versioning.html).
 
 * **DynamoDB table**: If you are using the [S3 backend](https://www.terraform.io/docs/backends/types/s3.html) for
-  remote state storage and you specify a `lock_table` (a [DynamoDB table used for
-  locking](https://www.terraform.io/docs/backends/types/s3.html#lock_table)) in `remote_state.config`, if that table
+  remote state storage and you specify a `dynamodb_table` (a [DynamoDB table used for
+  locking](https://www.terraform.io/docs/backends/types/s3.html#dynamodb_table)) in `remote_state.config`, if that table
   doesn't already exist, Terragrunt will create it automatically, including a primary key called `LockID`.
 
 **Note**: If you specify a `profile` key in `remote_state.config`, Terragrunt will automatically use this AWS profile
@@ -1058,7 +1058,7 @@ It is possible to override hooks defined in a parent configuration by specifying
 
 ```hcl
 terragrunt = {
-  pre_hooks|post_hooks "name" {
+  pre_hook|post_hook "name" {
     description      = ""                             # Description of the hook
     command          = "command"                      # shell command to execute
     on_commands      = [list of terraform commands]   # optional, default run on all terraform command
@@ -1076,7 +1076,7 @@ terragrunt = {
 
 ```hcl
   # Do terraform get before plan
-  pre_hooks "get-before-plan" {
+  pre_hook "get-before-plan" {
     command          = "terraform"
     arguments        = ["get"]
     on_commands      = ["plan"]
@@ -1084,7 +1084,7 @@ terragrunt = {
   }
 
   # Print the outputs as json after successful apply
-  post_hooks "print-json-output" {
+  post_hook "print-json-output" {
     command          = "terraform"
     arguments        = ["output", "-json"]
     on_commands      = ["apply"]

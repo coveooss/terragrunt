@@ -314,7 +314,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles = make(map[string]*TerragruntConfig)
-var hookWarningGiven bool
+var hookWarningGiven, lockWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
@@ -331,6 +331,14 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		// We should issue this warning only once
 		hookWarningGiven = true
 		terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
+	}
+
+	before = configString
+	configString = strings.Replace(configString, "lock_table", "dynamodb_table", -1)
+	if !lockWarningGiven && before != configString {
+		// We should issue this warning only once
+		lockWarningGiven = true
+		terragruntOptions.Logger.Warning("lock_table is deprecated, please use dynamodb_table instead")
 	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)
