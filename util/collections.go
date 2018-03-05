@@ -1,6 +1,7 @@
 package util
 
 import (
+	goErrors "errors"
 	"fmt"
 	"strings"
 )
@@ -73,4 +74,24 @@ func CommaSeparatedStrings(list []string) string {
 		values = append(values, fmt.Sprintf(`"%s"`, value))
 	}
 	return strings.Join(values, ", ")
+}
+
+// SplitEnvVariable returns the two parts of an environment variable
+func SplitEnvVariable(str string) (key, value string, err error) {
+	variableSplit := strings.SplitN(str, "=", 2)
+
+	if len(variableSplit) == 2 {
+		key, value, err = strings.TrimSpace(variableSplit[0]), variableSplit[1], nil
+	} else {
+		err = goErrors.New(fmt.Sprintf("Invalid variable format %v, should be name=value", str))
+	}
+	return
+}
+
+// IndexOrDefault returns the item at index position or default value if the array is shorter than index
+func IndexOrDefault(list []string, index int, defVal string) string {
+	if len(list) > index {
+		return list[index]
+	}
+	return defVal
 }

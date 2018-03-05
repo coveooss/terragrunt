@@ -5,6 +5,7 @@ import (
 
 	"github.com/gruntwork-io/terragrunt/cli"
 	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 )
@@ -32,7 +33,7 @@ func checkForErrorsAndExit(err error) {
 
 		if _, ok := errors.Unwrap(err).(errors.PlanWithChanges); !ok {
 			// Plan status are not considred as an error
-			if os.Getenv("TERRAGRUNT_DEBUG") != "" {
+			if os.Getenv(options.EnvDebug) != "" {
 				logger.Error(errors.PrintErrorWithStackTrace(err))
 			} else {
 				logger.Error(err)

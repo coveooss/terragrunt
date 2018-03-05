@@ -9,6 +9,7 @@ import (
 
 	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
+	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 	logging "github.com/op/go-logging"
@@ -170,7 +171,7 @@ func (list ExtraCommandList) GetVersions() string {
 			var out string
 			if err == nil {
 				c := shell.NewCmd(item.options(), command.Args[0])
-				c = c.Env(fmt.Sprintf("TERRAGRUNT_COMMAND=%s", cmd))
+				c = c.Env(fmt.Sprintf("%s=%s", options.EnvCommand, cmd))
 				c = c.Args(append(command.Args[1:], item.options().WorkingDir)...)
 				c.DisplayCommand = actualCmd
 				out, err = c.Output()

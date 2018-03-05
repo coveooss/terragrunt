@@ -155,6 +155,25 @@ func (terragruntOptions TerragruntOptions) Clone(terragruntConfigPath string) *T
 	return &newOptions
 }
 
+// SetStatus saves environment variables indicating the current execution status
+func (terragruntOptions *TerragruntOptions) SetStatus(exitCode int, err error) {
+	errorMessage := fmt.Sprint(err)
+	if err == nil {
+		errorMessage = ""
+	}
+	terragruntOptions.Env[EnvLastError] = errorMessage
+	terragruntOptions.Env[EnvLastStatus] = fmt.Sprint(exitCode)
+
+	currentStatus := terragruntOptions.Env[EnvStatus]
+	if currentStatus == "0" || currentStatus == "" {
+		terragruntOptions.Env[EnvStatus] = fmt.Sprint(exitCode)
+	}
+	if err != nil {
+		errors := append(strings.Split(terragruntOptions.Env[EnvError], "\n"), errorMessage)
+		terragruntOptions.Env[EnvError] = strings.Join(util.RemoveElementFromList(errors, ""), "\n")
+	}
+}
+
 // SaveVariables - Actually save the variables to the list of deferred files
 func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 	if terragruntOptions.deferredSaveList != nil {
@@ -191,24 +210,26 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 }
 
 // ImportVariablesFromFile loads variables from the file indicated by path
-func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, origin VariableSource) {
+func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, origin VariableSource) error {
 	vars, err := util.LoadVariablesFromFile(path)
 	if err != nil {
-		terragruntOptions.Logger.Errorf("Unable to import variables from %s, %v", path, err)
+		return err
 	}
 	terragruntOptions.importVariables(vars, origin)
+	return nil
+
 }
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
-func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource) {
+func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource) error {
 	vars, err := util.LoadVariables(content)
 	if err != nil {
-		terragruntOptions.Logger.Errorf("Unable to import variables from %s, %v", source, err)
+		return err
 	}
 	terragruntOptions.importVariables(vars, origin)
+	return nil
 }
 
-// ImportVariables load variables from the content, source indicates the path from where the content has been loaded
 func (terragruntOptions *TerragruntOptions) importVariables(vars map[string]interface{}, origin VariableSource) {
 	for key, value := range vars {
 		if key == "terragrunt" {
@@ -273,7 +294,6 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 		if err != nil {
 			terragruntOptions.Logger.Warningf("Unable to merge variable %s: %v and %v", key, target.Value, value)
 		} else {
-			terragruntOptions.Logger.Infof("Merge value for %s %v <= %v", key, oldMap, newMap)
 			terragruntOptions.Variables[key] = Variable{source, newValue}
 			return
 		}

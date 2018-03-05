@@ -83,6 +83,11 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 		return
 	}
 
+	if item.Source == "" && len(item.Files) == 0 && len(item.CopyAndRename) == 0 {
+		logger.Debugf("Import file %s skipped, nothing to do", item.Name)
+		return
+	}
+
 	// If no folders are specified, we only copy elements to the working folder
 	if len(folders) == 0 {
 		folders = []interface{}{item.options().WorkingDir}
@@ -305,5 +310,5 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 		keys = append(keys, key)
 	}
 
-	return list.Run(keys...)
+	return list.Run(nil, keys...)
 }

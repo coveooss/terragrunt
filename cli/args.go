@@ -1,7 +1,6 @@
 package cli
 
 import (
-	goErrors "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -69,16 +68,16 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	workingDir := parse(OPT_WORKING_DIR, currentDir)
-	terragruntConfigPath := parse(OPT_TERRAGRUNT_CONFIG, os.Getenv("TERRAGRUNT_CONFIG"), config.DefaultConfigPath(workingDir))
-	terraformPath := parse(OPT_TERRAGRUNT_TFPATH, os.Getenv("TERRAGRUNT_TFPATH"), "terraform")
-	terraformSource := parse(OPT_TERRAGRUNT_SOURCE, os.Getenv("TERRAGRUNT_SOURCE"))
-	loggingLevel := parse(OPT_LOGGING_LEVEL, os.Getenv("TERRAGRUNT_LOGGING_LEVEL"))
+	terragruntConfigPath := parse(OPT_TERRAGRUNT_CONFIG, os.Getenv(options.EnvConfig), config.DefaultConfigPath(workingDir))
+	terraformPath := parse(OPT_TERRAGRUNT_TFPATH, os.Getenv(options.EnvTFPath), "terraform")
+	terraformSource := parse(OPT_TERRAGRUNT_SOURCE, os.Getenv(options.EnvSource))
+	loggingLevel := parse(OPT_LOGGING_LEVEL, os.Getenv(options.EnvLoggingLevel))
 	awsProfile := parse(OPT_AWS_PROFILE)
 	approvalHandler := parse(OPT_APPROVAL_HANDLER)
 	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
 	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
-	flushDelay := parse(OPT_FLUSH_DELAY, os.Getenv("TERRAGRUNT_FLUSH_DELAY"), "60s")
-	nbWorkers := parse(OPT_NB_WORKERS, os.Getenv("TERRAGRUNT_WORKERS"), "10")
+	flushDelay := parse(OPT_FLUSH_DELAY, os.Getenv(options.EnvFlushDelay), "60s")
+	nbWorkers := parse(OPT_NB_WORKERS, os.Getenv(options.EnvWorkers), "10")
 
 	if err != nil {
 		return nil, err
@@ -105,8 +104,8 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
-	os.Setenv("TERRAGRUNT_LOGGING_LEVEL", fmt.Sprintf("%d", level))
-	os.Setenv("TERRAGRUNT_TFPATH", terraformPath)
+	os.Setenv(options.EnvLoggingLevel, fmt.Sprintf("%d", level))
+	os.Setenv(options.EnvTFPath, terraformPath)
 
 	parseEnvironmentVariables(opts, os.Environ())
 
@@ -120,75 +119,15 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 			cmd = strings.TrimSuffix(cmd, MULTI_MODULE_SUFFIX)
 		}
 	}
-	opts.TerraformCliArgs = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
+	opts.TerraformCliArgs, err = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 
 	return opts, err
-}
-
-func filterTerraformExtraArgs(terragruntOptions *options.TerragruntOptions, terragruntConfig *config.TerragruntConfig) []string {
-	out := []string{}
-	cmd := firstArg(terragruntOptions.TerraformCliArgs)
-
-	for _, arg := range terragruntConfig.Terraform.ExtraArgs.Enabled() {
-		currentCommandIncluded := util.ListContainsElement(arg.Commands, cmd)
-
-		if currentCommandIncluded {
-			out = append(out, arg.Arguments...)
-		}
-
-		// We first process all the -var because they have precedence over -var-file
-		// If vars is specified, add -var <key=value> for each specified key
-		keyFunc := func(key string) string { return strings.Split(key, "=")[0] }
-		varList := util.RemoveDuplicatesFromList(arg.Vars, true, keyFunc)
-		variablesExplicitlyProvided := terragruntOptions.VariablesExplicitlyProvided()
-		for _, varDef := range varList {
-			varDef = config.SubstituteVars(varDef, terragruntOptions)
-			if key, value, err := splitVariable(varDef); err != nil {
-				terragruntOptions.Logger.Warningf("-var ignored in %v: %v", arg.Name, err)
-			} else {
-				if util.ListContainsElement(variablesExplicitlyProvided, key) {
-					continue
-				}
-				terragruntOptions.SetVariable(key, value, options.VarParameter)
-			}
-			if currentCommandIncluded {
-				out = append(out, "-var", varDef)
-			}
-		}
-
-		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
-		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
-			file = config.SubstituteVars(file, terragruntOptions)
-			terragruntOptions.ImportVariablesFromFile(file, options.VarFile)
-			terragruntOptions.Logger.Info("Importing", file)
-			if currentCommandIncluded {
-				out = append(out, fmt.Sprintf("-var-file=%s", file))
-			}
-		}
-
-		// If OptionalVarFiles is specified, check for each file if it exists and if so, add -var-file=<file>
-		// It is possible that many files resolve to the same path, so we remove duplicates.
-		for _, file := range util.RemoveDuplicatesFromListKeepLast(arg.OptionalVarFiles) {
-			file = config.SubstituteVars(file, terragruntOptions)
-			if util.FileExists(file) {
-				if currentCommandIncluded {
-					out = append(out, fmt.Sprintf("-var-file=%s", file))
-				}
-				terragruntOptions.Logger.Info("Importing", file)
-				terragruntOptions.ImportVariablesFromFile(file, options.VarFile)
-			} else if currentCommandIncluded {
-				terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
-			}
-		}
-	}
-
-	return out
 }
 
 func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, environment []string) {
 	const tfPrefix = "TF_VAR_"
 	for i := 0; i < len(environment); i++ {
-		if key, value, err := splitVariable(environment[i]); err != nil {
+		if key, value, err := util.SplitEnvVariable(environment[i]); err != nil {
 			terragruntOptions.Logger.Warning("Environment variable ignored:", environment[i], err)
 		} else {
 			terragruntOptions.Env[key] = value
@@ -200,31 +139,22 @@ func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, env
 	}
 }
 
-func splitVariable(str string) (key, value string, err error) {
-	variableSplit := strings.SplitN(str, "=", 2)
-
-	if len(variableSplit) == 2 {
-		key, value, err = strings.TrimSpace(variableSplit[0]), variableSplit[1], nil
-	} else {
-		err = goErrors.New(fmt.Sprintf("Invalid variable format %v, should be name=value", str))
-	}
-	return
-}
-
-func filterVarsAndVarFiles(command string, terragruntOptions *options.TerragruntOptions, args []string) []string {
+func filterVarsAndVarFiles(command string, terragruntOptions *options.TerragruntOptions, args []string) ([]string, error) {
 	const varFile = "-var-file="
 	const varArg = "-var"
 
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], varFile) {
 			path := args[i][len(varFile):]
-			terragruntOptions.ImportVariablesFromFile(path, options.VarFileExplicit)
+			if err := terragruntOptions.ImportVariablesFromFile(path, options.VarFileExplicit); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	for i := 0; i < len(args); i++ {
 		if args[i] == varArg && i+1 < len(args) {
-			if key, value, err := splitVariable(args[i+1]); err != nil {
+			if key, value, err := util.SplitEnvVariable(args[i+1]); err != nil {
 				terragruntOptions.Logger.Warning("-var ignored:", args[i+1], err)
 			} else {
 				terragruntOptions.SetVariable(key, value, options.VarParameterExplicit)
@@ -234,7 +164,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 
 	if util.ListContainsElement(config.TerraformCommandWithVarFile, command) {
 		// The -var and -var-file are required by the terraform command, we return the args list unaltered
-		return args
+		return args, nil
 	}
 
 	// We must remove the -var and -var-file arguments because they are not needed by the terraform command
@@ -251,7 +181,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 		filtered = append(filtered, args[i])
 	}
 
-	return filtered
+	return filtered, nil
 }
 
 // Return a copy of the given args with all Terragrunt-specific args removed
@@ -305,24 +235,6 @@ func parseStringArg(args []string, argName string, defaultValue string) (string,
 		}
 	}
 	return defaultValue, nil
-}
-
-// A convenience method that returns the first item (0th index) in the given list or an empty string if this is an
-// empty list
-func firstArg(args []string) string {
-	if len(args) > 0 {
-		return args[0]
-	}
-	return ""
-}
-
-// A convenience method that returns the second item (1st index) in the given list or an empty string if this is a
-// list that has less than 2 items in it
-func secondArg(args []string) string {
-	if len(args) > 1 {
-		return args[1]
-	}
-	return ""
 }
 
 // Custom error types

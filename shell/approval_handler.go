@@ -39,7 +39,7 @@ func RunCommandToApprove(cmd *exec.Cmd, expectedStatements []string, completedSt
 		return goErrors.New("Waited 30 seconds for input prompt. Did not get it.")
 	}
 
-	if isDashAllQuery(terragruntOptions.Env["TERRAGRUNT_ARGS"]) {
+	if isDashAllQuery(terragruntOptions.Env[options.EnvArgs]) {
 		fmt.Println(stdOutInterceptor.GetBuffer())
 	}
 
