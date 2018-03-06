@@ -59,6 +59,9 @@ func init() {
 
 func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	cleanupTerraformFolder(t, TEST_FIXTURE_PATH)
 
@@ -76,6 +79,9 @@ func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 
 func TestTerragruntWorksWithIncludes(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_INCLUDE_PATH, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH)
 	cleanupTerraformFolder(t, childPath)
@@ -91,6 +97,9 @@ func TestTerragruntWorksWithIncludes(t *testing.T) {
 
 func TestTerragruntWorksWithIncludesAndOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_OLD_CONFIG_INCLUDE_PATH, "child")
 	cleanupTerraformFolder(t, childPath)
@@ -106,6 +115,9 @@ func TestTerragruntWorksWithIncludesAndOldConfig(t *testing.T) {
 
 func TestTerragruntWorksWithIncludesChildUpdatedAndOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_OLD_CONFIG_INCLUDE_CHILD_UPDATED_PATH, "child")
 	cleanupTerraformFolder(t, childPath)
@@ -121,6 +133,9 @@ func TestTerragruntWorksWithIncludesChildUpdatedAndOldConfig(t *testing.T) {
 
 func TestTerragruntWorksWithIncludesParentUpdatedAndOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_OLD_CONFIG_INCLUDE_PARENT_UPDATED_PATH, "child")
 	cleanupTerraformFolder(t, childPath)
@@ -136,6 +151,9 @@ func TestTerragruntWorksWithIncludesParentUpdatedAndOldConfig(t *testing.T) {
 
 func TestTerragruntOutputAllCommand(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 
@@ -166,6 +184,9 @@ func TestTerragruntOutputAllCommand(t *testing.T) {
 
 func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 
@@ -194,6 +215,9 @@ func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *tes
 
 func TestTerragruntStackCommands(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueId()))
@@ -221,6 +245,9 @@ func TestTerragruntStackCommands(t *testing.T) {
 
 func TestTerragruntStackCommandsWithOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 
@@ -317,6 +344,9 @@ func TestRemoteDownloadOverride(t *testing.T) {
 
 func TestLocalWithBackend(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueId()))
@@ -338,6 +368,9 @@ func TestLocalWithBackend(t *testing.T) {
 
 func TestRemoteWithBackend(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueId()))

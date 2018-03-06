@@ -13,6 +13,9 @@ import (
 
 func TestCreateLockTableIfNecessaryTableDoesntAlreadyExist(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	withLockTable(t, func(tableName string, client *dynamodb.DynamoDB) {
 		assertCanWriteToTable(t, tableName, client)
@@ -21,6 +24,9 @@ func TestCreateLockTableIfNecessaryTableDoesntAlreadyExist(t *testing.T) {
 
 func TestCreateLockTableConcurrency(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	client := createDynamoDbClientForTest(t)
 	tableName := uniqueTableNameForTest()
@@ -47,6 +53,9 @@ func TestCreateLockTableConcurrency(t *testing.T) {
 
 func TestWaitForTableToBeActiveTableDoesNotExist(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	client := createDynamoDbClientForTest(t)
 	tableName := "terragrunt-table-does-not-exist"
@@ -59,6 +68,9 @@ func TestWaitForTableToBeActiveTableDoesNotExist(t *testing.T) {
 
 func TestCreateLockTableIfNecessaryTableAlreadyExists(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	// Create the table the first time
 	withLockTable(t, func(tableName string, client *dynamodb.DynamoDB) {
