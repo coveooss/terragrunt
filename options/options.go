@@ -279,6 +279,11 @@ func (terragruntOptions *TerragruntOptions) Printf(format string, args ...interf
 
 // SetVariable overwrites the value in the variables map only if the source is more significant than the original value
 func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) {
+	if strings.Contains(key, ".") {
+		keys := strings.Split(key, ".")
+		key = keys[0]
+		value = util.ConvertToMap(value, keys[1:]...)
+	}
 	target := terragruntOptions.Variables[key]
 	oldMap, oldIsMap := target.Value.(map[string]interface{})
 	newMap, newIsMap := value.(map[string]interface{})

@@ -279,6 +279,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 		if err != nil {
 			return err
 		}
+
+		// We call again the parsing of arguments to be sure that supplied parameters overrides others
+		// There is a corner case when initializing map variables from command line
+		filterVarsAndVarFiles(actualCommand.Command, terragruntOptions, extractVarArgs())
+
 		args = append(args, extraArgs...)
 		if commandLength <= len(terragruntOptions.TerraformCliArgs) {
 			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
@@ -339,7 +344,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 		for i := range roles {
 			role := strings.TrimSpace(roles[i])
 			if role == "" {
-				terragruntOptions.Logger.Notice("Not assuming any role, continuing with the current user credentials", role)
+				listOfRoles := strings.Join(roles[:i], ", ")
+				if listOfRoles != "" {
+					listOfRoles = " from " + listOfRoles
+				}
+				terragruntOptions.Logger.Warningf("Not assuming any role%s, continuing with the current user credentials", listOfRoles)
 				roleAssumed = true
 				break
 			}

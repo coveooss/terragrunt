@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -19,7 +20,7 @@ const (
 )
 
 var (
-	INTERPOLATION_VARS                   = `\s*var\.([[:alpha:]][\w-]*)\s*`
+	INTERPOLATION_VARS                   = `var\.([\p{L}_][\p{L}_\-\d\.]*)\s*`
 	INTERPOLATION_PARAMETERS             = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
 	INTERPOLATION_SYNTAX_REGEX           = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, INTERPOLATION_PARAMETERS, INTERPOLATION_VARS))
 	INTERPOLATION_SYNTAX_REGEX_SINGLE    = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, INTERPOLATION_SYNTAX_REGEX))
@@ -256,7 +257,11 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 	str = HELPER_VAR_REGEX.ReplaceAllStringFunc(str, func(str string) string {
 		match = true
 		matches := HELPER_VAR_REGEX.FindStringSubmatch(str)
-		if found, ok := context.options.Variables[matches[1]]; ok {
+		if strings.Contains(matches[1], ".") {
+			if result, ok := context.resolveTerragruntMapVars(matches[1]); ok {
+				return result
+			}
+		} else if found, ok := context.options.Variables[matches[1]]; ok {
 			result := fmt.Sprint(found.Value)
 			if strings.Contains(result, "#{") {
 				delayedVar := strings.Replace(result, "#{", "${", 1)
@@ -267,6 +272,7 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 			}
 			return result
 		}
+
 		if context.ErrorOnUndefined() {
 			if !warningDone[matches[0]] {
 				context.options.Logger.Warningf("Variable %s undefined", matches[0])
@@ -278,6 +284,31 @@ func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) 
 	})
 
 	return str, match
+}
+
+// resolveTerragruntMapVars returns the value of map variable element, i.e. var.a.b
+func (context *resolveContext) resolveTerragruntMapVars(str string) (string, bool) {
+	selection := strings.Split(str, ".")
+	if found, ok := context.options.Variables[selection[0]]; ok {
+		v := found.Value
+		for i, sel := range selection[1:] {
+			if reflect.TypeOf(v).Kind() != reflect.Map {
+				name := strings.Join(selection[:i+1], ".")
+				if !warningDone[name] {
+					context.options.Logger.Errorf("Variable %s must be a map", name)
+					warningDone[name] = true
+				}
+				return "", false
+			}
+			element := reflect.ValueOf(v).MapIndex(reflect.ValueOf(sel))
+			if !element.IsValid() {
+				return "", false
+			}
+			v = element.Interface()
+		}
+		return fmt.Sprint(v), true
+	}
+	return "", false
 }
 
 var warningDone = map[string]bool{}
