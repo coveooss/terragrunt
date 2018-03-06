@@ -20,6 +20,7 @@ install:
   fi
 
 script:
+- go test -v -race ./...
 - if [ ${TRAVIS_TAG::1} = v ];
   then
     curl -sL https://git.io/goreleaser | bash;
