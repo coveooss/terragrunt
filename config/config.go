@@ -47,6 +47,22 @@ func (conf TerragruntConfig) String() string {
 	return utils.PrettyPrintStruct(conf)
 }
 
+// ExtraArguments processes the extra_arguments defined in the terraform section of the config file
+func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
+	return conf.Terraform.ExtraArgs.Filter(source)
+}
+
+func (conf TerragruntConfig) globFiles(pattern string, folders ...string) (result []string) {
+	pattern = SubstituteVars(pattern, conf.options)
+	if filepath.IsAbs(pattern) {
+		return utils.GlobFuncTrim(pattern)
+	}
+	for i := range folders {
+		result = append(result, utils.GlobFuncTrim(filepath.Join(folders[i], pattern))...)
+	}
+	return
+}
+
 // TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terraform.tfvars or .terragrunt)
 type TerragruntConfigFile struct {
 	TerragruntConfig `hcl:",squash"`
@@ -80,8 +96,8 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	case nil:
 		break
 	case string:
-		// A single role is specified, we convert it in an array of roles ending with error if the role cannot be assumed
-		tcf.AssumeRole = []string{role, "error"}
+		// A single role is specified, we convert it in an array of roles
+		tcf.AssumeRole = []string{role}
 	case []interface{}:
 		// We convert the array to an array of string
 		roles := make([]string, len(role))
@@ -108,7 +124,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	return &tcf.TerragruntConfig, nil
 }
 
-// Older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
+// LockConfig is older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
 // Terraform supports locking natively, so this feature was removed from Terragrunt. However, we keep around the
 // LockConfig so we can log a warning for Terragrunt users who are still trying to use it.
 type LockConfig map[interface{}]interface{}
@@ -131,7 +147,7 @@ func (include IncludeConfig) String() string {
 	if include.IncludeBy != nil {
 		includeBy = fmt.Sprintf(" included by %v", include.IncludeBy)
 	}
-	return fmt.Sprintf("IncludeConfig: %v%s", util.JoinPath(include.Source, include.Path), includeBy)
+	return fmt.Sprintf("%v%s", util.JoinPath(include.Source, include.Path), includeBy)
 }
 
 // ModuleDependencies represents the paths to other Terraform modules that must be applied before the current module
@@ -291,7 +307,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", util.GetPathRelativeToWorkingDirMax(source, 2))
 
-	terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile)
+	if err = terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile); err != nil {
+		return
+	}
 	if config, err = parseConfigString(configString, terragruntOptions, include); err != nil {
 		return
 	}
@@ -315,7 +333,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles = make(map[string]*TerragruntConfig)
-var hookWarningGiven bool
+var hookWarningGiven, lockWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
@@ -332,6 +350,14 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		// We should issue this warning only once
 		hookWarningGiven = true
 		terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
+	}
+
+	before = configString
+	configString = strings.Replace(configString, "lock_table", "dynamodb_table", -1)
+	if !lockWarningGiven && before != configString {
+		// We should issue this warning only once
+		lockWarningGiven = true
+		terragruntOptions.Logger.Warning("lock_table is deprecated, please use dynamodb_table instead")
 	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)

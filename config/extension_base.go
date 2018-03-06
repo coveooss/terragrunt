@@ -3,6 +3,9 @@ package config
 import (
 	"fmt"
 	"runtime"
+	"strings"
+
+	"github.com/gruntwork-io/terragrunt/shell"
 
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -23,8 +26,10 @@ type TerragruntExtensioner interface {
 	name() string
 	itemType() string
 	normalize()
+	setState(err error)
 	options() *options.TerragruntOptions
 	run(args ...interface{}) ([]interface{}, error)
+	ignoreError() bool
 }
 
 // TerragruntExtensionBase is the base object to define object used to extend the behavior of terragrunt
@@ -43,6 +48,15 @@ func (base TerragruntExtensionBase) id() string          { return base.Name }
 func (base TerragruntExtensionBase) description() string { return base.Description }
 func (base TerragruntExtensionBase) extraInfo() string   { return "" }
 func (base TerragruntExtensionBase) normalize()          {}
+func (base TerragruntExtensionBase) ignoreError() bool   { return false }
+
+func (base TerragruntExtensionBase) setState(err error) {
+	exitCode, errCode := shell.GetExitCode(err)
+	if errCode != nil {
+		exitCode = -1
+	}
+	base.options().SetStatus(exitCode, err)
+}
 
 func (base *TerragruntExtensionBase) init(config *TerragruntConfigFile) {
 	base._config = config
@@ -99,3 +113,15 @@ const (
 )
 
 func (list GenericItemList) sort() GenericItemList { return list }
+
+type errorArray []error
+
+func (errors errorArray) Error() string {
+	errorsStr := make([]string, 0, len(errors))
+	for i := range errors {
+		if errors[i] != nil {
+			errorsStr = append(errorsStr, errors[i].Error())
+		}
+	}
+	return strings.Join(errorsStr, "\n")
+}

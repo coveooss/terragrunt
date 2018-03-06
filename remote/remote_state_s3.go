@@ -21,7 +21,7 @@ type RemoteStateConfigS3 struct {
 	Key       string `mapstructure:"key"`
 	Region    string `mapstructure:"region"`
 	Profile   string `mapstructure:"profile"`
-	LockTable string `mapstructure:"lock_table"`
+	LockTable string `mapstructure:"dynamodb_table"`
 }
 
 const MAX_RETRIES_WAITING_FOR_S3_BUCKET = 12

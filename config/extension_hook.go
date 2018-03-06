@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/coveo/gotemplate/utils"
+	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 )
@@ -26,6 +27,7 @@ type Hook struct {
 }
 
 func (hook Hook) itemType() (result string) { return HookList{}.argName() }
+func (hook Hook) ignoreError() bool         { return hook.IgnoreError }
 
 func (hook Hook) help() (result string) {
 	if hook.Description != "" {
@@ -50,7 +52,7 @@ func (hook Hook) help() (result string) {
 func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	logger := hook.logger()
 
-	if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, hook.options().Env["TERRAGRUNT_COMMAND"]) {
+	if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, hook.options().Env[options.EnvCommand]) {
 		// The current command is not in the list of command on which the hook should be applied
 		return
 	}

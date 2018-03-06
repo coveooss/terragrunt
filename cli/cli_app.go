@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 
 	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
@@ -143,7 +141,7 @@ const DEFAULT_TERRAFORM_VERSION_CONSTRAINT = ">= v0.9.3"
 const TERRAFORM_EXTENSION_GLOB = "*.tf"
 
 var terragruntVersion string
-var terragruntRunId string
+var terragruntRunID string
 var terraformVersion string
 
 // Create the Terragrunt CLI App
@@ -175,11 +173,11 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
-	terragruntRunId = fmt.Sprint(xid.New())
+	terragruntRunID = fmt.Sprint(xid.New())
 
-	os.Setenv("TERRAGRUNT_CACHE_FOLDER", util.GetTempDownloadFolder("terragrunt-cache"))
-	os.Setenv("TERRAGRUNT_ARGS", strings.Join(os.Args, " "))
-	os.Setenv("TERRAGRUNT_RUN_ID", terragruntRunId)
+	os.Setenv(options.EnvCacheFolder, util.GetTempDownloadFolder("terragrunt-cache"))
+	os.Setenv(options.EnvArgs, strings.Join(os.Args, " "))
+	os.Setenv(options.EnvRunID, terragruntRunID)
 
 	terragruntOptions, err := ParseTerragruntOptions(cliContext)
 	if err != nil {
@@ -243,10 +241,20 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
-func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) {
+func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
+		return err
+	}
+
+	sourceURL, hasSourceURL := getTerraformSourceURL(terragruntOptions, conf)
+	if sourceURL == "" {
+		sourceURL = terragruntOptions.WorkingDir
+	}
+	terragruntOptions.Env[options.EnvLaunchFolder] = terragruntOptions.WorkingDir
+
+	if terragruntOptions.Env[options.EnvSourceFolder], err = util.CanonicalPath(sourceURL, ""); err != nil {
 		return err
 	}
 
@@ -267,7 +275,16 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 		// Options must be inserted after command but before the other args command is either 1 word or 2 words
 		var args []string
 		args = append(args, terragruntOptions.TerraformCliArgs[:commandLength]...)
-		args = append(args, filterTerraformExtraArgs(terragruntOptions, conf)...)
+		extraArgs, err := conf.ExtraArguments(sourceURL)
+		if err != nil {
+			return err
+		}
+
+		// We call again the parsing of arguments to be sure that supplied parameters overrides others
+		// There is a corner case when initializing map variables from command line
+		filterVarsAndVarFiles(actualCommand.Command, terragruntOptions, extractVarArgs())
+
+		args = append(args, extraArgs...)
 		if commandLength <= len(terragruntOptions.TerraformCliArgs) {
 			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
 		}
@@ -276,17 +293,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 
 	conf.SubstituteAllVariables(terragruntOptions, false)
 
-	// Copy the deployment files to the working directory
-	sourceURL, hasSourceURL := getTerraformSourceURL(terragruntOptions, conf)
-	if sourceURL == "" {
-		sourceURL = terragruntOptions.WorkingDir
-	}
-
 	if conf.Uniqueness != nil {
 		// If uniqueness_criteria has been defined, we set it in the options to ensure that
 		// we use distinct folder based on this criteria
 		terragruntOptions.Uniqueness = *conf.Uniqueness
 	}
+
+	// Copy the deployment files to the working directory
 	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
 	if err != nil {
 		return err
@@ -302,7 +315,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder
-	if _, err := conf.ImportFiles.Run(); err != nil {
+	if _, err := conf.ImportFiles.Run(nil); err != nil {
 		return err
 	}
 
@@ -329,34 +342,33 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	if roles, ok := conf.AssumeRole.([]string); ok {
 		var roleAssumed bool
 		for i := range roles {
-			switch strings.ToLower(strings.TrimSpace(roles[i])) {
-			case "":
-				break
-			case "error":
-				// We have not been able to assume any of the preceding roles and the last role is error
-				// so we raise an error
-				return fmt.Errorf("Unable to assume a role from %s", strings.Join(roles[:i], " "))
-			default:
-				if err := setRoleEnvironmentVariables(terragruntOptions, roles[i]); err == nil {
-					terragruntOptions.Logger.Notice("Assuming role", roles[i])
-					roleAssumed = true
+			role := strings.TrimSpace(roles[i])
+			if role == "" {
+				listOfRoles := strings.Join(roles[:i], ", ")
+				if listOfRoles != "" {
+					listOfRoles = " from " + listOfRoles
 				}
+				terragruntOptions.Logger.Warningf("Not assuming any role%s, continuing with the current user credentials", listOfRoles)
+				roleAssumed = true
+				break
 			}
-			if roleAssumed {
+			if err := setRoleEnvironmentVariables(terragruntOptions, role); err == nil {
+				terragruntOptions.Logger.Notice("Assuming role", role)
+				roleAssumed = true
 				break
 			}
 		}
 		if !roleAssumed {
-			terragruntOptions.Logger.Notice("Unable to assume any of the roles:", strings.Join(roles, " "))
+			return fmt.Errorf("Unable to assume any of the roles: %s", strings.Join(roles, " "))
 		}
 	}
 
-	terragruntOptions.Env["TERRAGRUNT_COMMAND"] = terragruntOptions.TerraformCliArgs[0]
+	terragruntOptions.Env[options.EnvCommand] = terragruntOptions.TerraformCliArgs[0]
 	if actualCommand.Extra != nil {
-		terragruntOptions.Env["TERRAGRUNT_EXTRA_COMMAND"] = actualCommand.Command
+		terragruntOptions.Env[options.EnvExtraCommand] = actualCommand.Command
 	}
-	terragruntOptions.Env["TERRAGRUNT_VERSION"] = terragruntVersion
-	terragruntOptions.Env["TERRAFORM_VERSION"] = terraformVersion
+	terragruntOptions.Env[options.EnvVersion] = terragruntVersion
+	terragruntOptions.Env[options.EnvTFVersion] = terraformVersion
 
 	// Temporary make the command behave as another command to initialize the folder properly
 	// (to be sure that the remote state file get initialized)
@@ -389,7 +401,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
 	// Executing the pre-hooks commands that should be ran before init state if there are
-	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(); err != nil {
+	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(nil); err != nil {
 		return err
 	}
 
@@ -401,32 +413,29 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 
 	// Executing the pre-hooks that should be ran after init state if there are
-	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(); err != nil {
+	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(nil); err != nil {
 		return err
 	}
 
 	defer func() {
 		// If there is an error but it is in fact a plan status, we run the post hooks normally
-		_, planStatusError := result.(errors.PlanWithChanges)
+		_, planStatusError := err.(errors.PlanWithChanges)
 
 		// Executing the post-hooks commands if there are and there is no error
-		if result == nil || planStatusError {
-			if _, err := conf.PostHooks.Run(); err != nil {
-				result = err
-			}
+		status := err
+		if planStatusError {
+			status = nil
+		}
+		if _, errHook := conf.PostHooks.Run(status); errHook != nil {
+			err = errHook
 		}
 	}()
 
 	// We define a filter to trap plan exit code that are not real error
 	filterPlanError := func(err error, command string) error {
-		if err == nil || command != "plan" {
-			return err
-		}
-		if exiterr, ok := errors.Unwrap(err).(*exec.ExitError); ok {
+		if exitCode, err := shell.GetExitCode(err); err == nil && command == "plan" && exitCode == errors.CHANGE_EXIT_CODE {
 			// For plan, an error with exit code 2 should not be considered as a real error
-			if exiterr.Sys().(syscall.WaitStatus).ExitStatus() == errors.CHANGE_EXIT_CODE {
-				return errors.PlanWithChanges{}
-			}
+			return errors.PlanWithChanges{}
 		}
 		return err
 	}
@@ -472,6 +481,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (result error) 
 	}
 	err = cmd.Run()
 
+	exitCode, errCode := shell.GetExitCode(err)
+	if errCode != nil {
+		exitCode = -1
+	}
+	terragruntOptions.SetStatus(exitCode, err)
+
 	return filterPlanError(err, actualCommand.Command)
 }
 
@@ -502,7 +517,7 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 
 // A quick sanity check that calls `terraform get` to download modules, if they aren't already downloaded.
 func downloadModules(terragruntOptions *options.TerragruntOptions) error {
-	switch firstArg(terragruntOptions.TerraformCliArgs) {
+	switch util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "") {
 	case "apply", "destroy", "graph", "output", "plan", "show", "taint", "untaint", "validate":
 		shouldDownload, err := shouldDownloadModules(terragruntOptions)
 		if err != nil {
@@ -534,7 +549,7 @@ func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, 
 func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *options.TerragruntOptions) error {
 	// We only configure remote state for the commands that use the tfstate files. We do not configure it for
 	// commands such as "get" or "version".
-	if util.ListContainsElement(TERRAFORM_COMMANDS_THAT_USE_STATE, firstArg(terragruntOptions.TerraformCliArgs)) {
+	if util.ListContainsElement(TERRAFORM_COMMANDS_THAT_USE_STATE, util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")) {
 		return remoteState.ConfigureRemoteState(terragruntOptions)
 	}
 

@@ -424,8 +424,9 @@ func TestExtraArgumentsWithRegion(t *testing.T) {
 func TestPriorityOrderOfArgument(t *testing.T) {
 	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
 	out := new(bytes.Buffer)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
 	injectedValue := "Injected-directly-by-argument"
-	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -var extra_var=%s --terragrunt-non-interactive --terragrunt-working-dir %s", injectedValue, TEST_FIXTURE_EXTRA_ARGS_PATH), out, os.Stderr)
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -var extra_var=%s --terragrunt-non-interactive --terragrunt-working-dir %s", injectedValue, tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
 	// And the result value for test should be the injected variable since the injected arguments are injected before the suplied parameters,
 	// so our override of extra_var should be the last argument.

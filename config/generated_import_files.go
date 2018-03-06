@@ -145,23 +145,35 @@ func (list ImportFilesList) Enabled() ImportFilesList {
 }
 
 // Run execute the content of the list
-func (list ImportFilesList) Run(args ...interface{}) (result []interface{}, err error) {
+func (list ImportFilesList) Run(status error, args ...interface{}) (result []interface{}, err error) {
 	if len(list) == 0 {
 		return
 	}
 
 	list.sort()
 
+	var errs errorArray
 	for _, item := range list {
 		iItem := IImportFiles(&item)
-		var temp interface{}
+		if (status != nil || len(errs) > 0) && !iItem.ignoreError() {
+			continue
+		}
 		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
 		iItem.normalize()
-		if temp, err = iItem.run(args...); err != nil {
-			err = fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), err)
-			return
+		temp, currentErr := iItem.run(args...)
+		if currentErr != nil {
+			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
 		}
+		iItem.setState(currentErr)
 		result = append(result, temp)
+	}
+	switch len(errs) {
+	case 0:
+		break
+	case 1:
+		err = errs[0]
+	default:
+		err = errs
 	}
 	return
 }

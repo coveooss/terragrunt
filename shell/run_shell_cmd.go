@@ -150,7 +150,7 @@ func (c CommandContext) Run() error {
 		}
 	}
 
-	var err error
+	var finalStatus error
 	tries := 0
 	for tries <= c.retries {
 		cmd, tempFile, err := utils.GetCommandFromString(c.command, c.args...)
@@ -189,21 +189,21 @@ func (c CommandContext) Run() error {
 		defer signalChannel.Close()
 
 		if c.expectedStatements != nil && c.completedStatements != nil {
-			err = RunCommandToApprove(cmd, c.expectedStatements, c.completedStatements, c.options)
+			finalStatus = RunCommandToApprove(cmd, c.expectedStatements, c.completedStatements, c.options)
 		} else {
 			cmd.Stdin = os.Stdin
-			err = cmd.Run()
+			finalStatus = cmd.Run()
 		}
 
-		if err == nil {
+		if finalStatus == nil {
 			tries = c.retries
 		}
 
 		tries++
-		cmdChannel <- err
+		cmdChannel <- finalStatus
 	}
 
-	return errors.WithStackTrace(err)
+	return errors.WithStackTrace(finalStatus)
 }
 
 // LookPath search the supplied path to find the desired command
@@ -229,6 +229,9 @@ var lookPathMutex sync.Mutex
 // GetExitCode returns the exit code of a command. If the error does not implement errors.IErrorCode or is not an exec.ExitError type,
 // the error is returned.
 func GetExitCode(err error) (int, error) {
+	if err == nil {
+		return 0, nil
+	}
 	if exiterr, ok := errors.Unwrap(err).(errors.IErrorCode); ok {
 		return exiterr.ExitStatus()
 	}
