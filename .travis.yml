@@ -6,29 +6,31 @@ sudo: false
 
 before_install:
   - go get github.com/Masterminds/glide
+  - go get github.com/mattn/goveralls
   - cd ../.. &&
     mv coveo gruntwork-io &&
     cd gruntwork-io/terragrunt
-  - wget https://releases.hashicorp.com/terraform/0.11.3/terraform_0.11.3_linux_amd64.zip -O /tmp/terraform.zip
+  - wget https://releases.hashicorp.com/terraform/0.11.3/terraform_0.11.3_linux_amd64.zip -O /tmp/terraform.zip 
   - sudo unzip -d /usr/local/bin/ /tmp/terraform.zip
 
 install:
   - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
-  - glide install
-  - go build .
-  - go install .
+  - make install
 
 before_script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
-      go test -v ./...;
+      make full-test;
     else
-      go test -v -short ./...;
+      make test;
     fi
 
 script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
       curl -sL https://git.io/goreleaser | bash;
     fi
+  
+after_success:
+  - make coveralls
 
 
 notifications:
