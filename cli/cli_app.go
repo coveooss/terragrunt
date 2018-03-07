@@ -241,7 +241,7 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
-func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
+func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
 	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
@@ -265,6 +265,23 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 
 	// Check if the current command is an extra command
 	actualCommand := conf.ExtraCommands.ActualCommand(terragruntOptions.TerraformCliArgs[0])
+	ignoreError := actualCommand.Extra != nil && actualCommand.Extra.IgnoreError
+
+	stopOnError := func(err error) bool {
+		if err == nil {
+			return false
+		}
+
+		if !ignoreError {
+			finalStatus = err
+			return true
+		}
+		terragruntOptions.Logger.Errorf("Encountered %v, continuing execution", err)
+		if finalStatus == nil {
+			finalStatus = err
+		}
+		return false
+	}
 
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
@@ -276,8 +293,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 		var args []string
 		args = append(args, terragruntOptions.TerraformCliArgs[:commandLength]...)
 		extraArgs, err := conf.ExtraArguments(sourceURL)
-		if err != nil {
-			return err
+		if stopOnError(err) {
+			return
 		}
 
 		// We call again the parsing of arguments to be sure that supplied parameters overrides others
@@ -301,13 +318,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 
 	// Copy the deployment files to the working directory
 	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
-	if err != nil {
+	if stopOnError(err) {
 		return err
 	}
 	if hasSourceURL || len(conf.ImportFiles) > 0 {
 		// If there are import files, we force the usage of a temp directory.
-		if err = downloadTerraformSource(terraformSource, terragruntOptions); err != nil {
-			return err
+		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {
+			return
 		}
 	}
 	conf.SubstituteAllVariables(terragruntOptions, true)
@@ -315,14 +332,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder
-	if _, err := conf.ImportFiles.Run(nil); err != nil {
-		return err
+	if _, err := conf.ImportFiles.Run(err); stopOnError(err) {
+		return
 	}
 
 	// Retrieve the default variables from the terraform files
-	err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir)
-	if err != nil {
-		return err
+	if err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
+		return
 	}
 
 	terragruntOptions.IgnoreRemainingInterpolation = false
@@ -376,18 +392,18 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 
-	if err := downloadModules(terragruntOptions); err != nil {
-		return err
+	if err := downloadModules(terragruntOptions); stopOnError(err) {
+		return
 	}
 
-	if _, err := conf.ImportFiles.RunOnModules(terragruntOptions); err != nil {
-		return err
+	if _, err := conf.ImportFiles.RunOnModules(terragruntOptions); stopOnError(err) {
+		return
 	}
 
 	// If there is no terraform file in the folder, we skip the command
 	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, "*.tf", "*.tf.json")
-	if err != nil {
-		return err
+	if stopOnError(err) {
+		return
 	}
 	if len(tfFiles) == 0 {
 		terragruntOptions.Logger.Warning("No terraform file found, skipping folder")
@@ -401,20 +417,20 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
 	// Executing the pre-hooks commands that should be ran before init state if there are
-	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(nil); err != nil {
-		return err
+	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(err); stopOnError(err) {
+		return
 	}
 
 	// Configure remote state if required
 	if conf.RemoteState != nil {
-		if err := configureRemoteState(conf.RemoteState, terragruntOptions); err != nil {
-			return err
+		if err := configureRemoteState(conf.RemoteState, terragruntOptions); stopOnError(err) {
+			return
 		}
 	}
 
 	// Executing the pre-hooks that should be ran after init state if there are
-	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(nil); err != nil {
-		return err
+	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(err); stopOnError(err) {
+		return
 	}
 
 	defer func() {
@@ -426,8 +442,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 		if planStatusError {
 			status = nil
 		}
-		if _, errHook := conf.PostHooks.Run(status); errHook != nil {
-			err = errHook
+		if _, errHook := conf.PostHooks.Run(status); stopOnError(errHook) {
+			return
 		}
 	}()
 
@@ -487,7 +503,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (err error) {
 	}
 	terragruntOptions.SetStatus(exitCode, err)
 
-	return filterPlanError(err, actualCommand.Command)
+	if stopOnError(filterPlanError(err, actualCommand.Command)) {
+		return
+	}
+	return
 }
 
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
