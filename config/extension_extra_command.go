@@ -27,6 +27,7 @@ type ExtraCommand struct {
 	ActAs        string   `hcl:"act_as"`
 	VersionArg   string   `hcl:"version"`
 	ShellCommand bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
+	IgnoreError  bool     `hcl:"ignore_error"`
 }
 
 func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
