@@ -151,8 +151,7 @@ func (c CommandContext) Run() error {
 	}
 
 	var finalStatus error
-	tries := 0
-	for tries <= c.retries {
+	for try := 0; try <= c.retries; try++ {
 		cmd, tempFile, err := utils.GetCommandFromString(c.command, c.args...)
 		if err != nil {
 			return errors.WithStackTrace(err)
@@ -163,8 +162,11 @@ func (c CommandContext) Run() error {
 		}
 
 		verb := "Running"
-		if tries > 0 {
-			verb = fmt.Sprintf("Trying(#%d)", tries+1)
+		if try > 0 {
+			verb = fmt.Sprintf("Trying(#%d)", try+1)
+			// On subsequent retry, we ignore the output to avoid displaying the same output many times
+			// TODO, check if the output is the same as the previous one to catch different messages
+			c.Stdout, c.Stderr = nil, nil
 		}
 
 		if c.DisplayCommand == "" {
@@ -195,12 +197,10 @@ func (c CommandContext) Run() error {
 			finalStatus = cmd.Run()
 		}
 
-		if finalStatus == nil {
-			tries = c.retries
-		}
-
-		tries++
 		cmdChannel <- finalStatus
+		if finalStatus == nil {
+			break
+		}
 	}
 
 	return errors.WithStackTrace(finalStatus)
