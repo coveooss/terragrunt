@@ -27,11 +27,6 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		return value
 	}
 
-	for i, extraArgs := range conf.Terraform.ExtraArgs {
-		substitute(&extraArgs.Description)
-		conf.Terraform.ExtraArgs[i] = extraArgs
-	}
-
 	substitute(conf.Uniqueness)
 
 	if roles, ok := conf.AssumeRole.([]string); ok {
@@ -42,6 +37,10 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 	}
 
 	if conf.Terraform != nil {
+		for i, extraArgs := range conf.Terraform.ExtraArgs {
+			substitute(&extraArgs.Description)
+			conf.Terraform.ExtraArgs[i] = extraArgs
+		}
 		substitute(&conf.Terraform.Source)
 	}
 	if conf.RemoteState != nil && conf.RemoteState.Config != nil {

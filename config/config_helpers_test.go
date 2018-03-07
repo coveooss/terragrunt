@@ -661,7 +661,7 @@ func Test_getParameters(t *testing.T) {
 	}
 
 	mockOptions := options.NewTerragruntOptionsForTest("")
-	mockOptions.Variables = options.VariableList{
+	mockOptions.Variables = map[string]options.Variable{
 		"a": {Source: options.Default, Value: "a"},
 		"b": {Source: options.Default, Value: "b"},
 	}
@@ -678,7 +678,7 @@ func Test_getParameters(t *testing.T) {
 		{"Var with - Keep undefined", false, args{`var.a-1, var.b, "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"${var.a-1}", "b", "text"}, false},
 		{"Too much parameters", true, args{`var.a, var.b, "text", var.c`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, nil, true},
 		{"With function", true, args{`var.a-1, default(var.a, "no a"), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"", "a", "text"}, false},
-		{"With default no value", true, args{`var.a-1, default(var.c, "no c"), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"", "no c", "text"}, false},
+		{"With default no value", false, args{`"", default(var.c, "no c"), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, []string{"", "no c", "text"}, false},
 		{"Wrong number of parameters", true, args{`var.a-1, default(var.c, "no c", extra), "text"`, regexp.MustCompile(fmt.Sprintf("^%s$", getVarParams(3))), mockOptions}, nil, true},
 	}
 	for _, tt := range tests {

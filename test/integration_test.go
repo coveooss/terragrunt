@@ -59,6 +59,9 @@ func init() {
 
 func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	cleanupTerraformFolder(t, TEST_FIXTURE_PATH)
 
@@ -76,6 +79,9 @@ func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 
 func TestTerragruntWorksWithIncludes(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_INCLUDE_PATH, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH)
 	cleanupTerraformFolder(t, childPath)
@@ -91,6 +97,9 @@ func TestTerragruntWorksWithIncludes(t *testing.T) {
 
 func TestTerragruntWorksWithIncludesAndOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_OLD_CONFIG_INCLUDE_PATH, "child")
 	cleanupTerraformFolder(t, childPath)
@@ -106,6 +115,9 @@ func TestTerragruntWorksWithIncludesAndOldConfig(t *testing.T) {
 
 func TestTerragruntWorksWithIncludesChildUpdatedAndOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_OLD_CONFIG_INCLUDE_CHILD_UPDATED_PATH, "child")
 	cleanupTerraformFolder(t, childPath)
@@ -121,6 +133,9 @@ func TestTerragruntWorksWithIncludesChildUpdatedAndOldConfig(t *testing.T) {
 
 func TestTerragruntWorksWithIncludesParentUpdatedAndOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	childPath := util.JoinPath(TEST_FIXTURE_OLD_CONFIG_INCLUDE_PARENT_UPDATED_PATH, "child")
 	cleanupTerraformFolder(t, childPath)
@@ -136,6 +151,9 @@ func TestTerragruntWorksWithIncludesParentUpdatedAndOldConfig(t *testing.T) {
 
 func TestTerragruntOutputAllCommand(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 
@@ -166,6 +184,9 @@ func TestTerragruntOutputAllCommand(t *testing.T) {
 
 func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 
@@ -194,6 +215,9 @@ func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *tes
 
 func TestTerragruntStackCommands(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueId()))
@@ -221,6 +245,9 @@ func TestTerragruntStackCommands(t *testing.T) {
 
 func TestTerragruntStackCommandsWithOldConfig(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 
@@ -317,6 +344,9 @@ func TestRemoteDownloadOverride(t *testing.T) {
 
 func TestLocalWithBackend(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueId()))
@@ -338,6 +368,9 @@ func TestLocalWithBackend(t *testing.T) {
 
 func TestRemoteWithBackend(t *testing.T) {
 	t.Parallel()
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueId()))
@@ -360,7 +393,8 @@ func TestRemoteWithBackend(t *testing.T) {
 func TestExtraArguments(t *testing.T) {
 	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
 	out := new(bytes.Buffer)
-	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_EXTRA_ARGS_PATH), out, os.Stderr)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
 	assert.Contains(t, out.String(), "Hello, World from dev!")
 }
@@ -368,9 +402,10 @@ func TestExtraArguments(t *testing.T) {
 func TestExtraArgumentsWithEnv(t *testing.T) {
 	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
 	out := new(bytes.Buffer)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
 	os.Setenv("TF_VAR_env", "prod")
 	defer os.Unsetenv("TF_VAR_env")
-	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_EXTRA_ARGS_PATH), out, os.Stderr)
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
 	assert.Contains(t, out.String(), "Hello, World!")
 }
@@ -378,9 +413,10 @@ func TestExtraArgumentsWithEnv(t *testing.T) {
 func TestExtraArgumentsWithRegion(t *testing.T) {
 	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
 	out := new(bytes.Buffer)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
 	os.Setenv("TF_VAR_region", "us-west-2")
 	defer os.Unsetenv("TF_VAR_region")
-	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_EXTRA_ARGS_PATH), out, os.Stderr)
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
 	assert.Contains(t, out.String(), "Hello, World from Oregon!")
 }
@@ -388,8 +424,9 @@ func TestExtraArgumentsWithRegion(t *testing.T) {
 func TestPriorityOrderOfArgument(t *testing.T) {
 	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
 	out := new(bytes.Buffer)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
 	injectedValue := "Injected-directly-by-argument"
-	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -var extra_var=%s --terragrunt-non-interactive --terragrunt-working-dir %s", injectedValue, TEST_FIXTURE_EXTRA_ARGS_PATH), out, os.Stderr)
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -var extra_var=%s --terragrunt-non-interactive --terragrunt-working-dir %s", injectedValue, tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
 	// And the result value for test should be the injected variable since the injected arguments are injected before the suplied parameters,
 	// so our override of extra_var should be the last argument.

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -110,11 +111,11 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 
 	// Make the context available to sub-objects
 	tcf.options = terragruntOptions
-	if tcf.Terraform == nil {
-		tcf.Terraform = &TerraformConfig{}
+
+	if tcf.Terraform != nil {
+		tcf.Terraform.ExtraArgs.init(tcf)
 	}
 
-	tcf.Terraform.ExtraArgs.init(tcf)
 	tcf.ExtraCommands.init(tcf)
 	tcf.ImportFiles.init(tcf)
 	tcf.ApprovalConfig.init(tcf)
@@ -374,6 +375,10 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 
+	if !path.IsAbs(include.Path) {
+		include.Path, _ = filepath.Abs(include.Path)
+	}
+
 	terragruntConfigFile.Include.IncludeBy = &include
 
 	includedConfig, err := parseIncludedConfig(terragruntConfigFile.Include, terragruntOptions)
@@ -400,7 +405,9 @@ func parseConfigStringAsTerragruntConfigFile(configString string, configPath str
 	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
-	tfvarsConfig.Terragrunt.Path = configPath
+	if tfvarsConfig.Terragrunt != nil {
+		tfvarsConfig.Terragrunt.Path = configPath
+	}
 	return tfvarsConfig.Terragrunt, nil
 }
 

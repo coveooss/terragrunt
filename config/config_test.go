@@ -429,8 +429,26 @@ func TestParseTerragruntConfigEmptyConfigOldConfig(t *testing.T) {
 	assert.Nil(t, terragruntConfig.RemoteState)
 }
 
+type argConfig struct {
+	name      string
+	extraArgs []string
+}
+
+func getExtraArgsConfig(options *options.TerragruntOptions, argConfigs ...argConfig) TerragruntConfig {
+	args := []TerraformExtraArguments{}
+	for _, argConfig := range argConfigs {
+		base := TerragruntExtensionBase{Name: argConfig.name}
+		base.init(&TerragruntConfigFile{})
+		base.config().options = options
+		args = append(args, TerraformExtraArguments{TerragruntExtensionBase: base, Arguments: argConfig.extraArgs})
+	}
+	return TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: args}}
+}
+
 func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 	t.Parallel()
+
+	options := options.NewTerragruntOptionsForTest("TestMergeConfigIntoIncludedConfig")
 
 	testCases := []struct {
 		config         TerragruntConfig
@@ -463,19 +481,19 @@ func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
-			TerragruntConfig{Terraform: &TerraformConfig{}},
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
+			getExtraArgsConfig(options, argConfig{name: "childArgs"}),
+			getExtraArgsConfig(options),
+			getExtraArgsConfig(options, argConfig{name: "childArgs"}),
 		},
 		{
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "childArgs"}}}},
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}}}},
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "parentArgs"}, TerraformExtraArguments{Name: "childArgs"}}}},
+			getExtraArgsConfig(options, argConfig{name: "childArgs"}),
+			getExtraArgsConfig(options, argConfig{name: "parentArgs"}),
+			getExtraArgsConfig(options, argConfig{name: "parentArgs"}, argConfig{name: "childArgs"}),
 		},
 		{
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-parent"}}}}},
-			TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: []TerraformExtraArguments{TerraformExtraArguments{Name: "overrideArgs", Arguments: []string{"-child"}}}}},
+			getExtraArgsConfig(options, argConfig{name: "overrideArgs", extraArgs: []string{"-child"}}),
+			getExtraArgsConfig(options, argConfig{name: "overrideArgs", extraArgs: []string{"-parent"}}),
+			getExtraArgsConfig(options, argConfig{name: "overrideArgs", extraArgs: []string{"-child"}}),
 		},
 	}
 
