@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
@@ -47,10 +48,10 @@ func assertModuleListsEqual(t *testing.T, expectedModules []*TerraformModule, ac
 // be compared directly
 func assertModulesEqual(t *testing.T, expected *TerraformModule, actual *TerraformModule, messageAndArgs ...interface{}) {
 	if assert.NotNil(t, actual, messageAndArgs...) {
-		assert.Equal(t, expected.Config, actual.Config, messageAndArgs...)
 		assert.Equal(t, expected.Path, actual.Path, messageAndArgs...)
 		assert.Equal(t, expected.AssumeAlreadyApplied, actual.AssumeAlreadyApplied, messageAndArgs...)
 
+		assertConfigsEqual(t, expected.Config, actual.Config, messageAndArgs...)
 		assertOptionsEqual(t, *expected.TerragruntOptions, *actual.TerragruntOptions, messageAndArgs...)
 		assertModuleListsEqual(t, expected.Dependencies, actual.Dependencies, messageAndArgs...)
 	}
@@ -133,6 +134,21 @@ func assertOptionsEqual(t *testing.T, expected options.TerragruntOptions, actual
 	assert.Equal(t, expected.NonInteractive, actual.NonInteractive, messageAndArgs...)
 	assert.Equal(t, expected.TerraformCliArgs, actual.TerraformCliArgs, messageAndArgs...)
 	assert.Equal(t, expected.WorkingDir, actual.WorkingDir, messageAndArgs...)
+}
+
+// We can't do a direct comparison between TerragruntConfig objects because they contain option objects.
+func assertConfigsEqual(t *testing.T, expected config.TerragruntConfig, actual config.TerragruntConfig, messageAndArgs ...interface{}) {
+	assert.Equal(t, expected.ApprovalConfig, actual.ApprovalConfig, messageAndArgs...)
+	assert.Equal(t, expected.AssumeRole, actual.AssumeRole, messageAndArgs...)
+	assert.Equal(t, expected.Dependencies, actual.Dependencies, messageAndArgs...)
+	assert.Equal(t, expected.Description, actual.Description, messageAndArgs...)
+	assert.Equal(t, expected.ExtraCommands, actual.ExtraCommands, messageAndArgs...)
+	assert.Equal(t, expected.ImportFiles, actual.ImportFiles, messageAndArgs...)
+	assert.Equal(t, expected.PostHooks, actual.PostHooks, messageAndArgs...)
+	assert.Equal(t, expected.PreHooks, actual.PreHooks, messageAndArgs...)
+	assert.Equal(t, expected.RemoteState, actual.RemoteState, messageAndArgs...)
+	assert.Equal(t, expected.Terraform, actual.Terraform, messageAndArgs...)
+	assert.Equal(t, expected.Uniqueness, actual.Uniqueness, messageAndArgs...)
 }
 
 // Return the absolute path for the given path

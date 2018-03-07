@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -516,8 +517,12 @@ func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
 func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 	cursor := &context.include
 	for {
+		includePath, _ := ResolveTerragruntConfigString(cursor.Path, context.include, context.options)
 		if cursor.Source == "" {
-			return filepath.Dir(cursor.Path)
+			if !path.IsAbs(includePath) {
+				includePath = util.JoinPath(context.options.WorkingDir, includePath)
+			}
+			return filepath.Dir(includePath)
 		}
 		cursor = cursor.IncludeBy
 	}

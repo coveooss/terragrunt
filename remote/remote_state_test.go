@@ -21,7 +21,7 @@ func TestToTerraformInitArgs(t *testing.T) {
 	}
 	args := remoteState.ToTerraformInitArgs()
 
-	assertTerraformInitArgsEqual(t, args, "-backend-config=encrypt=true -backend-config=bucket=my-bucket -backend-config=key=terraform.tfstate -backend-config=region=us-east-1")
+	assertTerraformInitArgsEqual(t, args, "-backend-config=encrypt=true -backend-config=bucket=my-bucket -backend-config=key=terraform.tfstate -backend-config=region=us-east-1 -force-copy -get=false")
 }
 
 func TestToTerraformInitArgsNoBackendConfigs(t *testing.T) {
@@ -29,7 +29,7 @@ func TestToTerraformInitArgsNoBackendConfigs(t *testing.T) {
 
 	remoteState := RemoteState{Backend: "s3"}
 	args := remoteState.ToTerraformInitArgs()
-	assert.Empty(t, args)
+	assertTerraformInitArgsEqual(t, args, "-force-copy -get=false")
 }
 
 func TestShouldOverrideExistingRemoteState(t *testing.T) {

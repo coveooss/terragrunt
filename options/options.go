@@ -211,6 +211,9 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 
 // ImportVariablesFromFile loads variables from the file indicated by path
 func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, origin VariableSource) error {
+	if !strings.Contains(path, "/") {
+		path = util.JoinPath(terragruntOptions.WorkingDir, path)
+	}
 	vars, err := util.LoadVariablesFromFile(path)
 	if err != nil {
 		return err

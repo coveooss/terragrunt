@@ -252,11 +252,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if sourceURL == "" {
 		sourceURL = terragruntOptions.WorkingDir
 	}
-	if sourceURL, err = util.CanonicalPath(sourceURL, ""); err != nil {
+	terragruntOptions.Env[options.EnvLaunchFolder] = terragruntOptions.WorkingDir
+
+	if terragruntOptions.Env[options.EnvSourceFolder], err = util.CanonicalPath(sourceURL, ""); err != nil {
 		return err
 	}
-	terragruntOptions.Env[options.EnvLaunchFolder] = terragruntOptions.WorkingDir
-	terragruntOptions.Env[options.EnvSourceFolder] = sourceURL
 
 	// If runHandler has been specified, we bypass the planned execution and defer the control // to the handler
 	if runHandler != nil {
