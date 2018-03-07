@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/coveo/terragrunt.svg?branch=master)](https://travis-ci.org/coveo/terragrunt)
+[![Coverage Status](https://coveralls.io/repos/github/coveo/terragrunt/badge.svg?branch=coveralls)](https://coveralls.io/github/coveo/terragrunt?branch=master)
+
 # Terragrunt
 
 Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that provides extra tools for keeping your Terraform configurations DRY, working with multiple Terraform modules, and managing remote state.

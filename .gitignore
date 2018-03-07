@@ -6,5 +6,6 @@ vendor
 *.tfstate
 *.tfstate.backup
 dist
+*.test
 
 terragrunt

@@ -6,6 +6,7 @@ sudo: false
 
 before_install:
   - go get github.com/Masterminds/glide
+  - go get github.com/mattn/goveralls
   - cd ../.. &&
     mv coveo gruntwork-io &&
     cd gruntwork-io/terragrunt
@@ -14,21 +15,23 @@ before_install:
 
 install:
   - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
-  - glide install
-  - go build .
-  - go install .
+  - make install
 
 before_script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
-      go test -v ./...;
+      make full-test;
     else
-      go test -v -short ./...;
+      make test;
     fi
+  - make fmtcheck
 
 script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
       curl -sL https://git.io/goreleaser | bash;
     fi
+  
+after_success:
+  - make coveralls
 
 
 notifications:
