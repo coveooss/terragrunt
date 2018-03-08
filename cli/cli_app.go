@@ -242,6 +242,14 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
+	if util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFile)) {
+		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFile)
+	}
+
+	if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFileNonInteractive)) {
+		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFileNonInteractive)
+	}
+
 	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {

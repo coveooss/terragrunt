@@ -194,12 +194,12 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 		}
 
 		if info.IsDir() {
-			if util.FileExists(filepath.Join(path, "terragrunt.ignore")) {
+			if util.FileExists(filepath.Join(path, options.IgnoreFile)) {
 				// If we wish to exclude a directory from the *-all commands, we just
 				// have to put an empty file name terragrunt.ignore in the folder
 				return nil
 			}
-			if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(path, "terragrunt-non-interactive.ignore")) {
+			if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(path, options.IgnoreFileNonInteractive)) {
 				// If we wish to exclude a directory from the *-all commands, we just
 				// have to put an empty file name terragrunt-non-interactive.ignore in
 				// the folder
