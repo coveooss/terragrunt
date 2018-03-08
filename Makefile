@@ -19,9 +19,12 @@ coveralls:
 html-coverage:
 	@sh ./scripts/coverage.sh --html
 
+build:
+	glide install
+	go build
+
 install:
 	glide install
-	go build .
-	go install .
+	go install
 
-.PHONY: fmtcheck fmt html-coverage coveralls full-test test
+.PHONY: test

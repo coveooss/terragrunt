@@ -1,6 +1,6 @@
 language: go
 go:
-- 1.9.x
+  - 1.9.x
 
 sudo: false
 
@@ -14,7 +14,6 @@ before_install:
   - sudo unzip -d /usr/local/bin/ /tmp/terraform.zip
 
 install:
-  - GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
   - make install
 
 before_script:
