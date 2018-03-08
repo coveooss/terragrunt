@@ -246,7 +246,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFile)
 	}
 
-	if util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFileNonInteractive)) {
+	if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFileNonInteractive)) {
 		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFileNonInteractive)
 	}
 
