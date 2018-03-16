@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	TEST_FIXTURE_DEFAULT_VALUES = "../test/fixture-default-values/variables-files"
+	testFixtureDefaultValues = "../test/fixture-default-values/variables-files"
 )
 
 func TestLoadDefaultValues(t *testing.T) {
@@ -21,7 +21,7 @@ func TestLoadDefaultValues(t *testing.T) {
 		args       args
 		wantResult map[string]interface{}
 	}{
-		{"All Types", args{TEST_FIXTURE_DEFAULT_VALUES}, map[string]interface{}{
+		{"All Types", args{testFixtureDefaultValues}, map[string]interface{}{
 			"a":               "A (a.tf)",
 			"a_overridden_1":  "A (a_override.tf)",
 			"a_overridden_2":  "A (override.tf)",
@@ -60,7 +60,7 @@ func Test_getTerraformFiles(t *testing.T) {
 
 	expectedResult := make([]string, 0, len(resultFiles))
 	for _, value := range resultFiles {
-		expectedResult = append(expectedResult, filepath.Join(TEST_FIXTURE_DEFAULT_VALUES, value))
+		expectedResult = append(expectedResult, filepath.Join(testFixtureDefaultValues, value))
 	}
 
 	type args struct {
@@ -71,7 +71,7 @@ func Test_getTerraformFiles(t *testing.T) {
 		args args
 		want []string
 	}{
-		{"All Types", args{TEST_FIXTURE_DEFAULT_VALUES}, expectedResult},
+		{"All Types", args{testFixtureDefaultValues}, expectedResult},
 		{"Invalid Folder", args{"Invalid"}, nil},
 	}
 	for _, tt := range tests {

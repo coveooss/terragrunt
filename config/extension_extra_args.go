@@ -50,7 +50,7 @@ func (list *TerraformExtraArgumentsList) Merge(imported TerraformExtraArgumentsL
 }
 
 // Filter applies extra_arguments to the current configuration
-func (list TerraformExtraArgumentsList) Filter(source string) ([]string, error) {
+func (list TerraformExtraArgumentsList) Filter(source string) (result []string, err error) {
 	if len(list) == 0 {
 		return nil, nil
 	}
@@ -66,7 +66,15 @@ func (list TerraformExtraArgumentsList) Filter(source string) ([]string, error) 
 		folders = append(folders, source)
 	}
 
-	for _, arg := range list.Enabled() {
+	var arg TerraformExtraArguments
+
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("Error while executing %s(%s): %v", arg.itemType(), arg.id(), err)
+		}
+	}()
+	for _, arg = range list.Enabled() {
+		arg.logger().Debugf("Processing arg %s", arg.id())
 		currentCommandIncluded := util.ListContainsElement(arg.Commands, cmd)
 
 		if currentCommandIncluded {

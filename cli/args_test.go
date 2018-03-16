@@ -97,19 +97,19 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 		{
 			[]string{"--terragrunt-config"},
 			nil,
-			ArgMissingValue("terragrunt-config"),
+			ErrArgMissingValue("terragrunt-config"),
 		},
 
 		{
 			[]string{"--terragrunt-working-dir"},
 			nil,
-			ArgMissingValue("terragrunt-working-dir"),
+			ErrArgMissingValue("terragrunt-working-dir"),
 		},
 
 		{
 			[]string{"--foo", "bar", "--terragrunt-config"},
 			nil,
-			ArgMissingValue("terragrunt-config"),
+			ErrArgMissingValue("terragrunt-config"),
 		},
 	}
 

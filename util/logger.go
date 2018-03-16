@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/coveo/gotemplate/template"
 	"github.com/op/go-logging"
 )
 
@@ -19,18 +20,23 @@ func CreateLogger(prefix string) *logging.Logger {
 	return logging.MustGetLogger(prefix)
 }
 
-// SetWarningLoggingLevel sets the logging level to the warning
-func SetWarningLoggingLevel() {
-	logging.SetLevel(logging.WARNING, "")
+// SetLoggingLevel sets the logging level
+func SetLoggingLevel(level int) {
+	logging.SetLevel(logging.Level(level), "")
+}
+
+// GetLoggingLevel returns the current logging level
+func GetLoggingLevel() logging.Level {
+	return logging.GetLevel("")
 }
 
 // InitLogging must be called to set the logging string, initialize color and logging level
 func InitLogging(levelName string, defaultLevel logging.Level, color bool) (int, error) {
 	var format string
 	if color {
-		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05.000} %{color}%{level:-8s} %{message}%{color:reset}`
+		format = `[terragrunt:%{module}] %{time:2006/01/02 15:04:05.000} %{color}%{level:-8s} %{message}%{color:reset}`
 	} else {
-		format = `[terragrunt%{module}] %{time:2006/01/02 15:04:05.000} %{level:-8s} %{message}`
+		format = `[terragrunt:%{module}] %{time:2006/01/02 15:04:05.000} %{level:-8s} %{message}`
 	}
 
 	logging.SetBackend(logging.NewBackendFormatter(logging.NewLogBackend(os.Stderr, "", 0), logging.MustStringFormatter(format)))
@@ -38,6 +44,7 @@ func InitLogging(levelName string, defaultLevel logging.Level, color bool) (int,
 	level, err := getLoggingLevelFromString(levelName, defaultLevel)
 
 	logging.SetLevel(level, "")
+	template.InitLogging()
 	return int(level), err
 }
 

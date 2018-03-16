@@ -740,7 +740,7 @@ func TestRunModulesMultipleModulesWithDependenciesOneFailure(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	expectedErrC := DependencyFinishedWithError{moduleC, moduleB, expectedErrB}
+	expectedErrC := dependencyFinishedWithError{moduleC, moduleB, expectedErrB}
 
 	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrB, expectedErrC)
@@ -820,7 +820,7 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesOneFailure(t *test
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	expectedErrA := DependencyFinishedWithError{moduleA, moduleB, expectedErrB}
+	expectedErrA := dependencyFinishedWithError{moduleA, moduleB, expectedErrB}
 
 	err := RunModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrB, expectedErrA)
@@ -858,8 +858,8 @@ func TestRunModulesMultipleModulesWithDependenciesMultipleFailures(t *testing.T)
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	expectedErrB := DependencyFinishedWithError{moduleB, moduleA, expectedErrA}
-	expectedErrC := DependencyFinishedWithError{moduleC, moduleB, expectedErrB}
+	expectedErrB := dependencyFinishedWithError{moduleB, moduleA, expectedErrA}
+	expectedErrC := dependencyFinishedWithError{moduleC, moduleB, expectedErrB}
 
 	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrA, expectedErrB, expectedErrC)
@@ -992,8 +992,8 @@ func TestRunModulesMultipleModulesWithDependenciesLargeGraphPartialFailure(t *te
 		TerragruntOptions: optionsWithMockTerragruntCommand("large-graph-g", nil, &gRan),
 	}
 
-	expectedErrD := DependencyFinishedWithError{moduleD, moduleC, expectedErrC}
-	expectedErrF := DependencyFinishedWithError{moduleF, moduleD, expectedErrD}
+	expectedErrD := dependencyFinishedWithError{moduleD, moduleC, expectedErrC}
+	expectedErrF := dependencyFinishedWithError{moduleF, moduleD, expectedErrD}
 
 	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF, moduleG})
 	assertMultiErrorContains(t, err, expectedErrC, expectedErrD, expectedErrF)
@@ -1059,8 +1059,8 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesLargeGraphPartialF
 		TerragruntOptions: optionsWithMockTerragruntCommand("f", nil, &fRan),
 	}
 
-	expectedErrB := DependencyFinishedWithError{moduleB, moduleC, expectedErrC}
-	expectedErrA := DependencyFinishedWithError{moduleA, moduleB, expectedErrB}
+	expectedErrB := dependencyFinishedWithError{moduleB, moduleC, expectedErrC}
+	expectedErrA := dependencyFinishedWithError{moduleA, moduleB, expectedErrB}
 
 	err := RunModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF})
 	assertMultiErrorContains(t, err, expectedErrC, expectedErrB, expectedErrA)

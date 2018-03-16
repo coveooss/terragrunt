@@ -174,15 +174,19 @@ func (terragruntOptions *TerragruntOptions) SetStatus(exitCode int, err error) {
 	}
 }
 
+// GetContext returns the current context from the variables set
+func (terragruntOptions TerragruntOptions) GetContext() (result map[string]interface{}) {
+	result = make(map[string]interface{}, len(terragruntOptions.Variables))
+	for key, value := range terragruntOptions.Variables {
+		result[key] = value.Value
+	}
+	return
+}
+
 // SaveVariables - Actually save the variables to the list of deferred files
 func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 	if terragruntOptions.deferredSaveList != nil {
-		variables := make(map[string]interface{}, len(terragruntOptions.Variables))
-
-		// We keep only the value from the variable list, don't need the source
-		for key, value := range terragruntOptions.Variables {
-			variables[key] = value.Value
-		}
+		variables := terragruntOptions.GetContext()
 
 		for file := range terragruntOptions.deferredSaveList {
 			terragruntOptions.Logger.Debug("Saving variables into", file)
@@ -214,7 +218,7 @@ func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string,
 	if !strings.Contains(path, "/") {
 		path = util.JoinPath(terragruntOptions.WorkingDir, path)
 	}
-	vars, err := util.LoadVariablesFromFile(path)
+	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, terragruntOptions.GetContext())
 	if err != nil {
 		return err
 	}
@@ -225,7 +229,7 @@ func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string,
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
 func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource) error {
-	vars, err := util.LoadVariables(content)
+	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, terragruntOptions.GetContext())
 	if err != nil {
 		return err
 	}

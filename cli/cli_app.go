@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
@@ -22,32 +23,35 @@ import (
 	"github.com/urfave/cli"
 )
 
-const OPT_TERRAGRUNT_CONFIG = "terragrunt-config"
-const OPT_TERRAGRUNT_TFPATH = "terragrunt-tfpath"
-const OPT_APPROVAL_HANDLER = "terragrunt-approval"
-const OPT_NON_INTERACTIVE = "terragrunt-non-interactive"
-const OPT_WORKING_DIR = "terragrunt-working-dir"
-const OPT_TERRAGRUNT_SOURCE = "terragrunt-source"
-const OPT_TERRAGRUNT_SOURCE_UPDATE = "terragrunt-source-update"
-const OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS = "terragrunt-ignore-dependency-errors"
-const OPT_LOGGING_LEVEL = "terragrunt-logging-level"
-const OPT_FLUSH_DELAY = "terragrunt-flush-delay"
-const OPT_NB_WORKERS = "terragrunt-workers"
-const OPT_AWS_PROFILE = "profile"
+// Constant used to define the command line options
+const (
+	optTerragruntConfig                 = "terragrunt-config"
+	optTerragruntTFPath                 = "terragrunt-tfpath"
+	optApprovalHandler                  = "terragrunt-approval"
+	optNonInteractive                   = "terragrunt-non-interactive"
+	optWorkingDir                       = "terragrunt-working-dir"
+	optTerragruntSource                 = "terragrunt-source"
+	optTerragruntSourceUpdate           = "terragrunt-source-update"
+	OptTerragruntIgnoreDependencyErrors = "terragrunt-ignore-dependency-errors"
+	OptLoggingLevel                     = "terragrunt-logging-level"
+	OptFlushDelay                       = "terragrunt-flush-delay"
+	OptNbWorkers                        = "terragrunt-workers"
+	OptAWSProfile                       = "profile"
+)
 
-var ALL_TERRAGRUNT_BOOLEAN_OPTS = []string{OPT_NON_INTERACTIVE, OPT_TERRAGRUNT_SOURCE_UPDATE, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS}
-var ALL_TERRAGRUNT_STRING_OPTS = []string{OPT_TERRAGRUNT_CONFIG, OPT_TERRAGRUNT_TFPATH, OPT_WORKING_DIR, OPT_TERRAGRUNT_SOURCE, OPT_LOGGING_LEVEL, OPT_AWS_PROFILE, OPT_APPROVAL_HANDLER, OPT_FLUSH_DELAY, OPT_NB_WORKERS}
+var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, OptTerragruntIgnoreDependencyErrors}
+var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath, optWorkingDir, optTerragruntSource, OptLoggingLevel, OptAWSProfile, optApprovalHandler, OptFlushDelay, OptNbWorkers}
 
-const MULTI_MODULE_SUFFIX = "-all"
-const CMD_INIT = "init"
+const multiModuleSuffix = "-all"
+const cmdInit = "init"
 
-// DEPRECATED_COMMANDS is a map of deprecated commands to the commands that replace them.
-var DEPRECATED_COMMANDS = map[string]string{
+// deprecatedCommands is a map of deprecated commands to the commands that replace them.
+var deprecatedCommands = map[string]string{
 	"spin-up":   "apply-all",
 	"tear-down": "destroy-all",
 }
 
-var TERRAFORM_COMMANDS_THAT_USE_STATE = []string{
+var terraformCommandsThatUseState = []string{
 	"init",
 	"apply",
 	"destroy",
@@ -66,7 +70,7 @@ var TERRAFORM_COMMANDS_THAT_USE_STATE = []string{
 	"state",
 }
 
-var TERRAFORM_COMMANDS_WITH_SUBCOMMAND = []string{
+var terraformCommandsWithSubCommand = []string{
 	"debug",
 	"state",
 }
@@ -87,7 +91,7 @@ USAGE:
 COMMANDS:
    <command> --help | -h               Print the command detailed help 
 
-   get-doc [options...] [filters...] Print the documentation of all extra_arguments, import_files, pre_hooks, post_hooks and extra_command.
+   get-doc [options...] [filters...] Print the documentation of all extra_arguments, import_files, pre_hook, post_hook and extra_command.
    get-versions                      Get all versions of underlying tools (including extra_command).
    get-stack [options]               Get the list of stack to execute sorted by dependency order.
 
@@ -133,18 +137,18 @@ AUTHOR(S):
    {{end}}
 `
 
-var MODULE_REGEX = regexp.MustCompile(`module[[:blank:]]+".+"`)
+var moduleRegex = regexp.MustCompile(`module[[:blank:]]+".+"`)
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
-const DEFAULT_TERRAFORM_VERSION_CONSTRAINT = ">= v0.9.3"
+const defaultTerraformVersionConstaint = ">= v0.9.3"
 
-const TERRAFORM_EXTENSION_GLOB = "*.tf"
+const terraformExtensionGlob = "*.tf"
 
 var terragruntVersion string
 var terragruntRunID string
 var terraformVersion string
 
-// Create the Terragrunt CLI App
+// CreateTerragruntCli creates the Terragrunt CLI App.
 func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) *cli.App {
 	cli.OsExiter = func(exitCode int) {
 		// Do nothing. We just need to override this function, as the default value calls os.Exit, which
@@ -191,7 +195,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		cli.ShowAppHelp(cliContext)
 
 		fmt.Fprintln(cliContext.App.Writer)
-		util.SetWarningLoggingLevel()
+		util.SetLoggingLevel(2)
 		terragruntOptions.Println(title("TERRAFORM\n"))
 		shell.NewTFCmd(terragruntOptions).Args("--help").Run()
 		return nil
@@ -205,7 +209,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		}
 	}
 
-	if err := CheckTerraformVersion(DEFAULT_TERRAFORM_VERSION_CONSTRAINT, terragruntOptions); err != nil {
+	if err := CheckTerraformVersion(defaultTerraformVersionConstaint, terragruntOptions); err != nil {
 		return err
 	}
 
@@ -216,7 +220,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 
 // checkDeprecated checks if the given command is deprecated.  If so: prints a message and returns the new command.
 func checkDeprecated(command string, terragruntOptions *options.TerragruntOptions) string {
-	newCommand, deprecated := DEPRECATED_COMMANDS[command]
+	newCommand, deprecated := deprecatedCommands[command]
 	if deprecated {
 		terragruntOptions.Logger.Warningf("%v is deprecated; running %v instead.\n", command, newCommand)
 		return newCommand
@@ -231,7 +235,7 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
 		return err
 	}
-	if command == getStackCommand || strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
+	if command == getStackCommand || strings.HasSuffix(command, multiModuleSuffix) {
 		return runMultiModuleCommand(command, terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
@@ -281,19 +285,19 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 
 		if !ignoreError {
-			finalStatus = err
+			finalStatus = errors.WithStackTrace(err)
 			return true
 		}
 		terragruntOptions.Logger.Errorf("Encountered %v, continuing execution", err)
 		if finalStatus == nil {
-			finalStatus = err
+			finalStatus = errors.WithStackTrace(err)
 		}
 		return false
 	}
 
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
-		if util.ListContainsElement(TERRAFORM_COMMANDS_WITH_SUBCOMMAND, terragruntOptions.TerraformCliArgs[0]) {
+		if util.ListContainsElement(terraformCommandsWithSubCommand, terragruntOptions.TerraformCliArgs[0]) {
 			commandLength = 2
 		}
 
@@ -329,7 +333,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if stopOnError(err) {
 		return err
 	}
-	if hasSourceURL || len(conf.ImportFiles) > 0 {
+
+	useTempFolder := hasSourceURL || len(conf.ImportFiles) > 0
+	if useTempFolder {
 		// If there are import files, we force the usage of a temp directory.
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {
 			return
@@ -400,6 +406,16 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 
+	if useTempFolder && err == nil {
+		template.SetLogLevel(util.GetLoggingLevel())
+		t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
+		t.SetOption(template.Overwrite, true)
+		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, "*.tf")
+		if _, err := t.ProcessTemplates("", "", files...); stopOnError(err) {
+			return
+		}
+	}
+
 	if err := downloadModules(terragruntOptions); stopOnError(err) {
 		return
 	}
@@ -424,7 +440,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Set the temporary script folder as the first item of the PATH
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
-	// Executing the pre-hooks commands that should be ran before init state if there are
+	// Executing the pre-hook commands that should be ran before init state if there are
 	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(err); stopOnError(err) {
 		return
 	}
@@ -436,7 +452,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	// Executing the pre-hooks that should be ran after init state if there are
+	// Executing the pre-hook that should be ran after init state if there are
 	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(err); stopOnError(err) {
 		return
 	}
@@ -445,7 +461,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		// If there is an error but it is in fact a plan status, we run the post hooks normally
 		_, planStatusError := err.(errors.PlanWithChanges)
 
-		// Executing the post-hooks commands if there are and there is no error
+		// Executing the post-hook commands if there are and there is no error
 		status := err
 		if planStatusError {
 			status = nil
@@ -490,7 +506,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
 		// terraform init if it was necessary, and the below RunTerraformCommand would end up calling init without
 		// the correct remote state arguments, which is confusing.
-		if terragruntOptions.TerraformCliArgs[0] == CMD_INIT {
+		if terragruntOptions.TerraformCliArgs[0] == cmdInit {
 			terragruntOptions.Logger.Warning("Running 'init' manually is not necessary: Terragrunt will call it automatically when needed before running other Terraform commands")
 			return nil
 		}
@@ -520,12 +536,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 // Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
 // apply-all or destroy-all command.
 func isMultiModuleCommand(command string) bool {
-	return strings.HasSuffix(command, MULTI_MODULE_SUFFIX)
+	return strings.HasSuffix(command, multiModuleSuffix)
 }
 
 // Execute a command that affects multiple Terraform modules, such as the apply-all or destroy-all command.
 func runMultiModuleCommand(command string, terragruntOptions *options.TerragruntOptions) error {
-	realCommand := strings.TrimSuffix(command, MULTI_MODULE_SUFFIX)
+	realCommand := strings.TrimSuffix(command, multiModuleSuffix)
 	if command == getStackCommand {
 		return getStack(terragruntOptions)
 	} else if strings.HasPrefix(command, "plan-") {
@@ -536,10 +552,10 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 		return destroyAll(realCommand, terragruntOptions)
 	} else if strings.HasPrefix(command, "output-") {
 		return outputAll(realCommand, terragruntOptions)
-	} else if strings.HasSuffix(command, MULTI_MODULE_SUFFIX) {
+	} else if strings.HasSuffix(command, multiModuleSuffix) {
 		return runAll(realCommand, terragruntOptions)
 	}
-	return errors.WithStackTrace(UnrecognizedCommand(command))
+	return errors.WithStackTrace(unrecognizedCommand(command))
 }
 
 // A quick sanity check that calls `terraform get` to download modules, if they aren't already downloaded.
@@ -568,7 +584,7 @@ func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, 
 		return false, nil
 	}
 
-	return util.Grep(MODULE_REGEX, fmt.Sprintf("%s/%s", terragruntOptions.WorkingDir, TERRAFORM_EXTENSION_GLOB))
+	return util.Grep(moduleRegex, fmt.Sprintf("%s/%s", terragruntOptions.WorkingDir, terraformExtensionGlob))
 }
 
 // If the user entered a Terraform command that uses state (e.g. plan, apply), make sure remote state is configured
@@ -576,7 +592,7 @@ func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, 
 func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *options.TerragruntOptions) error {
 	// We only configure remote state for the commands that use the tfstate files. We do not configure it for
 	// commands such as "get" or "version".
-	if util.ListContainsElement(TERRAFORM_COMMANDS_THAT_USE_STATE, util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")) {
+	if util.ListContainsElement(terraformCommandsThatUseState, util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")) {
 		return remoteState.ConfigureRemoteState(terragruntOptions)
 	}
 
@@ -663,10 +679,10 @@ func outputAll(command string, terragruntOptions *options.TerragruntOptions) err
 
 // Custom error types
 
-var DontManuallyConfigureRemoteState = fmt.Errorf("Instead of manually using the 'remote config' command, define your remote state settings in %s and Terragrunt will automatically configure it for you (and all your team members) next time you run it.", config.DefaultTerragruntConfigPath)
+var errDontManuallyConfigureRemoteState = fmt.Errorf("Instead of manually using the 'remote config' command, define your remote state settings in %s and Terragrunt will automatically configure it for you (and all your team members) next time you run it", config.DefaultTerragruntConfigPath)
 
-type UnrecognizedCommand string
+type unrecognizedCommand string
 
-func (commandName UnrecognizedCommand) Error() string {
+func (commandName unrecognizedCommand) Error() string {
 	return fmt.Sprintf("Unrecognized command: %s", string(commandName))
 }

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Return true if the given list contains the given element
+// ListContainsElement returns true if the given list contains the given element
 func ListContainsElement(list []string, element string) bool {
 	for _, item := range list {
 		if item == element {
@@ -17,22 +17,22 @@ func ListContainsElement(list []string, element string) bool {
 	return false
 }
 
-// Return a copy of the given list with all instances of the given element removed
+// RemoveElementFromList returns a copy of the given list with all instances of the given element removed
 func RemoveElementFromList(list []string, element string) []string {
 	return removeElementFromList(list, element, wholeValue)
 }
 
-// Returns a copy of the given list with all duplicates removed (keeping the first encountereds)
+// RemoveDuplicatesFromListKeepFirst returns a copy of the given list with all duplicates removed (keeping the first encountereds)
 func RemoveDuplicatesFromListKeepFirst(list []string) []string {
 	return RemoveDuplicatesFromList(list, false, wholeValue)
 }
 
-// Returns a copy of the given list with all duplicates removed (keeping the last encountereds)
+// RemoveDuplicatesFromListKeepLast returns a copy of the given list with all duplicates removed (keeping the last encountereds)
 func RemoveDuplicatesFromListKeepLast(list []string) []string {
 	return RemoveDuplicatesFromList(list, true, wholeValue)
 }
 
-// Returns a copy of the given list with all duplicates removed (keeping the last encountereds)
+// RemoveDuplicatesFromList returns a copy of the given list with all duplicates removed (keeping the last encountereds)
 // Params:
 //   list: The list to filter
 //   keepLast: Indicates whether the last or first encountered duplicate element should be kept

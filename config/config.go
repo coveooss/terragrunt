@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -358,6 +359,11 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		// We should issue this warning only once
 		lockWarningGiven = true
 		terragruntOptions.Logger.Warning("lock_table is deprecated, please use dynamodb_table instead")
+	}
+
+	t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
+	if configString, err = t.ProcessContent(configString, "Terragrunt configuration"); err != nil {
+		return
 	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)

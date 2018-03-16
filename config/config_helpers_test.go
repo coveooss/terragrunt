@@ -154,7 +154,7 @@ func TestFindInParentFolders(t *testing.T) {
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 			"",
-			ParentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
+			parentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 		},
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/multiple-terragrunt-in-parents/child/" + DefaultTerragruntConfigPath),
@@ -174,12 +174,12 @@ func TestFindInParentFolders(t *testing.T) {
 		{
 			options.NewTerragruntOptionsForTest("/"),
 			"",
-			ParentTerragruntConfigNotFound("/"),
+			parentTerragruntConfigNotFound("/"),
 		},
 		{
 			options.NewTerragruntOptionsForTest("/fake/path"),
 			"",
-			ParentTerragruntConfigNotFound("/fake/path"),
+			parentTerragruntConfigNotFound("/fake/path"),
 		},
 	}
 
@@ -238,28 +238,28 @@ func TestResolveTerragruntInterpolation(t *testing.T) {
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 			"",
-			ParentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
+			parentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 		},
 		{
 			"${find_in_parent_folders}",
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("/root/child/" + DefaultTerragruntConfigPath),
 			"",
-			InvalidInterpolationSyntax("${find_in_parent_folders}"),
+			invalidInterpolationSyntax("${find_in_parent_folders}"),
 		},
 		{
 			"{find_in_parent_folders()}",
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("/root/child/" + DefaultTerragruntConfigPath),
 			"",
-			InvalidInterpolationSyntax("{find_in_parent_folders()}"),
+			invalidInterpolationSyntax("{find_in_parent_folders()}"),
 		},
 		{
 			"find_in_parent_folders()",
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("/root/child/" + DefaultTerragruntConfigPath),
 			"",
-			InvalidInterpolationSyntax("find_in_parent_folders()"),
+			invalidInterpolationSyntax("find_in_parent_folders()"),
 		},
 	}
 
@@ -368,7 +368,7 @@ func TestResolveTerragruntConfigString(t *testing.T) {
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 			"",
-			InvalidInterpolationSyntax("${find_in_parent_folders ()}"),
+			invalidInterpolationSyntax("${find_in_parent_folders ()}"),
 		},
 		{
 			"foo/${find_in_parent_folders()}/bar",
@@ -382,14 +382,14 @@ func TestResolveTerragruntConfigString(t *testing.T) {
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 			"",
-			ParentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
+			parentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
 		},
 		{
 			"foo/${unknown}/bar",
 			mockDefaultInclude,
 			options.NewTerragruntOptionsForTest("/root/child/" + DefaultTerragruntConfigPath),
 			"",
-			InvalidInterpolationSyntax("${unknown}"),
+			invalidInterpolationSyntax("${unknown}"),
 		},
 	}
 
@@ -421,11 +421,11 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 		expectedOut       string
 		expectedErr       error
 	}{
-		{"foo/${get_env()}/bar", defaultOptions, "", InvalidGetEnvParameters("")},
-		{"foo/${get_env(Invalid Parameters)}/bar", defaultOptions, "", InvalidInterpolationSyntax("${get_env(Invalid Parameters)}")},
-		{"foo/${get_env('env','')}/bar", defaultOptions, "", InvalidInterpolationSyntax("${get_env('env','')}")},
-		{`foo/${get_env("","")}/bar`, defaultOptions, "", InvalidGetEnvParameters(`"",""`)},
-		{`foo/${get_env(   ""    ,   ""    )}/bar`, defaultOptions, "", InvalidGetEnvParameters(`   ""    ,   ""    `)},
+		{"foo/${get_env()}/bar", defaultOptions, "", invalidGetEnvParameters("")},
+		{"foo/${get_env(Invalid Parameters)}/bar", defaultOptions, "", invalidInterpolationSyntax("${get_env(Invalid Parameters)}")},
+		{"foo/${get_env('env','')}/bar", defaultOptions, "", invalidInterpolationSyntax("${get_env('env','')}")},
+		{`foo/${get_env("","")}/bar`, defaultOptions, "", invalidGetEnvParameters(`"",""`)},
+		{`foo/${get_env(   ""    ,   ""    )}/bar`, defaultOptions, "", invalidGetEnvParameters(`   ""    ,   ""    `)},
 		{`${get_env("SOME_VAR", "SOME{VALUE}")}`, defaultOptions, "SOME{VALUE}", nil},
 		{
 			`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT","")}/bar`,
@@ -444,7 +444,7 @@ func TestResolveEnvInterpolationConfigString(t *testing.T) {
 TERRAGRUNT_HIT","")}/bar`,
 			optionsWithEnv(map[string]string{"TEST_ENV_TERRAGRUNT_OTHER": "SOMETHING"}),
 			"",
-			InvalidInterpolationSyntax(`${get_env("TEST_ENV_
+			invalidInterpolationSyntax(`${get_env("TEST_ENV_
 TERRAGRUNT_HIT","")}`),
 		},
 		{
@@ -466,7 +466,7 @@ TERRAGRUNT_HIT","")}`),
 			nil,
 		},
 		// Unclosed quote
-		{`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT}/bar`, defaultOptions, "", InvalidInterpolationSyntax(`${get_env("TEST_ENV_TERRAGRUNT_HIT}`)},
+		{`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT}/bar`, defaultOptions, "", invalidInterpolationSyntax(`${get_env("TEST_ENV_TERRAGRUNT_HIT}`)},
 		// Unclosed quote and interpolation pattern
 		{`foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`, defaultOptions, `foo/${get_env("TEST_ENV_TERRAGRUNT_HIT/bar`, nil},
 	}

@@ -67,17 +67,17 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return
 	}
 
-	workingDir := parse(OPT_WORKING_DIR, currentDir)
-	terragruntConfigPath := parse(OPT_TERRAGRUNT_CONFIG, os.Getenv(options.EnvConfig), config.DefaultConfigPath(workingDir))
-	terraformPath := parse(OPT_TERRAGRUNT_TFPATH, os.Getenv(options.EnvTFPath), "terraform")
-	terraformSource := parse(OPT_TERRAGRUNT_SOURCE, os.Getenv(options.EnvSource))
-	loggingLevel := parse(OPT_LOGGING_LEVEL, os.Getenv(options.EnvLoggingLevel))
-	awsProfile := parse(OPT_AWS_PROFILE)
-	approvalHandler := parse(OPT_APPROVAL_HANDLER)
-	sourceUpdate := parseBooleanArg(args, OPT_TERRAGRUNT_SOURCE_UPDATE, false)
-	ignoreDependencyErrors := parseBooleanArg(args, OPT_TERRAGRUNT_IGNORE_DEPENDENCY_ERRORS, false)
-	flushDelay := parse(OPT_FLUSH_DELAY, os.Getenv(options.EnvFlushDelay), "60s")
-	nbWorkers := parse(OPT_NB_WORKERS, os.Getenv(options.EnvWorkers), "10")
+	workingDir := parse(optWorkingDir, currentDir)
+	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), config.DefaultConfigPath(workingDir))
+	terraformPath := parse(optTerragruntTFPath, os.Getenv(options.EnvTFPath), "terraform")
+	terraformSource := parse(optTerragruntSource, os.Getenv(options.EnvSource))
+	loggingLevel := parse(OptLoggingLevel, os.Getenv(options.EnvLoggingLevel))
+	awsProfile := parse(OptAWSProfile)
+	approvalHandler := parse(optApprovalHandler)
+	sourceUpdate := parseBooleanArg(args, optTerragruntSourceUpdate, false)
+	ignoreDependencyErrors := parseBooleanArg(args, OptTerragruntIgnoreDependencyErrors, false)
+	flushDelay := parse(OptFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
+	nbWorkers := parse(OptNbWorkers, os.Getenv(options.EnvWorkers), "10")
 
 	if err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 
 	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
 	opts.TerraformPath = filepath.ToSlash(terraformPath)
-	opts.NonInteractive = parseBooleanArg(args, OPT_NON_INTERACTIVE, false)
+	opts.NonInteractive = parseBooleanArg(args, optNonInteractive, false)
 	opts.TerraformCliArgs = filterTerragruntArgs(args)
 	opts.WorkingDir = filepath.ToSlash(workingDir)
 	opts.RunTerragrunt = runTerragrunt
@@ -115,8 +115,8 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	var cmd string
 	if len(args) > 0 {
 		cmd = args[0]
-		if strings.HasSuffix(cmd, MULTI_MODULE_SUFFIX) {
-			cmd = strings.TrimSuffix(cmd, MULTI_MODULE_SUFFIX)
+		if strings.HasSuffix(cmd, multiModuleSuffix) {
+			cmd = strings.TrimSuffix(cmd, multiModuleSuffix)
 		}
 	}
 	opts.TerraformCliArgs, err = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
@@ -201,16 +201,16 @@ func filterTerragruntArgs(args []string) []string {
 		arg := args[i]
 		argWithoutPrefix := strings.TrimPrefix(arg, "--")
 
-		if strings.HasSuffix(arg, MULTI_MODULE_SUFFIX) {
+		if strings.HasSuffix(arg, multiModuleSuffix) {
 			continue
 		}
 
-		if util.ListContainsElement(ALL_TERRAGRUNT_STRING_OPTS, argWithoutPrefix) {
+		if util.ListContainsElement(allTerragruntStringOpts, argWithoutPrefix) {
 			// String flags have the argument and the value, so skip both
 			i = i + 1
 			continue
 		}
-		if util.ListContainsElement(ALL_TERRAGRUNT_BOOLEAN_OPTS, argWithoutPrefix) {
+		if util.ListContainsElement(allTerragruntBooleanOpts, argWithoutPrefix) {
 			// Just skip the boolean flag
 			continue
 		}
@@ -241,16 +241,15 @@ func parseStringArg(args []string, argName string, defaultValue string) (string,
 			if (i + 1) < len(args) {
 				return args[i+1], nil
 			}
-			return "", errors.WithStackTrace(ArgMissingValue(argName))
+			return "", errors.WithStackTrace(ErrArgMissingValue(argName))
 		}
 	}
 	return defaultValue, nil
 }
 
-// Custom error types
+// ErrArgMissingValue indicates that there is a missing argument value
+type ErrArgMissingValue string
 
-type ArgMissingValue string
-
-func (err ArgMissingValue) Error() string {
+func (err ErrArgMissingValue) Error() string {
 	return fmt.Sprintf("You must specify a value for the --%s option", string(err))
 }

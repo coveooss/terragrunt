@@ -19,8 +19,8 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		*value = SubstituteVars(*value, terragruntOptions)
 		if substituteFinal {
 			// We only substitute folders on the last substitute call
-			*value = strings.Replace(*value, GET_TEMP_FOLDER, terragruntOptions.DownloadDir, -1)
-			*value = strings.Replace(*value, GET_SCRIPT_FOLDER, scriptFolder, -1)
+			*value = strings.Replace(*value, getTempFolder, terragruntOptions.DownloadDir, -1)
+			*value = strings.Replace(*value, getScriptsFolder, scriptFolder, -1)
 			*value = strings.TrimSpace(utils.UnIndent(*value))
 		}
 

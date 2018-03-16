@@ -33,13 +33,13 @@ func FileStat(path string) (result os.FileInfo, err error) {
 	}
 }
 
-// Return true if the given file exists
+// FileExists returns true if the given file exists.
 func FileExists(path string) bool {
 	_, err := FileStat(path)
 	return err == nil
 }
 
-// Return the canonical version of the given path, relative to the given base path. That is, if the given path is a
+// CanonicalPath returns the canonical version of the given path, relative to the given base path. That is, if the given path is a
 // relative path, assume it is relative to the given base path. A canonical path is an absolute path with all relative
 // components (e.g. "../") fully resolved, which makes it safe to compare paths as strings.
 func CanonicalPath(path string, basePath string) (string, error) {
@@ -54,8 +54,8 @@ func CanonicalPath(path string, basePath string) (string, error) {
 	return CleanPath(absPath), nil
 }
 
-// Return the canonical version of the given paths, relative to the given base path. That is, if a given path is a
-// relative path, assume it is relative to the given base path. A canonical path is an absolute path with all relative
+// CanonicalPaths returns the canonical version of the given paths, relative to the given base path. That is, if a given path
+// is a relative path, assume it is relative to the given base path. A canonical path is an absolute path with all relative
 // components (e.g. "../") fully resolved, which makes it safe to compare paths as strings.
 func CanonicalPaths(paths []string, basePath string) ([]string, error) {
 	canonicalPaths := []string{}
@@ -71,8 +71,8 @@ func CanonicalPaths(paths []string, basePath string) ([]string, error) {
 	return canonicalPaths, nil
 }
 
-// Delete the given list of files. Note: this function ONLY deletes files and will return an error if you pass in a
-// folder path.
+// DeleteFiles deletes the given list of files. Note: this function ONLY deletes files and will return an error if you
+// pass in a folder path.
 func DeleteFiles(files []string) error {
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
@@ -82,7 +82,7 @@ func DeleteFiles(files []string) error {
 	return nil
 }
 
-// Returns true if the given regex can be found in any of the files matched by the given glob
+// Grep returns true if the given regex can be found in any of the files matched by the given glob
 func Grep(regex *regexp.Regexp, glob string) (bool, error) {
 	matches, err := filepath.Glob(glob)
 	if err != nil {
@@ -274,7 +274,7 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 var sharedMutex sync.Mutex
 var sharedContent = map[string]bool{}
 
-// Copy the files and folders within the source folder into the destination folder. Note that hidden files and folders
+// CopyFolderContents copies the files and folders within the source folder into the destination folder. Note that hidden files and folders
 // (those starting with a dot) will be skipped.
 func CopyFolderContents(source string, destination string) error {
 	files, err := ioutil.ReadDir(source)
@@ -306,6 +306,7 @@ func CopyFolderContents(source string, destination string) error {
 	return nil
 }
 
+// PathContainsHiddenFileOrFolder returns true if folder contains files starting with . (except . and ..)
 func PathContainsHiddenFileOrFolder(path string) bool {
 	pathParts := strings.Split(path, string(filepath.Separator))
 	for _, pathPart := range pathParts {
@@ -316,7 +317,7 @@ func PathContainsHiddenFileOrFolder(path string) bool {
 	return false
 }
 
-// Copy a file from source to destination
+// CopyFile copies a file from source to destination
 func CopyFile(source string, destination string) error {
 	contents, err := ioutil.ReadFile(source)
 	if err != nil {
@@ -326,7 +327,7 @@ func CopyFile(source string, destination string) error {
 	return WriteFileWithSamePermissions(source, destination, contents)
 }
 
-// Write a file to the given destination with the given contents using the same permissions as the file at source
+// WriteFileWithSamePermissions writes a file to the given destination with the given contents using the same permissions as the file at source
 func WriteFileWithSamePermissions(source string, destination string, contents []byte) error {
 	fileInfo, err := FileStat(source)
 
@@ -337,6 +338,7 @@ func WriteFileWithSamePermissions(source string, destination string, contents []
 	return ioutil.WriteFile(destination, contents, fileInfo.Mode())
 }
 
+// JoinPath always use / as the separator.
 // Windows systems use \ as the path separator *nix uses /
 // Use this function when joining paths to force the returned path to use / as the path separator
 // This will improve cross-platform compatibility
@@ -344,7 +346,7 @@ func JoinPath(elem ...string) string {
 	return filepath.ToSlash(filepath.Join(elem...))
 }
 
-// Use this function when cleaning paths to ensure the returned path uses / as the path separator to improve cross-platform compatibility
+// CleanPath is used to clean paths to ensure the returned path uses / as the path separator to improve cross-platform compatibility.
 func CleanPath(path string) string {
 	return filepath.ToSlash(filepath.Clean(path))
 }

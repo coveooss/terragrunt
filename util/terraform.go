@@ -6,8 +6,10 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/coveo/gotemplate/hcl"
+	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 )
 
@@ -41,20 +43,46 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
-func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
+func LoadVariablesFromFile(path, cwd string, context ...interface{}) (map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return LoadVariables(string(bytes))
+	return LoadVariablesFromSource(string(bytes), path, cwd, context...)
 }
 
 // LoadVariables returns a map of the variables defined in the content provider
-func LoadVariables(content string) (map[string]interface{}, error) {
-	variables := map[string]interface{}{}
-	err := hcl.Unmarshal([]byte(content), &variables)
-	return variables, err
+func LoadVariables(content string, cwd string, context ...interface{}) (map[string]interface{}, error) {
+	return LoadVariablesFromSource(content, "Terragrunt content", cwd, context...)
+}
+
+// LoadVariablesFromSource returns a map of the variables defined in the content provider
+func LoadVariablesFromSource(content, fileName, cwd string, context ...interface{}) (result map[string]interface{}, err error) {
+	result = make(map[string]interface{})
+	if strings.Contains(content, "@") || strings.Contains(content, "{{") {
+		var t *template.Template
+		switch len(context) {
+		case 0:
+			break
+		case 1:
+			t = template.NewTemplate(cwd, context[0], "", nil)
+		default:
+			t = template.NewTemplate(cwd, context, "", nil)
+		}
+
+		if t != nil {
+			template.SetLogLevel(GetLoggingLevel())
+			if modifiedContent, err := t.ProcessContent(content, fileName); err != nil {
+				// In case of error, we simply issue a warning and continue with the original content
+				template.Log.Warning(err)
+			} else {
+				content = modifiedContent
+			}
+		}
+	}
+	err = utils.ConvertData(content, &result)
+	return
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)
