@@ -1,5 +1,5 @@
 hash: 850f3a87c1fb0beaf8e6fc831d363fe1e08dc4b395acccf4c370a08ed0d33f93
-updated: 2018-03-16T12:13:13.34492-04:00
+updated: 2018-03-23T08:08:38.221587-04:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -22,7 +22,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: 62465d4996f172ae426fdcec7a6a053062cf8995
+  version: c0ea8ae46aeed5902eeebe10d0d5cdf54b258526
   subpackages:
   - aws
   - aws/awserr
@@ -70,12 +70,16 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 1f5a576d4375c441a4d13e169aa5e36cb3590795
+  version: 379687fd11d0b719dfffbd92d9b3a2e4048828d0
   subpackages:
   - errors
   - hcl
+  - json
   - template
+  - types
   - utils
+  - xml
+  - yaml
 - name: github.com/davecgh/go-spew
   version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
@@ -128,7 +132,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 7878d66b386e5474102b5047722c2de2b3237278
+  version: 342c529aa58d824f2f2ed1f6ec6118059876aad0
   subpackages:
   - config
   - config/hcl2shim

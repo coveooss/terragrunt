@@ -114,7 +114,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		TerraformPath:        "terraform",
 		TerraformCliArgs:     []string{},
 		WorkingDir:           workingDir,
-		Logger:               util.CreateLogger(""),
+		Logger:               util.CreateLogger("main"),
 		Env:                  make(map[string]string),
 		Variables:            make(map[string]Variable),
 		DownloadDir:          downloadDir,

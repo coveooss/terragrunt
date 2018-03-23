@@ -11,6 +11,7 @@ import (
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
+	goerrors "github.com/go-errors/errors"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
@@ -246,6 +247,12 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
+	defer func() {
+		if _, hasStack := finalStatus.(*goerrors.Error); finalStatus != nil && !hasStack {
+			finalStatus = errors.WithStackTrace(finalStatus)
+		}
+	}()
+
 	if util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFile)) {
 		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFile)
 	}

@@ -14,9 +14,6 @@ import (
 
 // CreateLogger creates a logger with the given prefix
 func CreateLogger(prefix string) *logging.Logger {
-	if prefix != "" {
-		prefix = " " + prefix
-	}
 	return logging.MustGetLogger(prefix)
 }
 

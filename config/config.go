@@ -9,6 +9,7 @@ import (
 
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
+	goerrors "github.com/go-errors/errors"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
@@ -271,6 +272,12 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 // ParseConfigFile parses the Terragrunt config file at the given path. If the include parameter is not nil, then treat
 // this as a config included in some other config file when resolving relative paths.
 func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
+	defer func() {
+		if _, hasStack := err.(*goerrors.Error); err != nil && !hasStack {
+			err = errors.WithStackTrace(err)
+		}
+	}()
+
 	if include.Path == "" {
 		include.Path = DefaultTerragruntConfigPath
 	}
@@ -307,10 +314,15 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}
 
 	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", util.GetPathRelativeToWorkingDirMax(source, 2))
-
 	if err = terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile); err != nil {
 		return
 	}
+
+	t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
+	if configString, err = t.ProcessContent(configString, source); err != nil {
+		return
+	}
+
 	if config, err = parseConfigString(configString, terragruntOptions, include); err != nil {
 		return
 	}
@@ -359,11 +371,6 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		// We should issue this warning only once
 		lockWarningGiven = true
 		terragruntOptions.Logger.Warning("lock_table is deprecated, please use dynamodb_table instead")
-	}
-
-	t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
-	if configString, err = t.ProcessContent(configString, "Terragrunt configuration"); err != nil {
-		return
 	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)
