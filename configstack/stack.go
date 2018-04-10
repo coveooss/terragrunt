@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/config"
-	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 )
 
@@ -124,7 +123,7 @@ func (stack *Stack) setTerraformCommand(command []string) {
 // modules into a Stack object that can be applied or destroyed in a single command
 func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions) (*Stack, error) {
 	if len(terragruntConfigPaths) == 0 {
-		return nil, errors.WithStackTrace(NoTerraformModulesFound)
+		terragruntOptions.Logger.Warning("Could not find any subfolders with Terragrunt configuration files")
 	}
 
 	modules, err := ResolveTerraformModules(terragruntConfigPaths, terragruntOptions)
@@ -141,8 +140,6 @@ func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []st
 }
 
 // Custom error types
-
-var NoTerraformModulesFound = fmt.Errorf("Could not find any subfolders with Terragrunt configuration files")
 
 type DependencyCycle []string
 
