@@ -418,6 +418,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return nil
 	}
 
+	if conf.RunConditions != nil && !conf.RunConditions.ShouldRun(terragruntOptions) {
+		return nil
+	}
+
 	// Save all variable files requested in the terragrunt config
 	terragruntOptions.SaveVariables()
 

@@ -6,8 +6,19 @@ import (
 	"strings"
 )
 
-// Return true if the given list contains the given element
+// ListContainsElement returns true if the given list contains the given element
 func ListContainsElement(list []string, element string) bool {
+	for _, item := range list {
+		if item == element {
+			return true
+		}
+	}
+
+	return false
+}
+
+// ListContainsElementInterface returns true if the given list contains the given element
+func ListContainsElementInterface(list []interface{}, element interface{}) bool {
 	for _, item := range list {
 		if item == element {
 			return true
