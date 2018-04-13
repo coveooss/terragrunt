@@ -31,6 +31,7 @@ const (
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
 	Description    string              `hcl:"description"`
+	RunConditions  *RunConditions      `hcl:"run_conditions"`
 	Terraform      *TerraformConfig    `hcl:"terraform"`
 	RemoteState    *remote.RemoteState `hcl:"remote_state"`
 	Dependencies   *ModuleDependencies `hcl:"dependencies"`
@@ -124,6 +125,33 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	tcf.PreHooks.init(tcf)
 	tcf.PostHooks.init(tcf)
 	return &tcf.TerragruntConfig, nil
+}
+
+// RunConditions defines the rules that are evaluated in order to determine
+type RunConditions struct {
+	Run    map[string][]interface{} `hcl:"run_if"`
+	Ignore map[string][]interface{} `hcl:"ignore_if"`
+}
+
+// ShouldRun returns whether or not the current project should be run based on its run conditions and the variables in its options.
+func (conditions RunConditions) ShouldRun(terragruntOptions *options.TerragruntOptions) bool {
+	variables := terragruntOptions.Variables
+	for key, values := range conditions.Ignore {
+		variable, found := variables[key]
+		if found && util.ListContainsElementInterface(values, variable.Value) {
+			terragruntOptions.Logger.Warningf("Ignoring project because variable `%v` is equal to `%v` which is an ignored value. (See run_conditions)", key, variable.Value)
+			return false
+		}
+	}
+	for key, values := range conditions.Run {
+		variable, found := variables[key]
+		if found && !util.ListContainsElementInterface(values, variable.Value) {
+			terragruntOptions.Logger.Warningf("Ignoring project because variable `%v` is equal to `%v` which is not in the list of accepted values `%v`. (See run_conditions)", key, variable.Value, values)
+			return false
+		}
+	}
+
+	return true
 }
 
 // LockConfig is older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,

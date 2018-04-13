@@ -257,7 +257,7 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 			if s3Object != nil {
 				// Since it is an S3 Bucket object, we save its md5 value
 				// to avoid multiple download of the same object
-				err = aws_helper.SaveS3Status(source, cacheDir)
+				err = aws_helper.SaveS3Status(s3Object, cacheDir)
 			}
 			if err != nil {
 				return "", fmt.Errorf("%v while saving status for %s", err, source)

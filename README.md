@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/coveo/terragrunt.svg?branch=master)](https://travis-ci.org/coveo/terragrunt)
-[![Coverage Status](https://coveralls.io/repos/github/coveo/terragrunt/badge.svg?branch=coveralls)](https://coveralls.io/github/coveo/terragrunt?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/coveo/terragrunt/badge.svg?branch=master)](https://coveralls.io/github/coveo/terragrunt?branch=master)
 
 # Terragrunt
 
@@ -998,6 +998,28 @@ Then, terragrunt will try to assume the roles until it succeeded. Note that the 
 is satisfied. Empty strings means to continue with the user current role.
 
 The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf configuration will prevail.
+
+### Conditional execution of a project
+
+It is possible to set conditions that must be met in order for a project to be executed. To do so, the following block must be defined in the terraform.tfvars:
+```hcl
+terragrunt = {
+  run_conditions {
+    run_if {
+      region = ["us-east-1", "us-west-2"] # Must be a list
+      another_var = ["value"]
+    }
+    ignore_if {
+      env = ["qa"] # Must be a list
+    }
+  }
+}
+```
+
+The condition for this project to run would be as follows:  
+`region in ["us-east-1", "us-west-2"] and another_value in ["value"] and env not in ["qa"]`
+
+The conditions are evaluated using variables passed to terragrunt/terraform and the accepted or rejected values must be in the form of a list.
 
 ### Define extra commands
 

@@ -27,6 +27,28 @@ func TestListContainsElement(t *testing.T) {
 	}
 }
 
+func TestListContainsElementInterface(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		list     []interface{}
+		element  interface{}
+		expected bool
+	}{
+		{[]interface{}{}, "", false},
+		{[]interface{}{}, 1, false},
+		{[]interface{}{"foo"}, "foo", true},
+		{[]interface{}{"bar", 2, "baz"}, 2, true},
+		{[]interface{}{"bar", "foo", 4}, "nope", false},
+		{[]interface{}{"bar", "foo", "baz"}, "", false},
+	}
+
+	for _, testCase := range testCases {
+		actual := ListContainsElementInterface(testCase.list, testCase.element)
+		assert.Equal(t, testCase.expected, actual, "For list %v and element %s", testCase.list, testCase.element)
+	}
+}
+
 func TestRemoveElementFromList(t *testing.T) {
 	t.Parallel()
 

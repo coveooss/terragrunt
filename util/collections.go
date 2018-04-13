@@ -17,6 +17,17 @@ func ListContainsElement(list []string, element string) bool {
 	return false
 }
 
+// ListContainsElementInterface returns true if the given list contains the given element
+func ListContainsElementInterface(list []interface{}, element interface{}) bool {
+	for _, item := range list {
+		if item == element {
+			return true
+		}
+	}
+
+	return false
+}
+
 // RemoveElementFromList returns a copy of the given list with all instances of the given element removed
 func RemoveElementFromList(list []string, element string) []string {
 	return removeElementFromList(list, element, wholeValue)
