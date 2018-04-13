@@ -1,6 +1,7 @@
 package aws_helper
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -25,20 +26,9 @@ func ConvertS3Path(path string) (string, error) {
 
 	parts := strings.Split(path[5:], "/")
 
-	session, err := CreateAwsSession("us-east-1", "")
+	region, err := getBucketRegion(parts[0])
 	if err != nil {
 		return formatS3Path(parts[0], "", parts[1:]...), err
-	}
-	svc := s3.New(session)
-
-	answer, err := svc.GetBucketLocation(&s3.GetBucketLocationInput{Bucket: aws.String(parts[0])})
-	if err != nil {
-		return formatS3Path(parts[0], "", parts[1:]...), err
-	}
-
-	region := ""
-	if answer.LocationConstraint != nil {
-		region = *answer.LocationConstraint
 	}
 
 	return formatS3Path(parts[0], region, parts[1:]...), nil
@@ -118,16 +108,12 @@ type bucketStatus struct {
 var s3Patterns []*regexp.Regexp
 
 // SaveS3Status save the current state of the S3 bucket folder in the directory
-func SaveS3Status(url, folder string) (err error) {
+func SaveS3Status(bucketInfo *BucketInfo, folder string) (err error) {
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("%s %v", url, err)
+			err = fmt.Errorf("%s %v", bucketInfo, err)
 		}
 	}()
-	bucketInfo, err := GetBucketObjectInfoFromURL(url)
-	if err != nil {
-		return
-	}
 
 	if !strings.HasSuffix(bucketInfo.Key, "/") && !strings.HasSuffix(bucketInfo.Key, ".zip") {
 		bucketInfo.Key += "/"
@@ -172,6 +158,13 @@ func CheckS3Status(folder string) error {
 }
 
 func getS3Status(info BucketInfo) (*bucketStatus, error) {
+	var err error
+	if info.Region == "" {
+		info.Region, err = getBucketRegion(info.BucketName)
+		if err != nil {
+			return nil, err
+		}
+	}
 	session, err := CreateAwsSession(info.Region, "")
 	if err != nil {
 		return nil, err
@@ -192,4 +185,24 @@ func getS3Status(info BucketInfo) (*bucketStatus, error) {
 		Version:      *answer.VersionId,
 		LastModified: *answer.LastModified,
 	}, nil
+}
+
+func getBucketRegion(bucketName string) (string, error) {
+	session, err := CreateAwsSession("", "")
+	if err != nil {
+		return "", err
+	}
+	svc := s3.New(session)
+
+	result, err := svc.GetBucketLocationWithContext(
+		context.Background(),
+		&s3.GetBucketLocationInput{
+			Bucket: aws.String(bucketName),
+		},
+		s3.WithNormalizeBucketLocation,
+	)
+	if err != nil {
+		return "", err
+	}
+	return *result.LocationConstraint, nil
 }
