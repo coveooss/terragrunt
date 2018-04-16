@@ -413,7 +413,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 
-	if useTempFolder && err == nil {
+	if err == nil && useTempFolder && util.ApplyTemplate() {
 		template.SetLogLevel(util.GetLoggingLevel())
 		t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
 		t.SetOption(template.Overwrite, true)

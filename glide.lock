@@ -1,5 +1,5 @@
 hash: 850f3a87c1fb0beaf8e6fc831d363fe1e08dc4b395acccf4c370a08ed0d33f93
-updated: 2018-03-23T08:08:38.221587-04:00
+updated: 2018-04-16T14:10:41.516644-04:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -9,6 +9,8 @@ imports:
   - parse
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+- name: github.com/andybalholm/cascadia
+  version: 901648c87902174f774fac311d7f176f8647bdaa
 - name: github.com/aokoli/goutils
   version: 3391d3790d23d03408670993e957e8f408993c34
 - name: github.com/apparentlymart/go-cidr
@@ -22,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1fca145dffbcaa8fe914309b1ec0cfc67500fe61
 - name: github.com/aws/aws-sdk-go
-  version: c0ea8ae46aeed5902eeebe10d0d5cdf54b258526
+  version: 9b0098a71f6d4d473a26ec8ad3c2feaac6eb1da6
   subpackages:
   - aws
   - aws/awserr
@@ -70,13 +72,14 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 379687fd11d0b719dfffbd92d9b3a2e4048828d0
+  version: 6d2b37540486c178cdf8c8fff39af85dab5501ac
   subpackages:
+  - collections
+  - collections/implementation
   - errors
   - hcl
   - json
   - template
-  - types
   - utils
   - xml
   - yaml
@@ -132,7 +135,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 342c529aa58d824f2f2ed1f6ec6118059876aad0
+  version: 41e50bd32a8825a84535e353c3674af8ce799161
   subpackages:
   - config
   - config/hcl2shim
@@ -195,6 +198,8 @@ imports:
   - cmd
   - cmd/install
   - match
+- name: github.com/PuerkitoBio/goquery
+  version: ea1bc64a63088ac2bbf1a2edcae38413794a7710
 - name: github.com/rs/xid
   version: 02dd45c33376f85d1064355dc790dcc4850596b1
 - name: github.com/satori/go.uuid

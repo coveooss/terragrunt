@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 	goerrors "github.com/go-errors/errors"
@@ -47,7 +48,7 @@ type TerragruntConfig struct {
 }
 
 func (conf TerragruntConfig) String() string {
-	return utils.PrettyPrintStruct(conf)
+	return collections.PrettyPrintStruct(conf)
 }
 
 // ExtraArguments processes the extra_arguments defined in the terraform section of the config file
@@ -75,7 +76,7 @@ type TerragruntConfigFile struct {
 }
 
 func (tcf TerragruntConfigFile) String() string {
-	return utils.PrettyPrintStruct(tcf)
+	return collections.PrettyPrintStruct(tcf)
 }
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
@@ -197,7 +198,7 @@ type TerraformConfig struct {
 }
 
 func (conf TerraformConfig) String() string {
-	return utils.PrettyPrintStruct(conf)
+	return collections.PrettyPrintStruct(conf)
 }
 
 // DefaultConfigPath returns the default path to use for the Terragrunt configuration file. The reason this is a method
@@ -346,9 +347,11 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return
 	}
 
-	t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
-	if configString, err = t.ProcessContent(configString, source); err != nil {
-		return
+	if util.ApplyTemplate() {
+		t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
+		if configString, err = t.ProcessContent(configString, source); err != nil {
+			return
+		}
 	}
 
 	if config, err = parseConfigString(configString, terragruntOptions, include); err != nil {

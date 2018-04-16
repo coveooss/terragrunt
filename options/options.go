@@ -302,7 +302,7 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 			// Values defined at the same level overwrite the previous values except for those defined in config file
 			oldMap, newMap = newMap, oldMap
 		}
-		newValue, err := utils.MergeMaps(oldMap, newMap)
+		newValue, err := utils.MergeDictionaries(oldMap, newMap)
 		if err != nil {
 			terragruntOptions.Logger.Warningf("Unable to merge variable %s: %v and %v", key, target.Value, value)
 		} else {

@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/coveo/gotemplate/utils"
 	"strings"
+
+	"github.com/coveo/gotemplate/collections"
 )
 
 // ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
@@ -31,7 +32,7 @@ func (item ApprovalConfig) help() (result string) {
 }
 
 func (item ApprovalConfig) String() string {
-	return utils.PrettyPrintStruct(item)
+	return collections.PrettyPrintStruct(item)
 }
 
 // ----------------------- ApprovalConfigList -----------------------

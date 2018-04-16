@@ -1,14 +1,16 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/hcl"
+	"github.com/coveo/gotemplate/json"
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 )
@@ -29,10 +31,14 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 			if old, exist := result[key]; exist {
 				switch old := old.(type) {
 				case map[string]interface{}:
-					if result[key], err = utils.MergeMaps(old, value.(map[string]interface{})); err != nil {
-						return
+					newValue, ok := value.(map[string]interface{})
+					if !ok {
+						return nil, fmt.Errorf("Cannot override %s: %T with %T", key, old, value)
 					}
-					continue
+					value, err = utils.MergeDictionaries(old, newValue)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 			result[key] = value
@@ -60,7 +66,7 @@ func LoadVariables(content string, cwd string, context ...interface{}) (map[stri
 // LoadVariablesFromSource returns a map of the variables defined in the content provider
 func LoadVariablesFromSource(content, fileName, cwd string, context ...interface{}) (result map[string]interface{}, err error) {
 	result = make(map[string]interface{})
-	if strings.Contains(content, "@") || strings.Contains(content, "{{") {
+	if ApplyTemplate() && (strings.Contains(content, "@") || strings.Contains(content, "{{")) {
 		var t *template.Template
 		switch len(context) {
 		case 0:
@@ -81,8 +87,19 @@ func LoadVariablesFromSource(content, fileName, cwd string, context ...interface
 			}
 		}
 	}
-	err = utils.ConvertData(content, &result)
+	err = collections.ConvertData(content, &result)
 	return
+}
+
+// ApplyTemplate determines if go template should be applied on terraform files.
+func ApplyTemplate() bool {
+	template := os.Getenv("TERRAGRUNT_TEMPLATE")
+	switch strings.ToLower(template) {
+	case "", "0", "false":
+		return false
+	default:
+		return true
+	}
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)
@@ -149,7 +166,7 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 	case map[string]interface{}:
 		result["local"] = locals
 	case []map[string]interface{}:
-		result["local"], err = utils.MergeMaps(locals[0], locals[1:]...)
+		result["local"], err = utils.MergeDictionaries(locals...)
 	case nil:
 	default:
 		return nil, fmt.Errorf("%v: Unknown local type %T", filename, locals)

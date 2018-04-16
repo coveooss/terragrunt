@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveo/gotemplate/utils"
+	"github.com/coveo/gotemplate/collections"
 	"github.com/gruntwork-io/terragrunt/options"
 )
 
@@ -21,7 +21,7 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 			// We only substitute folders on the last substitute call
 			*value = strings.Replace(*value, getTempFolder, terragruntOptions.DownloadDir, -1)
 			*value = strings.Replace(*value, getScriptsFolder, scriptFolder, -1)
-			*value = strings.TrimSpace(utils.UnIndent(*value))
+			*value = strings.TrimSpace(collections.UnIndent(*value))
 		}
 
 		return value
