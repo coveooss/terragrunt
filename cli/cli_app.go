@@ -11,7 +11,6 @@ import (
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
-	goerrors "github.com/go-errors/errors"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
@@ -248,7 +247,7 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
 	defer func() {
-		if _, hasStack := finalStatus.(*goerrors.Error); finalStatus != nil && !hasStack {
+		if _, hasStack := finalStatus.(*errors.Error); finalStatus != nil && !hasStack {
 			finalStatus = errors.WithStackTrace(finalStatus)
 		}
 	}()
@@ -484,7 +483,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 
 	// We define a filter to trap plan exit code that are not real error
 	filterPlanError := func(err error, command string) error {
-		if exitCode, err := shell.GetExitCode(err); err == nil && command == "plan" && exitCode == errors.CHANGE_EXIT_CODE {
+		if exitCode, err := shell.GetExitCode(err); err == nil && command == "plan" && exitCode == errors.ChangeExitCode {
 			// For plan, an error with exit code 2 should not be considered as a real error
 			return errors.PlanWithChanges{}
 		}

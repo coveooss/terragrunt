@@ -20,6 +20,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/cli"
 	"github.com/gruntwork-io/terragrunt/config"
 	terragruntDynamoDb "github.com/gruntwork-io/terragrunt/dynamodb"
+	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/stretchr/testify/assert"
@@ -468,7 +469,7 @@ func runTerragrunt(t *testing.T, command string) {
 
 func runTerragruntRedirectOutput(t *testing.T, command string, writer io.Writer, errwriter io.Writer) {
 	if err := runTerragruntCommand(t, command, writer, errwriter); err != nil {
-		t.Fatalf("Failed to run Terragrunt command '%s' due to error: %s", command, err)
+		t.Fatalf("Failed to run Terragrunt command '%s' due to error: %v", command, errors.PrintErrorWithStackTrace(err))
 	}
 }
 

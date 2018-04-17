@@ -63,10 +63,10 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHandler {
 	return func(module TerraformModule, output string, err error) (string, error) {
 		warnAboutMissingDependencies(module, output)
-		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == errors.CHANGE_EXIT_CODE {
-			// We do not want to consider CHANGE_EXIT_CODE as an error and not execute the dependants because there is an "error" in the dependencies.
-			// CHANGE_EXIT_CODE is not an error in this case, it is simply a status. We will reintroduce the exit code at the very end to mimic the behaviour
-			// of the native terrafrom plan -detailed-exitcode to exit with CHANGE_EXIT_CODE if there are changes in any of the module in the stack.
+		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == errors.ChangeExitCode {
+			// We do not want to consider ChangeExitCode as an error and not execute the dependants because there is an "error" in the dependencies.
+			// ChangeExitCode is not an error in this case, it is simply a status. We will reintroduce the exit code at the very end to mimic the behaviour
+			// of the native terrafrom plan -detailed-exitcode to exit with ChangeExitCode if there are changes in any of the module in the stack.
 			err = nil
 		}
 
@@ -155,7 +155,7 @@ func (this PlanMultiError) ExitStatus() (int, error) {
 	for i := range this.Errors {
 		if code, err := shell.GetExitCode(this.Errors[i]); err != nil {
 			return UNDEFINED_EXIT_CODE, this
-		} else if code == ERROR_EXIT_CODE || code == errors.CHANGE_EXIT_CODE && exitCode == NORMAL_EXIT_CODE {
+		} else if code == ERROR_EXIT_CODE || code == errors.ChangeExitCode && exitCode == NORMAL_EXIT_CODE {
 			// The exit code 1 is more significant that the exit code 2 because it represents an error
 			// while 2 represent a warning.
 			return UNDEFINED_EXIT_CODE, this

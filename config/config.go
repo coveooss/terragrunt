@@ -10,7 +10,6 @@ import (
 	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
-	goerrors "github.com/go-errors/errors"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
@@ -302,7 +301,7 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 // this as a config included in some other config file when resolving relative paths.
 func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
 	defer func() {
-		if _, hasStack := err.(*goerrors.Error); err != nil && !hasStack {
+		if _, hasStack := err.(*errors.Error); err != nil && !hasStack {
 			err = errors.WithStackTrace(err)
 		}
 	}()

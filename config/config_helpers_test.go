@@ -187,7 +187,7 @@ func TestFindInParentFolders(t *testing.T) {
 		context := resolveContext{include: mockDefaultInclude, options: testCase.terragruntOptions}
 		actualPath, actualErr := context.findInParentFolders()
 		if testCase.expectedErr != nil {
-			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For options %v, expected error %v but got error %v", testCase.terragruntOptions, testCase.expectedErr, actualErr)
+			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "For options %v, expected error %v but got error %v\nResult = %v", testCase.terragruntOptions, testCase.expectedErr, actualErr, actualPath)
 		} else {
 			assert.Nil(t, actualErr, "For options %v, unexpected error: %v", testCase.terragruntOptions, actualErr)
 			assert.Equal(t, testCase.expectedPath, actualPath, "For options %v", testCase.terragruntOptions)

@@ -3,7 +3,7 @@
 package shell
 
 import (
-	goerrors "errors"
+	"errors"
 	"os"
 	"os/exec"
 	"strconv"
@@ -32,7 +32,7 @@ func TestExitCodeUnix(t *testing.T) {
 	}
 
 	// assert a non exec.ExitError returns an error
-	err := goerrors.New("This is an explicit error")
+	err := errors.New("This is an explicit error")
 	retCode, retErr := GetExitCode(err)
 	assert.Error(t, retErr, "An error was expected")
 	assert.Equal(t, err, retErr)

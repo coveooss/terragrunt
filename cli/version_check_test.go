@@ -65,7 +65,7 @@ func TestParseTerraformVersionWithDev(t *testing.T) {
 
 func TestParseTerraformVersionInvalidSyntax(t *testing.T) {
 	t.Parallel()
-	testParseTerraformVersion(t, "invalid-syntax", "", ErrErrInvalidTerraformVersionSyntax("invalid-syntax"))
+	testParseTerraformVersion(t, "invalid-syntax", "", ErrInvalidTerraformVersionSyntax("invalid-syntax"))
 }
 
 func testCheckTerraformVersionMeetsConstraint(t *testing.T, currentVersion string, versionConstraint string, versionMeetsConstraint bool) {
