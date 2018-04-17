@@ -493,6 +493,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Run an init in case there are new modules or plugins to import
 	shell.NewTFCmd(terragruntOptions).Args([]string{"init", "--backend=false"}...).WithRetries(3).Output()
 
+	isApply := actualCommand.Command == "apply" || (actualCommand.Extra != nil && actualCommand.Extra.ActAs == "apply")
+	if terragruntOptions.NonInteractive && isApply && !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-auto-approve") {
+		terragruntOptions.TerraformCliArgs = append(terragruntOptions.TerraformCliArgs, "-auto-approve")
+	}
+
 	var cmd *shell.CommandContext
 
 	if actualCommand.Extra != nil {
