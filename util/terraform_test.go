@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +42,7 @@ func TestLoadDefaultValues(t *testing.T) {
 			gotResult, err := LoadDefaultValues(tt.args.folder)
 			assert.Nil(t, err)
 			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("LoadDefaultValues() = %v, want %v", gotResult, tt.wantResult)
+				t.Errorf("LoadDefaultValues():\ngot : %v\nwant: %v", collections.AsDictionary(gotResult), collections.AsDictionary(tt.wantResult))
 			}
 		})
 	}

@@ -26,6 +26,9 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 		case ".json":
 			fileVars, err = getDefaultVars(file, json.Unmarshal)
 		}
+		if err != nil {
+			return nil, err
+		}
 
 		for key, value := range fileVars {
 			if old, exist := result[key]; exist {
@@ -153,13 +156,13 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 	switch variables := content["variable"].(type) {
 	case map[string]interface{}:
 		addVariables(variables, result)
-	case []map[string]interface{}:
+	case []interface{}:
 		for _, value := range variables {
-			addVariables(value, result)
+			addVariables(value.(map[string]interface{}), result)
 		}
 	case nil:
 	default:
-		return nil, fmt.Errorf("%v: Unknown variable type %T", filename, variables)
+		return nil, fmt.Errorf("%v[1]: Unknown variable type %[2]T: %[2]v", filename, variables)
 	}
 
 	switch locals := content["locals"].(type) {
