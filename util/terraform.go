@@ -168,8 +168,12 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 	switch locals := content["locals"].(type) {
 	case map[string]interface{}:
 		result["local"] = locals
-	case []map[string]interface{}:
-		result["local"], err = utils.MergeDictionaries(locals...)
+	case []interface{}:
+		localMaps := make([]map[string]interface{}, len(locals))
+		for i := range localMaps {
+			localMaps[i] = locals[i].(map[string]interface{})
+		}
+		result["local"], err = utils.MergeDictionaries(localMaps...)
 	case nil:
 	default:
 		return nil, fmt.Errorf("%v: Unknown local type %T", filename, locals)
