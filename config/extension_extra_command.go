@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -110,7 +111,7 @@ func (item *ExtraCommand) resolve(cmd string) *ActualCommand {
 
 func (item *ExtraCommand) resolveAlias(cmd string) (result string, found bool) {
 	for _, alias := range item.Aliases {
-		name, command := utils.Split2(alias, "=")
+		name, command := collections.Split2(alias, "=")
 		if name != cmd {
 			continue
 		}

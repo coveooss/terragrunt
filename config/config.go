@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coveo/gotemplate/collections"
+	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -45,7 +47,7 @@ type TerragruntConfig struct {
 }
 
 func (conf TerragruntConfig) String() string {
-	return utils.PrettyPrintStruct(conf)
+	return collections.PrettyPrintStruct(conf)
 }
 
 // ExtraArguments processes the extra_arguments defined in the terraform section of the config file
@@ -73,7 +75,7 @@ type TerragruntConfigFile struct {
 }
 
 func (tcf TerragruntConfigFile) String() string {
-	return utils.PrettyPrintStruct(tcf)
+	return collections.PrettyPrintStruct(tcf)
 }
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
@@ -195,7 +197,7 @@ type TerraformConfig struct {
 }
 
 func (conf TerraformConfig) String() string {
-	return utils.PrettyPrintStruct(conf)
+	return collections.PrettyPrintStruct(conf)
 }
 
 // DefaultConfigPath returns the default path to use for the Terragrunt configuration file. The reason this is a method
@@ -298,6 +300,12 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 // ParseConfigFile parses the Terragrunt config file at the given path. If the include parameter is not nil, then treat
 // this as a config included in some other config file when resolving relative paths.
 func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
+	defer func() {
+		if _, hasStack := err.(*errors.Error); err != nil && !hasStack {
+			err = errors.WithStackTrace(err)
+		}
+	}()
+
 	if include.Path == "" {
 		include.Path = DefaultTerragruntConfigPath
 	}
@@ -334,10 +342,17 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}
 
 	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", util.GetPathRelativeToWorkingDirMax(source, 2))
-
 	if err = terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile); err != nil {
 		return
 	}
+
+	if util.ApplyTemplate() {
+		t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
+		if configString, err = t.ProcessContent(configString, source); err != nil {
+			return
+		}
+	}
+
 	if config, err = parseConfigString(configString, terragruntOptions, include); err != nil {
 		return
 	}

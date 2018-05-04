@@ -18,7 +18,7 @@ import (
 	"github.com/mattn/go-zglob"
 )
 
-// This struct represents information about Terraform source code that needs to be downloaded
+// TerraformSource represents information about Terraform source code that needs to be downloaded
 type TerraformSource struct {
 	// A canonical version of RawSource, in URL format
 	CanonicalSourceURL *url.URL
@@ -64,7 +64,7 @@ func downloadTerraformSource(source *TerraformSource, terragruntOptions *options
 // Download the specified TerraformSource if the latest code hasn't already been downloaded.
 func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terragruntOptions *options.TerragruntOptions) error {
 	if terragruntOptions.SourceUpdate {
-		terragruntOptions.Logger.Noticef("The --%s flag is set, so deleting the temporary folder %s before downloading source.", OPT_TERRAGRUNT_SOURCE_UPDATE, terraformSource.DownloadDir)
+		terragruntOptions.Logger.Noticef("The --%s flag is set, so deleting the temporary folder %s before downloading source.", optTerragruntSourceUpdate, terraformSource.DownloadDir)
 		if err := os.RemoveAll(terraformSource.DownloadDir); err != nil {
 			return errors.WithStackTrace(err)
 		}
@@ -89,11 +89,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 		return err
 	}
 
-	if err := writeVersionFile(terraformSource); err != nil {
-		return err
-	}
-
-	return nil
+	return writeVersionFile(terraformSource)
 }
 
 // Returns true if the specified TerraformSource, of the exact same version, has already been downloaded into the
@@ -166,28 +162,28 @@ func processTerraformSource(source string, terragruntOptions *options.Terragrunt
 		return nil, err
 	}
 
-	canonicalSourceUrl, err := toSourceUrl(source, canonicalWorkingDir)
+	canonicalSourceURL, err := toSourceURL(source, canonicalWorkingDir)
 	if err != nil {
 		return nil, err
 	}
 
-	rootSourceUrl, modulePath, err := splitSourceUrl(canonicalSourceUrl, terragruntOptions)
+	rootSourceURL, modulePath, err := splitSourceURL(canonicalSourceURL, terragruntOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	if isLocalSource(rootSourceUrl) {
+	if isLocalSource(rootSourceURL) {
 		// Always use canonical file paths for local source folders, rather than relative paths, to ensure
 		// that the same local folder always maps to the same download folder, no matter how the local folder
 		// path is specified
-		canonicalFilePath, err := util.CanonicalPath(rootSourceUrl.Path, "")
+		canonicalFilePath, err := util.CanonicalPath(rootSourceURL.Path, "")
 		if err != nil {
 			return nil, err
 		}
-		rootSourceUrl.Path = canonicalFilePath
+		rootSourceURL.Path = canonicalFilePath
 	}
 
-	rootPath, err := encodeSourceName(rootSourceUrl)
+	rootPath, err := encodeSourceName(rootSourceURL)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +196,7 @@ func processTerraformSource(source string, terragruntOptions *options.Terragrunt
 	versionFile := util.JoinPath(downloadDir, ".terragrunt-source-version")
 
 	return &TerraformSource{
-		CanonicalSourceURL: rootSourceUrl,
+		CanonicalSourceURL: rootSourceURL,
 		DownloadDir:        downloadDir,
 		WorkingDir:         workingDir,
 		VersionFile:        versionFile,
@@ -209,67 +205,66 @@ func processTerraformSource(source string, terragruntOptions *options.Terragrunt
 
 // Convert the given source into a URL struct. This method should be able to handle all source URLs that the terraform
 // init command can handle, parsing local file paths, Git paths, and HTTP URLs correctly.
-func toSourceUrl(source string, workingDir string) (*url.URL, error) {
+func toSourceURL(source string, workingDir string) (*url.URL, error) {
 	// The go-getter library is what Terraform's init command uses to download source URLs. Use that library to
 	// parse the URL.
-	rawSourceUrlWithGetter, err := getter.Detect(source, workingDir, getter.Detectors)
+	rawSourceURLWithGetter, err := getter.Detect(source, workingDir, getter.Detectors)
 	if err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
 
-	return parseSourceUrl(rawSourceUrlWithGetter)
+	return parseSourceURL(rawSourceURLWithGetter)
 }
 
 // Parse the given source URL into a URL struct. This method can handle source URLs that include go-getter's "forced
 // getter" prefixes, such as git::.
-func parseSourceUrl(source string) (*url.URL, error) {
-	forcedGetter, rawSourceUrl := getForcedGetter(source)
+func parseSourceURL(source string) (*url.URL, error) {
+	forcedGetter, rawSourceURL := getForcedGetter(source)
 
 	// Parse the URL without the getter prefix
-	canonicalSourceUrl, err := urlhelper.Parse(rawSourceUrl)
+	canonicalSourceURL, err := urlhelper.Parse(rawSourceURL)
 	if err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
 
 	// Reattach the "getter" prefix as part of the scheme
 	if forcedGetter != "" {
-		canonicalSourceUrl.Scheme = fmt.Sprintf("%s::%s", forcedGetter, canonicalSourceUrl.Scheme)
+		canonicalSourceURL.Scheme = fmt.Sprintf("%s::%s", forcedGetter, canonicalSourceURL.Scheme)
 	}
 
-	return canonicalSourceUrl, nil
+	return canonicalSourceURL, nil
 }
 
 // Terraform source URLs can contain a "getter" prefix that specifies the type of protocol to use to download that URL,
 // such as "git::", which means Git should be used to download the URL. This method returns the getter prefix and the
 // rest of the URL. This code is copied from the getForcedGetter method of go-getter/get.go, as that method is not
 // exported publicly.
-func getForcedGetter(sourceUrl string) (string, string) {
-	if matches := forcedRegexp.FindStringSubmatch(sourceUrl); matches != nil && len(matches) > 2 {
+func getForcedGetter(sourceURL string) (string, string) {
+	if matches := forcedRegexp.FindStringSubmatch(sourceURL); matches != nil && len(matches) > 2 {
 		return matches[1], matches[2]
 	}
 
-	return "", sourceUrl
+	return "", sourceURL
 }
 
 // Splits a source URL into the root repo and the path. The root repo is the part of the URL before the double-slash
 // (//), which typically represents the root of a modules repo (e.g. github.com/foo/infrastructure-modules) and the
 // path is everything after the double slash. If there is no double-slash in the URL, the root repo is the entire
-// sourceUrl and the path is an empty string.
-func splitSourceUrl(sourceUrl *url.URL, terragruntOptions *options.TerragruntOptions) (*url.URL, string, error) {
-	pathSplitOnDoubleSlash := strings.SplitN(sourceUrl.Path, "//", 2)
+// sourceURL and the path is an empty string.
+func splitSourceURL(sourceURL *url.URL, terragruntOptions *options.TerragruntOptions) (*url.URL, string, error) {
+	pathSplitOnDoubleSlash := strings.SplitN(sourceURL.Path, "//", 2)
 
 	if len(pathSplitOnDoubleSlash) > 1 {
-		sourceUrlModifiedPath, err := parseSourceUrl(sourceUrl.String())
+		sourceURLModifiedPath, err := parseSourceURL(sourceURL.String())
 		if err != nil {
 			return nil, "", errors.WithStackTrace(err)
 		}
 
-		sourceUrlModifiedPath.Path = pathSplitOnDoubleSlash[0]
-		return sourceUrlModifiedPath, pathSplitOnDoubleSlash[1], nil
-	} else {
-		terragruntOptions.Logger.Debugf("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceUrl.Path)
-		return sourceUrl, "", nil
+		sourceURLModifiedPath.Path = pathSplitOnDoubleSlash[0]
+		return sourceURLModifiedPath, pathSplitOnDoubleSlash[1], nil
 	}
+	terragruntOptions.Logger.Debugf("No double-slash (//) found in source URL %s. Relative paths in downloaded Terraform code may not work.", sourceURL.Path)
+	return sourceURL, "", nil
 }
 
 // Encode a version number for the given source URL. When calculating a version number, we simply take the query
@@ -278,8 +273,8 @@ func splitSourceUrl(sourceUrl *url.URL, terragruntOptions *options.TerragruntOpt
 // name and the query string (e.g. ?ref=v0.0.3) identifies the version. For local file paths, there is no query string,
 // so the same file path (/foo/bar) is always considered the same version. See also the encodeSourceName and
 // processTerraformSource methods.
-func encodeSourceVersion(sourceUrl *url.URL) string {
-	return util.EncodeBase64Sha1(sourceUrl.Query().Encode())
+func encodeSourceVersion(sourceURL *url.URL) string {
+	return util.EncodeBase64Sha1(sourceURL.Query().Encode())
 }
 
 // Encode a the module name for the given source URL. When calculating a module name, we calculate the base 64 encoded
@@ -288,20 +283,20 @@ func encodeSourceVersion(sourceUrl *url.URL) string {
 // query string (e.g. ?ref=v0.0.3) identifies the version. For local file paths, there is no query string, so the same
 // file path (/foo/bar) is always considered the same version. See also the encodeSourceVersion and
 // processTerraformSource methods.
-func encodeSourceName(sourceUrl *url.URL) (string, error) {
-	sourceUrlNoQuery, err := parseSourceUrl(sourceUrl.String())
+func encodeSourceName(sourceURL *url.URL) (string, error) {
+	sourceURLNoQuery, err := parseSourceURL(sourceURL.String())
 	if err != nil {
 		return "", errors.WithStackTrace(err)
 	}
 
-	sourceUrlNoQuery.RawQuery = ""
+	sourceURLNoQuery.RawQuery = ""
 
-	return util.EncodeBase64Sha1(sourceUrlNoQuery.String()), nil
+	return util.EncodeBase64Sha1(sourceURLNoQuery.String()), nil
 }
 
 // Returns true if the given URL refers to a path on the local file system
-func isLocalSource(sourceUrl *url.URL) bool {
-	return sourceUrl.Scheme == "file"
+func isLocalSource(sourceURL *url.URL) bool {
+	return sourceURL.Scheme == "file"
 }
 
 // If this temp folder already exists, simply delete all the Terraform configurations (*.tf) within it

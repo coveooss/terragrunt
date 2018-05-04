@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"testing"
+
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCheckTerraformVersionMeetsConstraintEqual(t *testing.T) {
@@ -64,7 +65,7 @@ func TestParseTerraformVersionWithDev(t *testing.T) {
 
 func TestParseTerraformVersionInvalidSyntax(t *testing.T) {
 	t.Parallel()
-	testParseTerraformVersion(t, "invalid-syntax", "", InvalidTerraformVersionSyntax("invalid-syntax"))
+	testParseTerraformVersion(t, "invalid-syntax", "", ErrInvalidTerraformVersionSyntax("invalid-syntax"))
 }
 
 func testCheckTerraformVersionMeetsConstraint(t *testing.T, currentVersion string, versionConstraint string, versionMeetsConstraint bool) {

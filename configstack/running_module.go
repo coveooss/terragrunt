@@ -237,7 +237,7 @@ func (module *runningModule) waitForDependencies() error {
 				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too. However, because of --terragrunt-ignore-dependency-errors, module %[2]s will run anyway.", depPath, module.displayName())
 			} else {
 				log.Warningf("Dependency %[1]s of module %[2]s just finished with an error. Module %[2]s will have to return an error too.", depPath, module.displayName())
-				return DependencyFinishedWithError{module.Module, doneDependency.Module, doneDependency.Err}
+				return dependencyFinishedWithError{module.Module, doneDependency.Module, doneDependency.Err}
 			}
 		} else {
 			var moreDependencies string
@@ -301,18 +301,17 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 
 // Custom error types
 
-// DependencyFinishedWithError represents an error coming from a dependency
-type DependencyFinishedWithError struct {
+type dependencyFinishedWithError struct {
 	Module     *TerraformModule
 	Dependency *TerraformModule
 	Err        error
 }
 
-func (e DependencyFinishedWithError) Error() string {
+func (e dependencyFinishedWithError) Error() string {
 	return fmt.Sprintf("Cannot process module %s because one of its dependencies, %s, finished with an error: %s", e.Module, e.Dependency, e.Err)
 }
 
-func (e DependencyFinishedWithError) ExitStatus() (int, error) {
+func (e dependencyFinishedWithError) ExitStatus() (int, error) {
 	if exitCode, err := shell.GetExitCode(e.Err); err == nil {
 		return exitCode, nil
 	}

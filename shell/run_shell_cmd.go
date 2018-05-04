@@ -14,6 +14,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -133,7 +134,7 @@ func (c CommandContext) Run() error {
 		// Terragrunt can run some commands (such as terraform remote config) before running the actual terraform
 		// command requested by the user. The output of these other commands should not end up on stdout as this
 		// breaks scripts relying on terraform's output.
-		if !reflect.DeepEqual(utils.ToInterfaces(c.options.TerraformCliArgs...), c.args) {
+		if !reflect.DeepEqual(collections.ToInterfaces(c.options.TerraformCliArgs...), c.args) {
 			c.Stdout = c.Stderr
 		}
 	}

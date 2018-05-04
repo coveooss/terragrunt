@@ -29,7 +29,7 @@ func checkForErrorsAndExit(err error) {
 	if err == nil {
 		os.Exit(0)
 	} else {
-		logger := util.CreateLogger("")
+		logger := util.CreateLogger("main")
 
 		if _, ok := errors.Unwrap(err).(errors.PlanWithChanges); !ok {
 			// Plan status are not considred as an error

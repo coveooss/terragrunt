@@ -1,13 +1,17 @@
 package util
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/hcl"
+	"github.com/coveo/gotemplate/json"
+	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
 )
 
@@ -22,15 +26,22 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 		case ".json":
 			fileVars, err = getDefaultVars(file, json.Unmarshal)
 		}
+		if err != nil {
+			return nil, err
+		}
 
 		for key, value := range fileVars {
 			if old, exist := result[key]; exist {
 				switch old := old.(type) {
 				case map[string]interface{}:
-					if result[key], err = utils.MergeMaps(old, value.(map[string]interface{})); err != nil {
-						return
+					newValue, ok := value.(map[string]interface{})
+					if !ok {
+						return nil, fmt.Errorf("Cannot override %s: %T with %T", key, old, value)
 					}
-					continue
+					value, err = utils.MergeDictionaries(old, newValue)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 			result[key] = value
@@ -41,20 +52,57 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
-func LoadVariablesFromFile(path string) (map[string]interface{}, error) {
+func LoadVariablesFromFile(path, cwd string, context ...interface{}) (map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	return LoadVariables(string(bytes))
+	return LoadVariablesFromSource(string(bytes), path, cwd, context...)
 }
 
 // LoadVariables returns a map of the variables defined in the content provider
-func LoadVariables(content string) (map[string]interface{}, error) {
-	variables := map[string]interface{}{}
-	err := hcl.Unmarshal([]byte(content), &variables)
-	return variables, err
+func LoadVariables(content string, cwd string, context ...interface{}) (map[string]interface{}, error) {
+	return LoadVariablesFromSource(content, "Terragrunt content", cwd, context...)
+}
+
+// LoadVariablesFromSource returns a map of the variables defined in the content provider
+func LoadVariablesFromSource(content, fileName, cwd string, context ...interface{}) (result map[string]interface{}, err error) {
+	result = make(map[string]interface{})
+	if ApplyTemplate() && (strings.Contains(content, "@") || strings.Contains(content, "{{")) {
+		var t *template.Template
+		switch len(context) {
+		case 0:
+			break
+		case 1:
+			t = template.NewTemplate(cwd, context[0], "", nil)
+		default:
+			t = template.NewTemplate(cwd, context, "", nil)
+		}
+
+		if t != nil {
+			template.SetLogLevel(GetLoggingLevel())
+			if modifiedContent, err := t.ProcessContent(content, fileName); err != nil {
+				// In case of error, we simply issue a warning and continue with the original content
+				template.Log.Warning(err)
+			} else {
+				content = modifiedContent
+			}
+		}
+	}
+	err = collections.ConvertData(content, &result)
+	return
+}
+
+// ApplyTemplate determines if go template should be applied on terraform files.
+func ApplyTemplate() bool {
+	template := os.Getenv("TERRAGRUNT_TEMPLATE")
+	switch strings.ToLower(template) {
+	case "", "0", "false":
+		return false
+	default:
+		return true
+	}
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)
@@ -108,20 +156,24 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 	switch variables := content["variable"].(type) {
 	case map[string]interface{}:
 		addVariables(variables, result)
-	case []map[string]interface{}:
+	case []interface{}:
 		for _, value := range variables {
-			addVariables(value, result)
+			addVariables(value.(map[string]interface{}), result)
 		}
 	case nil:
 	default:
-		return nil, fmt.Errorf("%v: Unknown variable type %T", filename, variables)
+		return nil, fmt.Errorf("%v[1]: Unknown variable type %[2]T: %[2]v", filename, variables)
 	}
 
 	switch locals := content["locals"].(type) {
 	case map[string]interface{}:
 		result["local"] = locals
-	case []map[string]interface{}:
-		result["local"], err = utils.MergeMaps(locals[0], locals[1:]...)
+	case []interface{}:
+		localMaps := make([]map[string]interface{}, len(locals))
+		for i := range localMaps {
+			localMaps[i] = locals[i].(map[string]interface{})
+		}
+		result["local"], err = utils.MergeDictionaries(localMaps...)
 	case nil:
 	default:
 		return nil, fmt.Errorf("%v: Unknown local type %T", filename, locals)

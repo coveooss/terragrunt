@@ -11,11 +11,11 @@ import (
 )
 
 // The terraform --version output is of the format: Terraform v0.9.5-dev (cad024a5fe131a546936674ef85445215bbc4226+CHANGES)
-// where -dev and (commitid+CHANGES) is for custom builds or if TF_LOG is set for debug purposes
-var TERRAFORM_VERSION_REGEX = regexp.MustCompile("Terraform (v?[\\d\\.]+)(?:-dev)?(?: .+)?")
+// where -dev and (committed+CHANGES) is for custom builds or if TF_LOG is set for debug purposes
+var terraformVersionRegex = regexp.MustCompile("Terraform (v?[\\d\\.]+)(?:-dev)?(?: .+)?")
 
-// Check that the currently installed Terraform version works meets the specified version constraint and return an error
-// if it doesn't
+// CheckTerraformVersion checks that the currently installed Terraform version works meets the specified version constraint
+// and returns an error if it doesn't
 func CheckTerraformVersion(constraint string, terragruntOptions *options.TerragruntOptions) error {
 	currentVersion, err := getTerraformVersion(terragruntOptions)
 	if err != nil {
@@ -34,7 +34,7 @@ func checkTerraformVersionMeetsConstraint(currentVersion *version.Version, const
 	}
 
 	if !versionConstraint.Check(currentVersion) {
-		return errors.WithStackTrace(InvalidTerraformVersion{CurrentVersion: currentVersion, VersionConstraints: versionConstraint})
+		return errors.WithStackTrace(ErrInvalidTerraformVersion{CurrentVersion: currentVersion, VersionConstraints: versionConstraint})
 	}
 
 	return nil
@@ -52,10 +52,10 @@ func getTerraformVersion(terragruntOptions *options.TerragruntOptions) (*version
 
 // Parse the output of the terraform --version command
 func parseTerraformVersion(versionCommandOutput string) (*version.Version, error) {
-	matches := TERRAFORM_VERSION_REGEX.FindStringSubmatch(versionCommandOutput)
+	matches := terraformVersionRegex.FindStringSubmatch(versionCommandOutput)
 
 	if len(matches) != 2 {
-		return nil, errors.WithStackTrace(InvalidTerraformVersionSyntax(versionCommandOutput))
+		return nil, errors.WithStackTrace(ErrInvalidTerraformVersionSyntax(versionCommandOutput))
 	}
 
 	return version.NewVersion(matches[1])
@@ -63,17 +63,19 @@ func parseTerraformVersion(versionCommandOutput string) (*version.Version, error
 
 // Custom error types
 
-type InvalidTerraformVersionSyntax string
+// ErrInvalidTerraformVersionSyntax indicates that we cannot retrieve the terraform version
+type ErrInvalidTerraformVersionSyntax string
 
-func (err InvalidTerraformVersionSyntax) Error() string {
+func (err ErrInvalidTerraformVersionSyntax) Error() string {
 	return fmt.Sprintf("Unable to parse Terraform version output: %s", string(err))
 }
 
-type InvalidTerraformVersion struct {
+// ErrInvalidTerraformVersion indicates that the Terraform version is not compatible with this version of Terragrunt
+type ErrInvalidTerraformVersion struct {
 	CurrentVersion     *version.Version
 	VersionConstraints version.Constraints
 }
 
-func (err InvalidTerraformVersion) Error() string {
+func (err ErrInvalidTerraformVersion) Error() string {
 	return fmt.Sprintf("The currently installed version of Terraform (%s) is not compatible with the version Terragrunt requires (%s).", err.CurrentVersion.String(), err.VersionConstraints.String())
 }
