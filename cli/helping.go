@@ -58,6 +58,12 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	}
 
 	print("Extra arguments: (in evaluation order)", "%s\n", conf.Terraform.ExtraArgs.Help(*listOnly, *filters...), *extraArgs)
+
+	if *hooks || all {
+		beforeImports := conf.PreHooks.Filter(config.BeforeImports).Help(*listOnly, *filters...)
+		print("Pre hooks before imports (in execution order):", "%s\n", beforeImports, true)
+	}
+
 	print("File importers (in execution order)", "%s\n", conf.ImportFiles.Help(*listOnly, *filters...), *imports)
 	if *hooks || all {
 		pre1 := conf.PreHooks.Filter(config.BeforeInitState).Help(*listOnly, *filters...)

@@ -21,6 +21,7 @@ type Hook struct {
 	ExpandArgs     bool     `hcl:"expand_args"`
 	OnCommands     []string `hcl:"on_commands"`
 	IgnoreError    bool     `hcl:"ignore_error"`
+	BeforeImports  bool     `hcl:"before_imports"`
 	AfterInitState bool     `hcl:"after_init_state"`
 	Order          int      `hcl:"order"`
 	ShellCommand   bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
@@ -123,8 +124,11 @@ func (list HookList) Filter(filter HookFilter) HookList {
 // HookFilter is used to filter the hook on supplied criteria
 type HookFilter func(Hook) bool
 
+// BeforeImports is a filter function
+var BeforeImports = func(hook Hook) bool { return hook.BeforeImports }
+
 // BeforeInitState is a filter function
-var BeforeInitState = func(hook Hook) bool { return !hook.AfterInitState }
+var BeforeInitState = func(hook Hook) bool { return !hook.AfterInitState && !hook.BeforeImports }
 
 // AfterInitState is a filter function
-var AfterInitState = func(hook Hook) bool { return hook.AfterInitState }
+var AfterInitState = func(hook Hook) bool { return hook.AfterInitState && !hook.BeforeImports }
