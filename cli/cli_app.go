@@ -349,6 +349,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 	conf.SubstituteAllVariables(terragruntOptions, true)
 
+	// Executing the pre-hook commands that should be ran before the ImportFiles
+	if _, err = conf.PreHooks.Filter(config.BeforeImports).Run(err); stopOnError(err) {
+		return
+	}
+
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder

@@ -1091,6 +1091,7 @@ terragrunt = {
     arguments        = [list of arguments]            # optional
     expand_args      = false                          # optional, expand pattern like *, ? [] on arguments
     ignore_error     = false                          # optional, continue execution on error
+    before_imports   = false                          # optional, run command before terraform imports its files
     after_init_state = false                          # optional, run command after the state has been initialized
     order            = 0                              # optional, default run hooks in declaration order (hooks defined in uppermost parent first, negative number are supported)
   }
