@@ -460,6 +460,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return
 	}
 
+	shell.NewTFCmd(terragruntOptions).Args([]string{"get", "-update"}...).WithRetries(3).Output()
+
 	// Configure remote state if required
 	if conf.RemoteState != nil {
 		if err := configureRemoteState(conf.RemoteState, terragruntOptions); stopOnError(err) {
