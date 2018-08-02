@@ -20,6 +20,8 @@ const (
 	TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_PATH       = "fixture-hooks/before-and-after"
 	TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_MERGE_PATH = "fixture-hooks/before-and-after-merge"
 	TEST_FIXTURE_HOOKS_INTERPOLATIONS_PATH         = "fixture-hooks/interpolations"
+	TEST_FIXTURE_HOOKS_EXITCODE1_PATH              = "fixture-hooks/exitcode-1"
+	TEST_FIXTURE_HOOKS_EXITCODE2_PATH              = "fixture-hooks/exitcode-2"
 )
 
 func TestTerragruntBeforeHook(t *testing.T) {
@@ -124,4 +126,32 @@ func TestTerragruntHookInterpolation(t *testing.T) {
 
 	assert.Contains(t, output, homePath)
 
+}
+
+func TestTerragruntHookExitCode1(t *testing.T) {
+	t.Parallel()
+
+	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE1_PATH)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE1_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE1_PATH)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
+	assert.Error(t, exception)
+	assert.Contains(t, err.Error(), "Error while executing hooks(post_hook_1): exit status 1")
+}
+
+func TestTerragruntHookExitCode2(t *testing.T) {
+	t.Parallel()
+
+	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
+	assert.NoError(t, exception)
+	assert.Contains(t, err.Error(), "There are changes in the plan")
 }

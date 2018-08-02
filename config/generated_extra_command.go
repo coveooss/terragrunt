@@ -155,10 +155,13 @@ func (list ExtraCommandList) Run(status error, args ...interface{}) (result []in
 
 	list.sort()
 
-	var errs errorArray
+	var (
+		errs       errorArray
+		errOccured bool
+	)
 	for _, item := range list {
 		iItem := IExtraCommand(&item)
-		if (status != nil || len(errs) > 0) && !iItem.ignoreError() {
+		if (status != nil || errOccured) && !iItem.ignoreError() {
 			continue
 		}
 		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
@@ -169,6 +172,7 @@ func (list ExtraCommandList) Run(status error, args ...interface{}) (result []in
 			if _, ok := currentErr.(errors.PlanWithChanges); ok {
 				errs = append(errs, currentErr)
 			} else {
+				errOccured = true
 				errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
 			}
 		}
