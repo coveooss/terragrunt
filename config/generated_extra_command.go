@@ -7,6 +7,9 @@ package config
 import (
 	"fmt"
 	"strings"
+
+	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/gruntwork-io/terragrunt/shell"
 )
 
 // ExtraCommandList represents an array of ExtraCommand
@@ -161,8 +164,13 @@ func (list ExtraCommandList) Run(status error, args ...interface{}) (result []in
 		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
 		iItem.normalize()
 		temp, currentErr := iItem.run(args...)
+		currentErr = shell.FilterPlanError(currentErr, iItem.options().TerraformCliArgs[0])
 		if currentErr != nil {
-			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
+			if _, ok := currentErr.(errors.PlanWithChanges); ok {
+				errs = append(errs, currentErr)
+			} else {
+				errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
+			}
 		}
 		iItem.setState(currentErr)
 		result = append(result, temp)

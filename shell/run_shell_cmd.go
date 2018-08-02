@@ -244,6 +244,15 @@ func GetExitCode(err error) (int, error) {
 	return 0, err
 }
 
+// FilterPlanError filters to trap plan exit code that are not real error
+func FilterPlanError(err error, command string) error {
+	if exitCode, err := GetExitCode(err); err == nil && command == "plan" && exitCode == errors.ChangeExitCode {
+		// For plan, an error with exit code 2 should not be considered as a real error
+		return errors.PlanWithChanges{}
+	}
+	return err
+}
+
 // SignalsForwarder forwards signals to a command, waiting for the command to finish.
 type SignalsForwarder chan os.Signal
 
