@@ -7,6 +7,9 @@ package config
 import (
 	"fmt"
 	"strings"
+
+	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/gruntwork-io/terragrunt/shell"
 )
 
 // TerraformExtraArgumentsList represents an array of TerraformExtraArguments
@@ -152,17 +155,26 @@ func (list TerraformExtraArgumentsList) Run(status error, args ...interface{}) (
 
 	list.sort()
 
-	var errs errorArray
+	var (
+		errs       errorArray
+		errOccured bool
+	)
 	for _, item := range list {
 		iItem := ITerraformExtraArguments(&item)
-		if (status != nil || len(errs) > 0) && !iItem.ignoreError() {
+		if (status != nil || errOccured) && !iItem.ignoreError() {
 			continue
 		}
 		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
 		iItem.normalize()
 		temp, currentErr := iItem.run(args...)
+		currentErr = shell.FilterPlanError(currentErr, iItem.options().TerraformCliArgs[0])
 		if currentErr != nil {
-			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
+			if _, ok := currentErr.(errors.PlanWithChanges); ok {
+				errs = append(errs, currentErr)
+			} else {
+				errOccured = true
+				errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
+			}
 		}
 		iItem.setState(currentErr)
 		result = append(result, temp)

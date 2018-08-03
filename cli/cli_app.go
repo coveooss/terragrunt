@@ -488,15 +488,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}()
 
-	// We define a filter to trap plan exit code that are not real error
-	filterPlanError := func(err error, command string) error {
-		if exitCode, err := shell.GetExitCode(err); err == nil && command == "plan" && exitCode == errors.ChangeExitCode {
-			// For plan, an error with exit code 2 should not be considered as a real error
-			return errors.PlanWithChanges{}
-		}
-		return err
-	}
-
 	// Run an init in case there are new modules or plugins to import
 	shell.NewTFCmd(terragruntOptions).Args([]string{"init", "--backend=false"}...).WithRetries(3).Output()
 
@@ -541,7 +532,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
 		cmd = cmd.Expect(approvalConfig.ExpectStatements, approvalConfig.CompletedStatements)
 	}
-	err = cmd.Run()
+	err = shell.FilterPlanError(cmd.Run(), actualCommand.Command)
 
 	exitCode, errCode := shell.GetExitCode(err)
 	if errCode != nil {
@@ -549,7 +540,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 	terragruntOptions.SetStatus(exitCode, err)
 
-	if stopOnError(filterPlanError(err, actualCommand.Command)) {
+	if stopOnError(err) {
 		return
 	}
 	return
