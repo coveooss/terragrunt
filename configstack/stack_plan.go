@@ -51,11 +51,11 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 		} else if hasChanges {
 			terragruntOptions.Logger.Noticef("There are no terraform changes but hooks have reported changes.")
 		}
+		if hasChanges {
+			return errors.PlanWithChanges{}
+		}
 	}
 
-	if hasChanges {
-		return errors.PlanWithChanges{}
-	}
 	return err
 }
 
