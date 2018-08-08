@@ -157,3 +157,17 @@ func TestTerragruntHookExitCode2(t *testing.T) {
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "There are changes in the plan")
 }
+
+func TestTerragruntHookExitCode2PlanAll(t *testing.T) {
+	t.Parallel()
+
+	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan-all -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
+	assert.NoError(t, exception)
+	assert.Contains(t, err.Error(), "There are changes in the plan")
+}

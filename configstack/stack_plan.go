@@ -29,15 +29,11 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 		return PlanMultiError{MultiError{errs}}
 	}
 
-	// We do a special treatment for -detailed-exitcode since we do not want to interrupt the processing of dependant
-	// stacks if one dependency has changes
 	detailedExitCode := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-detailed-exitcode")
-	if detailedExitCode {
-		util.RemoveElementFromList(terragruntOptions.TerraformCliArgs, "-detailed-exitcode")
-	}
 
+	hasChanges := false
 	results := make([]moduleResult, 0, len(stack.Modules))
-	err := RunModulesWithHandler(stack.Modules, getResultHandler(detailedExitCode, &results), NormalOrder)
+	err := RunModulesWithHandler(stack.Modules, getResultHandler(detailedExitCode, &results, &hasChanges), NormalOrder)
 	printSummary(terragruntOptions, results)
 
 	// If there is no error, but -detail-exitcode is specified, we return an error with the number of changes.
@@ -52,6 +48,10 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 				article, plural = "are", "s"
 			}
 			terragruntOptions.Logger.Noticef("There %s %v change%s to apply", article, sum, plural)
+		} else if hasChanges {
+			terragruntOptions.Logger.Noticef("There are no terraform changes but hooks have reported changes.")
+		}
+		if hasChanges {
 			return errors.PlanWithChanges{}
 		}
 	}
@@ -60,13 +60,14 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 }
 
 // Returns the handler that will be executed after each completion of `terraform plan`
-func getResultHandler(detailedExitCode bool, results *[]moduleResult) ModuleHandler {
+func getResultHandler(detailedExitCode bool, results *[]moduleResult, hasChanges *bool) ModuleHandler {
 	return func(module TerraformModule, output string, err error) (string, error) {
 		warnAboutMissingDependencies(module, output)
 		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == errors.ChangeExitCode {
 			// We do not want to consider ChangeExitCode as an error and not execute the dependants because there is an "error" in the dependencies.
 			// ChangeExitCode is not an error in this case, it is simply a status. We will reintroduce the exit code at the very end to mimic the behaviour
 			// of the native terrafrom plan -detailed-exitcode to exit with ChangeExitCode if there are changes in any of the module in the stack.
+			*hasChanges = true
 			err = nil
 		}
 
