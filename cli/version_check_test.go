@@ -15,7 +15,8 @@ func TestCheckTerraformVersionMeetsConstraintEqual(t *testing.T) {
 
 func TestCheckTerraformVersionMeetsConstraintGreaterDev(t *testing.T) {
 	t.Parallel()
-	testCheckTerraformVersionMeetsConstraint(t, "v0.9.4-dev", ">= v0.9.3", true)
+	// Current version of go-version no longer support comparing version with candidate version
+	testCheckTerraformVersionMeetsConstraint(t, "v0.9.4-dev", ">= v0.9.3", false)
 }
 
 func TestCheckTerraformVersionMeetsConstraintGreaterPatch(t *testing.T) {
