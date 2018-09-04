@@ -228,8 +228,8 @@ func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string,
 }
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
-func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource) error {
-	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, terragruntOptions.GetContext())
+func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) error {
+	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, context...)
 	if err != nil {
 		return err
 	}

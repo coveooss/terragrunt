@@ -75,9 +75,12 @@ func LoadVariablesFromSource(content, fileName, cwd string, context ...interface
 		case 0:
 			break
 		case 1:
-			t = template.NewTemplate(cwd, context[0], "", nil)
+			t, err = template.NewTemplate(cwd, context[0], "", nil)
 		default:
-			t = template.NewTemplate(cwd, context, "", nil)
+			t, err = template.NewTemplate(cwd, context, "", nil)
+		}
+		if err != nil {
+			return
 		}
 
 		if t != nil {

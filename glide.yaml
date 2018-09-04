@@ -27,6 +27,6 @@ import:
   - aws/service/s3
 - package: github.com/op/go-logging
 - package: github.com/coveo/gotemplate
-  version: ^2.4.5
+  version: dee65c83a7726cee8a6d58e3376410a23c3d18d9
 - package: github.com/rs/xid
   version: ^1.1.0

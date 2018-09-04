@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/coveo/gotemplate/collections"
 	"github.com/gruntwork-io/terragrunt/aws_helper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -133,7 +134,31 @@ func SubstituteVars(str string, terragruntOptions *options.TerragruntOptions) st
 }
 
 // Execute a single Terragrunt helper function and return its value as a string
-func (context *resolveContext) executeTerragruntHelperFunction(functionName string, parameters string) (interface{}, error) {
+func (context *resolveContext) getHelperFunctions() map[string]interface{} {
+	return map[string]interface{}{
+		"find_in_parent_folders":                   context.findInParentFolders,
+		"path_relative_to_include":                 context.pathRelativeToInclude,
+		"path_relative_from_include":               context.pathRelativeFromInclude,
+		"discover":                                 context.getDiscoveredValueInternal,
+		"get_env":                                  context.getEnvironmentVariableInternal,
+		"get_current_dir":                          context.getCurrentDir,
+		"get_leaf_dir":                             context.getTfVarsDir,
+		"get_tfvars_dir":                           context.getTfVarsDir,
+		"get_parent_dir":                           context.getParentTfVarsDir,
+		"get_parent_tfvars_dir":                    context.getParentTfVarsDir,
+		"get_aws_account_id":                       context.getAWSAccountID,
+		"get_terraform_commands_that_need_vars":    func() interface{} { return collections.AsList(TerraformCommandWithVarFile) },
+		"get_terraform_commands_that_need_locking": func() interface{} { return collections.AsList(TerraformCommandWithLockTimeout) },
+		"get_terraform_commands_that_need_input":   func() interface{} { return collections.AsList(TerraformCommandWithInput) },
+	}
+}
+
+// Execute a single Terragrunt helper function and return its value as a string
+func (context *resolveContext) executeTerragruntHelperFunction(functionName string, parameters string) (result interface{}, err error) {
+	defer func() {
+		context.options.Logger.Debugf("%s(%s) = %v, %v", functionName, parameters, result, err)
+	}()
+
 	if functionMap == nil {
 		// We only initialize the function mapping on the first call
 		functionMap = map[string]interface{}{
@@ -372,11 +397,14 @@ func (context *resolveContext) getEnvironmentVariable() (interface{}, error) {
 	if err != nil || parameters[0] == "" {
 		return "", invalidGetEnvParameters(context.parameters)
 	}
-	if value, exists := context.options.Env[parameters[0]]; exists {
-		return value, nil
-	}
+	return context.getEnvironmentVariableInternal(parameters[0], parameters[1]), nil
+}
 
-	return parameters[1], nil
+func (context *resolveContext) getEnvironmentVariableInternal(env, defValue string) interface{} {
+	if value, exists := context.options.Env[env]; exists {
+		return value
+	}
+	return defValue
 }
 
 type invalidGetEnvParameters string
@@ -407,18 +435,27 @@ func (err invalidDefaultParameters) Error() string {
 
 // Returns the value from the parameter store
 //     discover(key_name, folder, region)
-func (context *resolveContext) getDiscoveredValue() (interface{}, error) {
+func (context *resolveContext) getDiscoveredValue() (result interface{}, err error) {
 	parameters, err := context.getParameters(p3Regex)
 	if err != nil {
-		return "", invalidDiscoveryParameters(context.parameters)
+		return
 	}
 
-	result, err := aws_helper.GetSSMParameter(fmt.Sprintf("/%s/terragrunt/%s", parameters[1], parameters[0]), parameters[2])
-	if err != nil {
+	key := fmt.Sprintf("/%s/terragrunt/%s", parameters[1], parameters[0])
+	region := parameters[2]
+	if result, err = context.getDiscoveredValueInternal(key, region); err != nil {
 		return "", errorOnDiscovery{err, context.parameters}
 	}
-
 	return result, nil
+}
+
+func (context *resolveContext) getDiscoveredValueInternal(key, region string) (result interface{}, err error) {
+	result, err = aws_helper.GetSSMParameter(key, region)
+	if err != nil {
+		account, _ := context.getAWSAccountID()
+		err = fmt.Errorf("%s (key=%s region=%s account=%s)", err, key, region, account)
+	}
+	return
 }
 
 type invalidDiscoveryParameters string
@@ -520,7 +557,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 			}
 			return filepath.Dir(includePath)
 		}
-		cursor = cursor.IncludeBy
+		cursor = cursor.isIncludeBy
 	}
 }
 

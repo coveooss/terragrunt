@@ -15,12 +15,10 @@ import (
 
 // CreateAwsSession returns an AWS session object for the given region, ensuring that the credentials are available
 func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
-	mfaRequired := false
 	options := session.Options{
 		Profile:           awsProfile,
 		SharedConfigState: session.SharedConfigEnable,
 		AssumeRoleTokenProvider: func() (string, error) {
-			mfaRequired = true
 			fmt.Print("Enter MFA Code: ")
 			reader := bufio.NewReader(os.Stdin)
 			mfa, err := reader.ReadString('\n')

@@ -1,5 +1,5 @@
-hash: 850f3a87c1fb0beaf8e6fc831d363fe1e08dc4b395acccf4c370a08ed0d33f93
-updated: 2018-08-14T13:08:13.024262-04:00
+hash: d1bd6dbd5050af8435a51879257b00a7bf853bd94ecdc5a48d215ec62ba18991
+updated: 2018-09-04T08:23:42.454045-04:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 7fddfc383310abc091d79a27f116d30cf0424032
 - name: github.com/aws/aws-sdk-go
-  version: f831d5a0822a1ad72420ab18c6269bca1ddaf490
+  version: 04abd557eeaab3cfdded45467eea00fc03db9cb9
   subpackages:
   - aws
   - aws/awserr
@@ -76,7 +76,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 40ed0a800cccab9868456b03b30bc1914bfc3b12
+  version: dee65c83a7726cee8a6d58e3376410a23c3d18d9
   subpackages:
   - collections
   - collections/implementation
@@ -143,7 +143,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 41e50bd32a8825a84535e353c3674af8ce799161
+  version: 6dfc4d748de9cda23835bc5704307ed45e839622
   subpackages:
   - config
   - config/hcl2shim
@@ -209,7 +209,7 @@ imports:
 - name: github.com/PuerkitoBio/goquery
   version: dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2
 - name: github.com/rs/xid
-  version: 2c7e97ce663ff82c49656bca3048df0fdd83c5f9
+  version: 15d26544def341f036c5f8dca987a4cbe575032c
 - name: github.com/sergi/go-diff
   version: da645544ed44df016359bd4c0e3dc60ee3a0da43
   subpackages:
