@@ -295,7 +295,8 @@ func containsTerragruntBlock(configString string) bool {
 
 // ReadTerragruntConfig reads the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
-	conf, err := ParseConfigFile(terragruntOptions, IncludeConfig{Path: terragruntOptions.TerragruntConfigPath})
+	include := IncludeConfig{Path: terragruntOptions.TerragruntConfigPath}
+	conf, err := ParseConfigFile(terragruntOptions, include)
 	if err == nil {
 		return conf, nil
 	}
@@ -308,7 +309,7 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 		return nil, err
 	}
 	// The configuration has not been initialized, we generate a default configuration
-	return parseConfigString("terragrunt{}", terragruntOptions, IncludeConfig{})
+	return parseConfigString("terragrunt{}", terragruntOptions, include)
 }
 
 // ParseConfigFile parses the Terragrunt config file at the given path. If the include parameter is not nil, then treat
