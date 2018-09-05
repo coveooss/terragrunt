@@ -1,0 +1,3 @@
+terragrunt {
+  invalid value
+}

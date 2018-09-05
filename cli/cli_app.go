@@ -514,7 +514,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		cmd = shell.NewCmd(terragruntOptions, command).Args(args...)
 		if actualCommand.Extra.ShellCommand {
 			// We must not redirect the stderr on shell command, doing so, remove the prompt
-			cmd.Stderr = os.Stderr
+			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 		}
 
 		if expandArgs {

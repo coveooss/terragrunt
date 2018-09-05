@@ -167,16 +167,16 @@ type tfvarsFileWithTerragruntConfig struct {
 // IncludeConfig represents the configuration settings for a parent Terragrunt configuration file that you can
 // "include" in a child Terragrunt configuration file
 type IncludeConfig struct {
-	Source      string `hcl:"source"`
-	Path        string `hcl:"path"`
-	isIncludeBy *IncludeConfig
-	isBootstrap bool
+	Source       string `hcl:"source"`
+	Path         string `hcl:"path"`
+	isIncludedBy *IncludeConfig
+	isBootstrap  bool
 }
 
 func (include IncludeConfig) String() string {
 	var includeBy string
-	if include.isIncludeBy != nil {
-		includeBy = fmt.Sprintf(" included by %v", include.isIncludeBy)
+	if include.isIncludedBy != nil {
+		includeBy = fmt.Sprintf(" included by %v", include.isIncludedBy)
 	}
 	return fmt.Sprintf("%v%s", util.JoinPath(include.Source, include.Path), includeBy)
 }
@@ -304,6 +304,10 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 	case CouldNotResolveTerragruntConfigInFile:
 		terragruntOptions.Logger.Warningf("No terragrunt section in %s, assuming default values", terragruntOptions.TerragruntConfigPath)
 	case *os.PathError:
+		stat, _ := os.Stat(filepath.Dir(terragruntOptions.TerragruntConfigPath))
+		if stat == nil || !stat.IsDir() {
+			return nil, err
+		}
 		terragruntOptions.Logger.Warningf("File %s not found, assuming default values", terragruntOptions.TerragruntConfigPath)
 	default:
 		return nil, err
@@ -325,7 +329,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		include.Path = DefaultTerragruntConfigPath
 	}
 
-	if include.isIncludeBy == nil {
+	if include.isIncludedBy == nil {
 		// Check if the config has already been loaded
 		if include.Source == "" {
 			if include.Path, err = util.CanonicalPath(include.Path, ""); err != nil {
@@ -400,7 +404,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		}
 	}
 
-	if include.isIncludeBy == nil {
+	if include.isIncludedBy == nil {
 		configFiles[include.Path] = config
 	}
 
@@ -460,8 +464,8 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 			return
 		}
 		terragruntConfigFile.Include = &(IncludeConfig{
-			isBootstrap: true,
-			isIncludeBy: &include,
+			isBootstrap:  true,
+			isIncludedBy: &include,
 		})
 		// We check if we should merge bootstrap files defined by environment variable TERRAGRUNT_BOOT_CONFIGS
 		paths := strings.Split(os.Getenv(options.EnvBootConfigs), string(os.PathListSeparator))
@@ -485,7 +489,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 
-	terragruntConfigFile.Include.isIncludeBy = &include
+	terragruntConfigFile.Include.isIncludedBy = &include
 	includedConfig, err := parseIncludedConfig(terragruntConfigFile.Include, terragruntOptions)
 	if err != nil {
 		return
@@ -579,7 +583,7 @@ func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *optio
 	}
 
 	if !filepath.IsAbs(includedConfig.Path) && includedConfig.Source == "" {
-		includedConfig.Path = util.JoinPath(filepath.Dir(includedConfig.isIncludeBy.Path), includedConfig.Path)
+		includedConfig.Path = util.JoinPath(filepath.Dir(includedConfig.isIncludedBy.Path), includedConfig.Path)
 	}
 
 	return ParseConfigFile(terragruntOptions, *includedConfig)
