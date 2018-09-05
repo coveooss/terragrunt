@@ -72,7 +72,7 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	cmd := shell.NewCmd(hook.options(), hook.Command).Args(hook.Arguments...)
 	if hook.ShellCommand {
 		// We must not redirect the stderr on shell command, doing so, remove the prompt
-		cmd.Stderr = os.Stderr
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	}
 
 	if hook.ExpandArgs {

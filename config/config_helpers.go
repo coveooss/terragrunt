@@ -557,7 +557,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 			}
 			return filepath.Dir(includePath)
 		}
-		cursor = cursor.isIncludeBy
+		cursor = cursor.isIncludedBy
 	}
 }
 
