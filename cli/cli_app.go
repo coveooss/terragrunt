@@ -294,7 +294,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			finalStatus = errors.WithStackTrace(err)
 			return true
 		}
-		terragruntOptions.Logger.Errorf("Encountered %v, continuing execution", err)
+		terragruntOptions.Logger.Error("Error, but continuing execution because ignore_error is set")
+		terragruntOptions.Logger.Debugf("%v", err)
 		if finalStatus == nil {
 			finalStatus = errors.WithStackTrace(err)
 		}
@@ -419,11 +420,17 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 
 	if err == nil && useTempFolder && util.ApplyTemplate() {
 		template.SetLogLevel(util.GetLoggingLevel())
-		t := template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil)
+		var t *template.Template
+		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil); stopOnError(err) {
+			return
+		}
 		t.SetOption(template.Overwrite, true)
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, "*.tf")
-		if _, err := t.ProcessTemplates("", "", files...); stopOnError(err) {
-			return
+		if _, err := t.ProcessTemplates("", "", files...); err != nil {
+			err = fmt.Errorf("Error(s) while applying go template\n%s", strings.Replace(err.Error(), terragruntOptions.WorkingDir+"/", "", -1))
+			if stopOnError(err) {
+				return
+			}
 		}
 	}
 
@@ -507,7 +514,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		cmd = shell.NewCmd(terragruntOptions, command).Args(args...)
 		if actualCommand.Extra.ShellCommand {
 			// We must not redirect the stderr on shell command, doing so, remove the prompt
-			cmd.Stderr = os.Stderr
+			cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 		}
 
 		if expandArgs {

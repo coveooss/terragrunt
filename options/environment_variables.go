@@ -11,6 +11,7 @@ const (
 	EnvTFPath        = "TERRAGRUNT_TFPATH"        // Used to configure the path to the terraform command (optional, default terraform)
 	EnvWorkers       = "TERRAGRUNT_WORKERS"       // Used to configure the maximum number of concurrent workers (optional)
 	EnvApplyTemplate = "TERRAGRUNT_TEMPLATE"      // Used to configure whether or not go template should be applied on terraform (.tf and .tfvars) file
+	EnvBootConfigs   = "TERRAGRUNT_BOOT_CONFIGS"  // Used to set defaults configuration when launching terragrunt
 )
 
 // All environment variables that are published during Terragrunt execution to share current context during shell execution

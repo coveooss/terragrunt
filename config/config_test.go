@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -405,6 +407,61 @@ func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 	terragruntConfig, err := parseConfigString(config, options.NewTerragruntOptionsForTest(configPath), IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
+}
+
+func TestParseWithBootStrapFile(t *testing.T) {
+	fixture := "../test/fixture-bootstrap/"
+	absolute, _ := filepath.Abs(fixture)
+	os.Setenv(options.EnvBootConfigs, fmt.Sprintf("%[1]s/a.tfvars:%[1]s/b.tfvars", absolute))
+	defer func() { os.Setenv(options.EnvBootConfigs, "") }()
+
+	// Cannot be run in parallel since it defines an environment variable
+	configPath := fixture + DefaultTerragruntConfigPath
+
+	config, err := util.ReadFileAsString(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	terragruntConfig, err := parseConfigString(config, options.NewTerragruntOptionsForTest(configPath), IncludeConfig{Path: configPath})
+	assert.Nil(t, err)
+	assert.NotNil(t, terragruntConfig)
+	assert.Equal(t, len(terragruntConfig.PreHooks), 2, "Should have 2 pre_hook(s)")
+}
+
+func TestParseWithNoFile(t *testing.T) {
+	t.Parallel()
+	config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest("../test/fixture-noconfig/no-file/" + DefaultTerragruntConfigPath))
+	assert.Nil(t, err)
+	assert.NotNil(t, config)
+}
+
+func TestParseWithNoConfig(t *testing.T) {
+	t.Parallel()
+	config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest("../test/fixture-noconfig/no-terragrunt/" + DefaultTerragruntConfigPath))
+	assert.Nil(t, err)
+	assert.NotNil(t, config)
+}
+
+func TestParseWithBadPath(t *testing.T) {
+	t.Parallel()
+	config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest("../test/fixture-noconfig/bad-path/" + DefaultTerragruntConfigPath))
+	assert.NotNil(t, err)
+	assert.Nil(t, config)
+}
+
+func TestParseValid(t *testing.T) {
+	t.Parallel()
+	config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest("../test/fixture-noconfig/valid/" + DefaultTerragruntConfigPath))
+	assert.Nil(t, err)
+	assert.NotNil(t, config)
+}
+
+func TestParseInvalid(t *testing.T) {
+	t.Parallel()
+	config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest("../test/fixture-noconfig/invalid/" + DefaultTerragruntConfigPath + ".invalid"))
+	assert.NotNil(t, err)
+	assert.Nil(t, config)
 }
 
 func TestParseTerragruntConfigEmptyConfig(t *testing.T) {
