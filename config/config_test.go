@@ -410,12 +410,12 @@ func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 }
 
 func TestParseWithBootStrapFile(t *testing.T) {
+	// Cannot be run in parallel since it defines an environment variable
 	fixture := "../test/fixture-bootstrap/"
 	absolute, _ := filepath.Abs(fixture)
 	os.Setenv(options.EnvBootConfigs, fmt.Sprintf("%[1]s/a.tfvars:%[1]s/b.tfvars", absolute))
 	defer func() { os.Setenv(options.EnvBootConfigs, "") }()
 
-	// Cannot be run in parallel since it defines an environment variable
 	configPath := fixture + DefaultTerragruntConfigPath
 
 	config, err := util.ReadFileAsString(configPath)
