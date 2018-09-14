@@ -1,5 +1,5 @@
 hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2018-09-14T06:53:29.294081-04:00
+updated: 2018-09-14T14:24:38.009502-04:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -76,7 +76,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 5a360e591fe04fa4d7a970e4773b9e1b58b1bb0d
+  version: 193b20ecc146f596db4fe90343298debcd65ae88
   subpackages:
   - collections
   - collections/implementation
