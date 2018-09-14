@@ -8,7 +8,7 @@ sudo: required
 before_install:
   - go get github.com/Masterminds/glide
   - go get github.com/mattn/goveralls
-  - wget https://releases.hashicorp.com/terraform/0.11./terraform8_0.11.8_linux_amd64.zip -O /tmp/terraform.zip
+  - wget https://releases.hashicorp.com/terraform/0.11.8/terraform8_0.11.8_linux_amd64.zip -O /tmp/terraform.zip
   - sudo unzip -d /usr/local/bin/ /tmp/terraform.zip
 
 install:
