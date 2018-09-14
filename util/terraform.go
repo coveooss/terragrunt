@@ -69,7 +69,7 @@ func LoadVariables(content string, cwd string, context ...interface{}) (map[stri
 // LoadVariablesFromSource returns a map of the variables defined in the content provider
 func LoadVariablesFromSource(content, fileName, cwd string, context ...interface{}) (result map[string]interface{}, err error) {
 	result = make(map[string]interface{})
-	if ApplyTemplate() && (strings.Contains(content, "@") || strings.Contains(content, "{{")) {
+	if ApplyTemplate() && template.IsCode(content) {
 		var t *template.Template
 		switch len(context) {
 		case 0:
