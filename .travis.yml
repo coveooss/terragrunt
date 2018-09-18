@@ -1,16 +1,14 @@
 language: go
 go:
   - 1.11.x
+go_import_path: github.com/gruntwork-io/terragrunt
 
 sudo: required
 
 before_install:
   - go get github.com/Masterminds/glide
   - go get github.com/mattn/goveralls
-  - cd ../.. &&
-    mv coveo gruntwork-io &&
-    cd gruntwork-io/terragrunt
-  - wget https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip -O /tmp/terraform.zip
+  - wget https://releases.hashicorp.com/terraform/0.11.8/terraform_0.11.8_linux_amd64.zip -O /tmp/terraform.zip
   - sudo unzip -d /usr/local/bin/ /tmp/terraform.zip
 
 install:
