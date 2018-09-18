@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/hcl"
 	"github.com/coveo/gotemplate/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -175,10 +176,10 @@ func (terragruntOptions *TerragruntOptions) SetStatus(exitCode int, err error) {
 }
 
 // GetContext returns the current context from the variables set
-func (terragruntOptions TerragruntOptions) GetContext() (result map[string]interface{}) {
-	result = make(map[string]interface{}, len(terragruntOptions.Variables))
+func (terragruntOptions TerragruntOptions) GetContext() (result collections.IDictionary) {
+	result = hcl.DictionaryHelper.CreateDictionary(len(terragruntOptions.Variables))
 	for key, value := range terragruntOptions.Variables {
-		result[key] = value.Value
+		result.Set(key, value.Value)
 	}
 	return
 }

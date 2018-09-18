@@ -276,7 +276,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return err
 	}
 
-	// If runHandler has been specified, we bypass the planned execution and defer the control // to the handler
+	// If runHandler has been specified, we bypass the planned execution and defer the control to the handler
 	if runHandler != nil {
 		return runHandler(terragruntOptions, conf)
 	}
@@ -417,7 +417,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if actualCommand.BehaveAs != "" {
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
-
 	if err == nil && useTempFolder && util.ApplyTemplate() {
 		template.SetLogLevel(util.GetLoggingLevel())
 		var t *template.Template
@@ -425,12 +424,19 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return
 		}
 		t.SetOption(template.Overwrite, true)
-		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, "*.tf")
-		if _, err := t.ProcessTemplates("", "", files...); err != nil {
-			err = fmt.Errorf("Error(s) while applying go template\n%s", strings.Replace(err.Error(), terragruntOptions.WorkingDir+"/", "", -1))
+		pathSep := string(os.PathListSeparator)
+		patterns := util.RemoveElementFromList(strings.Split("*.tf"+pathSep+os.Getenv(options.EnvTemplatePatterns), pathSep), "")
+		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
+		modifiedFiles, err := t.ProcessTemplates("", "", files...)
+		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
+		if err != nil {
+			err = fmt.Errorf("Error(s) while applying go template\n%s", filterPath(err.Error()))
 			if stopOnError(err) {
 				return
 			}
+		}
+		if len(modifiedFiles) > 0 {
+			terragruntOptions.Logger.Noticef("File(s) modified by go template: %s", filterPath(strings.Join(modifiedFiles, ", ")))
 		}
 	}
 
