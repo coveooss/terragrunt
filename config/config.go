@@ -11,6 +11,7 @@ import (
 	"github.com/coveo/gotemplate/hcl"
 	"github.com/coveo/gotemplate/template"
 	"github.com/coveo/gotemplate/utils"
+	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
@@ -31,7 +32,7 @@ const (
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
 	Description    string              `hcl:"description"`
-	RunConditions  *RunConditions      `hcl:"run_conditions"`
+	RunConditions  RunConditions       `hcl:"run_conditions"`
 	Terraform      *TerraformConfig    `hcl:"terraform"`
 	RemoteState    *remote.RemoteState `hcl:"remote_state"`
 	Dependencies   *ModuleDependencies `hcl:"dependencies"`
@@ -124,34 +125,8 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	tcf.ApprovalConfig.init(tcf)
 	tcf.PreHooks.init(tcf)
 	tcf.PostHooks.init(tcf)
-	return &tcf.TerragruntConfig, nil
-}
-
-// RunConditions defines the rules that are evaluated in order to determine
-type RunConditions struct {
-	Run    map[string][]interface{} `hcl:"run_if"`
-	Ignore map[string][]interface{} `hcl:"ignore_if"`
-}
-
-// ShouldRun returns whether or not the current project should be run based on its run conditions and the variables in its options.
-func (conditions RunConditions) ShouldRun(terragruntOptions *options.TerragruntOptions) bool {
-	variables := terragruntOptions.Variables
-	for key, values := range conditions.Ignore {
-		variable, found := variables[key]
-		if found && util.ListContainsElementInterface(values, variable.Value) {
-			terragruntOptions.Logger.Warningf("Ignoring project because variable `%v` is equal to `%v` which is an ignored value. (See run_conditions)", key, variable.Value)
-			return false
-		}
-	}
-	for key, values := range conditions.Run {
-		variable, found := variables[key]
-		if found && !util.ListContainsElementInterface(values, variable.Value) {
-			terragruntOptions.Logger.Warningf("Ignoring project because variable `%v` is equal to `%v` which is not in the list of accepted values `%v`. (See run_conditions)", key, variable.Value, values)
-			return false
-		}
-	}
-
-	return true
+	err = tcf.RunConditions.init(tcf.options)
+	return &tcf.TerragruntConfig, err
 }
 
 // LockConfig is older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -383,10 +358,12 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		}
 	}
 
-	terragruntOptions.Logger.Infof("Reading Terragrunt config file at %s", util.GetPathRelativeToWorkingDirMax(source, 2))
-	if err = terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile); err != nil {
+	var terragrunt interface{}
+	if terragrunt, err = terragruntOptions.ImportVariables(configString, source, options.ConfigVarFile); err != nil {
 		return
 	}
+
+	terragruntOptions.TerragruntRawConfig, _ = collections.TryAsDictionary(terragrunt)
 
 	if config, err = parseConfigString(configString, terragruntOptions, include); err != nil {
 		return
@@ -446,12 +423,12 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		err = errors.WithStackTrace(CouldNotResolveTerragruntConfigInFile(include.Path))
 		return
 	}
-	terragruntOptions.Logger.Debugf("Loaded configuration\n%v", terragruntConfigFile)
 
 	config, err = terragruntConfigFile.convertToTerragruntConfig(terragruntOptions)
 	if err != nil {
 		return
 	}
+	terragruntOptions.Logger.Infof("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
 
 	if !path.IsAbs(include.Path) {
 		include.Path, _ = filepath.Abs(include.Path)
@@ -559,6 +536,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 		conf.AssumeRole = includedConfig.AssumeRole
 	}
 
+	conf.RunConditions.Merge(includedConfig.RunConditions)
 	conf.ImportFiles.Merge(includedConfig.ImportFiles)
 	conf.ExtraCommands.Merge(includedConfig.ExtraCommands)
 	conf.ApprovalConfig.Merge(includedConfig.ApprovalConfig)

@@ -302,6 +302,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
+	// Applying the extra arguments
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
 		if util.ListContainsElement(terraformCommandsWithSubCommand, terragruntOptions.TerraformCliArgs[0]) {
@@ -328,6 +329,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	conf.SubstituteAllVariables(terragruntOptions, false)
+
+	// Determinate if the project should be ignored
+	if !conf.RunConditions.ShouldRun() {
+		return nil
+	}
 
 	if conf.Uniqueness != nil {
 		// If uniqueness_criteria has been defined, we set it in the options to ensure that
@@ -455,10 +461,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 	if len(tfFiles) == 0 {
 		terragruntOptions.Logger.Warning("No terraform file found, skipping folder")
-		return nil
-	}
-
-	if conf.RunConditions != nil && !conf.RunConditions.ShouldRun(terragruntOptions) {
 		return nil
 	}
 
