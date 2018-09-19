@@ -95,6 +95,9 @@ type TerragruntOptions struct {
 
 	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
 	deferredSaveList map[string]bool
+
+	// Represent the raw terragrunt config variable
+	TerragruntRawConfig collections.IDictionary
 }
 
 // NewTerragruntOptions creates a new TerragruntOptions object with reasonable defaults for real usage
@@ -229,23 +232,25 @@ func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string,
 }
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
-func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) error {
+func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) (terragrunt interface{}, err error) {
 	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, context...)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	terragruntOptions.importVariables(vars, origin)
-	return nil
+	terragrunt = terragruntOptions.importVariables(vars, origin)
+	return
 }
 
-func (terragruntOptions *TerragruntOptions) importVariables(vars map[string]interface{}, origin VariableSource) {
+func (terragruntOptions *TerragruntOptions) importVariables(vars map[string]interface{}, origin VariableSource) (terragrunt interface{}) {
 	for key, value := range vars {
 		if key == "terragrunt" {
-			// We do not import the terragrunt variable
+			// We do not import the terragrunt variable, but we return it
+			terragrunt = value
 			continue
 		}
 		terragruntOptions.SetVariable(key, value, origin)
 	}
+	return
 }
 
 // AddDeferredSaveVariables - Add a path where to save the variable list

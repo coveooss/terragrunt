@@ -93,7 +93,19 @@ func LoadVariablesFromSource(content, fileName, cwd string, context ...interface
 			}
 		}
 	}
-	err = collections.ConvertData(content, &result)
+
+	// We first try to read using hcl parser
+	if err = hcl.Unmarshal([]byte(content), &result); err != nil {
+		// If there is an error with try with a multi language parser
+		result = make(map[string]interface{})
+		if err2 := collections.ConvertData(content, &result); err2 == nil {
+			// We succeeded, hooray!
+			err = nil
+		} else {
+			// We add the file name to the error
+			err = fmt.Errorf("Error in %s:%s", fileName, strings.TrimPrefix(err.Error(), "At "))
+		}
+	}
 	return
 }
 

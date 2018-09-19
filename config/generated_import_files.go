@@ -156,12 +156,12 @@ func (list ImportFilesList) Run(status error, args ...interface{}) (result []int
 	list.sort()
 
 	var (
-		errs       errorArray
-		errOccured bool
+		errs        errorArray
+		errOccurred bool
 	)
 	for _, item := range list {
 		iItem := IImportFiles(&item)
-		if (status != nil || errOccured) && !iItem.ignoreError() {
+		if (status != nil || errOccurred) && !iItem.ignoreError() {
 			continue
 		}
 		iItem.logger().Infof("Running %s (%s): %s", iItem.itemType(), iItem.id(), iItem.name())
@@ -172,7 +172,7 @@ func (list ImportFilesList) Run(status error, args ...interface{}) (result []int
 			if _, ok := currentErr.(errors.PlanWithChanges); ok {
 				errs = append(errs, currentErr)
 			} else {
-				errOccured = true
+				errOccurred = true
 				errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", iItem.itemType(), iItem.id(), currentErr))
 			}
 		}
