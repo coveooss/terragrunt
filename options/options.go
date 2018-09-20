@@ -66,10 +66,10 @@ type TerragruntOptions struct {
 	IgnoreDependencyErrors bool
 
 	// If you want stdout to go somewhere other than os.stdout
-	Writer io.Writer
+	Writer io.WriteCloser
 
 	// If you want stderr to go somewhere other than os.stderr
-	ErrWriter io.Writer
+	ErrWriter io.WriteCloser
 
 	// A command that can be used to run Terragrunt with the given options. This is useful for running Terragrunt
 	// multiple times (e.g. when spinning up a stack of Terraform modules). The actual command is normally defined
@@ -288,6 +288,12 @@ func (terragruntOptions *TerragruntOptions) Println(args ...interface{}) (n int,
 // Printf uses the embedded writer to print
 func (terragruntOptions *TerragruntOptions) Printf(format string, args ...interface{}) (n int, err error) {
 	return fmt.Fprintf(terragruntOptions.Writer, format, args...)
+}
+
+// CloseWriters indicates to the writers that it can be closed
+func (terragruntOptions *TerragruntOptions) CloseWriters() {
+	terragruntOptions.Writer.Close()
+	terragruntOptions.ErrWriter.Close()
 }
 
 // SetVariable overwrites the value in the variables map only if the source is more significant than the original value

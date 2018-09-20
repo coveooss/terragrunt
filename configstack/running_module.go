@@ -132,8 +132,8 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 				Writer: &module.OutStream,
 				Logger: module.Module.TerragruntOptions.Logger,
 			}
-			module.Module.TerragruntOptions.Writer = logCatcher
-			module.Module.TerragruntOptions.ErrWriter = logCatcher
+			module.Module.TerragruntOptions.Writer = &logCatcher
+			module.Module.TerragruntOptions.ErrWriter = &logCatcher
 			go module.OutputPeriodicLogs(&completed) // Flush the output buffers periodically to confirm that the process is still alive
 			module.runModuleWhenReady()
 		}(module)
