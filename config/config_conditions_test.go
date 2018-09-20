@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/coveo/gotemplate/hcl"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunConditions(t *testing.T) {
 	t.Parallel()
 
-	type list = []interface{}
+	type list = hcl.List
 	type vars = map[string]interface{}
 	tests := []struct {
 		name      string
