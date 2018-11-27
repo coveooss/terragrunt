@@ -290,6 +290,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return false
 		}
 
+		if _, planStatusError := err.(errors.PlanWithChanges); planStatusError {
+			finalStatus = errors.WithStackTrace(err)
+			return false
+		}
+
 		if !ignoreError {
 			finalStatus = errors.WithStackTrace(err)
 			return true
