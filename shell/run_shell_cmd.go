@@ -287,4 +287,4 @@ func (signalChannel *SignalsForwarder) Close() error {
 	return nil
 }
 
-var iif = utils.IIf
+var iif = collections.IIf

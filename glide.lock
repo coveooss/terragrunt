@@ -1,5 +1,5 @@
 hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2018-09-17T19:32:37.303195-04:00
+updated: 2018-11-30T09:35:15.578196853-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: 34699de98eac41fa94737f6ce7b83d7a621c2634
+  version: ceab7b7ac6f535d1397f124620720b5145f1ad59
   subpackages:
   - aws
   - aws/awserr
@@ -36,6 +36,7 @@ imports:
   - aws/credentials/ec2rolecreds
   - aws/credentials/endpointcreds
   - aws/credentials/stscreds
+  - aws/crr
   - aws/csm
   - aws/defaults
   - aws/ec2metadata
@@ -45,6 +46,8 @@ imports:
   - aws/service/s3
   - aws/session
   - aws/signer/v4
+  - internal/ini
+  - internal/s3err
   - internal/sdkio
   - internal/sdkrand
   - internal/sdkuri
@@ -76,7 +79,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 19fe711b5015bd7f3c87baedb49eaacad4415b21
+  version: 6c245adc3fcf99f2de22f5ec06f2752f2b49fb11
   subpackages:
   - collections
   - collections/implementation
@@ -97,8 +100,6 @@ imports:
   version: 2d684516a8861da43017284349b7e303e809ac21
 - name: github.com/go-errors/errors
   version: d98b870cc4e05f1545532a80e9909be8216095b6
-- name: github.com/go-ini/ini
-  version: fa25069db393aecc09b71267d0489b357781c860
 - name: github.com/google/uuid
   version: 064e2069ce9c359c118179501254f67d7d37ba24
 - name: github.com/hashicorp/errwrap
@@ -143,7 +144,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 6dfc4d748de9cda23835bc5704307ed45e839622
+  version: 07da549a1d20bf1db1a5f841835aa28b1576b4d3
   subpackages:
   - config
   - config/hcl2shim
@@ -258,7 +259,7 @@ imports:
   - html/atom
   - idna
 - name: golang.org/x/sys
-  version: d0be0721c37eeb5299f245a996a483160fc36940
+  version: ee1b12c67af419cf5a9be3bdbeea7fc1c5f32f11
   subpackages:
   - unix
   - windows
