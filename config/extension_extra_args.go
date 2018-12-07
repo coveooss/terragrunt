@@ -13,6 +13,7 @@ import (
 type TerraformExtraArguments struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
+	NestedUnder      string   `hcl:"nested_under"`
 	Source           string   `hcl:"source"`
 	Arguments        []string `hcl:"arguments"`
 	Vars             []string `hcl:"vars"`
@@ -124,7 +125,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 			}
 			for _, file := range files {
 				terragruntOptions.Logger.Info("Importing", file)
-				if err := terragruntOptions.ImportVariablesFromFile(file, options.VarFile); err != nil {
+				if err := terragruntOptions.ImportVariablesFromFile(file, arg.NestedUnder, options.VarFile); err != nil {
 					return nil, err
 				}
 				if currentCommandIncluded {
@@ -142,7 +143,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 						out = append(out, fmt.Sprintf("-var-file=%s", file))
 					}
 					terragruntOptions.Logger.Info("Importing", file)
-					if err := terragruntOptions.ImportVariablesFromFile(file, options.VarFile); err != nil {
+					if err := terragruntOptions.ImportVariablesFromFile(file, arg.NestedUnder, options.VarFile); err != nil {
 						return nil, err
 					}
 				} else if currentCommandIncluded {

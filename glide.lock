@@ -1,5 +1,5 @@
 hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2018-11-30T09:35:15.578196853-05:00
+updated: 2018-12-07T08:18:56.741099594-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: ceab7b7ac6f535d1397f124620720b5145f1ad59
+  version: 130ebb7dc1d6b5a940198b47642fc8b20936a65d
   subpackages:
   - aws
   - aws/awserr
@@ -35,6 +35,7 @@ imports:
   - aws/credentials
   - aws/credentials/ec2rolecreds
   - aws/credentials/endpointcreds
+  - aws/credentials/processcreds
   - aws/credentials/stscreds
   - aws/crr
   - aws/csm
@@ -79,7 +80,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 6c245adc3fcf99f2de22f5ec06f2752f2b49fb11
+  version: 3edf3fa42949d978a47053705974f5a501da6ad4
   subpackages:
   - collections
   - collections/implementation
@@ -164,13 +165,14 @@ imports:
 - name: github.com/huandu/xstrings
   version: 8bbcf2f9ccb55755e748b7644164cd4bdce94c1d
 - name: github.com/imdario/mergo
-  version: 7fe0c75c13abdee74b09fcacef5ea1c6bba6a874
+  version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
 - name: github.com/jmespath/go-jmespath
   version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
 - name: github.com/Masterminds/semver
   version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
-  version: 15f9564e7e9cf0da02a48e0d25f12a7b83559aa6
+  version: 6f47c5a313118e47c93c062ac4ed24eb141d0243
+  repo: https://github.com/coveord/sprig
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
@@ -238,7 +240,7 @@ imports:
   - cty/json
   - cty/set
 - name: golang.org/x/crypto
-  version: 0e37d006457bf46f9e6692014ba72ef82c33022c
+  version: 4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06
   subpackages:
   - bcrypt
   - blowfish

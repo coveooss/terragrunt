@@ -215,13 +215,16 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 }
 
 // ImportVariablesFromFile loads variables from the file indicated by path
-func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, origin VariableSource) error {
+func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, nestedUnder string, origin VariableSource) error {
 	if !strings.Contains(path, "/") {
 		path = util.JoinPath(terragruntOptions.WorkingDir, path)
 	}
 	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, terragruntOptions.GetContext())
 	if err != nil {
 		return err
+	}
+	if nestedUnder != "" {
+		vars = map[string]interface{}{nestedUnder: vars}
 	}
 	terragruntOptions.importVariables(vars, origin)
 	return nil
