@@ -1,5 +1,5 @@
-hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2018-12-07T08:18:56.741099594-05:00
+hash: cfa30df7647fb200b11519cff1543929a8afee923ea8c8b6efdac68e2952d98e
+updated: 2018-12-18T11:55:41.486538308-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: 130ebb7dc1d6b5a940198b47642fc8b20936a65d
+  version: a21788f1964e28dc1e3932e595db6707ce8070cf
   subpackages:
   - aws
   - aws/awserr
@@ -80,7 +80,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 3edf3fa42949d978a47053705974f5a501da6ad4
+  version: dd0d1948f6dfcb8b97f2d8d03927cd3ce8909a37
   subpackages:
   - collections
   - collections/implementation
@@ -165,13 +165,13 @@ imports:
 - name: github.com/huandu/xstrings
   version: 8bbcf2f9ccb55755e748b7644164cd4bdce94c1d
 - name: github.com/imdario/mergo
-  version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
+  version: 7fe0c75c13abdee74b09fcacef5ea1c6bba6a874
 - name: github.com/jmespath/go-jmespath
   version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
 - name: github.com/Masterminds/semver
   version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
-  version: 6f47c5a313118e47c93c062ac4ed24eb141d0243
+  version: 5fb75a222e99ca7c861b906c96ff5ac6bec4a1d6
   repo: https://github.com/coveord/sprig
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
@@ -264,7 +264,6 @@ imports:
   version: ee1b12c67af419cf5a9be3bdbeea7fc1c5f32f11
   subpackages:
   - unix
-  - windows
 - name: golang.org/x/text
   version: 905a57155faa8230500121607930ebb9dd8e139c
   subpackages:
