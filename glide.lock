@@ -1,5 +1,5 @@
-hash: cfa30df7647fb200b11519cff1543929a8afee923ea8c8b6efdac68e2952d98e
-updated: 2018-12-18T11:55:41.486538308-05:00
+hash: 7c95095b10a458b45ae54f458a51a8f52cf14f4dd0f864c6c49d0534dbceac0b
+updated: 2018-12-19T08:29:15.77104066-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -10,9 +10,9 @@ imports:
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/andybalholm/cascadia
-  version: 901648c87902174f774fac311d7f176f8647bdaa
+  version: 680b6a57bda4f657485ad44bdea42342ead737bc
 - name: github.com/aokoli/goutils
-  version: 3391d3790d23d03408670993e957e8f408993c34
+  version: 41ac8693c5c10a92ea1ff5ac3a7f95646f6123b0
 - name: github.com/apparentlymart/go-cidr
   version: 1755c023625ec3a84979b90841a1ab067ed6c071
   subpackages:
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: a21788f1964e28dc1e3932e595db6707ce8070cf
+  version: 8d41be8a37391ddc4feb2d16f5ca6f440eb8b356
   subpackages:
   - aws
   - aws/awserr
@@ -80,7 +80,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: dd0d1948f6dfcb8b97f2d8d03927cd3ce8909a37
+  version: 5ab6772dc4d54c839f6b2d294de86350da15618f
   subpackages:
   - collections
   - collections/implementation
@@ -98,9 +98,16 @@ imports:
 - name: github.com/drhodes/goLorem
   version: ecccc744c2d953a1e13cbe5e5fc5d4cbc9b8daeb
 - name: github.com/fatih/color
-  version: 2d684516a8861da43017284349b7e303e809ac21
+  version: 3f9d52f7176a6927daacff70a3e8d1dc2025c53e
 - name: github.com/go-errors/errors
   version: d98b870cc4e05f1545532a80e9909be8216095b6
+- name: github.com/google/go-cmp
+  version: 2248b49eaa8e1c8c0963ee77b40841adbc19d4ca
+  subpackages:
+  - cmp
+  - cmp/internal/diff
+  - cmp/internal/function
+  - cmp/internal/value
 - name: github.com/google/uuid
   version: 064e2069ce9c359c118179501254f67d7d37ba24
 - name: github.com/hashicorp/errwrap
@@ -108,7 +115,7 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: e8ab9daed8d1ddd2d3c4efba338fe2eeae2e4f18
 - name: github.com/hashicorp/go-getter
-  version: 4bda8fa99001c61db3cad96b421d4c12a81f256d
+  version: be39683deade1b3613258f751a2fad316d7b5e7c
   subpackages:
   - helper/url
 - name: github.com/hashicorp/go-multierror
@@ -116,7 +123,7 @@ imports:
 - name: github.com/hashicorp/go-safetemp
   version: c9a55de4fe06c920a71964b53cfe3dd293a3c743
 - name: github.com/hashicorp/go-uuid
-  version: de160f5c59f693fed329e73e291bb751fe4ea4dc
+  version: 4f571afc59f3043a65f8fe6bf46d887b10a01d43
 - name: github.com/hashicorp/go-version
   version: b5a281d3160aa11950a6182bd9a9dc2cb1e02d50
 - name: github.com/hashicorp/hcl
@@ -131,13 +138,14 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/hashicorp/hcl2
-  version: 864f97c8ab203ef9f72a47f231e7d10e52a33ce7
+  version: 253da47fd604c8c6c857af9826021d65e50d9b4c
   subpackages:
   - gohcl
   - hcl
   - hcl/hclsyntax
   - hcl/json
   - hclparse
+  - hclwrite
 - name: github.com/hashicorp/hil
   version: fa9f258a92500514cc8e9c67020487709df92432
   subpackages:
@@ -145,7 +153,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 07da549a1d20bf1db1a5f841835aa28b1576b4d3
+  version: ac4fff416318bf0915a0ab80e062a99ef3724334
   subpackages:
   - config
   - config/hcl2shim
@@ -171,8 +179,7 @@ imports:
 - name: github.com/Masterminds/semver
   version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
-  version: 5fb75a222e99ca7c861b906c96ff5ac6bec4a1d6
-  repo: https://github.com/coveord/sprig
+  version: 15f9564e7e9cf0da02a48e0d25f12a7b83559aa6
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
@@ -194,7 +201,7 @@ imports:
 - name: github.com/mitchellh/hashstructure
   version: a38c50148365edc8df43c1580c48fb2b3a1e9cd7
 - name: github.com/mitchellh/mapstructure
-  version: fa473d140ef3c6adf42d6b391fe76707f1f243c8
+  version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/mitchellh/reflectwalk
   version: eecee6c969c02c8cc2ae48e1e269843ae8590796
 - name: github.com/op/go-logging
@@ -204,13 +211,13 @@ imports:
   subpackages:
   - difflib
 - name: github.com/posener/complete
-  version: 0d98d7ee195f007b3453c002780ed80c76e7c806
+  version: 3ef9b31a6a0613ae832e7ecf208374027c3b2343
   subpackages:
   - cmd
   - cmd/install
   - match
 - name: github.com/PuerkitoBio/goquery
-  version: dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2
+  version: 2d2796f41742ece03e8086188fa4db16a3a0b458
 - name: github.com/rs/xid
   version: 15d26544def341f036c5f8dca987a4cbe575032c
 - name: github.com/sergi/go-diff
@@ -222,7 +229,7 @@ imports:
   subpackages:
   - assert
 - name: github.com/ulikunitz/xz
-  version: 636d36a76670e6c700f22fd5f4588679ff2896c4
+  version: 590df8077fbcb06ad62d7714da06c00e5dd2316d
   subpackages:
   - internal/hash
   - internal/xlog
@@ -230,7 +237,7 @@ imports:
 - name: github.com/urfave/cli
   version: cfb38830724cc34fedffe9a2a29fb54fa9169cd1
 - name: github.com/zclconf/go-cty
-  version: cc054f996f8b732f7205fd6f1ef84c39f2720461
+  version: 4fe1e489ee06ac211df6f290ed1cfdd1e14c2ac6
   subpackages:
   - cty
   - cty/convert
@@ -240,7 +247,7 @@ imports:
   - cty/json
   - cty/set
 - name: golang.org/x/crypto
-  version: 4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06
+  version: 505ab145d0a99da450461ae2c1a9f6cd10d1f447
   subpackages:
   - bcrypt
   - blowfish
@@ -255,17 +262,18 @@ imports:
   - scrypt
   - ssh/terminal
 - name: golang.org/x/net
-  version: 26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2
+  version: e147a9138326bc0e9d4e179541ffd8af41cff8a9
   subpackages:
   - html
   - html/atom
   - idna
 - name: golang.org/x/sys
-  version: ee1b12c67af419cf5a9be3bdbeea7fc1c5f32f11
+  version: 074acd46bca67915925527c07849494d115e7c43
   subpackages:
   - unix
+  - windows
 - name: golang.org/x/text
-  version: 905a57155faa8230500121607930ebb9dd8e139c
+  version: 17bcc049122f272a32787ba38073ee47433023e9
   subpackages:
   - secure/bidirule
   - transform
@@ -274,5 +282,5 @@ imports:
 - name: gopkg.in/alecthomas/kingpin.v2
   version: 947dcec5ba9c011838740e680966fd7087a71d0d
 - name: gopkg.in/yaml.v2
-  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
 testImports: []
