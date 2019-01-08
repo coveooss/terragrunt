@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/coveo/gotemplate/errors"
 	"github.com/coveo/gotemplate/template"
+	"github.com/coveo/gotemplate/utils"
 	"github.com/op/go-logging"
 )
 
@@ -61,18 +63,59 @@ func getLoggingLevelFromString(level string, defaultLevel logging.Level) (loggin
 
 // LogCatcher traps messsage containing logging level [LOGLEVEL] and redirect them to the logging system
 type LogCatcher struct {
-	Writer io.Writer
-	Logger *logging.Logger
+	Writer    io.Writer
+	Logger    *logging.Logger
+	remaining string
 }
 
-// This methods intercepts every message written to stderr and determines if a logging
+// Close implements io.Closer
+func (catcher *LogCatcher) Close() error {
+	if catcher.remaining != "" {
+		catcher.Write([]byte("\n"))
+	}
+	return nil
+}
+
+func (catcher *LogCatcher) write(s string) (int, error) {
+	_, err := catcher.Writer.Write([]byte(s))
+	return len(s), err
+}
+
+// This methods intercepts every message written to stream and determines if a logging
 // function should be used.
-func (catcher LogCatcher) Write(p []byte) (n int, err error) {
+func (catcher *LogCatcher) Write(p []byte) (n int, err error) {
+	var buffer string
+	if catcher.remaining != "" {
+		n -= len(catcher.remaining)
+		buffer = catcher.remaining + string(p)
+		catcher.remaining = ""
+	} else {
+		buffer = string(p)
+	}
+
+	var errArray errors.Array
 	if logMessage == nil {
 		initLogCatcher()
 	}
-	if matches := logMessage.FindSubmatch(p); matches != nil {
-		if level, err := logging.LogLevel(string(matches[1])); err == nil {
+	if lastCR := strings.LastIndex(buffer, "\n"); lastCR >= 0 {
+		catcher.remaining = buffer[lastCR+1:]
+		buffer = buffer[:lastCR+1]
+		n += len(catcher.remaining)
+	}
+
+	for {
+		matches, _ := utils.MultiMatch(buffer, logMessage)
+		if len(matches) == 0 {
+			break
+		}
+		count, err := catcher.write(matches["before"])
+		if err != nil {
+			errArray = append(errArray, err)
+		}
+		n += count
+		buffer = buffer[count:]
+
+		if level, err := logging.LogLevel(matches["level"]); err == nil {
 			var logFunc func(...interface{})
 			// TODO: it would have been preferable to simply call the private
 			// method func (l *Logger) log instead of having a switch case here
@@ -91,12 +134,23 @@ func (catcher LogCatcher) Write(p []byte) (n int, err error) {
 				logFunc = catcher.Logger.Debug
 			}
 			if logFunc != nil {
-				logFunc(string(matches[2]))
-				return len(p), nil
+				logFunc(string(matches["message"]))
+				toRemove := len(matches["toRemove"])
+				buffer = buffer[toRemove:]
+				n += toRemove
 			}
 		}
 	}
-	return catcher.Writer.Write(p)
+
+	count, err := catcher.write(buffer)
+	if err != nil {
+		errArray = append(errArray, err)
+	}
+	n += count
+	if len(errArray) > 0 {
+		return n, errArray
+	}
+	return n, nil
 }
 
 func initLogCatcher() {
@@ -104,8 +158,8 @@ func initLogCatcher() {
 	for level := logging.CRITICAL; level <= logging.DEBUG; level++ {
 		levelNames = append(levelNames, level.String())
 	}
-	// https://regex101.com/r/joriQk/2
-	logMessage = regexp.MustCompile(fmt.Sprintf(`(?im)^\s*\[(?P<type>%s)\]\s*(?P<message>.*?)\s*$`, strings.Join(levelNames, "|")))
+	// https://regex101.com/r/joriQk/3
+	logMessage = regexp.MustCompile(fmt.Sprintf(`(?is)(?P<before>.*?\n)(?P<toRemove>[[:blank:]]*\[(?P<level>%s)\]\s*(?P<message>.*?)[[:blank:]]*\n)`, strings.Join(levelNames, "|")))
 }
 
 var logMessage *regexp.Regexp

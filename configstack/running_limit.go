@@ -35,7 +35,7 @@ func (module *runningModule) OutputPeriodicLogs(completed *bool) {
 	if module.Module.TerragruntOptions.RefreshOutputDelay == 0 {
 		return
 	}
-	writer := module.Module.TerragruntOptions.Writer.(util.LogCatcher).Logger.Noticef
+	writer := module.Module.TerragruntOptions.Writer.(*util.LogCatcher).Logger.Noticef
 	for {
 		time.Sleep(module.Module.TerragruntOptions.RefreshOutputDelay)
 		if *completed {

@@ -250,6 +250,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		if _, hasStack := finalStatus.(*errors.Error); finalStatus != nil && !hasStack {
 			finalStatus = errors.WithStackTrace(finalStatus)
 		}
+		terragruntOptions.CloseWriters()
 	}()
 
 	if util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFile)) {
