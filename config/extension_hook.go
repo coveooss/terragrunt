@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/gruntwork-io/terragrunt/errors"
 	"os"
 	"sort"
 	"strings"
@@ -28,7 +29,6 @@ type Hook struct {
 }
 
 func (hook Hook) itemType() (result string) { return HookList{}.argName() }
-func (hook Hook) ignoreError() bool         { return hook.IgnoreError }
 
 func (hook Hook) help() (result string) {
 	if hook.Description != "" {
@@ -90,6 +90,14 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	return
 }
 
+func (base Hook) setState(err error) {
+	exitCode, errCode := shell.GetExitCode(err)
+	if errCode != nil {
+		exitCode = -1
+	}
+	base.options().SetStatus(exitCode, err)
+}
+
 // ----------------------- HookList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_hooks.go gen "GenericItem=Hook"
@@ -132,3 +140,45 @@ var BeforeInitState = func(hook Hook) bool { return !hook.AfterInitState && !hoo
 
 // AfterInitState is a filter function
 var AfterInitState = func(hook Hook) bool { return hook.AfterInitState && !hook.BeforeImports }
+
+// Run execute the content of the list
+func (list HookList) Run(status error, args ...interface{}) (result []interface{}, err error) {
+	if len(list) == 0 {
+		return
+	}
+
+	list.sort()
+
+	var (
+		errs        errorArray
+		errOccurred bool
+	)
+	for _, hook := range list {
+		if (status != nil || errOccurred) && !hook.IgnoreError {
+			continue
+		}
+		hook.logger().Infof("Running %s (%s): %s", hook.itemType(), hook.id(), hook.name())
+		hook.normalize()
+		temp, currentErr := hook.run(args...)
+		currentErr = shell.FilterPlanError(currentErr, hook.options().TerraformCliArgs[0])
+		if currentErr != nil {
+			if _, ok := currentErr.(errors.PlanWithChanges); ok {
+				errs = append(errs, currentErr)
+			} else {
+				errOccurred = true
+				errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", hook.itemType(), hook.id(), currentErr))
+			}
+		}
+		hook.setState(currentErr)
+		result = append(result, temp)
+	}
+	switch len(errs) {
+	case 0:
+		break
+	case 1:
+		err = errs[0]
+	default:
+		err = errs
+	}
+	return
+}

@@ -32,6 +32,7 @@ const (
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
 	Description    string              `hcl:"description"`
+	VariablesFile  string              `hcl:"variables_file"`
 	RunConditions  RunConditions       `hcl:"run_conditions"`
 	Terraform      *TerraformConfig    `hcl:"terraform"`
 	RemoteState    *remote.RemoteState `hcl:"remote_state"`

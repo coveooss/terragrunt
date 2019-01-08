@@ -75,7 +75,7 @@ func (item ImportFiles) help() (result string) {
 	return
 }
 
-func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err error) {
+func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 	logger := item.logger()
 
 	if !item.enabled() {
@@ -275,7 +275,7 @@ func (list *ImportFilesList) Merge(imported ImportFilesList) {
 }
 
 // RunOnModules executes list configuration on module folders
-func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOptions) (result interface{}, err error) {
+func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOptions) (err error) {
 	if len(list) == 0 {
 		return
 	}
@@ -285,7 +285,7 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	for _, module := range modules {
 		stat, err := util.FileStat(module)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if !stat.IsDir() {
 			continue
@@ -295,7 +295,7 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 		if !stat.IsDir() {
 			link, err := os.Readlink(module)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			module = link
 		}
@@ -311,4 +311,19 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	}
 
 	return list.Run(nil, keys...)
+}
+
+func (list ImportFilesList) Run(status error, args ...interface{}) (err error) {
+	if len(list) == 0 {
+		return
+	}
+	list.sort()
+
+	for _, item := range list {
+		item.logger().Infof("Running %s (%s): %s", item.itemType(), item.id(), item.name())
+		if err := item.importFiles(args...); err != nil {
+			return err
+		}
+	}
+	return
 }

@@ -9,22 +9,22 @@ import (
 	"strings"
 )
 
-// ApprovalConfigList represents an array of ApprovalConfig
-type ApprovalConfigList []ApprovalConfig
+// TerraformImportVariablesList represents an array of TerraformImportVariables
+type TerraformImportVariablesList []TerraformImportVariables
 
-// IApprovalConfig returns TerragruntExtensioner from the supplied type
-func IApprovalConfig(item interface{}) TerragruntExtensioner {
+// ITerraformImportVariables returns TerragruntExtensioner from the supplied type
+func ITerraformImportVariables(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list ApprovalConfigList) init(config *TerragruntConfigFile) {
+func (list TerraformImportVariablesList) init(config *TerragruntConfigFile) {
 	for i := range list {
-		IApprovalConfig(&list[i]).init(config)
+		ITerraformImportVariables(&list[i]).init(config)
 	}
 }
 
 // Merge elements from an imported list to the current list priorising those already existing
-func (list *ApprovalConfigList) merge(imported ApprovalConfigList, mode mergeMode, argName string) {
+func (list *TerraformImportVariablesList) merge(imported TerraformImportVariablesList, mode mergeMode, argName string) {
 	if len(imported) == 0 {
 		return
 	} else if len(*list) == 0 {
@@ -32,18 +32,18 @@ func (list *ApprovalConfigList) merge(imported ApprovalConfigList, mode mergeMod
 		return
 	}
 
-	log := IApprovalConfig(&(*list)[0]).logger().Debugf
+	log := ITerraformImportVariables(&(*list)[0]).logger().Debugf
 
 	// Create a map with existing elements
 	index := make(map[string]int, len(*list))
 	for i, item := range *list {
-		index[IApprovalConfig(&item).id()] = i
+		index[ITerraformImportVariables(&item).id()] = i
 	}
 
 	// Create a list of the hooks that should be added to the list
-	newList := make(ApprovalConfigList, 0, len(imported))
+	newList := make(TerraformImportVariablesList, 0, len(imported))
 	for _, item := range imported {
-		name := IApprovalConfig(&item).id()
+		name := ITerraformImportVariables(&item).id()
 		if pos, exist := index[name]; exist {
 			// It already exist in the list, so is is an override
 			// We remove it from its current position and add it to the list of newly added elements to keep its original declaration ordering.
@@ -58,9 +58,9 @@ func (list *ApprovalConfigList) merge(imported ApprovalConfigList, mode mergeMod
 	if len(index) != len(*list) {
 		// Some elements must be removed from the original list, we simply regenerate the list
 		// including only elements that are still in the index.
-		newList := make(ApprovalConfigList, 0, len(index))
+		newList := make(TerraformImportVariablesList, 0, len(index))
 		for _, item := range *list {
-			name := IApprovalConfig(&item).id()
+			name := ITerraformImportVariables(&item).id()
 			if _, found := index[name]; found {
 				newList = append(newList, item)
 			}
@@ -76,7 +76,7 @@ func (list *ApprovalConfigList) merge(imported ApprovalConfigList, mode mergeMod
 }
 
 // Help returns the information relative to the elements within the list
-func (list ApprovalConfigList) Help(listOnly bool, lookups ...string) (result string) {
+func (list TerraformImportVariablesList) Help(listOnly bool, lookups ...string) (result string) {
 	list.sort()
 	add := func(item TerragruntExtensioner, name string) {
 		extra := item.extraInfo()
@@ -104,7 +104,7 @@ func (list ApprovalConfigList) Help(listOnly bool, lookups ...string) (result st
 	}
 
 	for _, item := range list.Enabled() {
-		item := IApprovalConfig(&item)
+		item := ITerraformImportVariables(&item)
 		match := len(lookups) == 0
 		for i := 0; !match && i < len(lookups); i++ {
 			match = strings.Contains(item.name(), lookups[i]) || strings.Contains(item.id(), lookups[i]) || strings.Contains(item.extraInfo(), lookups[i])
@@ -132,10 +132,10 @@ func (list ApprovalConfigList) Help(listOnly bool, lookups ...string) (result st
 }
 
 // Enabled returns only the enabled items on the list
-func (list ApprovalConfigList) Enabled() ApprovalConfigList {
-	result := make(ApprovalConfigList, 0, len(list))
+func (list TerraformImportVariablesList) Enabled() TerraformImportVariablesList {
+	result := make(TerraformImportVariablesList, 0, len(list))
 	for _, item := range list {
-		iItem := IApprovalConfig(&item)
+		iItem := ITerraformImportVariables(&item)
 		if iItem.enabled() {
 			iItem.normalize()
 			result = append(result, item)

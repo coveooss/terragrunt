@@ -369,7 +369,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder
-	if _, err := conf.ImportFiles.Run(err); stopOnError(err) {
+	if err := conf.ImportFiles.Run(err); stopOnError(err) {
 		return
 	}
 
@@ -455,7 +455,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return
 	}
 
-	if _, err := conf.ImportFiles.RunOnModules(terragruntOptions); stopOnError(err) {
+	if err := conf.ImportFiles.RunOnModules(terragruntOptions); stopOnError(err) {
 		return
 	}
 
