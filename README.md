@@ -1,10 +1,9 @@
 [![Build Status](https://travis-ci.org/coveo/terragrunt.svg?branch=master)](https://travis-ci.org/coveo/terragrunt)
-[![Coverage Status](https://coveralls.io/repos/github/coveo/terragrunt/badge.svg?branch=master)](https://coveralls.io/github/coveo/terragrunt?branch=master)
+[![Coverage Status](https://coveralls.io/repository/github/coveo/terragrunt/badge.svg?branch=master)](https://coveralls.io/github/coveo/terragrunt?branch=master)
 
 # Terragrunt
 
 Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that provides extra tools for keeping your Terraform configurations DRY, working with multiple Terraform modules, and managing remote state.
-
 
 ## Quick start
 
@@ -38,47 +37,48 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
    Terraform you already have installed. However, based on the settings in your `terraform.tfvars` file, Terragrunt can
    configure remote state, locking, extra arguments, and lots more.
 
-1. Terragrunt is a direct implementation of the ideas expressed in 
+1. Terragrunt is a direct implementation of the ideas expressed in
    [Terraform: Up & Running](http://www.terraformupandrunning.com). Additional background reading that will help
    explain the motivation for Terragrunt includes the Gruntwork.io blog posts
    [How to create reusable infrastructure with Terraform modules](https://blog.gruntwork.io/how-to-create-reusable-infrastructure-with-terraform-modules-25526d65f73d)
    and [How to use Terraform as a team](https://blog.gruntwork.io/how-to-use-terraform-as-a-team-251bc1104973).
 
 1. Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
-   and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example) 
-   repos for fully-working sample code that demonstrates how to use Terragrunt.
+   and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example)
+   repository for fully-working sample code that demonstrates how to use Terragrunt.
 
 ## Table of Contents
 
-1. [Install Terragrunt](#install-terragrunt)
-1. [Use cases](#use-cases)
-   1. [Keep your Terraform code DRY](#keep-your-terraform-code-dry)
-   1. [Keep your remote state configuration DRY](#keep-your-remote-state-configuration-dry)
-   1. [Keep your CLI flags DRY](#keep-your-cli-flags-dry)
-   1. [Execute Terraform commands on multiple modules at once](#execute-terraform-commands-on-multiple-modules-at-once)
-   1. [Assume a different AWS IAM role to execute Terraform commands](#assume-aws-iam-role)
-   1. [Define extra commands](#define-extra-commands)
-   1. [Run code before and after the actual command](#define-hooks)
-   1. [Import files from external sources](#import-files)
-   1. [Define uniqueness criterial](#uniqueness-criteria)
-1. [Terragrunt details](#terragrunt-details)
-   1. [AWS credentials](#aws-credentials)
-   1. [AWS IAM policies](#aws-iam-policies)
-   1. [Interpolation Syntax](#interpolation-syntax)
-   1. [CLI options](#cli-options)
-   1. [Configuration](#configuration)
-   1. [Migrating from Terragrunt v0.11.x and Terraform 0.8.x and older](#migrating-from-terragrunt-v011x-and-terraform-08x-and-older)
-   1. [Developing Terragrunt](#developing-terragrunt)
-   1. [License](#license)
-
+* [Install Terragrunt](#install-terragrunt)
+* [Use cases](#use-cases)
+  * [Keep your Terraform code DRY](#keep-your-terraform-code-dry)
+  * [Keep your remote state configuration DRY] #keep-your-remote-state-configuration-dry)
+  * [Keep your CLI flags DRY](#keep-your-cli-flags-dry)
+  * [Execute Terraform commands on multiple modules at once](#execute-terraform-commands-on-multiple-modules-at-once)
+  * [Assume a different AWS IAM role to execute Terraform commands](#assume-aws-iam-role)
+  * [Conditional execution of a project](#conditional-execution-of-a-project)
+  * [Define extra commands](#define-extra-commands)
+  * [Run code before and after the actual command](#define-hooks)
+  * [Import files from external sources](#import-files)
+  * [Define uniqueness criteria](#uniqueness-criteria)
+* [Terragrunt details](#terragrunt-details)
+  * [AWS credentials](#aws-credentials)
+  * [AWS IAM policies](#aws-iam-policies)
+  * [Interpolation Syntax](#interpolation-syntax)
+  * [CLI options](#cli-options)
+  * [Configuration](#configuration)
+  * [Migrating from Terragrunt v0.11.x and Terraform 0.8.x and older](#migrating-from-terragrunt-v011x-and-terraform-08x-and-older)
+  * [Developing Terragrunt](#developing-terragrunt)
+  * [License](#license)
 
 ## Install Terragrunt
 
 Note that third-party Terragrunt packages may not be updated with the latest version, but are often close.
-Please check your version against the latest available on the 
+Please check your version against the latest available on the
 [Releases Page](https://github.com/gruntwork-io/terragrunt/releases).
 
 ### OSX
+
 You can install Terragrunt on OSX using [Homebrew](https://brew.sh/): `brew install terragrunt`.
 
 ### Linux
@@ -88,9 +88,9 @@ You can install Terragrunt on OSX using [Homebrew](https://brew.sh/): `brew inst
 You can install Terragrunt on Linux systems using [snap](https://snapcraft.io/docs/core/install): `snap install terragrunt`.
 
 ### Manual
+
 You can install Terragrunt manually by going to the [Releases Page](https://github.com/gruntwork-io/terragrunt/releases),
 downloading the binary for your OS, renaming it to `terragrunt`, and adding it to your PATH.
-
 
 ## Use cases
 
@@ -101,24 +101,22 @@ Terragrunt supports the following use cases:
 1. [Keep your CLI flags DRY](#keep-your-cli-flags-dry)
 1. [Execute Terraform commands on multiple modules at once](#execute-terraform-commands-on-multiple-modules-at-once)
 
-
 ### Keep your Terraform code DRY
 
-* [Motivation](#motivation)
+* [Motivation](#motivation-for-dry-terraform-code)
 * [Remote Terraform configurations](#remote-terraform-configurations)
 * [How to use remote configurations](#how-to-use-remote-configurations)
 * [Achieve DRY Terraform code and immutable infrastructure](#achieve-dry-terraform-code-and-immutable-infrastructure)
 * [Working locally](#working-locally)
 * [Important gotcha: working with relative file paths](#important-gotcha-working-with-relative-file-paths)
-* [Using Terragrunt with private Git repos](#using-terragrunt-with-private-git-repos)
+* [Using Terragrunt with private Git repository](#using-terragrunt-with-private-git-repository)
 
-
-#### Motivation
+#### Motivation for dry terraform code
 
 Consider the following file structure, which defines three environments (prod, qa, stage) with the same infrastructure
 in each one (an app, a MySQL database, and a VPC):
 
-```
+```text
 └── live
     ├── prod
     │   ├── app
@@ -153,13 +151,12 @@ can still create a lot of maintenance overhead.
 How can you keep your Terraform code [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) so that you only
 have to define it once, no matter how many environments you have?
 
-
 #### Remote Terraform configurations
 
 Terragrunt has the ability to download remote Terraform configurations. The idea is that you define the Terraform code
 for your infrastructure just once, in a single repo, called, for example, `modules`:
 
-```
+```text
 └── modules
     ├── app
     │   └── main.tf
@@ -190,7 +187,7 @@ In a separate repo, called, for example, `live`, you define the code for all of 
 of just one `.tfvars` file per component (e.g. `app/terraform.tfvars`, `mysql/terraform.tfvars`, etc). This gives you
 the following file layout:
 
-```
+```text
 └── live
     ├── prod
     │   ├── app
@@ -231,7 +228,7 @@ instance_count = 3
 instance_type = "t2.micro"
 ```
 
-*(Note: the double slash (`//`) is intentional and required. It's part of Terraform's Git syntax for [module
+*(Note: the double slash (`//`) is intentional and required. It's part of Terraform Git syntax for [module
 sources](https://www.terraform.io/docs/modules/sources.html).)*
 
 And `prod/app/terraform.tfvars` may look like this:
@@ -253,18 +250,15 @@ versions (i.e. `stage` is testing out a newer version of the module). They also 
 to save money, larger/more instances in `prod` for scalability and high availability.
 
 Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
-and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example) 
-repos for fully-working sample code that demonstrates this new folder structure.
-
-
-
+and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example)
+repository for fully-working sample code that demonstrates this new folder structure.
 
 #### How to use remote configurations
 
 Once you've set up your `live` and `modules` repositories, all you need to do is run `terragrunt` commands in the
 `live` repository. For example, to deploy the `app` module in qa, you would do the following:
 
-```
+```bash
 cd live/qa/app
 terragrunt apply
 ```
@@ -283,7 +277,6 @@ When Terragrunt finds the `terraform` block with a `source` parameter in `live/q
 
 1. Execute whatever Terraform command you specified in that temporary folder.
 
-
 #### Achieve DRY Terraform code and immutable infrastructure
 
 With this new approach, copy/paste between environments is minimized. The `.tfvars` files contain solely the variables
@@ -297,21 +290,19 @@ tags and referencing them using the `ref` parameter in the `source` URL, as in t
 qa -> stage -> prod). This idea is inspired by Kief Morris' blog post [Using Pipelines to Manage Environments with
 Infrastructure as Code](https://medium.com/@kief/https-medium-com-kief-using-pipelines-to-manage-environments-with-infrastructure-as-code-b37285a1cbf5).
 
-
 #### Working locally
 
 If you're testing changes to a local copy of the `modules` repo, you you can use the `--terragrunt-source` command-line
 option or the `TERRAGRUNT_SOURCE` environment variable to override the `source` parameter. This is useful to point
 Terragrunt at a local checkout of your code so you can do rapid, iterative, make-a-change-and-rerun development:
 
-```
+```bash
 cd live/stage/app
 terragrunt apply --terragrunt-source ../../../modules//app
 ```
 
 *(Note: the double slash (`//`) here too is intentional and required. Terragrunt downloads all the code in the folder
 before the double-slash into the temporary folder so that relative paths between modules work correctly.)*
-
 
 #### Important gotcha: working with relative file paths
 
@@ -361,10 +352,9 @@ In particular:
 
   See the [get_tfvars_dir()](#get_tfvars_dir) documentation for more details.
 
+#### Using Terragrunt with private Git repository
 
-#### Using Terragrunt with private Git repos
-
-The easiest way to use Terragrunt with private Git repos is to use SSH authentication.
+The easiest way to use Terragrunt with private Git repository is to use SSH authentication.
 Configure your Git account so you can use it with SSH
 (see the [guide for GitHub here](https://help.github.com/articles/connecting-to-github-with-ssh/))
 and use the SSH URL for your repo, prepended with `git::ssh://`:
@@ -383,17 +373,17 @@ Note: In automated pipelines, you may need to run the following command for your
 Git repository prior to calling `terragrunt` to ensure that the ssh host is registered
 locally, e.g.:
 
-```
-$ ssh -T -oStrictHostKeyChecking=no git@github.com || true
+```bash
+> ssh -T -oStrictHostKeyChecking=no git@github.com || true
 ```
 
 ### Keep your remote state configuration DRY
 
-* [Motivation](#motivation-1)
+* [Motivation](#motivation-for-remote-state)
 * [Filling in remote state settings with Terragrunt](#filling-in-remote-state-settings-with-terragrunt)
 * [Create remote state and locking resources automatically](#create-remote-state-and-locking-resources-automatically)
 
-#### Motivation
+#### Motivation for remote state
 
 Terraform supports [remote state storage](https://www.terraform.io/docs/state/remote.html) via a variety of
 [backends](https://www.terraform.io/docs/backends) that you configure as follows:
@@ -415,7 +405,7 @@ Unfortunately, the `backend` configuration does not support interpolation. This 
 consider the following folder structure, which uses different Terraform modules to deploy a backend app, frontend app,
 MySQL database, and a VPC:
 
-```
+```text
 ├── backend-app
 │   └── main.tf
 ├── frontend-app
@@ -442,13 +432,12 @@ terraform {
 }
 ```
 
-
 #### Filling in remote state settings with Terragrunt
 
 To fill in the settings via Terragrunt, create a `terraform.tfvars` file in the root folder and in each of the
 Terraform modules:
 
-```
+```text
 ├── terraform.tfvars
 ├── backend-app
 │   ├── main.tf
@@ -499,7 +488,7 @@ terragrunt = {
 ```
 
 The `include` block tells Terragrunt to use the exact same Terragrunt configuration from the `terraform.tfvars` file
-specified via the `path` parameter. It behaves exactly as if you had copy/pasted the Terraform configuration from 
+specified via the `path` parameter. It behaves exactly as if you had copy/pasted the Terraform configuration from
 the root `terraform.tfvars` file into `mysql/terraform.tfvars`, but this approach is much easier to maintain!
 
 The child `.tfvars` file's `terragrunt.terraform` settings will be merged into the parent file's `terragrunt.terraform`
@@ -534,8 +523,8 @@ The `terraform.tfvars` files above use two Terragrunt built-in functions:
 See [the Interpolation Syntax docs](#interpolation-syntax) for more info.
 
 Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
-and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example) 
-repos for fully-working sample code that demonstrates how to use Terragrunt to manage remote state.
+and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example)
+repository for fully-working sample code that demonstrates how to use Terragrunt to manage remote state.
 
 #### Create remote state and locking resources automatically
 
@@ -554,15 +543,14 @@ they don't already exist:
 **Note**: If you specify a `profile` key in `remote_state.config`, Terragrunt will automatically use this AWS profile
 when creating the S3 bucket or DynamoDB table.
 
-
 ### Keep your CLI flags DRY
 
-* [Motivation](#motivation-2)
+* [Motivation](#motivation-for-extra-arguments)
 * [Multiple extra_arguments blocks](#multiple-extra_arguments-blocks)
 * [Required and optional var-files](#required-and-optional-var-files)
 * [Handling whitespace](#handling-whitespace)
 
-#### Motivation
+#### Motivation for extra arguments
 
 Sometimes you may need to pass extra CLI arguments every time you run certain `terraform` commands. For example, you
 may want to set the `lock-timeout` setting to 20 minutes for all commands that may modify remote state so that
@@ -617,12 +605,11 @@ terragrunt = {
 }
 ```
 
-```
+```bash
 > terragrunt apply
 
 terraform apply -lock-timeout=20m
 ```
-
 
 #### Multiple extra_arguments blocks
 
@@ -673,7 +660,7 @@ terragrunt = {
 
 With the configuration above, when you run `terragrunt apply`, Terragrunt will call Terraform as follows:
 
-```
+```bash
 > terragrunt apply
 
 terraform apply -lock-timeout=20m -var foo=bar -var region=us-west-1
@@ -687,7 +674,7 @@ will add the extra argument `-var-file=<your file>` for each file specified and 
 `optional_var_files` instead, terragrunt will only add the `-var-file=<your file>` for existing files. This allows many conditional
 configurations based on environment variables as you can see in the following example:
 
-```
+```text
 /my/tf
 ├── terraform.tfvars
 ├── prod.tfvars
@@ -735,7 +722,7 @@ your variables have to be defined through TF_VAR_xxx environment variable to be 
 
 With the configuration above, when you run `terragrunt apply-all`, Terragrunt will call Terraform as follows:
 
-```
+```bash
 > terragrunt apply-all
 [backend-app]  terraform apply -var-file=/my/tf/terraform.tfvars -var-file=/my/tf/backend-app/dev.tfvars
 [frontend-app] terraform apply -var-file=/my/tf/terraform.tfvars -var-file=/my/tf/frontend-app/us-east-1.tfvars
@@ -776,25 +763,23 @@ terragrunt = {
 
 With the configuration above, when you run `terragrunt apply`, Terragrunt will call Terraform as follows:
 
-```
+```bash
 > terragrunt apply
 
 terraform apply -var bucket=example.bucket.name
 ```
 
-
 ### Execute Terraform commands on multiple modules at once
 
-* [Motivation](#motivation-3)
+* [Motivation](#motivation-for-multiple-modules)
 * [The apply-all, destroy-all, output-all, plan-all and get-all commands](#the-apply-all-destroy-all-output-all-and-plan-all-commands)
 * [Dependencies between modules](#dependencies-between-modules)
 
-
-#### Motivation
+#### Motivation for multiple modules
 
 Let's say your infrastructure is defined across multiple Terraform modules:
 
-```
+```text
 root
 ├── backend-app
 │   └── main.tf
@@ -813,12 +798,11 @@ on. To deploy such an environment, you'd have to manually run `terraform apply` 
 to complete, and then run `terraform apply` in the next subfolder. How do you avoid this tedious and time-consuming
 process?
 
-
 #### The apply-all, destroy-all, output-all and plan-all commands
 
 To be able to deploy multiple Terraform modules in a single command, add a `terraform.tfvars` file to each module:
 
-```
+```text
 root
 ├── backend-app
 │   ├── main.tf
@@ -848,7 +832,7 @@ terragrunt = {
 
 Now you can go into the `root` folder and deploy all the modules within it by using the `apply-all` command:
 
-```
+```bash
 cd root
 terragrunt apply-all
 ```
@@ -859,14 +843,14 @@ one concurrently.
 
 Similarly, to undeploy all the Terraform modules, you can use the `destroy-all` command:
 
-```
+```bash
 cd root
 terragrunt destroy-all
 ```
 
 To see the currently applied outputs of all of the subfolders, you can use the `output-all` command:
 
-```
+```bash
 cd root
 terragrunt output-all
 ```
@@ -879,7 +863,7 @@ and some of those dependencies haven't been applied yet.
 _Ex: If module A depends on module B and module B hasn't been applied yet, then plan-all will show the plan for B,
 but exit with an error when trying to show the plan for A._
 
-```
+```bash
 cd root
 terragrunt plan-all
 ```
@@ -887,12 +871,11 @@ terragrunt plan-all
 If your modules have dependencies between them—for example, you can't deploy the backend-app until MySQL and redis are
 deployed—you'll need to express those dependencies in your Terragrunt configuration as explained in the next section.
 
-
 #### Dependencies between modules
 
 Consider the following file structure:
 
-```
+```text
 root
 ├── backend-app
 │   ├── main.tf
@@ -965,7 +948,7 @@ by assuming a role, the call will fail if the current user does not have a direc
 Moreover, if the user has configured its AWS profile (in .aws/config) to assume a role instead of directly using credentials, terraform would not be
 able to recognize that configuration and will complain that there is `No valid credential sources found for AWS Provider`
 
-```
+```text
 [profile deploy]
 source_profile = default
 role_arn = arn:aws:iam::9999999999999:role/deploy-role
@@ -1002,15 +985,24 @@ The `assume_role` configuration could be defined in any terragrunt configuration
 ### Conditional execution of a project
 
 It is possible to set conditions that must be met in order for a project to be executed. To do so, the following block must be defined in the terraform.tfvars:
+
+All conditions within a `run_if`/`ignore_if` section must be true to apply the rule (logical and between elements).
+
+If any of `ignore_if` section is true, the code is not executed (logical or between elements).
+
+If any of `run_if` section is true, the code is executed (logical or between element).
+
+*Important: `ignore_if` sections always take precedence over `run_if` sections.*
+
 ```hcl
 terragrunt = {
   run_conditions {
     run_if {
-      region = ["us-east-1", "us-west-2"] # Must be a list
-      another_var = ["value"]
+      region = ["us-east-1", "us-west-2"] # region must match one of "us-east-1" or "us-west-2"
+      another_var = "value"               # another_var must be equal to "value"
     }
     ignore_if {
-      env = ["qa"] # Must be a list
+      env = "qa"                          # do not run if env = "qa"
     }
   }
 }
@@ -1020,6 +1012,20 @@ The condition for this project to run would be as follows:
 `region in ["us-east-1", "us-west-2"] and another_value in ["value"] and env not in ["qa"]`
 
 The conditions are evaluated using variables passed to terragrunt/terraform and the accepted or rejected values must be in the form of a list.
+
+Any non existing variable will cause an error and the project will be ignored.
+
+For more complex situation, it is possible to use variable interpolation as the key:
+
+```hcl
+terragrunt = {
+  run_conditions {
+    run_if {
+      "${var.env} / ${var.region}" = ["dev/us-east-1", "qa/us-west-2"] # env/region must match one of "dev / us-east-1" or "qa / us-west-2"
+    }
+  }
+}
+```
 
 ### Define extra commands
 
@@ -1034,7 +1040,7 @@ terragrunt = {
     description = ""                  # Description of the extra command action
     command     = ""                  # optional (default use name as the command, actual command to use instead of name)
     commands    = [list of commands]  # optional (list of other commands that should be included and are having the same behavior)
-    aliases     = [list of alias]     # optional (list of alias to ccommand or name or first item of commands)
+    aliases     = [list of alias]     # optional (list of alias to command or name or first item of commands)
     os          = [list of os]        # optional (default run on all os, os name are those supported by go, i.e. linux, darwin, windows)
     use_state   = true or false       # optional (default = true)
     act_as      = "command"           # optional (default = empty, instructs to consider this extra command and its aliases as another command regarding extra_parameters evaluation)
@@ -1055,7 +1061,7 @@ terragrunt = {
 
 So the following commands do:
 
-- starts a shell into the temporary folder
+starts a shell into the temporary folder
 
 ```bash
 > terragrunt bash
@@ -1065,7 +1071,7 @@ So the following commands do:
 > terragrunt shell
 ```
 
-- List the content of the temporary folder
+List the content of the temporary folder
 
 ```bash
 > terragrunt ls -al
@@ -1189,7 +1195,6 @@ This section contains detailed documentation for the following aspects of Terrag
 1. [Developing Terragrunt](#developing-terragrunt)
 1. [License](#license)
 
-
 ### AWS credentials
 
 Terragrunt uses the official [AWS SDK for Go](https://aws.amazon.com/sdk-for-go/), which
@@ -1197,8 +1202,8 @@ means that it will automatically load credentials using the [AWS standard approa
 
 ### AWS IAM policies
 
-Your AWS user must have an [IAM 
-policy](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/access-control-identity-based.html) 
+Your AWS user must have an [IAM
+policy](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/access-control-identity-based.html)
 which grants permissions for interacting with DynamoDB and S3. Terragrunt will automatically create
 the configured DynamoDB tables and S3 buckets for storing remote state if they do not already exist.
 
@@ -1238,7 +1243,7 @@ your organization's naming convention for AWS resources for Terraform remote sta
 ### Interpolation syntax
 
 Terragrunt allows you to use [Terraform interpolation syntax](https://www.terraform.io/docs/configuration/interpolation.html)
-(`${...}`) to call specific Terragrunt built-in functions. Note that Terragrunt built-in functions **only** work within a 
+(`${...}`) to call specific Terragrunt built-in functions. Note that Terragrunt built-in functions **only** work within a
 `terragrunt = { ... }` block. Terraform does NOT process interpolations in `.tfvars` files.
 
 * [find_in_parent_folders()](#find_in_parent_folders)
@@ -1251,7 +1256,6 @@ Terragrunt allows you to use [Terraform interpolation syntax](https://www.terraf
 * [get_terraform_commands_that_need_input()](#get_terraform_commands_that_need_input)
 * [get_terraform_commands_that_need_locking()](#get_terraform_commands_that_need_locking)
 * [get_aws_account_id()](#get_aws_account_id)
-
 
 #### find_in_parent_folders
 
@@ -1267,13 +1271,12 @@ terragrunt = {
 }
 ```
 
-
 #### path_relative_to_include
 
 `path_relative_to_include()` returns the relative path between the current `.tfvars` file and the `path` specified in
 its `include` block. For example, consider the following folder structure:
 
-```
+```text
 ├── terraform.tfvars
 └── prod
     └── mysql
@@ -1313,13 +1316,12 @@ terragrunt = {
 The resulting `key` will be `prod/mysql/terraform.tfstate` for the prod `mysql` module and
 `stage/mysql/terraform.tfstate` for the stage `mysql` module.
 
-
 #### path_relative_from_include
 
 `path_relative_from_include()` returns the relative path between the `path` specified in its `include` block and the current
 `.tfvars` file (it is the counterpart of `path_relative_to_include()`). For example, consider the following folder structure:
 
-```
+```text
 ├── sources
 |  ├── mysql
 |  |  └── *.tf
@@ -1386,7 +1388,6 @@ terragrunt = {
 
 This allows proper retrieval of the `common.tfvars` from whatever the level of subdirectories we have.
 
-
 #### get_env
 
 `get_env(NAME, DEFAULT)` returns the value of the environment variable named `NAME` or `DEFAULT` if that environment
@@ -1408,7 +1409,6 @@ variables](https://www.terraform.io/docs/configuration/environment-variables.htm
 prefix `TF_VAR_`, so one way to share the a variable named `foo` between Terraform and Terragrunt is to set its value
 as the environment variable `TF_VAR_foo` and to read that value in using this `get_env()` built-in function.
 
-
 #### get_tfvars_dir
 
 `get_tfvars_dir()` returns the directory where the Terragrunt configuration file (by default, `terraform.tfvars`) lives.
@@ -1418,7 +1418,7 @@ file and not relative to the temporary directory where Terragrunt downloads the 
 
 For example, imagine you have the following file structure:
 
-```
+```text
 /terraform-code
 ├── common.tfvars
 ├── frontend-app
@@ -1486,7 +1486,6 @@ terragrunt = {
 For the example above, this path will resolve to `/terraform-code/frontend-app/../common.tfvars`, which is exactly
 what you want.
 
-
 #### get_parent_tfvars_dir
 
 `get_parent_tfvars_dir()` returns the absolute directory where the Terragrunt parent configuration file (by default, `terraform.tfvars`) lives.
@@ -1497,7 +1496,7 @@ the code.
 This function is very similar to [get_tfvars_dir()](#get_tfvars_dir) except it returns the root instead of the leaf of your terragrunt
 configuration folder.
 
-```
+```text
 /terraform-code
 ├── terraform.tfvars
 ├── common.tfvars
@@ -1538,7 +1537,7 @@ The common.tfvars located in the terraform root folder will be included by all a
 
 Returns the list of terraform commands that accept -var and -var-file parameters. This function is used when defining [extra_arguments](#keep-your-cli-flags-dry).
 
-```
+```hcl
 terragrunt = {
   terraform = {
     ...
@@ -1602,7 +1601,6 @@ commands = "Some text ${get_terraform_commands_that_need_locking()}"
 commands = "Some text [apply destroy import init plan refresh taint untaint]"
 ```
 
-
 #### get_aws_account_id
 
 `get_aws_account_id()` returns the AWS account id associated with the current set of credentials. Example:
@@ -1622,7 +1620,7 @@ This allows uniqueness of the storage bucket per AWS account (since bucket name 
 
 It is also possible to configure variables specifically based on the account used:
 
-```
+```hcl
 terragrunt = {
   terraform = {
     ...
@@ -1634,7 +1632,6 @@ terragrunt = {
   }
 }
 ```
-
 
 ### CLI Options
 
@@ -1667,7 +1664,6 @@ start with the prefix `--terragrunt-`. The currently available options are:
 
 * `--terragrunt-ignore-dependency-errors`: `*-all` commands continue processing components even if a dependency fails
 
-
 ### Configuration
 
 Terragrunt configuration is defined in a `terraform.tfvars` file in a `terragrunt = { ... }` block.
@@ -1686,23 +1682,22 @@ terragrunt = {
 }
 ```
 
-Terragrunt figures out the path to its config file according to the following rules:		
- 		
+Terragrunt figures out the path to its config file according to the following rules:
+
  1. The value of the `--terragrunt-config` command-line option, if specified.
  1. The value of the `TERRAGRUNT_CONFIG` environment variable, if defined.
  1. A `terraform.tfvars` file in the current working directory, if it exists.
  1. If none of these are found, exit with an error.
- 		
+
  The `--terragrunt-config` parameter is only used by Terragrunt and has no effect on which variable files are loaded
  by Terraform. Terraform will automatically read variables from a file named `terraform.tfvars`, but if you want it
- to read variables from some other .tfvars file, you must pass it in using the `--var-file` argument:		
- 
- ```bash
-  terragrunt plan --terragrunt-config example.tfvars --var-file example.tfvars		
- ```
+ to read variables from some other .tfvars file, you must pass it in using the `--var-file` argument:
 
+```bash
+  terragrunt plan --terragrunt-config example.tfvars --var-file example.tfvars
+```
 
-##### Previous Versions of Terragrunt
+#### Previous Versions of Terragrunt
 
 Terragrunt v0.11.x and earlier defined the config in a .terragrunt file. Note that the .terragrunt format
 is now deprecated. You will get a warning in your logs every time you run Terragrunt with a .terragrunt file,
@@ -1710,9 +1705,8 @@ and we will eventually stop supporting this older format.
 
 ### Migrating from Terragrunt v0.11.x and Terraform 0.8.x and older
 
-After we released support for Terraform 0.9.x, we wrote a guide on 
+After we released support for Terraform 0.9.x, we wrote a guide on
 [Upgrading to Terragrunt 0.12.x](_docs/migration_guides/upgrading_to_terragrunt_0.12.x.md).
-
 
 ### Developing terragrunt
 
@@ -1757,12 +1751,10 @@ cd remote
 go test -v -parallel 128 -run TestToTerraformRemoteConfigArgsNoBackendConfigs
 ```
 
-
 #### Debug logging
 
 If you set the `TERRAGRUNT_DEBUG` environment variable to "true", the stack trace for any error will be printed to
 stdout when you run the app.
-
 
 #### Error handling
 
@@ -1787,7 +1779,6 @@ Here is how the `errors` package should be used:
    `errors.WithStackTrace`. This gives us a stacktrace as close to the source as possible.
 1. If you need to get back the underlying error, you can use the `errors.IsError` and `errors.Unwrap` functions.
 
-
 #### Formatting
 
 Every source file in this project should be formatted with `go fmt`. There are few helper scripts and targets in the
@@ -1805,7 +1796,6 @@ Makefile that can help with this (mostly taken from the [terraform repo](https:/
 
 To ensure that your changes get properly formatted, please install the git pre-commit hook with `make install-pre-commit-hook`.
 
-
 #### Releasing new versions
 
 To release a new version, just go to the [Releases Page](https://github.com/gruntwork-io/terragrunt/releases) and
@@ -1816,7 +1806,6 @@ create a new release. The CircleCI job for this repo has been configured to:
 1. Upload the binaries to the release in GitHub.
 
 See `circle.yml` and `_ci/build-and-push-release-asset.sh` for details.
-
 
 ### License
 
