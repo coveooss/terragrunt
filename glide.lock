@@ -1,5 +1,5 @@
 hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2019-01-08T09:20:42.422801045-05:00
+updated: 2019-01-09T10:51:48.408545229-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -10,9 +10,9 @@ imports:
 - name: github.com/alecthomas/units
   version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
 - name: github.com/andybalholm/cascadia
-  version: 901648c87902174f774fac311d7f176f8647bdaa
+  version: 680b6a57bda4f657485ad44bdea42342ead737bc
 - name: github.com/aokoli/goutils
-  version: 3391d3790d23d03408670993e957e8f408993c34
+  version: 41ac8693c5c10a92ea1ff5ac3a7f95646f6123b0
 - name: github.com/apparentlymart/go-cidr
   version: 1755c023625ec3a84979b90841a1ab067ed6c071
   subpackages:
@@ -80,7 +80,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 3edf3fa42949d978a47053705974f5a501da6ad4
+  version: 6c245adc3fcf99f2de22f5ec06f2752f2b49fb11
   subpackages:
   - collections
   - collections/implementation
@@ -98,7 +98,7 @@ imports:
 - name: github.com/drhodes/goLorem
   version: ecccc744c2d953a1e13cbe5e5fc5d4cbc9b8daeb
 - name: github.com/fatih/color
-  version: 2d684516a8861da43017284349b7e303e809ac21
+  version: 3f9d52f7176a6927daacff70a3e8d1dc2025c53e
 - name: github.com/go-errors/errors
   version: d98b870cc4e05f1545532a80e9909be8216095b6
 - name: github.com/google/go-cmp
@@ -115,7 +115,7 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: e8ab9daed8d1ddd2d3c4efba338fe2eeae2e4f18
 - name: github.com/hashicorp/go-getter
-  version: be39683deade1b3613258f751a2fad316d7b5e7c
+  version: fd95e62a2c5cb656352a2f4abdce2c6c787a7ec7
   subpackages:
   - helper/url
 - name: github.com/hashicorp/go-multierror
@@ -125,7 +125,7 @@ imports:
 - name: github.com/hashicorp/go-uuid
   version: 4f571afc59f3043a65f8fe6bf46d887b10a01d43
 - name: github.com/hashicorp/go-version
-  version: b5a281d3160aa11950a6182bd9a9dc2cb1e02d50
+  version: d40cf49b3a77bba84a7afdbd7f1dc295d114efb1
 - name: github.com/hashicorp/hcl
   version: 65a6292f0157eff210d03ed1bf6c59b190b8b906
   subpackages:
@@ -138,7 +138,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/hashicorp/hcl2
-  version: 6631d7cd0a68d20ba7d0aa559f883c86158fffd9
+  version: 819a65acc453ba35681e287fa31f5f0bb084ddb9
   subpackages:
   - gohcl
   - hcl
@@ -173,14 +173,13 @@ imports:
 - name: github.com/huandu/xstrings
   version: f02667b379e2fb5916c3cda2cf31e0eb885d79f8
 - name: github.com/imdario/mergo
-  version: 9f23e2d6bd2a77f959b2bf6acdbefd708a83a4a4
+  version: 7fe0c75c13abdee74b09fcacef5ea1c6bba6a874
 - name: github.com/jmespath/go-jmespath
   version: c2b33e8439af944379acbdd9c3a5fe0bc44bd8a5
 - name: github.com/Masterminds/semver
   version: 59c29afe1a994eacb71c833025ca7acf874bb1da
 - name: github.com/Masterminds/sprig
-  version: 6f47c5a313118e47c93c062ac4ed24eb141d0243
-  repo: https://github.com/coveord/sprig
+  version: 544a9b1d90f323f6509491b389714fbbd126bee3
 - name: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - name: github.com/mattn/go-isatty
@@ -208,7 +207,7 @@ imports:
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
   - difflib
 - name: github.com/posener/complete
@@ -218,7 +217,7 @@ imports:
   - cmd/install
   - match
 - name: github.com/PuerkitoBio/goquery
-  version: dc2ec5c7ca4d9aae063b79b9f581dd3ea6afd2b2
+  version: 9b813b2309289e705f8491372cbe75966cbbb48b
 - name: github.com/rs/xid
   version: 15d26544def341f036c5f8dca987a4cbe575032c
 - name: github.com/sergi/go-diff
@@ -248,7 +247,7 @@ imports:
   - cty/json
   - cty/set
 - name: golang.org/x/crypto
-  version: 4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06
+  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
   subpackages:
   - bcrypt
   - blowfish
@@ -263,13 +262,13 @@ imports:
   - scrypt
   - ssh/terminal
 - name: golang.org/x/net
-  version: 26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2
+  version: 1e06a53dbb7e2ed46e91183f219db23c6943c532
   subpackages:
   - html
   - html/atom
   - idna
 - name: golang.org/x/sys
-  version: ee1b12c67af419cf5a9be3bdbeea7fc1c5f32f11
+  version: 48ac38b7c8cbedd50b1613c0fccacfc7d88dfcdf
   subpackages:
   - unix
   - windows
@@ -283,5 +282,5 @@ imports:
 - name: gopkg.in/alecthomas/kingpin.v2
   version: 947dcec5ba9c011838740e680966fd7087a71d0d
 - name: gopkg.in/yaml.v2
-  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+  version: 51d6538a90f86fe93ac480b35f37b2be17fef232
 testImports: []
