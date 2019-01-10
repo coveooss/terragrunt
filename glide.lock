@@ -1,5 +1,5 @@
 hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2019-01-09T10:51:48.408545229-05:00
+updated: 2019-01-10T11:22:06.906755191-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: 62936e15518acb527a1a9cb4a39d96d94d0fd9a2
+  version: 1f8a24693bc965514ee0d7aadbabe0ceed184a88
   subpackages:
   - aws
   - aws/awserr
@@ -80,7 +80,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 6c245adc3fcf99f2de22f5ec06f2752f2b49fb11
+  version: d4fb8b16261143a79149fe432fdaec46bab94d8a
   subpackages:
   - collections
   - collections/implementation
@@ -207,7 +207,7 @@ imports:
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/pmezard/go-difflib
-  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/posener/complete
@@ -217,7 +217,7 @@ imports:
   - cmd/install
   - match
 - name: github.com/PuerkitoBio/goquery
-  version: 9b813b2309289e705f8491372cbe75966cbbb48b
+  version: 2d2796f41742ece03e8086188fa4db16a3a0b458
 - name: github.com/rs/xid
   version: 15d26544def341f036c5f8dca987a4cbe575032c
 - name: github.com/sergi/go-diff
@@ -247,7 +247,7 @@ imports:
   - cty/json
   - cty/set
 - name: golang.org/x/crypto
-  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
+  version: 505ab145d0a99da450461ae2c1a9f6cd10d1f447
   subpackages:
   - bcrypt
   - blowfish
@@ -262,13 +262,13 @@ imports:
   - scrypt
   - ssh/terminal
 - name: golang.org/x/net
-  version: 1e06a53dbb7e2ed46e91183f219db23c6943c532
+  version: e147a9138326bc0e9d4e179541ffd8af41cff8a9
   subpackages:
   - html
   - html/atom
   - idna
 - name: golang.org/x/sys
-  version: 48ac38b7c8cbedd50b1613c0fccacfc7d88dfcdf
+  version: 074acd46bca67915925527c07849494d115e7c43
   subpackages:
   - unix
   - windows
