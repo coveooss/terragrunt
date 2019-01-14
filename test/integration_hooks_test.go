@@ -22,6 +22,7 @@ const (
 	TEST_FIXTURE_HOOKS_INTERPOLATIONS_PATH         = "fixture-hooks/interpolations"
 	TEST_FIXTURE_HOOKS_EXITCODE1_PATH              = "fixture-hooks/exitcode-1"
 	TEST_FIXTURE_HOOKS_EXITCODE2_PATH              = "fixture-hooks/exitcode-2"
+	TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH          = "fixture-hooks/exitcode-2-pre"
 )
 
 func TestTerragruntBeforeHook(t *testing.T) {
@@ -154,6 +155,20 @@ func TestTerragruntHookExitCode2(t *testing.T) {
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
 	_, exception := ioutil.ReadFile(rootPath + "/test.out")
+	assert.NoError(t, exception)
+	assert.Contains(t, err.Error(), "There are changes in the plan")
+}
+
+func TestTerragruntHookExitCode2InPreHook(t *testing.T) {
+	t.Parallel()
+
+	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH)
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+
+	_, exception := ioutil.ReadFile(rootPath + "/test2.out")
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "There are changes in the plan")
 }

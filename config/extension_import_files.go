@@ -100,7 +100,7 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			if *item.Required {
 				return
 			}
-			logger.Warningf("%s: %s doesn't exist", item.Name, item.Source)
+			logger.Warningf("%s: %s could not be fetched: %v", item.Name, item.Source, err)
 		}
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
 	} else {
