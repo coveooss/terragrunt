@@ -178,7 +178,6 @@ func initLogCatcher() {
 	expressions := []string{
 		// https://regex101.com/r/jhhPLS/2
 		`${choices}\s*{\s*${message}\s*}`,
-		asdfadfs
 		`\s*(?P<prefix>[^\n]*?)\s*${choices}\s*${message}\s*\n`,
 	}
 
@@ -187,7 +186,6 @@ func initLogCatcher() {
 		expr = strings.Replace(expr, "${choices}", choices, -1)
 		expr = strings.Replace(expr, "${message}", `(?P<message>.*?)`, -1)
 		logMessages = append(logMessages, regexp.MustCompile(expr))
-		fmt.Println(logMessages[len(logMessages)-1])
 	}
 }
 
