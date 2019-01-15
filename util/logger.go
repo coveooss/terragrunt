@@ -71,40 +71,48 @@ type LogCatcher struct {
 // Close implements io.Closer
 func (catcher *LogCatcher) Close() error {
 	if catcher.remaining != "" {
-		catcher.Write([]byte("\n"))
+		catcher.Write(nil)
 	}
 	return nil
 }
 
-func (catcher *LogCatcher) write(s string) (int, error) {
-	_, err := catcher.Writer.Write([]byte(s))
-	return len(s), err
+func (catcher *LogCatcher) write(s string) (out int, err error) {
+	if out, err = catcher.Writer.Write([]byte(s)); err == nil && out != len(s) {
+		err = fmt.Errorf("Write error, %d byte(s) out of %d written", out, len(s))
+	}
+	return
 }
 
 // This methods intercepts every message written to stream and determines if a logging
 // function should be used.
-func (catcher *LogCatcher) Write(p []byte) (n int, err error) {
+func (catcher *LogCatcher) Write(writeBuffer []byte) (resultCount int, err error) {
 	var buffer string
 	if catcher.remaining != "" {
-		n -= len(catcher.remaining)
-		buffer = catcher.remaining + string(p)
+		resultCount -= len(catcher.remaining)
+		buffer = catcher.remaining + string(writeBuffer)
 		catcher.remaining = ""
 	} else {
-		buffer = string(p)
+		buffer = string(writeBuffer)
 	}
 
 	var errArray errors.Array
-	if logMessage == nil {
+	if logMessages == nil {
 		initLogCatcher()
 	}
-	if lastCR := strings.LastIndex(buffer, "\n"); lastCR >= 0 {
+	if writeBuffer != nil {
+		lastCR := strings.LastIndex(buffer, "\n")
 		catcher.remaining = buffer[lastCR+1:]
 		buffer = buffer[:lastCR+1]
-		n += len(catcher.remaining)
+		resultCount += len(catcher.remaining)
 	}
 
 	for {
-		matches, _ := utils.MultiMatch(buffer, logMessage)
+		searchBuffer, extraChar := buffer, 0
+		if writeBuffer == nil {
+			searchBuffer += "\n"
+			extraChar = 1
+		}
+		matches, _ := utils.MultiMatch(searchBuffer, logMessages...)
 		if len(matches) == 0 {
 			break
 		}
@@ -112,11 +120,12 @@ func (catcher *LogCatcher) Write(p []byte) (n int, err error) {
 		if err != nil {
 			errArray = append(errArray, err)
 		}
-		n += count
+		resultCount += count
 		buffer = buffer[count:]
 
-		if level, err := logging.LogLevel(matches["level"]); err == nil {
-			var logFunc func(...interface{})
+		var level logging.Level
+		logFunc := catcher.Logger.Fatal
+		if level, err = logging.LogLevel(matches["level"]); err == nil {
 			// TODO: it would have been preferable to simply call the private
 			// method func (l *Logger) log instead of having a switch case here
 			switch level {
@@ -133,24 +142,31 @@ func (catcher *LogCatcher) Write(p []byte) (n int, err error) {
 			case logging.DEBUG:
 				logFunc = catcher.Logger.Debug
 			}
-			if logFunc != nil {
-				logFunc(string(matches["message"]))
-				toRemove := len(matches["toRemove"])
-				buffer = buffer[toRemove:]
-				n += toRemove
-			}
 		}
+		message := matches["message"]
+		if prefix := matches["prefix"]; prefix != "" {
+			message = fmt.Sprintf("%s %s %s", prefix, matches["level"], message)
+		}
+		logFunc(message)
+		toRemove := len(matches["toRemove"]) - extraChar
+		buffer = buffer[toRemove:]
+		resultCount += toRemove
 	}
 
 	count, err := catcher.write(buffer)
 	if err != nil {
 		errArray = append(errArray, err)
 	}
-	n += count
-	if len(errArray) > 0 {
-		return n, errArray
+	resultCount += count
+
+	switch len(errArray) {
+	case 0:
+		return resultCount, nil
+	case 1:
+		return resultCount, errArray[0]
+	default:
+		return resultCount, errArray
 	}
-	return n, nil
 }
 
 func initLogCatcher() {
@@ -158,8 +174,21 @@ func initLogCatcher() {
 	for level := logging.CRITICAL; level <= logging.DEBUG; level++ {
 		levelNames = append(levelNames, level.String())
 	}
-	// https://regex101.com/r/joriQk/3
-	logMessage = regexp.MustCompile(fmt.Sprintf(`(?is)(?P<before>.*?\n)(?P<toRemove>[[:blank:]]*\[(?P<level>%s)\]\s*(?P<message>.*?)[[:blank:]]*\n)`, strings.Join(levelNames, "|")))
+	choices := fmt.Sprintf(`\[(?P<level>%s|\[PANIC\])\]`, strings.Join(levelNames, "|"))
+	expressions := []string{
+		// https://regex101.com/r/jhhPLS/2
+		`${choices}\s*{\s*${message}\s*}`,
+		asdfadfs
+		`\s*(?P<prefix>[^\n]*?)\s*${choices}\s*${message}\s*\n`,
+	}
+
+	for _, expr := range expressions {
+		expr = fmt.Sprintf(`(?is)(?P<before>.*?)(?P<toRemove>%s)`, expr)
+		expr = strings.Replace(expr, "${choices}", choices, -1)
+		expr = strings.Replace(expr, "${message}", `(?P<message>.*?)`, -1)
+		logMessages = append(logMessages, regexp.MustCompile(expr))
+		fmt.Println(logMessages[len(logMessages)-1])
+	}
 }
 
-var logMessage *regexp.Regexp
+var logMessages []*regexp.Regexp
