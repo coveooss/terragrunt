@@ -90,7 +90,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 				if len(arg.RequiredVarFiles) > 0 {
 					return nil, err
 				}
-				logger.Warningf("%s: %s doesn't exist", arg.Name, arg.Source)
+				logger.Warningf("%s: %s could not be fetched: %v", arg.Name, arg.Source, err)
 			}
 			folders = []string{sourceFolder}
 		}
