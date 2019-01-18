@@ -311,13 +311,14 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	return list.Run(nil, keys...)
 }
 
+// Run execute the content of the list
 func (list ImportFilesList) Run(status error, args ...interface{}) (err error) {
 	if len(list) == 0 {
 		return
 	}
 	list.sort()
 
-	for _, item := range list {
+	for _, item := range list.Enabled() {
 		item.logger().Infof("Running %s (%s): %s", item.itemType(), item.id(), item.name())
 		if err := item.importFiles(args...); err != nil {
 			return err

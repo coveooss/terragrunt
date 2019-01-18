@@ -308,8 +308,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
-	fmt.Println(conf.ImportVariables)
-
 	if err = conf.ImportVariables.Import(); stopOnError(err) {
 		return
 	}
