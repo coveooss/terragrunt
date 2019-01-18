@@ -12,7 +12,7 @@ import (
 
 // This variable is set at build time using -ldflags parameters. For more info, see:
 // http://stackoverflow.com/a/11355611/483528
-var VERSION = "1.2.6"
+var VERSION = "1.2.7"
 
 // The main entrypoint for Terragrunt
 func main() {

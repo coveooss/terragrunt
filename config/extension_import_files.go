@@ -147,7 +147,9 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			messages = append(messages, fmt.Sprintf("to %s", relativeTarget))
 		}
 
-		messages = append(messages, fmt.Sprintf("prefixed by %s", *item.Prefix))
+		if *item.Prefix != "" {
+			messages = append(messages, fmt.Sprintf("prefixed by %s", *item.Prefix))
+		}
 		contextMessage := fmt.Sprintf(" %s", strings.Join(messages, " "))
 
 		// Local copy function used by both type of file copy
