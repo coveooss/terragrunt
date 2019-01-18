@@ -85,9 +85,9 @@ func TestLogCatcher_WriteWithError(t *testing.T) {
 		wantResultCount int
 		wantErr         bool
 	}{
-		{"No error", "", nil, 12, false},
+		{"No error", "", nil, 0, false},
 		{"Count error", "Write something\n", nil, 0, true},
-		{"Several errors", "First line\n[debug] Hello\n", nil, 14, true},
+		{"Several errors", "First line\n[debug] Hello\nNo output\n", nil, 14, true},
 		{"Disk full", "", fmt.Errorf("Disk is full"), 0, true},
 	}
 	for _, tt := range tests {
@@ -107,4 +107,10 @@ func TestLogCatcher_WriteWithError(t *testing.T) {
 
 type buggyWriter struct{ err error }
 
-func (bw *buggyWriter) Write(buffer []byte) (int, error) { return 0, bw.err }
+func (bw *buggyWriter) Write(buffer []byte) (int, error) {
+	if bw.err != nil {
+		return 0, bw.err
+	}
+	fmt.Printf("Output (%q)\n", string(buffer))
+	return 0, nil
+}

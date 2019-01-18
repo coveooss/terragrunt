@@ -177,8 +177,8 @@ func initLogCatcher() {
 	choices := fmt.Sprintf(`\[(?P<level>%s|\[PANIC\])\]`, strings.Join(levelNames, "|"))
 	expressions := []string{
 		// https://regex101.com/r/jhhPLS/2
-		`${choices}\s*{\s*${message}\s*}`,
-		`\s*(?P<prefix>[^\n]*?)\s*${choices}\s*${message}\s*\n`,
+		`${choices}[[:blank:]]*{\s*${message}\s*}`,
+		`[[:blank:]]*(?P<prefix>[^\n]*?)[[:blank:]]*${choices}[[:blank:]]*${message}[[:blank:]]*\n`,
 	}
 
 	for _, expr := range expressions {
