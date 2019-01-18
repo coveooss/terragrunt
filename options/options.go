@@ -217,18 +217,13 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 	return
 }
 
-// ImportVariablesFromFile loads variables from the file indicated by path
-func (terragruntOptions *TerragruntOptions) ImportVariablesFromFile(path string, origin VariableSource) error {
+// LoadVariablesFromFile loads variables from the file indicated by path
+func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 	if !strings.Contains(path, "/") {
 		path = util.JoinPath(terragruntOptions.WorkingDir, path)
 	}
 	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, terragruntOptions.GetContext())
-	if err != nil {
-		return err
-	}
-	terragruntOptions.importVariables(vars, origin)
-	return nil
-
+	return vars, err
 }
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
@@ -237,11 +232,11 @@ func (terragruntOptions *TerragruntOptions) ImportVariables(content string, sour
 	if err != nil {
 		return nil, err
 	}
-	terragrunt = terragruntOptions.importVariables(vars, origin)
+	terragrunt = terragruntOptions.ImportVariablesMap(vars, origin)
 	return
 }
 
-func (terragruntOptions *TerragruntOptions) importVariables(vars map[string]interface{}, origin VariableSource) (terragrunt interface{}) {
+func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (terragrunt interface{}) {
 	for key, value := range vars {
 		if key == "terragrunt" {
 			// We do not import the terragrunt variable, but we return it

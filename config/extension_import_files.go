@@ -94,14 +94,9 @@ func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 	}
 
 	var sourceFolder, sourceFolderPrefix string
-	if item.Source != "" {
-		sourceFolder, err = util.GetSource(item.Source, filepath.Dir(item.config().Path), logger)
-		if err != nil {
-			if *item.Required {
-				return
-			}
-			logger.Warningf("%s: %s could not be fetched: %v", item.Name, item.Source, err)
-		}
+	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required); err != nil {
+		return err
+	} else if sourceFolder != "" {
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
 	} else {
 		sourceFolder = item.options().WorkingDir

@@ -1,0 +1,10 @@
+{
+    "testmap": {
+        "test1": 1,
+        "test2": 2,
+        "testmap2": {
+            "test": "twolevels"
+        }
+    },
+    "test3": "hello"
+}

@@ -308,6 +308,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
+	fmt.Println(conf.ImportVariables)
+
+	if err = conf.ImportVariables.Import(); stopOnError(err) {
+		return
+	}
+
 	// Applying the extra arguments
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
 		commandLength := 1
@@ -322,10 +328,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		if stopOnError(err) {
 			return
 		}
-
-		// We call again the parsing of arguments to be sure that supplied parameters overrides others
-		// There is a corner case when initializing map variables from command line
-		filterVarsAndVarFiles(actualCommand.Command, terragruntOptions, extractVarArgs())
 
 		args = append(args, extraArgs...)
 		if commandLength <= len(terragruntOptions.TerraformCliArgs) {

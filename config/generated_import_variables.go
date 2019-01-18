@@ -9,22 +9,22 @@ import (
 	"strings"
 )
 
-// TerraformImportVariablesList represents an array of TerraformImportVariables
-type TerraformImportVariablesList []TerraformImportVariables
+// ImportVariablesList represents an array of ImportVariables
+type ImportVariablesList []ImportVariables
 
-// ITerraformImportVariables returns TerragruntExtensioner from the supplied type
-func ITerraformImportVariables(item interface{}) TerragruntExtensioner {
+// IImportVariables returns TerragruntExtensioner from the supplied type
+func IImportVariables(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list TerraformImportVariablesList) init(config *TerragruntConfigFile) {
+func (list ImportVariablesList) init(config *TerragruntConfigFile) {
 	for i := range list {
-		ITerraformImportVariables(&list[i]).init(config)
+		IImportVariables(&list[i]).init(config)
 	}
 }
 
 // Merge elements from an imported list to the current list priorising those already existing
-func (list *TerraformImportVariablesList) merge(imported TerraformImportVariablesList, mode mergeMode, argName string) {
+func (list *ImportVariablesList) merge(imported ImportVariablesList, mode mergeMode, argName string) {
 	if len(imported) == 0 {
 		return
 	} else if len(*list) == 0 {
@@ -32,18 +32,18 @@ func (list *TerraformImportVariablesList) merge(imported TerraformImportVariable
 		return
 	}
 
-	log := ITerraformImportVariables(&(*list)[0]).logger().Debugf
+	log := IImportVariables(&(*list)[0]).logger().Debugf
 
 	// Create a map with existing elements
 	index := make(map[string]int, len(*list))
 	for i, item := range *list {
-		index[ITerraformImportVariables(&item).id()] = i
+		index[IImportVariables(&item).id()] = i
 	}
 
 	// Create a list of the hooks that should be added to the list
-	newList := make(TerraformImportVariablesList, 0, len(imported))
+	newList := make(ImportVariablesList, 0, len(imported))
 	for _, item := range imported {
-		name := ITerraformImportVariables(&item).id()
+		name := IImportVariables(&item).id()
 		if pos, exist := index[name]; exist {
 			// It already exist in the list, so is is an override
 			// We remove it from its current position and add it to the list of newly added elements to keep its original declaration ordering.
@@ -58,9 +58,9 @@ func (list *TerraformImportVariablesList) merge(imported TerraformImportVariable
 	if len(index) != len(*list) {
 		// Some elements must be removed from the original list, we simply regenerate the list
 		// including only elements that are still in the index.
-		newList := make(TerraformImportVariablesList, 0, len(index))
+		newList := make(ImportVariablesList, 0, len(index))
 		for _, item := range *list {
-			name := ITerraformImportVariables(&item).id()
+			name := IImportVariables(&item).id()
 			if _, found := index[name]; found {
 				newList = append(newList, item)
 			}
@@ -76,7 +76,7 @@ func (list *TerraformImportVariablesList) merge(imported TerraformImportVariable
 }
 
 // Help returns the information relative to the elements within the list
-func (list TerraformImportVariablesList) Help(listOnly bool, lookups ...string) (result string) {
+func (list ImportVariablesList) Help(listOnly bool, lookups ...string) (result string) {
 	list.sort()
 	add := func(item TerragruntExtensioner, name string) {
 		extra := item.extraInfo()
@@ -104,7 +104,7 @@ func (list TerraformImportVariablesList) Help(listOnly bool, lookups ...string) 
 	}
 
 	for _, item := range list.Enabled() {
-		item := ITerraformImportVariables(&item)
+		item := IImportVariables(&item)
 		match := len(lookups) == 0
 		for i := 0; !match && i < len(lookups); i++ {
 			match = strings.Contains(item.name(), lookups[i]) || strings.Contains(item.id(), lookups[i]) || strings.Contains(item.extraInfo(), lookups[i])
@@ -132,10 +132,10 @@ func (list TerraformImportVariablesList) Help(listOnly bool, lookups ...string) 
 }
 
 // Enabled returns only the enabled items on the list
-func (list TerraformImportVariablesList) Enabled() TerraformImportVariablesList {
-	result := make(TerraformImportVariablesList, 0, len(list))
+func (list ImportVariablesList) Enabled() ImportVariablesList {
+	result := make(ImportVariablesList, 0, len(list))
 	for _, item := range list {
-		iItem := ITerraformImportVariables(&item)
+		iItem := IImportVariables(&item)
 		if iItem.enabled() {
 			iItem.normalize()
 			result = append(result, item)

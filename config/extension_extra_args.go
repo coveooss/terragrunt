@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/util"
@@ -59,20 +58,9 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 	out := []string{}
 	cmd := util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")
 
-	folders := []string{terragruntOptions.WorkingDir}
-	if terragruntOptions.WorkingDir != source {
-		folders = append(folders, source)
-	}
-
-	var arg TerraformExtraArguments
-
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("Error while executing %s(%s): %v", arg.itemType(), arg.id(), err)
-		}
-	}()
-	for _, arg = range list.Enabled() {
+	for _, arg := range list.Enabled() {
 		arg.logger().Debugf("Processing arg %s", arg.id())
+
 		if !util.ListContainsElement(arg.Commands, cmd) {
 			continue
 		}
@@ -80,19 +68,15 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 		// Append arguments
 		out = append(out, arg.Arguments...)
 
-		folders := folders
-		logger := arg.logger()
+		folders := []string{terragruntOptions.WorkingDir}
+		if terragruntOptions.WorkingDir != source {
+			folders = append(folders, source)
+		}
 
-		if arg.Source != "" {
-			arg.Source = SubstituteVars(arg.Source, terragruntOptions)
-			sourceFolder, err := util.GetSource(arg.Source, filepath.Dir(arg.config().Path), logger)
-			if err != nil {
-				if len(arg.RequiredVarFiles) > 0 {
-					return nil, err
-				}
-				logger.Warningf("%s: %s could not be fetched: %v", arg.Name, arg.Source, err)
-			}
-			folders = []string{sourceFolder}
+		if newSource, err := config.GetSourceFolder(arg.Name, arg.Source, len(arg.RequiredVarFiles) > 0); err != nil {
+			return nil, err
+		} else if newSource != "" {
+			folders = []string{newSource}
 		}
 
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
