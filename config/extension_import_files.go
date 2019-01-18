@@ -22,7 +22,7 @@ type ImportFiles struct {
 	ImportIntoModules bool            `hcl:"import_into_modules"`
 	FileMode          *int            `hcl:"file_mode"`
 	Target            string          `hcl:"target"`
-	Prefix            string          `hcl:"prefix"`
+	Prefix            *string         `hcl:"prefix"`
 }
 
 // CopyAndRename is a structure used by ImportFiles to rename the imported files
@@ -38,6 +38,11 @@ func (item *ImportFiles) normalize() {
 		def := true
 		item.Required = &def
 	}
+
+	if item.Prefix == nil {
+		prefix := util.EncodeBase64Sha1(item.Name) + "_"
+		item.Prefix = &prefix
+	}
 }
 
 func (item ImportFiles) help() (result string) {
@@ -52,7 +57,7 @@ func (item ImportFiles) help() (result string) {
 
 	target, _ := filepath.Rel(item.options().WorkingDir, item.Target)
 	for _, file := range item.Files {
-		target := filepath.Join(target, fmt.Sprintf("%s%s", item.Prefix, filepath.Base(file)))
+		target := filepath.Join(target, fmt.Sprintf("%s%s", *item.Prefix, filepath.Base(file)))
 		if strings.Contains(file, "/terragrunt-cache/") {
 			file = filepath.Base(file)
 		}
@@ -142,18 +147,16 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 			messages = append(messages, fmt.Sprintf("to %s", relativeTarget))
 		}
 
-		if item.Prefix != "" {
-			messages = append(messages, fmt.Sprintf("prefixed by %s", item.Prefix))
+		if *item.Prefix != "" {
+			messages = append(messages, fmt.Sprintf("prefixed by %s", *item.Prefix))
 		}
 		contextMessage := fmt.Sprintf(" %s", strings.Join(messages, " "))
 
 		// Local copy function used by both type of file copy
 		copy := func(source, target string) error {
-			if item.Prefix != "" {
-				// If the target should be prefixed, we change the targget to insert the prefix before the base name
-				folder, file := filepath.Split(target)
-				target = filepath.Join(folder, item.Prefix+file)
-			}
+			// If the target should be prefixed, we change the target to insert the prefix before the base name
+			folder, file := filepath.Split(target)
+			target = filepath.Join(folder, *item.Prefix+file)
 
 			logger.Debugf("Copy file %s to %s", util.GetPathRelativeToMax(source, item.options().WorkingDir, 2), util.GetPathRelativeToMax(target, item.options().WorkingDir, 2))
 			os.MkdirAll(folder, os.ModePerm)
