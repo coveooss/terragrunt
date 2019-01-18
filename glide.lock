@@ -1,5 +1,5 @@
 hash: f8e26036cb411cc5a81cef6da5104e8a06240af346defd9b08468dd5d132fb18
-updated: 2019-01-10T11:22:06.906755191-05:00
+updated: 2019-01-18T11:32:48.154719-05:00
 imports:
 - name: github.com/agext/levenshtein
   version: 5f10fee965225ac1eecdc234c09daf5cd9e7f7b6
@@ -24,7 +24,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: 1f8a24693bc965514ee0d7aadbabe0ceed184a88
+  version: a0a1669c06da522317116cc7624ac257d9c5fdfd
   subpackages:
   - aws
   - aws/awserr
@@ -80,7 +80,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: d4fb8b16261143a79149fe432fdaec46bab94d8a
+  version: 59dbcef9a2d484c7e185163476df9ecefe372696
   subpackages:
   - collections
   - collections/implementation
@@ -115,7 +115,7 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: e8ab9daed8d1ddd2d3c4efba338fe2eeae2e4f18
 - name: github.com/hashicorp/go-getter
-  version: fd95e62a2c5cb656352a2f4abdce2c6c787a7ec7
+  version: 3279f7834bfada0785f23677629791ea1abb7475
   subpackages:
   - helper/url
 - name: github.com/hashicorp/go-multierror
@@ -138,7 +138,7 @@ imports:
   - json/scanner
   - json/token
 - name: github.com/hashicorp/hcl2
-  version: 819a65acc453ba35681e287fa31f5f0bb084ddb9
+  version: 7b147fbae47a39a84792258ad4017a940a752d46
   subpackages:
   - gohcl
   - hcl
@@ -207,7 +207,7 @@ imports:
 - name: github.com/op/go-logging
   version: 970db520ece77730c7e4724c61121037378659d9
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: 5d4384ee4fb2527b0a1256a821ebfc92f91efefc
   subpackages:
   - difflib
 - name: github.com/posener/complete
@@ -217,7 +217,7 @@ imports:
   - cmd/install
   - match
 - name: github.com/PuerkitoBio/goquery
-  version: 2d2796f41742ece03e8086188fa4db16a3a0b458
+  version: 3dcf72e6c17f694381a21592651ca1464ded0e10
 - name: github.com/rs/xid
   version: 15d26544def341f036c5f8dca987a4cbe575032c
 - name: github.com/sergi/go-diff
@@ -247,7 +247,7 @@ imports:
   - cty/json
   - cty/set
 - name: golang.org/x/crypto
-  version: 505ab145d0a99da450461ae2c1a9f6cd10d1f447
+  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
   subpackages:
   - bcrypt
   - blowfish
@@ -262,13 +262,13 @@ imports:
   - scrypt
   - ssh/terminal
 - name: golang.org/x/net
-  version: e147a9138326bc0e9d4e179541ffd8af41cff8a9
+  version: 915654e7eabcea33ae277abbecf52f0d8b7a9fdc
   subpackages:
   - html
   - html/atom
   - idna
 - name: golang.org/x/sys
-  version: 074acd46bca67915925527c07849494d115e7c43
+  version: 48ac38b7c8cbedd50b1613c0fccacfc7d88dfcdf
   subpackages:
   - unix
   - windows
