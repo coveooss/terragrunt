@@ -308,9 +308,25 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
+	// Copy the deployment files to the working directory
+	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
+	if stopOnError(err) {
+		return err
+	}
+
+	useTempFolder := hasSourceURL || len(conf.ImportFiles) > 0 || conf.ImportVariables.CreatesVariableFile()
+	if useTempFolder {
+		// If there are import files, we force the usage of a temp directory.
+		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {
+			return
+		}
+	}
+
 	if err = conf.ImportVariables.Import(); stopOnError(err) {
 		return
 	}
+
+	conf.SubstituteAllVariables(terragruntOptions, false)
 
 	// Applying the extra arguments
 	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
@@ -332,9 +348,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
 		}
 		terragruntOptions.TerraformCliArgs = args
-	}
 
-	conf.SubstituteAllVariables(terragruntOptions, false)
+		conf.SubstituteAllVariables(terragruntOptions, false)
+	}
 
 	// Determinate if the project should be ignored
 	if !conf.RunConditions.ShouldRun() {
@@ -347,19 +363,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.Uniqueness = *conf.Uniqueness
 	}
 
-	// Copy the deployment files to the working directory
-	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
-	if stopOnError(err) {
-		return err
-	}
-
-	useTempFolder := hasSourceURL || len(conf.ImportFiles) > 0
-	if useTempFolder {
-		// If there are import files, we force the usage of a temp directory.
-		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {
-			return
-		}
-	}
 	conf.SubstituteAllVariables(terragruntOptions, true)
 
 	// Executing the pre-hook commands that should be ran before the ImportFiles

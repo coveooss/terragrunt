@@ -93,4 +93,21 @@ func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.
 		}
 		conf.ImportFiles[i] = importer
 	}
+
+	for i, importVariables := range conf.ImportVariables {
+		substitute(&importVariables.Description)
+		substitute(&importVariables.Source)
+		substitute(&importVariables.TFVariablesFile)
+
+		for i, value := range importVariables.Vars {
+			importVariables.Vars[i] = *substitute(&value)
+		}
+		for i, value := range importVariables.RequiredVarFiles {
+			importVariables.RequiredVarFiles[i] = *substitute(&value)
+		}
+		for i, value := range importVariables.OptionalVarFiles {
+			importVariables.OptionalVarFiles[i] = *substitute(&value)
+		}
+		conf.ImportVariables[i] = importVariables
+	}
 }

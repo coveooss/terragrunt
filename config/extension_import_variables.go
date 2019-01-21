@@ -44,6 +44,15 @@ func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
 	list.merge(imported, mergeModePrepend, list.argName())
 }
 
+func (list ImportVariablesList) CreatesVariableFile() bool {
+	for _, item := range list.Enabled() {
+		if item.TFVariablesFile != "" {
+			return true
+		}
+	}
+	return false
+}
+
 func (list ImportVariablesList) Import() (err error) {
 	if len(list) == 0 {
 		return nil
@@ -64,7 +73,9 @@ func (list ImportVariablesList) Import() (err error) {
 			} else {
 				variablesFile = path.Join(terragruntOptions.WorkingDir, item.TFVariablesFile)
 			}
-			variablesFiles[variablesFile] = make(map[string]interface{})
+			if _, ok := variablesFiles[variablesFile]; !ok {
+				variablesFiles[variablesFile] = make(map[string]interface{})
+			}
 		}
 
 		folders := []string{terragruntOptions.WorkingDir}
@@ -79,24 +90,40 @@ func (list ImportVariablesList) Import() (err error) {
 		// If vars is specified, add -var <key=value> for each specified key
 		keyFunc := func(key string) string { return strings.Split(key, "=")[0] }
 		varList := util.RemoveDuplicatesFromList(item.Vars, true, keyFunc)
-		variablesExplicitlyProvided := terragruntOptions.VariablesExplicitlyProvided()
 		for _, varDef := range varList {
 			varDef = SubstituteVars(varDef, terragruntOptions)
-			if key, value, err := util.SplitEnvVariable(varDef); err != nil {
-				terragruntOptions.Logger.Warningf("-var ignored in %v: %v", item.Name, err)
+			var (
+				key   string
+				value interface{}
+			)
+
+			if !strings.Contains(varDef, "=") {
+				key = varDef
+				value = nil
 			} else {
-				if util.ListContainsElement(variablesExplicitlyProvided, key) {
+				if key, value, err = util.SplitEnvVariable(varDef); err != nil {
+					terragruntOptions.Logger.Warningf("-var ignored in %v: %v", item.Name, err)
 					continue
 				}
-				terragruntOptions.SetVariable(key, value, options.VarParameter)
-				if variablesFile != "" {
-					variablesFiles[variablesFile][key] = value
-				}
 			}
+			if util.ListContainsElement(terragruntOptions.VariablesExplicitlyProvided(), key) {
+				continue
+			}
+
+			if value != nil {
+				terragruntOptions.SetVariable(key, value, options.VarParameter)
+			}
+
+			if variablesFile != "" {
+				variablesFiles[variablesFile][key] = value
+			}
+
 		}
 
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.RequiredVarFiles) {
+			pattern = SubstituteVars(pattern, terragruntOptions)
+
 			files := config.globFiles(pattern, folders...)
 			if len(files) == 0 {
 				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
@@ -111,6 +138,8 @@ func (list ImportVariablesList) Import() (err error) {
 		// If OptionalVarFiles is specified, check for each file if it exists and if so, add -var-file=<file>
 		// It is possible that many files resolve to the same path, so we remove duplicates.
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.OptionalVarFiles) {
+			pattern = SubstituteVars(pattern, terragruntOptions)
+
 			for _, file := range config.globFiles(pattern, folders...) {
 				if util.FileExists(file) {
 					if err := loadVariablesFromFile(terragruntOptions, file, variablesFiles, variablesFile); err != nil {
@@ -121,7 +150,9 @@ func (list ImportVariablesList) Import() (err error) {
 				}
 			}
 		}
+
 	}
+
 	writeTerraformVariables(variablesFiles)
 
 	return nil
@@ -152,7 +183,12 @@ func writeTerraformVariables(variablesFiles map[string]map[string]interface{}) {
 		lines := []string{}
 
 		for key, value := range flatten(variablesFile, "") {
-			lines = append(lines, []string{fmt.Sprintf("variable \"%s\" {\n", key), fmt.Sprintf("  default = \"%v\"\n", value), "}\n"}...)
+			lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
+			if value != nil {
+				lines = append(lines, fmt.Sprintf("  default = \"%v\"\n", value))
+			}
+			lines = append(lines, "}\n")
+
 		}
 		for _, line := range lines {
 			if _, err = f.WriteString(line); err != nil {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"path"
 	"testing"
 
 	"github.com/gruntwork-io/terragrunt/util"
@@ -17,9 +16,12 @@ const (
 	TEST_FIXTURE_VARIABLES_BASIC_FILE_PATH          = "fixture-variables/basic-file"
 	TEST_FIXTURE_VARIABLES_FLATTEN_PATH             = "fixture-variables/flatten"
 	TEST_FIXTURE_VARIABLES_FLATTEN_OVERWRITE_PATH   = "fixture-variables/flatten-overwrite"
+	TEST_FIXTURE_VARIABLES_GLOB_FILE_PATH           = "fixture-variables/glob-file"
 	TEST_FIXTURE_VARIABLES_NO_TF_VARIABLES_PATH     = "fixture-variables/no-tf-variables"
 	TEST_FIXTURE_VARIABLES_OVERWRITE_PATH           = "fixture-variables/overwrite"
 	TEST_FIXTURE_VARIABLES_OVERWRITE_WITH_FILE_PATH = "fixture-variables/overwrite-with-file"
+	TEST_FIXTURE_VARIABLES_PLACEHOLDER_VAR_PATH     = "fixture-variables/placeholder-var"
+	TEST_FIXTURE_VARIABLES_SUBSTITUTE_PATH          = "fixture-variables/substitute"
 )
 
 func TestTerragruntImportVariablesBasic(t *testing.T) {
@@ -34,7 +36,6 @@ func TestTerragruntImportVariablesBasic(t *testing.T) {
 	output := stdout.String()
 
 	assert.Contains(t, output, "example = 123")
-	assert.FileExists(t, path.Join(rootPath, "test.tf"))
 }
 
 func TestTerragruntImportVariablesBasicFile(t *testing.T) {
@@ -49,7 +50,20 @@ func TestTerragruntImportVariablesBasicFile(t *testing.T) {
 	output := stdout.String()
 
 	assert.Contains(t, output, "example = 123")
-	assert.FileExists(t, path.Join(rootPath, "test.tf"))
+}
+
+func TestTerragruntImportVariablesGlobFile(t *testing.T) {
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_VARIABLES_GLOB_FILE_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_VARIABLES_GLOB_FILE_PATH)
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
+	output := stdout.String()
+
+	assert.Contains(t, output, "example = json1-yaml1-json2-yaml2")
 }
 
 func TestTerragruntImportVariablesFlatten(t *testing.T) {
@@ -64,7 +78,6 @@ func TestTerragruntImportVariablesFlatten(t *testing.T) {
 	output := stdout.String()
 
 	assert.Contains(t, output, "example = 1-2-hello-twolevels")
-	assert.FileExists(t, path.Join(rootPath, "test.tf"))
 }
 
 func TestTerragruntImportVariablesFlattenOverwrite(t *testing.T) {
@@ -79,7 +92,6 @@ func TestTerragruntImportVariablesFlattenOverwrite(t *testing.T) {
 	output := stdout.String()
 
 	assert.Contains(t, output, "example = 1-3-4-twolevels")
-	assert.FileExists(t, path.Join(rootPath, "test.tf"))
 }
 
 func TestTerragruntImportVariablesWithoutVariablesGeneration(t *testing.T) {
@@ -110,7 +122,6 @@ func TestTerragruntImportVariablesOverwrite(t *testing.T) {
 	output := stdout.String()
 
 	assert.Contains(t, output, "example = 456")
-	assert.FileExists(t, path.Join(rootPath, "test.tf"))
 }
 
 func TestTerragruntImportVariablesOverwriteWithFile(t *testing.T) {
@@ -125,5 +136,32 @@ func TestTerragruntImportVariablesOverwriteWithFile(t *testing.T) {
 	output := stdout.String()
 
 	assert.Contains(t, output, "example = 456")
-	assert.FileExists(t, path.Join(rootPath, "test.tf"))
+}
+
+func TestTerragruntImportVariablesWithPlaceholder(t *testing.T) {
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_VARIABLES_PLACEHOLDER_VAR_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_VARIABLES_PLACEHOLDER_VAR_PATH)
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
+	output := stdout.String()
+
+	assert.Contains(t, output, "example = 123")
+}
+
+func TestTerragruntImportVariablesWithSubstitute(t *testing.T) {
+	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_VARIABLES_SUBSTITUTE_PATH)
+	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_VARIABLES_SUBSTITUTE_PATH)
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
+	output := stdout.String()
+
+	assert.Contains(t, output, "example = hello-hello2")
 }

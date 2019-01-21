@@ -559,6 +559,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 
 	conf.RunConditions.Merge(includedConfig.RunConditions)
 	conf.ImportFiles.Merge(includedConfig.ImportFiles)
+	conf.ImportVariables.Merge(includedConfig.ImportVariables)
 	conf.ExtraCommands.Merge(includedConfig.ExtraCommands)
 	conf.ApprovalConfig.Merge(includedConfig.ApprovalConfig)
 	conf.PreHooks.MergePrepend(includedConfig.PreHooks)
