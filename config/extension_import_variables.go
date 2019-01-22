@@ -19,6 +19,7 @@ type ImportVariables struct {
 	RequiredVarFiles []string `hcl:"required_var_files"`
 	OptionalVarFiles []string `hcl:"optional_var_files"`
 
+	NestedUnder     string `hcl:"nested_under"`
 	TFVariablesFile string `hcl:"output_variables_file"`
 }
 
@@ -110,14 +111,9 @@ func (list ImportVariablesList) Import() (err error) {
 				continue
 			}
 
-			if value != nil {
-				terragruntOptions.SetVariable(key, value, options.VarParameter)
+			if variablesFiles[variablesFile], err = loadVariables(terragruntOptions, variablesFiles[variablesFile], map[string]interface{}{key: value}, item.NestedUnder, options.VarParameter); err != nil {
+				return err
 			}
-
-			if variablesFile != "" {
-				variablesFiles[variablesFile][key] = value
-			}
-
 		}
 
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
@@ -129,7 +125,7 @@ func (list ImportVariablesList) Import() (err error) {
 				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
 			}
 			for _, file := range files {
-				if err := loadVariablesFromFile(terragruntOptions, file, variablesFiles, variablesFile); err != nil {
+				if variablesFiles[variablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[variablesFile], item.NestedUnder); err != nil {
 					return err
 				}
 			}
@@ -142,7 +138,7 @@ func (list ImportVariablesList) Import() (err error) {
 
 			for _, file := range config.globFiles(pattern, folders...) {
 				if util.FileExists(file) {
-					if err := loadVariablesFromFile(terragruntOptions, file, variablesFiles, variablesFile); err != nil {
+					if variablesFiles[variablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[variablesFile], item.NestedUnder); err != nil {
 						return err
 					}
 				} else {
@@ -158,21 +154,32 @@ func (list ImportVariablesList) Import() (err error) {
 	return nil
 }
 
-func loadVariablesFromFile(terragruntOptions *options.TerragruntOptions, file string, variablesFiles map[string]map[string]interface{}, variablesFileName string) error {
+func loadVariablesFromFile(terragruntOptions *options.TerragruntOptions, file string, currentVariables map[string]interface{}, nestedUnder string) (map[string]interface{}, error) {
 	terragruntOptions.Logger.Info("Importing", file)
 	vars, err := terragruntOptions.LoadVariablesFromFile(file)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	terragruntOptions.ImportVariablesMap(vars, options.VarFile)
-	if variablesMap, ok := variablesFiles[variablesFileName]; variablesFileName != "" && ok {
-		variablesFiles[variablesFileName], err = utils.MergeDictionaries(vars, variablesMap)
+	return loadVariables(terragruntOptions, currentVariables, vars, nestedUnder, options.VarFile)
+}
+
+func loadVariables(terragruntOptions *options.TerragruntOptions, currentVariables map[string]interface{}, newVariables map[string]interface{}, nestedUnder string, source options.VariableSource) (map[string]interface{}, error) {
+	if nestedUnder != "" {
+		newVariables = map[string]interface{}{nestedUnder: newVariables}
 	}
-	return err
+	terragruntOptions.ImportVariablesMap(newVariables, source)
+	if currentVariables != nil {
+		return utils.MergeDictionaries(newVariables, currentVariables)
+	}
+	return nil, nil
 }
 
 func writeTerraformVariables(variablesFiles map[string]map[string]interface{}) {
 	for variablesFileName, variablesFile := range variablesFiles {
+		if variablesFile == nil {
+			continue
+		}
+
 		f, err := os.OpenFile(variablesFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			panic(err)

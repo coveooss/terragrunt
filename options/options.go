@@ -243,7 +243,9 @@ func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]i
 			terragrunt = value
 			continue
 		}
-		terragruntOptions.SetVariable(key, value, origin)
+		if value != nil {
+			terragruntOptions.SetVariable(key, value, origin)
+		}
 	}
 	return
 }
