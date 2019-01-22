@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/coveo/gotemplate/hcl"
 	"github.com/coveo/gotemplate/utils"
 	"os"
 	"path"
@@ -192,9 +193,10 @@ func writeTerraformVariables(variablesFiles map[string]map[string]interface{}) {
 		for key, value := range flatten(variablesFile, "") {
 			lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
 			if value != nil {
-				lines = append(lines, fmt.Sprintf("  default = \"%v\"\n", value))
+				value, _ = hcl.Marshal(value)
+				lines = append(lines, fmt.Sprintf("  default = %v\n", string(value.([]byte))))
 			}
-			lines = append(lines, "}\n")
+			lines = append(lines, "}\n\n")
 
 		}
 		for _, line := range lines {

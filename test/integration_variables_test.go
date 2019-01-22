@@ -61,9 +61,21 @@ func TestTerragruntImportVariables(t *testing.T) {
 			project:        "fixture-variables/nested",
 			expectedOutput: "example = 123-456",
 		},
+		{
+			project:        "fixture-variables/different-types",
+			expectedOutput: "example = first-hello",
+		},
+		{
+			project:        "fixture-variables/load-tf-variables",
+			expectedOutput: "example = hello1-hello2-hello1-hello2",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.project, func(t *testing.T) {
+			if len(tt.envVariables) == 0 {
+				t.Parallel()
+			}
+
 			tmpEnvPath := copyEnvironment(t, tt.project)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
