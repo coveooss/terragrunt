@@ -72,11 +72,8 @@ func TestTerragruntImportVariables(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.project, func(t *testing.T) {
-			if len(tt.envVariables) == 0 {
-				t.Parallel()
-			}
-
 			tmpEnvPath := copyEnvironment(t, tt.project)
+			defer os.RemoveAll(tmpEnvPath)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
 			for key, value := range tt.envVariables {

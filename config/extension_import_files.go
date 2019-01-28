@@ -103,8 +103,8 @@ func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 		return err
 	} else if sourceFolder != "" {
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
-	} else {
-		sourceFolder = item.options().WorkingDir
+	} else if item.Source != "" {
+		return
 	}
 
 	for _, folder := range folders {
