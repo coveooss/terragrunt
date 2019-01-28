@@ -6,6 +6,7 @@ import (
 	"github.com/coveo/gotemplate/utils"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/options"
@@ -68,15 +69,9 @@ func (list ImportVariablesList) Import() (err error) {
 	for _, item := range list.Enabled() {
 		item.logger().Debugf("Processing import variables statement %s", item.id())
 
-		var variablesFile string
 		if item.TFVariablesFile != "" {
-			if path.IsAbs(item.TFVariablesFile) {
-				variablesFile = item.TFVariablesFile
-			} else {
-				variablesFile = path.Join(terragruntOptions.WorkingDir, item.TFVariablesFile)
-			}
-			if _, ok := variablesFiles[variablesFile]; !ok {
-				variablesFiles[variablesFile] = make(map[string]interface{})
+			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
+				variablesFiles[item.TFVariablesFile] = make(map[string]interface{})
 			}
 		}
 
@@ -112,7 +107,7 @@ func (list ImportVariablesList) Import() (err error) {
 				continue
 			}
 
-			if variablesFiles[variablesFile], err = loadVariables(terragruntOptions, variablesFiles[variablesFile], map[string]interface{}{key: value}, item.NestedUnder, options.VarParameter); err != nil {
+			if variablesFiles[item.TFVariablesFile], err = loadVariables(terragruntOptions, variablesFiles[item.TFVariablesFile], map[string]interface{}{key: value}, item.NestedUnder, options.VarParameter); err != nil {
 				return err
 			}
 		}
@@ -126,7 +121,7 @@ func (list ImportVariablesList) Import() (err error) {
 				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
 			}
 			for _, file := range files {
-				if variablesFiles[variablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[variablesFile], item.NestedUnder); err != nil {
+				if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[item.TFVariablesFile], item.NestedUnder); err != nil {
 					return err
 				}
 			}
@@ -139,7 +134,7 @@ func (list ImportVariablesList) Import() (err error) {
 
 			for _, file := range config.globFiles(pattern, folders...) {
 				if util.FileExists(file) {
-					if variablesFiles[variablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[variablesFile], item.NestedUnder); err != nil {
+					if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[item.TFVariablesFile], item.NestedUnder); err != nil {
 						return err
 					}
 				} else {
@@ -147,11 +142,18 @@ func (list ImportVariablesList) Import() (err error) {
 				}
 			}
 		}
-
 	}
 
-	writeTerraformVariables(variablesFiles)
-
+	for fileName, variables := range variablesFiles {
+		if err := filepath.Walk(terragruntOptions.WorkingDir, func(walkPath string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				writeTerraformVariables(path.Join(walkPath, fileName), variables)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -175,34 +177,32 @@ func loadVariables(terragruntOptions *options.TerragruntOptions, currentVariable
 	return nil, nil
 }
 
-func writeTerraformVariables(variablesFiles map[string]map[string]interface{}) {
-	for variablesFileName, variablesFile := range variablesFiles {
-		if variablesFile == nil {
-			continue
-		}
+func writeTerraformVariables(fileName string, variables map[string]interface{}) {
+	if variables == nil {
+		return
+	}
 
-		f, err := os.OpenFile(variablesFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
+	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
+	lines := []string{}
+
+	for key, value := range flatten(variables, "") {
+		lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
+		if value != nil {
+			value, _ = hcl.Marshal(value)
+			lines = append(lines, fmt.Sprintf("  default = %v\n", string(value.([]byte))))
+		}
+		lines = append(lines, "}\n\n")
+
+	}
+	for _, line := range lines {
+		if _, err = f.WriteString(line); err != nil {
 			panic(err)
-		}
-
-		defer f.Close()
-
-		lines := []string{}
-
-		for key, value := range flatten(variablesFile, "") {
-			lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
-			if value != nil {
-				value, _ = hcl.Marshal(value)
-				lines = append(lines, fmt.Sprintf("  default = %v\n", string(value.([]byte))))
-			}
-			lines = append(lines, "}\n\n")
-
-		}
-		for _, line := range lines {
-			if _, err = f.WriteString(line); err != nil {
-				panic(err)
-			}
 		}
 	}
 }
