@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/gruntwork-io/terragrunt/options"
@@ -40,7 +41,8 @@ func (item *ImportFiles) normalize() {
 	}
 
 	if item.Prefix == nil {
-		prefix := util.EncodeBase64Sha1(item.Name) + "_"
+		reg := regexp.MustCompile("[^a-zA-Z]+")
+		prefix := reg.ReplaceAllString(util.EncodeBase64Sha1(item.Name), "") + "_"
 		item.Prefix = &prefix
 	}
 }
