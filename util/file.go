@@ -15,6 +15,7 @@ import (
 	getter "github.com/hashicorp/go-getter"
 	"github.com/hashicorp/terraform/config/module"
 	logging "github.com/op/go-logging"
+	"gopkg.in/matryer/try.v1"
 )
 
 // FileStat calls os.Stat with retries
@@ -249,7 +250,9 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 				}
 			}
 
-			err = module.GetCopy(cacheDir, source)
+			err = try.Do(func(attempt int) (bool, error) {
+				return attempt < 3, module.GetCopy(cacheDir, source)
+			})
 			if err != nil {
 				return "", fmt.Errorf("%v while copying source from %s", err, source)
 			}
