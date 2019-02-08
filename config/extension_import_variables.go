@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/coveo/gotemplate/hcl"
 	"github.com/coveo/gotemplate/utils"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -146,8 +147,19 @@ func (list ImportVariablesList) Import() (err error) {
 
 	for fileName, variables := range variablesFiles {
 		if err := filepath.Walk(terragruntOptions.WorkingDir, func(walkPath string, info os.FileInfo, err error) error {
-			if info.IsDir() {
-				writeTerraformVariables(path.Join(walkPath, fileName), variables)
+			if !info.IsDir() {
+				return nil
+			}
+			filesInDir, err := ioutil.ReadDir(walkPath)
+			if err != nil {
+				return err
+			}
+			for _, dirFile := range filesInDir {
+				if filepath.Ext(dirFile.Name()) == ".tf" {
+					terragruntOptions.Logger.Info("Writing terraform variables to directory: " + walkPath)
+					writeTerraformVariables(path.Join(walkPath, fileName), variables)
+					break
+				}
 			}
 			return nil
 		}); err != nil {

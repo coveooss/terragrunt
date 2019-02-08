@@ -17,12 +17,13 @@ func TestTerragruntImportVariables(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			project:        "fixture-variables/basic",
-			expectedOutput: "example = 123",
-		},
-		{
 			project:        "fixture-variables/basic-file",
 			expectedOutput: "example = 123",
+		},
+		// Hook prints out the content of the subfolder. Shouldn't contain test.tf
+		{
+			project:        "fixture-variables/basic",
+			expectedOutput: "sub folder content:\nzzz_unrelated.yaml\n",
 		},
 		{
 			project:        "fixture-variables/glob-file",
