@@ -2,10 +2,8 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
@@ -15,7 +13,6 @@ type TerraformExtraArguments struct {
 
 	Source           string   `hcl:"source"`
 	Arguments        []string `hcl:"arguments"`
-	Vars             []string `hcl:"vars"`
 	RequiredVarFiles []string `hcl:"required_var_files"`
 	OptionalVarFiles []string `hcl:"optional_var_files"`
 	Commands         []string `hcl:"commands"`
@@ -61,59 +58,25 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 	out := []string{}
 	cmd := util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")
 
-	folders := []string{terragruntOptions.WorkingDir}
-	if terragruntOptions.WorkingDir != source {
-		folders = append(folders, source)
-	}
-
-	var arg TerraformExtraArguments
-
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("Error while executing %s(%s): %v", arg.itemType(), arg.id(), err)
-		}
-	}()
-	for _, arg = range list.Enabled() {
+	for _, arg := range list.Enabled() {
 		arg.logger().Debugf("Processing arg %s", arg.id())
-		currentCommandIncluded := util.ListContainsElement(arg.Commands, cmd)
 
-		if currentCommandIncluded {
-			out = append(out, arg.Arguments...)
+		if !util.ListContainsElement(arg.Commands, cmd) {
+			continue
 		}
 
-		folders := folders
-		logger := arg.logger()
+		// Append arguments
+		out = append(out, arg.Arguments...)
 
-		if arg.Source != "" {
-			arg.Source = SubstituteVars(arg.Source, terragruntOptions)
-			sourceFolder, err := util.GetSource(arg.Source, filepath.Dir(arg.config().Path), logger)
-			if err != nil {
-				if len(arg.RequiredVarFiles) > 0 {
-					return nil, err
-				}
-				logger.Warningf("%s: %s could not be fetched: %v", arg.Name, arg.Source, err)
-			}
-			folders = []string{sourceFolder}
+		folders := []string{terragruntOptions.WorkingDir}
+		if terragruntOptions.WorkingDir != source {
+			folders = append(folders, source)
 		}
 
-		// We first process all the -var because they have precedence over -var-file
-		// If vars is specified, add -var <key=value> for each specified key
-		keyFunc := func(key string) string { return strings.Split(key, "=")[0] }
-		varList := util.RemoveDuplicatesFromList(arg.Vars, true, keyFunc)
-		variablesExplicitlyProvided := terragruntOptions.VariablesExplicitlyProvided()
-		for _, varDef := range varList {
-			varDef = SubstituteVars(varDef, terragruntOptions)
-			if key, value, err := util.SplitEnvVariable(varDef); err != nil {
-				terragruntOptions.Logger.Warningf("-var ignored in %v: %v", arg.Name, err)
-			} else {
-				if util.ListContainsElement(variablesExplicitlyProvided, key) {
-					continue
-				}
-				terragruntOptions.SetVariable(key, value, options.VarParameter)
-			}
-			if currentCommandIncluded {
-				out = append(out, "-var", varDef)
-			}
+		if newSource, err := config.GetSourceFolder(arg.Name, arg.Source, len(arg.RequiredVarFiles) > 0); err != nil {
+			return nil, err
+		} else if newSource != "" {
+			folders = []string{newSource}
 		}
 
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
@@ -123,13 +86,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 				return nil, fmt.Errorf("%s: No file matches %s", arg.name(), pattern)
 			}
 			for _, file := range files {
-				terragruntOptions.Logger.Info("Importing", file)
-				if err := terragruntOptions.ImportVariablesFromFile(file, options.VarFile); err != nil {
-					return nil, err
-				}
-				if currentCommandIncluded {
-					out = append(out, fmt.Sprintf("-var-file=%s", file))
-				}
+				out = append(out, fmt.Sprintf("-var-file=%s", file))
 			}
 		}
 
@@ -138,14 +95,8 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(arg.OptionalVarFiles) {
 			for _, file := range config.globFiles(pattern, folders...) {
 				if util.FileExists(file) {
-					if currentCommandIncluded {
-						out = append(out, fmt.Sprintf("-var-file=%s", file))
-					}
-					terragruntOptions.Logger.Info("Importing", file)
-					if err := terragruntOptions.ImportVariablesFromFile(file, options.VarFile); err != nil {
-						return nil, err
-					}
-				} else if currentCommandIncluded {
+					out = append(out, fmt.Sprintf("-var-file=%s", file))
+				} else {
 					terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
 				}
 			}

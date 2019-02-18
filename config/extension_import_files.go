@@ -82,7 +82,7 @@ func (item ImportFiles) help() (result string) {
 	return
 }
 
-func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err error) {
+func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 	logger := item.logger()
 
 	if !item.enabled() {
@@ -101,17 +101,12 @@ func (item *ImportFiles) run(folders ...interface{}) (result []interface{}, err 
 	}
 
 	var sourceFolder, sourceFolderPrefix string
-	if item.Source != "" {
-		sourceFolder, err = util.GetSource(item.Source, filepath.Dir(item.config().Path), logger)
-		if err != nil {
-			if *item.Required {
-				return
-			}
-			logger.Warningf("%s: %s could not be fetched: %v", item.Name, item.Source, err)
-		}
+	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required); err != nil {
+		return err
+	} else if sourceFolder != "" {
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
-	} else {
-		sourceFolder = item.options().WorkingDir
+	} else if item.Source != "" {
+		return
 	}
 
 	for _, folder := range folders {
@@ -280,7 +275,7 @@ func (list *ImportFilesList) Merge(imported ImportFilesList) {
 }
 
 // RunOnModules executes list configuration on module folders
-func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOptions) (result interface{}, err error) {
+func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOptions) (err error) {
 	if len(list) == 0 {
 		return
 	}
@@ -290,7 +285,7 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	for _, module := range modules {
 		stat, err := util.FileStat(module)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if !stat.IsDir() {
 			continue
@@ -300,7 +295,7 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 		if !stat.IsDir() {
 			link, err := os.Readlink(module)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			module = link
 		}
@@ -316,4 +311,20 @@ func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOp
 	}
 
 	return list.Run(nil, keys...)
+}
+
+// Run execute the content of the list
+func (list ImportFilesList) Run(status error, args ...interface{}) (err error) {
+	if len(list) == 0 {
+		return
+	}
+	list.sort()
+
+	for _, item := range list.Enabled() {
+		item.logger().Infof("Running %s (%s): %s", item.itemType(), item.id(), item.name())
+		if err := item.importFiles(args...); err != nil {
+			return err
+		}
+	}
+	return
 }

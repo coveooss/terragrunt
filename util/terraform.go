@@ -22,9 +22,9 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 		var fileVars map[string]interface{}
 		switch filepath.Ext(file) {
 		case ".tf":
-			fileVars, err = getDefaultVars(file, hcl.Unmarshal)
+			fileVars, err = getDefaultVarsFromFile(file, hcl.Unmarshal)
 		case ".json":
-			fileVars, err = getDefaultVars(file, json.Unmarshal)
+			fileVars, err = getDefaultVarsFromFile(file, json.Unmarshal)
 		}
 		if err != nil {
 			return nil, err
@@ -58,7 +58,14 @@ func LoadVariablesFromFile(path, cwd string, context ...interface{}) (map[string
 		return nil, err
 	}
 
-	return LoadVariablesFromSource(string(bytes), path, cwd, context...)
+	if result, err := LoadVariablesFromSource(string(bytes), path, cwd, context...); err != nil {
+		return nil, err
+	} else {
+		if len(result) == 1 && result["variable"] != nil {
+			return getDefaultVars(result)
+		}
+		return result, nil
+	}
 }
 
 // LoadVariables returns a map of the variables defined in the content provider
@@ -154,7 +161,7 @@ func getTerraformFiles(folder string) []string {
 
 var patterns = []string{"*.tf", "*.tf.json", "override.tf", "override.tf.json", "*_override.tf", "*_override.tf.json"}
 
-func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) (map[string]interface{}, error) {
+func getDefaultVarsFromFile(filename string, unmarshal func([]byte, interface{}) error) (map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -166,6 +173,16 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 		return nil, fmt.Errorf("%v %v", filename, err)
 	}
 
+	result, err := getDefaultVars(content)
+	if err != nil {
+		return result, fmt.Errorf("%v: %v", filename, err)
+	}
+
+	return result, nil
+}
+
+func getDefaultVars(content map[string]interface{}) (map[string]interface{}, error) {
+	var err error
 	result := make(map[string]interface{})
 
 	switch variables := content["variable"].(type) {
@@ -177,7 +194,7 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 		}
 	case nil:
 	default:
-		return nil, fmt.Errorf("%v[1]: Unknown variable type %[2]T: %[2]v", filename, variables)
+		return nil, fmt.Errorf("Unknown variable type %[1]T: %[1]v", variables)
 	}
 
 	switch locals := content["locals"].(type) {
@@ -191,7 +208,7 @@ func getDefaultVars(filename string, unmarshal func([]byte, interface{}) error) 
 		result["local"], err = utils.MergeDictionaries(localMaps...)
 	case nil:
 	default:
-		return nil, fmt.Errorf("%v: Unknown local type %T", filename, locals)
+		return nil, fmt.Errorf("Unknown local type %T", locals)
 	}
 
 	return result, err

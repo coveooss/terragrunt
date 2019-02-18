@@ -146,9 +146,11 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 	for i := 0; i < len(args); i++ {
 		if strings.HasPrefix(args[i], varFile) {
 			path := args[i][len(varFile):]
-			if err := terragruntOptions.ImportVariablesFromFile(path, options.VarFileExplicit); err != nil {
+			vars, err := terragruntOptions.LoadVariablesFromFile(path)
+			if err != nil {
 				return nil, err
 			}
+			terragruntOptions.ImportVariablesMap(vars, options.VarFileExplicit)
 		}
 	}
 

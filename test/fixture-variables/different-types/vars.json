@@ -1,0 +1,9 @@
+{
+    "bool": false,
+    "int": 3,
+    "list": [
+        "first",
+        "second"
+    ],
+    "string": "hello"
+}

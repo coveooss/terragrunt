@@ -44,6 +44,8 @@ type TerragruntConfig struct {
 	ImportFiles    ImportFilesList     `hcl:"import_files"`
 	ApprovalConfig ApprovalConfigList  `hcl:"approval_config"`
 
+	ImportVariables ImportVariablesList `hcl:"import_variables"`
+
 	options *options.TerragruntOptions
 }
 
@@ -122,11 +124,30 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 
 	tcf.ExtraCommands.init(tcf)
 	tcf.ImportFiles.init(tcf)
+	tcf.ImportVariables.init(tcf)
 	tcf.ApprovalConfig.init(tcf)
 	tcf.PreHooks.init(tcf)
 	tcf.PostHooks.init(tcf)
 	err = tcf.RunConditions.init(tcf.options)
 	return &tcf.TerragruntConfig, err
+}
+
+func (config *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool) (string, error) {
+	terragruntOptions := config.options
+
+	if source != "" {
+		source = SubstituteVars(source, terragruntOptions)
+		sourceFolder, err := util.GetSource(source, filepath.Dir(config.Path), terragruntOptions.Logger)
+		if err != nil {
+			if failIfNotFound {
+				return "", err
+			}
+			terragruntOptions.Logger.Warningf("%s: %s could not be fetched: %v", name, source, err)
+		}
+		return sourceFolder, nil
+	}
+
+	return "", nil
 }
 
 // LockConfig is older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
@@ -538,6 +559,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 
 	conf.RunConditions.Merge(includedConfig.RunConditions)
 	conf.ImportFiles.Merge(includedConfig.ImportFiles)
+	conf.ImportVariables.Merge(includedConfig.ImportVariables)
 	conf.ExtraCommands.Merge(includedConfig.ExtraCommands)
 	conf.ApprovalConfig.Merge(includedConfig.ApprovalConfig)
 	conf.PreHooks.MergePrepend(includedConfig.PreHooks)
