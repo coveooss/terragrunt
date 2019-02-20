@@ -1,5 +1,5 @@
 data "template_file" "example" {
-  template = "${var.testmap_test1}-${var.testmap_test2}-${var.test3}-${var.testmap_testmap2_test}"
+  template = "${var.infra_common_testmap["test1"]}-${var.infra_common_testmap["test2"]}-${var.infra_common_test3}-${var.infra_other["hello"]}"
 }
 
 output "example" {

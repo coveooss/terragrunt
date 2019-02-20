@@ -36,11 +36,11 @@ func TestTerragruntImportVariables(t *testing.T) {
 		},
 		{
 			project:        "fixture-variables/flatten",
-			expectedOutput: "example = 1-2-hello-twolevels",
+			expectedOutput: "example = 1-2-hello-123",
 		},
 		{
 			project:        "fixture-variables/flatten-overwrite",
-			expectedOutput: "example = 1-3-4-twolevels",
+			expectedOutput: "example = 1-3-4",
 		},
 		{
 			project:        "fixture-variables/overwrite",
@@ -69,6 +69,10 @@ func TestTerragruntImportVariables(t *testing.T) {
 		{
 			project:        "fixture-variables/load-tf-variables",
 			expectedOutput: "example = hello1-hello2-hello1-hello2",
+		},
+		{
+			project:        "fixture-variables/map",
+			expectedOutput: "example = 1-2-1-2",
 		},
 	}
 	for _, tt := range tests {

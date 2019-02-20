@@ -1,10 +1,14 @@
 {
-    "testmap": {
-        "test1": 1,
-        "test2": 2,
-        "testmap2": {
-            "test": "twolevels"
+    "infra": {
+        "common": {
+            "testmap": {
+                "test1": 1,
+                "test2": 2
+            },
+            "test3": "hello"
+        },
+        "other": {
+            "hello": 123
         }
-    },
-    "test3": "hello"
+    }
 }

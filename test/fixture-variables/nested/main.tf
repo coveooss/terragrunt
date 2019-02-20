@@ -1,5 +1,5 @@
 data "template_file" "example" {
-  template = "${var.nested1_var}-${var.nested2_var}"
+  template = "${var.nested1["var"]}-${var.nested2["var"]}"
 }
 
 output "example" {

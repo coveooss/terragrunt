@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/coveo/gotemplate/yaml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -99,6 +100,14 @@ func LoadVariablesFromSource(content, fileName, cwd string, context ...interface
 				content = modifiedContent
 			}
 		}
+	}
+
+	if strings.HasSuffix(fileName, ".json") {
+		err = json.Unmarshal([]byte(content), &result)
+		return
+	}
+	if strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml") {
+		err = yaml.Unmarshal([]byte(content), &result)
 	}
 
 	// We first try to read using hcl parser

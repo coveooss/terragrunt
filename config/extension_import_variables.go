@@ -206,8 +206,17 @@ func writeTerraformVariables(fileName string, variables map[string]interface{}) 
 	for key, value := range flatten(variables, "") {
 		lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
 		if value != nil {
-			value, _ = hcl.Marshal(value)
-			lines = append(lines, fmt.Sprintf("  default = %v\n", string(value.([]byte))))
+			terraformValue := map[string]interface{}{"default": value}
+			if _, isMap := value.(map[string]interface{}); isMap {
+				terraformValue["type"] = "map"
+			} else if _, isList := value.([]interface{}); isList {
+				terraformValue["type"] = "list"
+			}
+			variableContent, err := hcl.Marshal(terraformValue)
+			if err != nil {
+				panic(err)
+			}
+			lines = append(lines, string(variableContent))
 		}
 		lines = append(lines, "}\n\n")
 
@@ -222,12 +231,22 @@ func writeTerraformVariables(fileName string, variables map[string]interface{}) 
 func flatten(nestedMap map[string]interface{}, prefix string) map[string]interface{} {
 	keysToRemove := []string{}
 	itemsToAdd := make(map[string]interface{})
+
 	for key, value := range nestedMap {
 		if valueMap, ok := value.(map[string]interface{}); ok {
-			keysToRemove = append(keysToRemove, key)
-			for key, value := range flatten(valueMap, key+"_") {
-				itemsToAdd[key] = value
+			isTopLevel := true
+			for _, childValue := range valueMap {
+				if _, childIsMap := childValue.(map[string]interface{}); childIsMap {
+					isTopLevel = false
+				}
 			}
+			if !isTopLevel {
+				keysToRemove = append(keysToRemove, key)
+				for key, value := range flatten(valueMap, key+"_") {
+					itemsToAdd[key] = value
+				}
+			}
+
 		}
 	}
 	for _, key := range keysToRemove {
