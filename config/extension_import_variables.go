@@ -77,10 +77,13 @@ func (list ImportVariablesList) Import() (err error) {
 		}
 
 		folders := []string{terragruntOptions.WorkingDir}
-
-		if newSource, err := config.GetSourceFolder(item.Name, item.Source, len(item.RequiredVarFiles) > 0); err != nil {
-			return err
-		} else if newSource != "" {
+		if item.Source != "" {
+			newSource, err := config.GetSourceFolder(item.Name, item.Source, len(item.RequiredVarFiles) > 0)
+			if err != nil {
+				return err
+			} else if newSource == "" {
+				continue
+			}
 			folders = []string{newSource}
 		}
 
@@ -146,6 +149,9 @@ func (list ImportVariablesList) Import() (err error) {
 	}
 
 	for fileName, variables := range variablesFiles {
+		if len(variables) == 0 {
+			continue
+		}
 		if err := filepath.Walk(terragruntOptions.WorkingDir, func(walkPath string, info os.FileInfo, err error) error {
 			if !info.IsDir() {
 				return nil
