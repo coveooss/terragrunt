@@ -22,8 +22,10 @@ type ImportVariables struct {
 	RequiredVarFiles []string `hcl:"required_var_files"`
 	OptionalVarFiles []string `hcl:"optional_var_files"`
 
-	NestedUnder     string `hcl:"nested_under"`
+	NestedUnder string `hcl:"nested_under"`
+
 	TFVariablesFile string `hcl:"output_variables_file"`
+	FlattenLevels   *int   `hcl:"flatten_levels"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -111,7 +113,7 @@ func (list ImportVariablesList) Import() (err error) {
 				continue
 			}
 
-			if variablesFiles[item.TFVariablesFile], err = loadVariables(terragruntOptions, variablesFiles[item.TFVariablesFile], map[string]interface{}{key: value}, item.NestedUnder, options.VarParameter); err != nil {
+			if variablesFiles[item.TFVariablesFile], err = loadVariables(terragruntOptions, &item, variablesFiles[item.TFVariablesFile], map[string]interface{}{key: value}, options.VarParameter); err != nil {
 				return err
 			}
 		}
@@ -125,7 +127,7 @@ func (list ImportVariablesList) Import() (err error) {
 				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
 			}
 			for _, file := range files {
-				if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[item.TFVariablesFile], item.NestedUnder); err != nil {
+				if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, &item, file, variablesFiles[item.TFVariablesFile]); err != nil {
 					return err
 				}
 			}
@@ -138,7 +140,7 @@ func (list ImportVariablesList) Import() (err error) {
 
 			for _, file := range config.globFiles(pattern, folders...) {
 				if util.FileExists(file) {
-					if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, file, variablesFiles[item.TFVariablesFile], item.NestedUnder); err != nil {
+					if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, &item, file, variablesFiles[item.TFVariablesFile]); err != nil {
 						return err
 					}
 				} else {
@@ -175,18 +177,22 @@ func (list ImportVariablesList) Import() (err error) {
 	return nil
 }
 
-func loadVariablesFromFile(terragruntOptions *options.TerragruntOptions, file string, currentVariables map[string]interface{}, nestedUnder string) (map[string]interface{}, error) {
+func loadVariablesFromFile(terragruntOptions *options.TerragruntOptions, importOptions *ImportVariables, file string, currentVariables map[string]interface{}) (map[string]interface{}, error) {
 	terragruntOptions.Logger.Info("Importing", file)
 	vars, err := terragruntOptions.LoadVariablesFromFile(file)
 	if err != nil {
 		return nil, err
 	}
-	return loadVariables(terragruntOptions, currentVariables, vars, nestedUnder, options.VarFile)
+	flattenLevels := -1 // flatten all
+	if importOptions.FlattenLevels != nil {
+		flattenLevels = *importOptions.FlattenLevels
+	}
+	return loadVariables(terragruntOptions, importOptions, currentVariables, flatten(vars, "", flattenLevels), options.VarFile)
 }
 
-func loadVariables(terragruntOptions *options.TerragruntOptions, currentVariables map[string]interface{}, newVariables map[string]interface{}, nestedUnder string, source options.VariableSource) (map[string]interface{}, error) {
-	if nestedUnder != "" {
-		newVariables = map[string]interface{}{nestedUnder: newVariables}
+func loadVariables(terragruntOptions *options.TerragruntOptions, importOptions *ImportVariables, currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
+	if importOptions.NestedUnder != "" {
+		newVariables = map[string]interface{}{importOptions.NestedUnder: newVariables}
 	}
 	terragruntOptions.ImportVariablesMap(newVariables, source)
 	if currentVariables != nil {
@@ -209,7 +215,7 @@ func writeTerraformVariables(fileName string, variables map[string]interface{}) 
 
 	lines := []string{}
 
-	for key, value := range flatten(variables, "") {
+	for key, value := range variables {
 		lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
 		if value != nil {
 			terraformValue := map[string]interface{}{"default": value}
@@ -234,7 +240,7 @@ func writeTerraformVariables(fileName string, variables map[string]interface{}) 
 	}
 }
 
-func flatten(nestedMap map[string]interface{}, prefix string) map[string]interface{} {
+func flatten(nestedMap map[string]interface{}, prefix string, numberOfLevels int) map[string]interface{} {
 	keysToRemove := []string{}
 	itemsToAdd := make(map[string]interface{})
 
@@ -246,9 +252,9 @@ func flatten(nestedMap map[string]interface{}, prefix string) map[string]interfa
 					isTopLevel = false
 				}
 			}
-			if !isTopLevel {
+			if !isTopLevel || numberOfLevels >= 1 {
 				keysToRemove = append(keysToRemove, key)
-				for key, value := range flatten(valueMap, key+"_") {
+				for key, value := range flatten(valueMap, key+"_", numberOfLevels-1) {
 					itemsToAdd[key] = value
 				}
 			}

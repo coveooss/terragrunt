@@ -1,0 +1,14 @@
+{
+    "infra": {
+        "common": {
+            "testmap": {
+                "test1": 1,
+                "test2": 2
+            },
+            "test3": "hello"
+        },
+        "other": {
+            "hello": 123
+        }
+    }
+}
