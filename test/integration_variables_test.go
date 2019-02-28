@@ -82,6 +82,11 @@ func TestTerragruntImportVariables(t *testing.T) {
 			project:        "fixture-variables/map",
 			expectedOutput: "example = 1-2-1-2",
 		},
+		{
+			project:        "fixture-variables/map-no-flatten",
+			envVariables:   map[string]string{"TERRAGRUNT_TEMPLATE": "true"},
+			expectedOutput: "example = 1-2-1-2",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.project, func(t *testing.T) {

@@ -252,7 +252,7 @@ func flatten(nestedMap map[string]interface{}, prefix string, numberOfLevels int
 					isTopLevel = false
 				}
 			}
-			if !isTopLevel || numberOfLevels >= 1 {
+			if (numberOfLevels < 0 && !isTopLevel) || numberOfLevels >= 1 {
 				keysToRemove = append(keysToRemove, key)
 				for key, value := range flatten(valueMap, key+"_", numberOfLevels-1) {
 					itemsToAdd[key] = value
