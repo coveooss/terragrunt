@@ -80,11 +80,11 @@ func TestTerragruntImportVariables(t *testing.T) {
 		},
 		{
 			project:        "fixture-variables/map",
-			expectedOutput: "example = 1-2-1-2",
+			expectedOutput: "example = 1-2-1-2-1-2",
+			envVariables:   map[string]string{"TERRAGRUNT_TEMPLATE": "true"},
 		},
 		{
 			project:        "fixture-variables/map-no-flatten",
-			envVariables:   map[string]string{"TERRAGRUNT_TEMPLATE": "true"},
 			expectedOutput: "example = 1-2-1-2",
 		},
 	}

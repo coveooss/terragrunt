@@ -183,11 +183,7 @@ func loadVariablesFromFile(terragruntOptions *options.TerragruntOptions, importO
 	if err != nil {
 		return nil, err
 	}
-	flattenLevels := -1 // flatten all
-	if importOptions.FlattenLevels != nil {
-		flattenLevels = *importOptions.FlattenLevels
-	}
-	return loadVariables(terragruntOptions, importOptions, currentVariables, flatten(vars, "", flattenLevels), options.VarFile)
+	return loadVariables(terragruntOptions, importOptions, currentVariables, vars, options.VarFile)
 }
 
 func loadVariables(terragruntOptions *options.TerragruntOptions, importOptions *ImportVariables, currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
@@ -195,8 +191,12 @@ func loadVariables(terragruntOptions *options.TerragruntOptions, importOptions *
 		newVariables = map[string]interface{}{importOptions.NestedUnder: newVariables}
 	}
 	terragruntOptions.ImportVariablesMap(newVariables, source)
+	flattenLevels := -1 // flatten all
+	if importOptions.FlattenLevels != nil {
+		flattenLevels = *importOptions.FlattenLevels
+	}
 	if currentVariables != nil {
-		return utils.MergeDictionaries(newVariables, currentVariables)
+		return utils.MergeDictionaries(flatten(newVariables, "", flattenLevels), currentVariables)
 	}
 	return nil, nil
 }
