@@ -1,5 +1,5 @@
 hash: c03c830bfe54d02870422b370ae1d45b2c54b23b17e6104a28da0073a1ace7ff
-updated: 2019-03-08T10:10:55.11429-05:00
+updated: 2019-03-08T15:17:15.151819-05:00
 imports:
 - name: cloud.google.com/go
   version: 7377f9d353bf3a755e4df421fd87c466f522714f
@@ -88,7 +88,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 57e1c8d949c7f20f172dc2455c7259c099957377
+  version: 1d8000d9759115bc1c74d92e631ef4c77d0ab2c8
   subpackages:
   - collections
   - collections/implementation
@@ -178,7 +178,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: ac4fff416318bf0915a0ab80e062a99ef3724334
+  version: 057286e5228559722bfc9bf6a03679650358c9d2
   subpackages:
   - config
   - config/hcl2shim
