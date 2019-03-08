@@ -2,12 +2,13 @@ package util
 
 import (
 	"fmt"
-	"github.com/coveo/gotemplate/yaml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/coveo/gotemplate/yaml"
 
 	"github.com/coveo/gotemplate/collections"
 	"github.com/coveo/gotemplate/hcl"
