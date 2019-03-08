@@ -364,7 +364,7 @@ func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 		arg := fmt.Sprint(argI)
 		arg = strings.Replace(arg, `\$`, stringEscape, -1)
 		arg = strings.Replace(os.ExpandEnv(arg), stringEscape, "$", -1)
-		if strings.ContainsAny(arg, "*?[]") && !strings.ContainsAny(arg, "$|`") {
+		if strings.ContainsAny(arg, "*?[]") && !strings.ContainsAny(arg, "$|`") && !strings.HasPrefix(arg, "-") {
 			// The string contains wildcard and is not a shell command
 			if !filepath.IsAbs(arg) {
 				arg = prefix + arg
