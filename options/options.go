@@ -184,6 +184,18 @@ func (terragruntOptions TerragruntOptions) GetContext() (result collections.IDic
 	for key, value := range terragruntOptions.Variables {
 		result.Set(key, value.Value)
 	}
+	result.Set("TerragruntOptions", map[string]interface{}{
+		"AwsProfile":           terragruntOptions.AwsProfile,
+		"DownloadDir":          terragruntOptions.DownloadDir,
+		"LoggingLevel":         util.GetLoggingLevel(),
+		"NbWorkers":            terragruntOptions.NbWorkers,
+		"Source":               terragruntOptions.Source,
+		"SourceUpdate":         terragruntOptions.SourceUpdate,
+		"TerraformCliArgs":     terragruntOptions.TerraformCliArgs,
+		"TerraformPath":        terragruntOptions.TerraformPath,
+		"TerragruntConfigPath": terragruntOptions.TerragruntConfigPath,
+		"WorkingDir":           terragruntOptions.WorkingDir,
+	})
 	return
 }
 
