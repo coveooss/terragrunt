@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/coveo/gotemplate/errors"
@@ -40,25 +39,11 @@ func InitLogging(levelName string, defaultLevel logging.Level, color bool) (int,
 
 	logging.SetBackend(logging.NewBackendFormatter(logging.NewLogBackend(os.Stderr, "", 0), logging.MustStringFormatter(format)))
 
-	level, err := getLoggingLevelFromString(levelName, defaultLevel)
+	level, err := template.TryGetLoggingLevelFromString(levelName, defaultLevel)
 
 	logging.SetLevel(level, "")
 	template.InitLogging()
 	return int(level), err
-}
-
-func getLoggingLevelFromString(level string, defaultLevel logging.Level) (logging.Level, error) {
-	level = strings.TrimSpace(level)
-	if level == "" {
-		return defaultLevel, nil
-	}
-
-	levelNum, err := strconv.Atoi(level)
-	if err == nil {
-		return logging.Level(levelNum), nil
-	}
-
-	return logging.LogLevel(level)
 }
 
 // LogCatcher traps messsage containing logging level [LOGLEVEL] and redirect them to the logging system

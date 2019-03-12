@@ -1,8 +1,8 @@
 hash: c03c830bfe54d02870422b370ae1d45b2c54b23b17e6104a28da0073a1ace7ff
-updated: 2019-03-08T15:17:15.151819-05:00
+updated: 2019-03-12T08:01:18.651218-04:00
 imports:
 - name: cloud.google.com/go
-  version: 7377f9d353bf3a755e4df421fd87c466f522714f
+  version: f52f9bc132541d2aa914f42100c36d10b1ef7e0c
   subpackages:
   - compute/metadata
   - iam
@@ -32,7 +32,7 @@ imports:
 - name: github.com/armon/go-radix
   version: 1a2de0c21c94309923825da3df33a4381872c795
 - name: github.com/aws/aws-sdk-go
-  version: 774132714af4336cfacbde2528d8702d0649f225
+  version: eeb8697ef6ae27d51c78e4aaf8dcf58c6a5a57e0
   subpackages:
   - aws
   - aws/awserr
@@ -88,7 +88,7 @@ imports:
   subpackages:
   - generic
 - name: github.com/coveo/gotemplate
-  version: 1d8000d9759115bc1c74d92e631ef4c77d0ab2c8
+  version: d3450da3ae62c6b40c500fb0a38e9b1483a01dcc
   subpackages:
   - collections
   - collections/implementation
@@ -119,10 +119,11 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/google/go-cmp
-  version: c81281657ad99ba22e14fda7c4dfaaf2974c454e
+  version: 6f77996f0c42f7b84e5a2b252227263f93432e9b
   subpackages:
   - cmp
   - cmp/internal/diff
+  - cmp/internal/flags
   - cmp/internal/function
   - cmp/internal/value
 - name: github.com/google/uuid
@@ -136,7 +137,7 @@ imports:
 - name: github.com/hashicorp/go-cleanhttp
   version: e8ab9daed8d1ddd2d3c4efba338fe2eeae2e4f18
 - name: github.com/hashicorp/go-getter
-  version: e1437d0bbb37a1fa61cdb924b034352c823cb89b
+  version: d9c5f687368ab14e686e0009a756480b2ea4611d
   subpackages:
   - helper/url
 - name: github.com/hashicorp/go-multierror
@@ -178,7 +179,7 @@ imports:
   - parser
   - scanner
 - name: github.com/hashicorp/terraform
-  version: 057286e5228559722bfc9bf6a03679650358c9d2
+  version: d48069534832fdb09919a5fe46500755540cbf0a
   subpackages:
   - config
   - config/hcl2shim
@@ -208,9 +209,9 @@ imports:
 - name: github.com/Masterminds/sprig
   version: 9f8fceff796fb9f4e992cd2bece016be0121ab74
 - name: github.com/mattn/go-colorable
-  version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
+  version: 3a70a971f94a22f2fa562ffcc7a0eb45f5daf045
 - name: github.com/mattn/go-isatty
-  version: 3fb116b820352b7f0c281308a4d6250c22d94e27
+  version: 369ecd8cea9851e459abb67eb171853e3986591e
 - name: github.com/mattn/go-zglob
   version: 2ea3427bfa539cca900ca2768d8663ecc8a708c1
   subpackages:
@@ -238,7 +239,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/posener/complete
-  version: 82e658e4f39dc2808175e6558a5315b3fa9e5e4b
+  version: af07aa5181b38e3fa57d053328e44aaa27da5999
   subpackages:
   - cmd
   - cmd/install
@@ -274,7 +275,7 @@ imports:
   - cty/json
   - cty/set
 - name: go.opencensus.io
-  version: 8734d3b4deb5b1369308eb92b16ca7c7dd5ff343
+  version: 1c9fa349e904ab5e280e67471b53d7c5f696ef0d
   subpackages:
   - exemplar
   - internal
@@ -290,7 +291,7 @@ imports:
   - trace/propagation
   - trace/tracestate
 - name: golang.org/x/crypto
-  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
+  version: c2843e01d9a2bc60bb26ad24e09734fdc2d9ec58
   subpackages:
   - bcrypt
   - blowfish
@@ -305,7 +306,7 @@ imports:
   - scrypt
   - ssh/terminal
 - name: golang.org/x/net
-  version: 16b79f2e4e95ea23b2bf9903c9809ff7b013ce85
+  version: d8887717615a059821345a5c23649351b52a1c0b
   subpackages:
   - context
   - context/ctxhttp
@@ -325,7 +326,7 @@ imports:
   - jws
   - jwt
 - name: golang.org/x/sys
-  version: 48ac38b7c8cbedd50b1613c0fccacfc7d88dfcdf
+  version: fead79001313d15903fb4605b4a1b781532cd93e
   subpackages:
   - unix
   - windows
@@ -337,7 +338,7 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/api
-  version: 1949198e2e5ae38675b60302e6e08c5cf74493fb
+  version: 8778df036089cbbed9231c892a598e469ecf2c16
   subpackages:
   - gensupport
   - googleapi
@@ -369,7 +370,7 @@ imports:
   - googleapis/rpc/code
   - googleapis/rpc/status
 - name: google.golang.org/grpc
-  version: 2369d0a0a1c8526dbd79292f41d0dbeecc8fe593
+  version: 77ce7bc228475a8f28dc50a9d74ac4994fc019e7
   subpackages:
   - balancer
   - balancer/base
