@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/coveo/gotemplate/hcl"
+	"github.com/coveo/gotemplate/v3/hcl"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/options"

@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coveo/gotemplate/collections"
-	"github.com/coveo/gotemplate/hcl"
-	"github.com/coveo/gotemplate/utils"
+	"github.com/coveo/gotemplate/v3/collections"
+	"github.com/coveo/gotemplate/v3/hcl"
+	"github.com/coveo/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/op/go-logging"

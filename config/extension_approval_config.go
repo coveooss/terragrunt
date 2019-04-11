@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/coveo/gotemplate/collections"
+	"github.com/coveo/gotemplate/v3/collections"
 )
 
 // ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
