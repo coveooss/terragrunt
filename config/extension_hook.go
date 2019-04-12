@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/errors"
 	"os"
 	"sort"
 	"strings"
+
+	"github.com/gruntwork-io/terragrunt/errors"
 
 	"github.com/coveo/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -90,12 +91,12 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	return
 }
 
-func (base Hook) setState(err error) {
+func (hook *Hook) setState(err error) {
 	exitCode, errCode := shell.GetExitCode(err)
 	if errCode != nil {
 		exitCode = -1
 	}
-	base.options().SetStatus(exitCode, err)
+	hook.options().SetStatus(exitCode, err)
 }
 
 // ----------------------- HookList -----------------------

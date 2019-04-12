@@ -81,7 +81,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(arg.RequiredVarFiles) {
-			files := config.globFiles(pattern, folders...)
+			files := config.globFiles(pattern, false, folders...)
 			if len(files) == 0 {
 				return nil, fmt.Errorf("%s: No file matches %s", arg.name(), pattern)
 			}
@@ -93,7 +93,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 		// If OptionalVarFiles is specified, check for each file if it exists and if so, add -var-file=<file>
 		// It is possible that many files resolve to the same path, so we remove duplicates.
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(arg.OptionalVarFiles) {
-			for _, file := range config.globFiles(pattern, folders...) {
+			for _, file := range config.globFiles(pattern, false, folders...) {
 				if util.FileExists(file) {
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
 				} else {
