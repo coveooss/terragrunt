@@ -52,8 +52,10 @@ func (item *ImportVariables) stringOrArray(property string, object *interface{})
 		}
 		return nil
 	default:
-		item.logger().Warningf("Ignored type (%T) for %s in import_variable %s, type must be string or array of strings", *object, property, item.Name)
-		*object = nil
+		if source != nil {
+			item.logger().Warningf("Ignored type (%T) for %s in import_variable %s, type must be string or array of strings", *object, property, item.Name)
+			*object = nil
+		}
 	}
 	return nil
 }
@@ -72,6 +74,10 @@ func (item *ImportVariables) normalize() {
 	if item.FlattenLevels == nil {
 		value := -1
 		item.FlattenLevels = &value
+	}
+
+	if item.NestedObjectsType == nil {
+		item.NestedObjectsType = []string{""}
 	}
 }
 
