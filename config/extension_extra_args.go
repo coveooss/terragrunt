@@ -59,7 +59,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 	cmd := util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")
 
 	for _, arg := range list.Enabled() {
-		arg.logger().Debugf("Processing arg %s", arg.id())
+		arg.logger().Infof("Processing arg %s", arg.id())
 
 		if !util.ListContainsElement(arg.Commands, cmd) {
 			continue
