@@ -20,7 +20,7 @@ html-coverage:
 	@sh ./scripts/coverage.sh --html
 
 build:
-	glide install
+	go generate -x ./...
 	go build
 
 install:

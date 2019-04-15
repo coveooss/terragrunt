@@ -137,7 +137,7 @@ func (list ImportVariablesList) Import() (err error) {
 	variablesFiles := make(map[string]map[string]interface{})
 
 	for _, item := range list.Enabled() {
-		item.logger().Debugf("Processing import variables statement %s", item.id())
+		item.logger().Infof("Processing import variables statement %s", item.id())
 
 		if item.TFVariablesFile != "" {
 			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
