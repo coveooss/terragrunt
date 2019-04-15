@@ -124,8 +124,8 @@ func (c Condition) getVariable(v string) string {
 	if options == nil {
 		return v
 	}
-	if variable, found := options.Variables[v]; found {
-		return fmt.Sprint(variable.Value)
+	if value, found := options.GetVariableValue(v); found {
+		return fmt.Sprint(value)
 	}
 	if value := SubstituteVars(v, options); value != v {
 		return value
