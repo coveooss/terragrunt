@@ -301,6 +301,33 @@ func (terragruntOptions *TerragruntOptions) CloseWriters() {
 	terragruntOptions.ErrWriter.Close()
 }
 
+// GetVariableValue returns the value of a variable with the given key. Supports dot notation (my_map.my_var)
+func (terragruntOptions *TerragruntOptions) GetVariableValue(key string) (value interface{}, found bool) {
+	variables := map[string]interface{}{}
+	for key, value := range terragruntOptions.Variables {
+		variables[key] = value.Value
+	}
+	return getVariableValue(variables, strings.Split(key, "."))
+}
+
+func getVariableValue(variables interface{}, keys []string) (value interface{}, found bool) {
+	variablesMap, isMap := variables.(map[string]interface{})
+	if !isMap {
+		return nil, false
+	}
+
+	value, found = variablesMap[keys[0]]
+	if !found {
+		return nil, false
+	}
+
+	if len(keys) > 1 {
+		return getVariableValue(value, keys[1:])
+	}
+
+	return
+}
+
 // SetVariable overwrites the value in the variables map only if the source is more significant than the original value
 func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) {
 	if strings.Contains(key, ".") {
