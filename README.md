@@ -1000,6 +1000,7 @@ terragrunt = {
     run_if {
       region = ["us-east-1", "us-west-2"] # region must match one of "us-east-1" or "us-west-2"
       another_var = "value"               # another_var must be equal to "value"
+      my_map.my_var = "value"               # the `my_var` item of the `my_var` map must be equal to "value"
     }
     ignore_if {
       env = "qa"                          # do not run if env = "qa"
