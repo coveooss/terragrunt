@@ -457,7 +457,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 		t.SetOption(template.Overwrite, true)
 		pathSep := string(os.PathListSeparator)
-		patterns := util.RemoveElementFromList(strings.Split("*.tf"+pathSep+os.Getenv(options.EnvTemplatePatterns), pathSep), "")
+		patterns := util.RemoveElementFromList(strings.Split(terraformExtensionGlob+pathSep+os.Getenv(options.EnvTemplatePatterns), pathSep), "")
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
 		modifiedFiles, err := t.ProcessTemplates("", "", files...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
@@ -481,7 +481,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// If there is no terraform file in the folder, we skip the command
-	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, "*.tf", "*.tf.json")
+	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, terraformExtensionGlob, terraformExtensionGlob+".json")
 	if stopOnError(err) {
 		return
 	}

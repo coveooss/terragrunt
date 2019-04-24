@@ -309,7 +309,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 
 	terragruntOptions.Logger.Info("Cleaning up existing *.tf files in", path)
 
-	files, err := zglob.Glob(util.JoinPath(path, "**/*.tf"))
+	files, err := zglob.Glob(util.JoinPath(path, "**/"+terraformExtensionGlob))
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}

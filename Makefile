@@ -24,7 +24,6 @@ build:
 	go build
 
 install:
-	glide install
 	go install
 
 .PHONY: test
