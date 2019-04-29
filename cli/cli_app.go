@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coveo/gotemplate/v3/collections"
+	"github.com/coveo/gotemplate/v3/hcl"
 	"github.com/coveo/gotemplate/v3/template"
 	"github.com/coveo/gotemplate/v3/utils"
 	"github.com/fatih/color"
@@ -177,6 +179,8 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
+	collections.ListHelper = hcl.GenericListHelper
+	collections.DictionaryHelper = hcl.DictionaryHelper
 	terragruntRunID = fmt.Sprint(xid.New())
 
 	os.Setenv(options.EnvCacheFolder, util.GetTempDownloadFolder("terragrunt-cache"))

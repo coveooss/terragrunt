@@ -22,7 +22,8 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	var app = kingpin.New("get-doc", "Get documentation about current terragrunt project configuration")
 	listOnly := app.Flag("list", "Only list the element names").Short('l').Bool()
 	extraArgs := app.Flag("args", "List the extra_arguments configurations").Short('A').Bool()
-	imports := app.Flag("imports", "List the import_files configurations").Short('I').Bool()
+	importVars := app.Flag("imports-variables", "List the import_variables configurations").Short('V').Bool()
+	importFiles := app.Flag("imports-files", "List the import_files configurations").Short('I').Bool()
 	hooks := app.Flag("hooks", "List the pre_hook & post_hook configurations").Short('H').Bool()
 	commands := app.Flag("commands", "List the extra_command configurations").Short('C').Bool()
 	approvalConfigs := app.Flag("approval-configs", "List the approval configurations").Bool()
@@ -31,7 +32,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	filters := app.Arg("filters", "Filter the result").Strings()
 	app.HelpFlag.Short('h')
 	app.Parse(terragruntOptions.TerraformCliArgs[1:])
-	all := !(*hooks || *extraArgs || *imports || *commands || *approvalConfigs)
+	all := !(*hooks || *extraArgs || *importFiles || *importVars || *commands || *approvalConfigs)
 	if *noColor {
 		color.NoColor = true
 	} else if *useColor {
@@ -58,13 +59,14 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	}
 
 	print("Extra arguments: (in evaluation order)", "%s\n", conf.Terraform.ExtraArgs.Help(*listOnly, *filters...), *extraArgs)
+	print("Import variables: (in evaluation order)", "%s\n", conf.ImportVariables.Help(*listOnly, *filters...), *importVars)
 
 	if *hooks || all {
 		beforeImports := conf.PreHooks.Filter(config.BeforeImports).Help(*listOnly, *filters...)
 		print("Pre hooks before imports (in execution order):", "%s\n", beforeImports, true)
 	}
 
-	print("File importers (in execution order)", "%s\n", conf.ImportFiles.Help(*listOnly, *filters...), *imports)
+	print("File importers (in execution order)", "%s\n", conf.ImportFiles.Help(*listOnly, *filters...), *importFiles)
 	if *hooks || all {
 		pre1 := conf.PreHooks.Filter(config.BeforeInitState).Help(*listOnly, *filters...)
 		pre2 := conf.PreHooks.Filter(config.AfterInitState).Help(*listOnly, *filters...)

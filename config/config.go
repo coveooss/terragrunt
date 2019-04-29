@@ -362,9 +362,6 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}
 
 	if util.ApplyTemplate() {
-		collections.ListHelper = hcl.GenericListHelper
-		collections.DictionaryHelper = hcl.DictionaryHelper
-
 		var t *template.Template
 		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil); err != nil {
 			return
