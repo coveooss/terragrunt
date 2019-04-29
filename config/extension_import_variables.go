@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coveo/gotemplate/v3/collections"
 	"github.com/coveo/gotemplate/v3/errors"
 	"github.com/coveo/gotemplate/v3/hcl"
 	"github.com/coveo/gotemplate/v3/utils"
@@ -40,12 +41,18 @@ func (item ImportVariables) help() (result string) {
 }
 
 func (item *ImportVariables) stringOrArray(property string, object *interface{}) []string {
-	switch source := (*object).(type) {
-	case []string:
-		for i := range source {
-			source[i] = SubstituteVars(source[i], item.options())
+	if object == nil || *object == nil {
+		return nil
+	}
+
+	if list, err := collections.TryAsList(*object); err == nil {
+		result := list.Strings()
+		for i := range result {
+			result[i] = SubstituteVars(result[i], item.options())
 		}
-		return source
+		return result
+	}
+	switch source := (*object).(type) {
 	case string:
 		if source != "" {
 			return []string{SubstituteVars(source, item.options())}
@@ -53,10 +60,11 @@ func (item *ImportVariables) stringOrArray(property string, object *interface{})
 		return nil
 	default:
 		if source != nil {
-			item.logger().Warningf("Ignored type (%T) for %s in import_variable %s, type must be string or array of strings", *object, property, item.Name)
+			item.logger().Warningf("Ignored type (%[1]T %[1]v) for %[2]s in import_variable %[3]s, type must be string or array of strings", *object, property, item.Name)
 			*object = nil
 		}
 	}
+
 	return nil
 }
 
