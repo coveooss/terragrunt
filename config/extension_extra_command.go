@@ -125,15 +125,14 @@ func (item *ExtraCommand) resolveAlias(cmd string) (result string, found bool) {
 	return cmd, false
 }
 
+func (item ExtraCommand) compare(other TerragruntExtensioner) bool {
+	return item.Name < other.(*ExtraCommand).Name
+}
+
 // ----------------------- ExtraCommandList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_extra_command.go gen "GenericItem=ExtraCommand"
 func (list ExtraCommandList) argName() string { return "extra_command" }
-
-func (list ExtraCommandList) sort() ExtraCommandList {
-	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })
-	return list
-}
 
 // Merge elements from an imported list to the current list
 func (list *ExtraCommandList) Merge(imported ExtraCommandList) {

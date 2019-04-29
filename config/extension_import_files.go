@@ -266,8 +266,7 @@ func ensureIsFile(file string) error {
 // ----------------------- ImportFilesList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_import_files.go gen "GenericItem=ImportFiles"
-func (list ImportFilesList) argName() string       { return "import_files" }
-func (list ImportFilesList) sort() ImportFilesList { return list }
+func (list ImportFilesList) argName() string { return "import_files" }
 
 // Merge elements from an imported list to the current list
 func (list *ImportFilesList) Merge(imported ImportFilesList) {

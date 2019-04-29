@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -21,6 +22,13 @@ func (list TerraformExtraArgumentsList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		ITerraformExtraArguments(&list[i]).init(config)
 	}
+}
+
+func (list TerraformExtraArgumentsList) sort() TerraformExtraArgumentsList {
+	sort.SliceStable(list, func(i, j int) bool {
+		return ITerraformExtraArguments(&(list)[i]).compare(ITerraformExtraArguments(&(list)[j]))
+	})
+	return list
 }
 
 // Merge elements from an imported list to the current list priorising those already existing

@@ -23,6 +23,8 @@ type TerragruntExtensioner interface {
 	logger() *logging.Logger
 	name() string
 	itemType() string
+	order() int
+	compare(TerragruntExtensioner) bool
 	normalize()
 	options() *options.TerragruntOptions
 }
@@ -35,14 +37,20 @@ type TerragruntExtensionBase struct {
 	DisplayName string   `hcl:"display_name"`
 	Description string   `hcl:"description"`
 	OS          []string `hcl:"os"`
+	Order       int      `hcl:"order"`
 	Disabled    bool     `hcl:"disabled"`
 }
 
 func (base TerragruntExtensionBase) String() string      { return base.id() }
 func (base TerragruntExtensionBase) id() string          { return base.Name }
 func (base TerragruntExtensionBase) description() string { return base.Description }
+func (base TerragruntExtensionBase) order() int          { return base.Order }
 func (base TerragruntExtensionBase) extraInfo() string   { return "" }
 func (base TerragruntExtensionBase) normalize()          {}
+
+func (base TerragruntExtensionBase) compare(other TerragruntExtensioner) bool {
+	return base.Order < other.order()
+}
 
 func (base *TerragruntExtensionBase) init(config *TerragruntConfigFile) {
 	base._config = config
@@ -97,8 +105,6 @@ const (
 	mergeModePrepend mergeMode = iota
 	mergeModeAppend
 )
-
-func (list GenericItemList) sort() GenericItemList { return list }
 
 type errorArray []error
 

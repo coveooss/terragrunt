@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -21,6 +22,13 @@ func (list HookList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		IHook(&list[i]).init(config)
 	}
+}
+
+func (list HookList) sort() HookList {
+	sort.SliceStable(list, func(i, j int) bool {
+		return IHook(&(list)[i]).compare(IHook(&(list)[j]))
+	})
+	return list
 }
 
 // Merge elements from an imported list to the current list priorising those already existing

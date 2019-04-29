@@ -107,8 +107,7 @@ func (item *ImportVariables) loadVariables(currentVariables map[string]interface
 // ----------------------- ImportVariablesList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_import_variables.go gen "GenericItem=ImportVariables"
-func (list ImportVariablesList) argName() string           { return "import_variables" }
-func (list ImportVariablesList) sort() ImportVariablesList { return list }
+func (list ImportVariablesList) argName() string { return "import_variables" }
 
 // Merge elements from an imported list to the current list
 func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
@@ -131,6 +130,7 @@ func (list ImportVariablesList) Import() (err error) {
 		return nil
 	}
 
+	list.sort()
 	config := IImportVariables(&list[0]).config()
 	terragruntOptions := config.options
 

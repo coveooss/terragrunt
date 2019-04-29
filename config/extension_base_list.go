@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/cheekybits/genny/generic"
@@ -22,6 +23,13 @@ func (list GenericItemList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		IGenericItem(&list[i]).init(config)
 	}
+}
+
+func (list GenericItemList) sort() GenericItemList {
+	sort.SliceStable(list, func(i, j int) bool {
+		return IGenericItem(&(list)[i]).compare(IGenericItem(&(list)[j]))
+	})
+	return list
 }
 
 // Merge elements from an imported list to the current list priorising those already existing

@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -21,6 +22,13 @@ func (list ExtraCommandList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		IExtraCommand(&list[i]).init(config)
 	}
+}
+
+func (list ExtraCommandList) sort() ExtraCommandList {
+	sort.SliceStable(list, func(i, j int) bool {
+		return IExtraCommand(&(list)[i]).compare(IExtraCommand(&(list)[j]))
+	})
+	return list
 }
 
 // Merge elements from an imported list to the current list priorising those already existing

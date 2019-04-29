@@ -3,12 +3,10 @@ package config
 import (
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/errors"
-
 	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -25,7 +23,6 @@ type Hook struct {
 	IgnoreError    bool     `hcl:"ignore_error"`
 	BeforeImports  bool     `hcl:"before_imports"`
 	AfterInitState bool     `hcl:"after_init_state"`
-	Order          int      `hcl:"order"`
 	ShellCommand   bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
 }
 
@@ -103,11 +100,6 @@ func (hook *Hook) setState(err error) {
 
 //go:generate genny -in=extension_base_list.go -out=generated_hooks.go gen "GenericItem=Hook"
 func (list HookList) argName() string { return "hooks" }
-
-func (list HookList) sort() HookList {
-	sort.SliceStable(list, func(i, j int) bool { return list[i].Order < list[j].Order })
-	return list
-}
 
 // MergePrepend prepends elements from an imported list to the current list
 func (list *HookList) MergePrepend(imported HookList) {

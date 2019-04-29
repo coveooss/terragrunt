@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -21,6 +22,13 @@ func (list ImportVariablesList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		IImportVariables(&list[i]).init(config)
 	}
+}
+
+func (list ImportVariablesList) sort() ImportVariablesList {
+	sort.SliceStable(list, func(i, j int) bool {
+		return IImportVariables(&(list)[i]).compare(IImportVariables(&(list)[j]))
+	})
+	return list
 }
 
 // Merge elements from an imported list to the current list priorising those already existing

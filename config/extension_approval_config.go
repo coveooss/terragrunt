@@ -52,10 +52,6 @@ func (list ApprovalConfigList) ShouldBeApproved(command string) (bool, *Approval
 	return false, nil
 }
 
-func (list ApprovalConfigList) sort() ApprovalConfigList {
-	return list
-}
-
 // Merge elements from an imported list to the current list
 func (list *ApprovalConfigList) Merge(imported ApprovalConfigList) {
 	list.merge(imported, mergeModeAppend, "approval_config")

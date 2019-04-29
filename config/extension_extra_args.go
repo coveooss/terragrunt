@@ -38,8 +38,7 @@ func (item TerraformExtraArguments) help() (result string) {
 // ----------------------- TerraformExtraArgumentsList -----------------------
 
 //go:generate genny -in=extension_base_list.go -out=generated_extra_args.go gen "GenericItem=TerraformExtraArguments"
-func (list TerraformExtraArgumentsList) argName() string                   { return "extra_arguments" }
-func (list TerraformExtraArgumentsList) sort() TerraformExtraArgumentsList { return list }
+func (list TerraformExtraArgumentsList) argName() string { return "extra_arguments" }
 
 // Merge elements from an imported list to the current list
 func (list *TerraformExtraArgumentsList) Merge(imported TerraformExtraArgumentsList) {

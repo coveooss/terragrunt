@@ -6,6 +6,7 @@ package config
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -21,6 +22,13 @@ func (list ApprovalConfigList) init(config *TerragruntConfigFile) {
 	for i := range list {
 		IApprovalConfig(&list[i]).init(config)
 	}
+}
+
+func (list ApprovalConfigList) sort() ApprovalConfigList {
+	sort.SliceStable(list, func(i, j int) bool {
+		return IApprovalConfig(&(list)[i]).compare(IApprovalConfig(&(list)[j]))
+	})
+	return list
 }
 
 // Merge elements from an imported list to the current list priorising those already existing
