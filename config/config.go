@@ -256,27 +256,12 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 // IsTerragruntConfigFile returns true if the given path corresponds to file that could be a Terragrunt config file.
 // A file could be a Terragrunt config file if:
 //   1. The file exists
-//   2. It is a .terragrunt file, which is the old Terragrunt-specific file format
 //   3. The file contains HCL contents with a terragrunt = { ... } block
 func IsTerragruntConfigFile(path string) (bool, error) {
 	if !util.FileExists(path) {
 		return false, nil
 	}
 
-	if isOldTerragruntConfig(path) {
-		return true, nil
-	}
-
-	return isNewTerragruntConfig(path)
-}
-
-// Returns true if the given path points to an old Terragrunt config file
-func isOldTerragruntConfig(path string) bool {
-	return strings.HasSuffix(path, OldTerragruntConfigPath)
-}
-
-// Returns true if the given path points to a new (current) Terragrunt config file
-func isNewTerragruntConfig(path string) (bool, error) {
 	configContents, err := util.ReadFileAsString(path)
 	if err != nil {
 		return false, err
@@ -343,10 +328,6 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 			terragruntOptions.Logger.Debugf("Config already in the cache %s", include.Path)
 			return
 		}
-	}
-
-	if isOldTerragruntConfig(include.Path) {
-		terragruntOptions.Logger.Warningf("DEPRECATION : Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
 	}
 
 	var configString, source string
@@ -501,14 +482,6 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 // Parse the given config string, read from the given config file, as a terragruntConfigFile struct. This method solely
 // converts the HCL syntax in the string to the terragruntConfigFile struct; it does not process any interpolations.
 func parseConfigStringAsTerragruntConfigFile(configString string, configPath string) (*TerragruntConfigFile, error) {
-	if isOldTerragruntConfig(configPath) {
-		terragruntConfig := &TerragruntConfigFile{Path: configPath}
-		if err := hcl.Decode(terragruntConfig, configString); err != nil {
-			return nil, errors.WithStackTrace(err)
-		}
-		return terragruntConfig, nil
-	}
-
 	tfvarsConfig := &tfvarsFileWithTerragruntConfig{}
 	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
 		return nil, errors.WithStackTrace(err)
