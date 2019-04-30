@@ -22,9 +22,6 @@ const (
 	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
 	DefaultTerragruntConfigPath = "terraform.tfvars"
 
-	// OldTerragruntConfigPath is the name of the legacy file name used to store terragrunt definitions
-	OldTerragruntConfigPath = ".terragrunt"
-
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
 )
@@ -206,10 +203,6 @@ func (conf TerraformConfig) String() string {
 // rather than a constant is that older versions of Terragrunt stored configuration in a different file. This method returns
 // the path to the old configuration format if such a file exists and the new format otherwise.
 func DefaultConfigPath(workingDir string) string {
-	path := util.JoinPath(workingDir, OldTerragruntConfigPath)
-	if util.FileExists(path) {
-		return path
-	}
 	return util.JoinPath(workingDir, DefaultTerragruntConfigPath)
 }
 
