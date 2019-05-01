@@ -288,6 +288,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return err
 	}
 
+	if conf.Uniqueness != nil {
+		// If uniqueness_criteria has been defined, we set it in the options to ensure that
+		// we use distinct folder based on this criteria
+		terragruntOptions.Uniqueness = *conf.Uniqueness
+	}
+
 	sourceURL, hasSourceURL := getTerraformSourceURL(terragruntOptions, conf)
 	if sourceURL == "" {
 		sourceURL = terragruntOptions.WorkingDir
@@ -376,12 +382,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Determinate if the project should be ignored
 	if !conf.RunConditions.ShouldRun() {
 		return nil
-	}
-
-	if conf.Uniqueness != nil {
-		// If uniqueness_criteria has been defined, we set it in the options to ensure that
-		// we use distinct folder based on this criteria
-		terragruntOptions.Uniqueness = *conf.Uniqueness
 	}
 
 	conf.SubstituteAllVariables(terragruntOptions, true)
