@@ -16,6 +16,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
+	logging "github.com/op/go-logging"
 )
 
 const (
@@ -367,6 +368,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 		if configString, err = t.ProcessContent(configString, source); err != nil {
 			return
+		}
+		if logging.GetLevel("") >= logging.DEBUG {
+			terragruntOptions.Logger.Debugf("Configuration for %s:\n%s", source, color.HiBlueString(collections.String(configString).AddLineNumber(0).Str()))
 		}
 	}
 
