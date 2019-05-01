@@ -14,15 +14,15 @@ before_install:
   - sudo unzip -d /usr/local/bin/ /tmp/terraform.zip
 
 install:
-  - make install
+  - if [ "${TRAVIS_TAG::1}" = "v" ]; then
+      make install;
+    fi
 
 before_script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
       make full-test;
-    else
-      make test;
+      make fmtcheck;
     fi
-  - make fmtcheck
 
 script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
@@ -30,7 +30,9 @@ script:
     fi
   
 after_success:
-  - make coveralls
+  - if [ "${TRAVIS_TAG::1}" = "v" ]; then
+      make coveralls;
+    fi
 
 notifications:
   email: false
