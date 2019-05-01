@@ -235,27 +235,31 @@ func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (
 }
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
-func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) (terragrunt interface{}, err error) {
+func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) ([]hcl.Dictionary, interface{}, error) {
 	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, context...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	terragrunt = terragruntOptions.ImportVariablesMap(vars, origin)
-	return
+	results, terragrunt := terragruntOptions.ImportVariablesMap(vars, origin)
+	return results, terragrunt, nil
 }
 
-func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (terragrunt interface{}) {
+// ImportVariablesMap adds the supplied variables to the to the TerragruntOptions object
+func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (result []hcl.Dictionary, terragrunt interface{}) {
+	result = make([]hcl.Dictionary, SetVariableResultCount)
+	for i := range result {
+		result[i] = make(hcl.Dictionary)
+	}
+
 	for key, value := range vars {
 		if key == "terragrunt" {
 			// We do not import the terragrunt variable, but we return it
 			terragrunt = value
 			continue
 		}
-		if value != nil {
-			terragruntOptions.SetVariable(key, value, origin)
-		}
+		result[terragruntOptions.SetVariable(key, value, origin)][key] = value
 	}
-	return
+	return result, terragrunt
 }
 
 // AddDeferredSaveVariables - Add a path where to save the variable list
@@ -329,7 +333,10 @@ func getVariableValue(variables interface{}, keys []string) (value interface{}, 
 }
 
 // SetVariable overwrites the value in the variables map only if the source is more significant than the original value
-func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) {
+func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) SetVariableResult {
+	if value == nil {
+		return IgnoredVariable
+	}
 	if strings.Contains(key, ".") {
 		keys := strings.Split(key, ".")
 		key = keys[0]
@@ -351,7 +358,7 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 			terragruntOptions.Logger.Warningf("Unable to merge variable %s: %v and %v", key, target.Value, value)
 		} else {
 			terragruntOptions.Variables[key] = Variable{source, newValue}
-			return
+			return NewVariable
 		}
 	} else if target.Value != nil && (oldIsMap || newIsMap) {
 		terragruntOptions.Logger.Warningf("Different types for %s: %v vs %v", key, target.Value, value)
@@ -361,13 +368,17 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 		// We only override value if the source has less or equal precedence than the previous value
 		if source == ConfigVarFile && target.Source == ConfigVarFile {
 			// Values defined at the same level overwrite the previous values except for those defined in config file
-			return
+			return IgnoredVariable
 		}
+		status := NewVariable
 		if target.Source != UndefinedSource {
 			terragruntOptions.Logger.Infof("Overwriting value for %s with %v", key, value)
+			status = IgnoredVariable
 		}
 		terragruntOptions.Variables[key] = Variable{source, value}
+		return status
 	}
+	return IgnoredVariable
 }
 
 // Variable defines value and origin of a variable (origin is important due to the precedence of the definition)
@@ -391,6 +402,21 @@ const (
 	Environment
 	VarParameterExplicit
 )
+
+//go:generate stringer -type=VariableSource -output generated_variable_source.go
+
+// SetVariableResult indicates the status of trying to add a variable to the options
+type SetVariableResult byte
+
+// Valid values for SetVariableResult
+const (
+	IgnoredVariable SetVariableResult = iota
+	NewVariable
+	Overwritten
+	SetVariableResultCount
+)
+
+//go:generate stringer -type=SetVariableResult -output generated_set_variables.go
 
 // ErrRunTerragruntCommandNotSet is a custom error
 var ErrRunTerragruntCommandNotSet = fmt.Errorf("The RunTerragrunt option has not been set on this TerragruntOptions object")

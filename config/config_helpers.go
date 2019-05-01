@@ -142,10 +142,8 @@ func (context *resolveContext) getHelperFunctions() map[string]interface{} {
 		"discover":                                 context.getDiscoveredValueInternal,
 		"get_env":                                  context.getEnvironmentVariableInternal,
 		"get_current_dir":                          context.getCurrentDir,
-		"get_leaf_dir":                             context.getTfVarsDir,
-		"get_tfvars_dir":                           context.getTfVarsDir,
-		"get_parent_dir":                           context.getParentTfVarsDir,
-		"get_parent_tfvars_dir":                    context.getParentTfVarsDir,
+		"get_leaf_dir":                             context.getLeafDir,
+		"get_parent_dir":                           context.getParentDir,
 		"get_aws_account_id":                       context.getAWSAccountID,
 		"get_terraform_commands_that_need_vars":    func() interface{} { return collections.AsList(TerraformCommandWithVarFile) },
 		"get_terraform_commands_that_need_locking": func() interface{} { return collections.AsList(TerraformCommandWithLockTimeout) },
@@ -169,10 +167,8 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 			"default":                                  (*resolveContext).getDefaultValue,
 			"discover":                                 (*resolveContext).getDiscoveredValue,
 			"get_current_dir":                          (*resolveContext).getCurrentDir,
-			"get_leaf_dir":                             (*resolveContext).getTfVarsDir,
-			"get_tfvars_dir":                           (*resolveContext).getTfVarsDir,
-			"get_parent_dir":                           (*resolveContext).getParentTfVarsDir,
-			"get_parent_tfvars_dir":                    (*resolveContext).getParentTfVarsDir,
+			"get_leaf_dir":                             (*resolveContext).getLeafDir,
+			"get_parent_dir":                           (*resolveContext).getParentDir,
 			"get_aws_account_id":                       (*resolveContext).getAWSAccountID,
 			"save_variables":                           (*resolveContext).saveVariables,
 			"get_terraform_commands_that_need_vars":    TerraformCommandWithVarFile,
@@ -361,7 +357,7 @@ func (context *resolveContext) getCurrentDir() (interface{}, error) {
 }
 
 // Return the directory where the Terragrunt configuration file lives
-func (context *resolveContext) getTfVarsDir() (interface{}, error) {
+func (context *resolveContext) getLeafDir() (interface{}, error) {
 	terragruntConfigFileAbsPath, err := filepath.Abs(context.options.TerragruntConfigPath)
 	if err != nil {
 		return "", err
@@ -371,7 +367,11 @@ func (context *resolveContext) getTfVarsDir() (interface{}, error) {
 }
 
 // Return the parent directory where the Terragrunt configuration file lives
-func (context *resolveContext) getParentTfVarsDir() (interface{}, error) {
+func (context *resolveContext) getParentDir() (interface{}, error) {
+	if context.include.isIncludedBy == nil {
+		// This is a bootstrap file that is executed before having the parent context
+		return "", fmt.Errorf("There is no parent context for %s", context.include.Path)
+	}
 	parentPath, err := context.pathRelativeFromInclude()
 	if err != nil {
 		return "", err
@@ -548,17 +548,16 @@ func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
 }
 
 func (context *resolveContext) getParentLocalConfigFilesLocation() string {
-	cursor := &context.include
-	for {
+	for cursor := &context.include; cursor != nil; cursor = cursor.isIncludedBy {
 		includePath, _ := ResolveTerragruntConfigString(cursor.Path, context.include, context.options)
-		if cursor.Source == "" {
+		if !cursor.isBootstrap {
 			if !path.IsAbs(includePath) {
 				includePath = util.JoinPath(context.options.WorkingDir, includePath)
 			}
 			return filepath.Dir(includePath)
 		}
-		cursor = cursor.isIncludedBy
 	}
+	return ""
 }
 
 // Return the AWS account id associated to the current set of credentials
