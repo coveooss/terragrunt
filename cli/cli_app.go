@@ -145,6 +145,7 @@ var moduleRegex = regexp.MustCompile(`module[[:blank:]]+".+"`)
 const defaultTerraformVersionConstaint = ">= v0.9.3"
 
 const terraformExtensionGlob = "*.tf"
+const terraformExtensionGlobJSON = "*.tf.json"
 
 var terragruntVersion string
 var terragruntRunID string
@@ -461,7 +462,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 		t.SetOption(template.Overwrite, true)
 		pathSep := string(os.PathListSeparator)
-		patterns := util.RemoveElementFromList(strings.Split(terraformExtensionGlob+pathSep+os.Getenv(options.EnvTemplatePatterns), pathSep), "")
+		patterns := util.RemoveElementFromList(strings.Split(strings.Join([]string{terraformExtensionGlob, terraformExtensionGlobJSON, os.Getenv(options.EnvTemplatePatterns)}, pathSep), pathSep), "")
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
 		modifiedFiles, err := t.ProcessTemplates("", "", files...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
@@ -485,7 +486,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// If there is no terraform file in the folder, we skip the command
-	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, terraformExtensionGlob, terraformExtensionGlob+".json")
+	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, terraformExtensionGlob, terraformExtensionGlobJSON)
 	if stopOnError(err) {
 		return
 	}

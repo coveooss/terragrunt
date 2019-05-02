@@ -3,9 +3,9 @@ module github.com/gruntwork-io/terragrunt
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.19.21
+	github.com/aws/aws-sdk-go v1.19.22
 	github.com/cheekybits/genny v1.0.0
-	github.com/coveo/gotemplate/v3 v3.0.2
+	github.com/coveo/gotemplate/v3 v3.1.0-test
 	github.com/fatih/color v1.7.0
 	github.com/go-errors/errors v1.0.1
 	github.com/hashicorp/go-getter v1.2.0

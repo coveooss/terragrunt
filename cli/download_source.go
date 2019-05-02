@@ -314,10 +314,15 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 		return errors.WithStackTrace(err)
 	}
 
+	jsonfiles, err := zglob.Glob(util.JoinPath(path, "**/"+terraformExtensionGlobJSON))
+	if err != nil {
+		return errors.WithStackTrace(err)
+	}
+
 	// Filter out files in .terraform folders, since those are from modules downloaded via a call to terraform get,
 	// and we don't want to re-download them.
 	filteredFiles := []string{}
-	for _, file := range files {
+	for _, file := range append(files, jsonfiles...) {
 		if !strings.Contains(file, ".terraform") {
 			filteredFiles = append(filteredFiles, file)
 		}
