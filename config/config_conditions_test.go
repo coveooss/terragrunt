@@ -27,9 +27,21 @@ func TestRunConditions(t *testing.T) {
 			expected:  true,
 		},
 		{
+			name:      "Simple match (map)",
+			allowed:   []Condition{{"my_map.env": "qa"}},
+			variables: vars{"my_map": map[string]interface{}{"env": "qa"}},
+			expected:  true,
+		},
+		{
 			name:      "Simple no match",
 			allowed:   []Condition{{"env": "qa"}},
 			variables: vars{"env": "dev"},
+			expected:  false,
+		},
+		{
+			name:      "Simple no match (map)",
+			allowed:   []Condition{{"my_map.env": "qa"}},
+			variables: vars{"my_map": map[string]interface{}{"env": "dev"}},
 			expected:  false,
 		},
 		{
@@ -48,6 +60,12 @@ func TestRunConditions(t *testing.T) {
 			name:      "Ignore simple",
 			denied:    []Condition{{"env": "qa"}},
 			variables: vars{"env": "qa"},
+			expected:  false,
+		},
+		{
+			name:      "Ignore simple (map)",
+			denied:    []Condition{{"my_map.env": "qa"}},
+			variables: vars{"my_map": map[string]interface{}{"env": "qa"}},
 			expected:  false,
 		},
 		{
@@ -109,9 +127,21 @@ func TestRunConditions(t *testing.T) {
 			expected:  false,
 		},
 		{
+			name:      "Invalid variables on ignore (map)",
+			denied:    []Condition{{"my_map.envv": "value"}},
+			variables: vars{"my_map": map[string]interface{}{"env": "qa"}},
+			expected:  false,
+		},
+		{
 			name:      "Invalid variables on run_if",
 			allowed:   []Condition{{"non_existing": "value"}},
 			variables: vars{},
+			expected:  false,
+		},
+		{
+			name:      "Invalid variables on run_if (map)",
+			allowed:   []Condition{{"my_map.envv": "value"}},
+			variables: vars{"my_map": map[string]interface{}{"env": "qa"}},
 			expected:  false,
 		},
 	}

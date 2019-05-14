@@ -77,10 +77,15 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	loggingLevel := parse(OptLoggingLevel, os.Getenv(options.EnvLoggingLevel))
 	awsProfile := parse(OptAWSProfile)
 	approvalHandler := parse(optApprovalHandler)
-	sourceUpdate := parseBooleanArg(args, optTerragruntSourceUpdate, false)
 	ignoreDependencyErrors := parseBooleanArg(args, OptTerragruntIgnoreDependencyErrors, false)
 	flushDelay := parse(OptFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
 	nbWorkers := parse(OptNbWorkers, os.Getenv(options.EnvWorkers), "10")
+
+	sourceUpdateDefaultValue := false
+	if value, ok := os.LookupEnv(options.EnvSourceUpdate); ok && (strings.ToLower(value) == "true" || value == "1") {
+		sourceUpdateDefaultValue = true
+	}
+	sourceUpdate := parseBooleanArg(args, optTerragruntSourceUpdate, sourceUpdateDefaultValue)
 
 	if err != nil {
 		return nil, err
