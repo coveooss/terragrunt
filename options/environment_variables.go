@@ -8,6 +8,7 @@ const (
 	EnvFlushDelay       = "TERRAGRUNT_FLUSH_DELAY"       // Used to configure the flush delay on long -all operation (default 60s)
 	EnvLoggingLevel     = "TERRAGRUNT_LOGGING_LEVEL"     // Used to configure the current logging level
 	EnvSource           = "TERRAGRUNT_SOURCE"            // Used to configure the location of the Terraform source folder (optional, default determined by source in the terragrunt.terraform object
+	EnvSourceUpdate     = "TERRAGRUNT_SOURCE_UPDATE"     // Used to configure the --terragrunt-source-update option (flushes the cache) (optional)
 	EnvTFPath           = "TERRAGRUNT_TFPATH"            // Used to configure the path to the terraform command (optional, default terraform)
 	EnvWorkers          = "TERRAGRUNT_WORKERS"           // Used to configure the maximum number of concurrent workers (optional)
 	EnvApplyTemplate    = "TERRAGRUNT_TEMPLATE"          // Used to configure whether or not go template should be applied on terraform (.tf and .tfvars) file

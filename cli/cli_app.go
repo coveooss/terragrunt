@@ -615,8 +615,8 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 
 // A quick sanity check that calls `terraform get` to download modules, if they aren't already downloaded.
 func downloadModules(terragruntOptions *options.TerragruntOptions) error {
-	switch util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "") {
-	case "apply", "destroy", "graph", "output", "plan", "show", "taint", "untaint", "validate":
+	command := util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")
+	if util.ListContainsElement(terraformCommandsThatUseState, command) {
 		shouldDownload, err := shouldDownloadModules(terragruntOptions)
 		if err != nil {
 			return err
