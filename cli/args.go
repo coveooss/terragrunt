@@ -197,16 +197,6 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 	return args, nil
 }
 
-func extractVarArgs() []string {
-	var commandLineArgs []string
-	for i := range os.Args {
-		if os.Args[i] == "-var" {
-			commandLineArgs = append(commandLineArgs, os.Args[i:i+2]...)
-		}
-	}
-	return commandLineArgs
-}
-
 // Return a copy of the given args with all Terragrunt-specific args removed
 func filterTerragruntArgs(args []string) []string {
 	out := []string{}
