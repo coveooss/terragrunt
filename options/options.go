@@ -124,6 +124,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		Logger:               util.CreateLogger("main"),
 		Env:                  make(map[string]string),
 		Variables:            make(map[string]Variable),
+		Context:              make(map[string]interface{}),
 		DownloadDir:          downloadDir,
 		Writer:               os.Stdout,
 		ErrWriter:            os.Stderr,

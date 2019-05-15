@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/coveo/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -145,60 +147,53 @@ func parseEnvironmentVariables(terragruntOptions *options.TerragruntOptions, env
 }
 
 func filterVarsAndVarFiles(command string, terragruntOptions *options.TerragruntOptions, args []string) ([]string, error) {
-	const varFile = "-var-file="
-	const varArg = "-var"
-
-	for i := 0; i < len(args); i++ {
-		if strings.HasPrefix(args[i], varFile) {
-			path := args[i][len(varFile):]
-			vars, err := terragruntOptions.LoadVariablesFromFile(path)
-			if err != nil {
-				return nil, err
-			}
-			terragruntOptions.ImportVariablesMap(vars, options.VarFileExplicit)
-		}
+	// https://regex101.com/r/9Gm4wt/2
+	reVarFile := regexp.MustCompile(`^-{1,2}(?P<var>var(?P<file>-file)?)(?:=(?P<value>.*))?$`)
+	var filteredArgs []string
+	if !util.ListContainsElement(config.TerraformCommandWithVarFile, command) {
+		filteredArgs = make([]string, 0, len(args))
 	}
 
 	for i := 0; i < len(args); i++ {
-		if args[i] == varArg && i+1 < len(args) {
-			if key, value, err := util.SplitEnvVariable(args[i+1]); err != nil {
-				terragruntOptions.Logger.Warning("-var ignored:", args[i+1], err)
-			} else {
+		if matches, match := utils.MultiMatch(args[i], reVarFile); match >= 0 {
+			if matches["value"] == "" && i+1 < len(args) {
+				// The value is specified in the next argument
+				matches["value"] = args[i+1]
+				i++
+			}
+			if matches["file"] == "" {
+				// The value is a single variable to set
+				key, value, err := util.SplitEnvVariable(matches["value"])
+				if err != nil {
+					return nil, err
+				}
 				terragruntOptions.SetVariable(key, value, options.VarParameterExplicit)
+			} else {
+				// The value represent a file to load
+				vars, err := terragruntOptions.LoadVariablesFromFile(matches["value"])
+				if err != nil {
+					return nil, err
+				}
+				terragruntOptions.ImportVariablesMap(vars, options.VarFileExplicit)
+			}
+			if filteredArgs != nil {
+				// We have to filter arguments, so we ignore the current var argument
+				continue
 			}
 		}
-	}
 
-	if util.ListContainsElement(config.TerraformCommandWithVarFile, command) {
-		// The -var and -var-file are required by the terraform command, we return the args list unaltered
-		return args, nil
-	}
-
-	// We must remove the -var and -var-file arguments because they are not needed by the terraform command
-	// but they may have been supplied by the user to help determine the current content
-	filtered := make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		if strings.HasPrefix(args[i], varFile) {
-			continue
-		}
-		if args[i] == varArg && i+1 < len(args) {
-			i++
-			continue
-		}
-		filtered = append(filtered, args[i])
-	}
-
-	return filtered, nil
-}
-
-func extractVarArgs() []string {
-	var commandLineArgs []string
-	for i := range os.Args {
-		if os.Args[i] == "-var" {
-			commandLineArgs = append(commandLineArgs, os.Args[i:i+2]...)
+		if filteredArgs != nil {
+			// We have to filter arguments, so we append the non var argument to the list
+			filteredArgs = append(filteredArgs, args[i])
 		}
 	}
-	return commandLineArgs
+
+	if filteredArgs != nil {
+		// We must remove the -var and -var-file arguments because they are not supported by the terraform command
+		// but they may have been supplied by the user to help determine the current content
+		return filteredArgs, nil
+	}
+	return args, nil
 }
 
 // Return a copy of the given args with all Terragrunt-specific args removed

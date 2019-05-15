@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/gruntwork-io/terragrunt/config"
@@ -205,11 +206,94 @@ func TestParseEnvironmentVariables(t *testing.T) {
 			[]string{"foo=composite=bar"},
 			map[string]string{"foo": "composite=bar"},
 		},
+		{
+			[]string{"TF_VAR_foo=composite=bar"},
+			map[string]string{"TF_VAR_foo": "composite=bar"},
+		},
 	}
 
 	for _, testCase := range testCases {
 		var mockOptions = options.NewTerragruntOptionsForTest("test-env-mock")
 		parseEnvironmentVariables(mockOptions, testCase.environmentVariables)
 		assert.Equal(t, testCase.expectedVariables, mockOptions.Env)
+	}
+}
+
+func Test_filterVarsAndVarFiles(t *testing.T) {
+	type ov = options.Variable
+	type variables = map[string]ov
+	param, varfile := options.VarParameterExplicit, options.VarFileExplicit
+
+	tests := []struct {
+		name    string
+		command string
+		args    []string
+		want    []string // nil could be used to specify unaltered list
+		vars    variables
+		wantErr bool
+	}{
+		{"No args", "plan", []string{}, nil, variables{}, false},
+		{"-var", "plan", []string{"-var", "foo=bar"}, nil, variables{
+			"foo": ov{Source: param, Value: "bar"},
+		}, false},
+		{"--var", "plan", []string{"--var", "foo=bar"}, nil, variables{
+			"foo": ov{Source: param, Value: "bar"},
+		}, false},
+		{"With value", "plan", []string{"--var=foo=bar", "-var=bar=foo"}, nil, variables{
+			"foo": ov{Source: param, Value: "bar"},
+			"bar": ov{Source: param, Value: "foo"},
+		}, false},
+		{"Separated", "plan", []string{"-var", "foo=bar"}, nil, variables{
+			"foo": ov{Source: param, Value: "bar"},
+		}, false},
+		{"With empty value", "plan", []string{"--var", "foo="}, nil, variables{
+			"foo": ov{Source: param, Value: ""},
+		}, false},
+		{"With non real arg", "plan", []string{"-var", "foo=bar", "---var=test"}, nil, variables{
+			"foo": ov{Source: param, Value: "bar"},
+		}, false},
+		{"With invalid value", "plan", []string{"--var=foo"}, nil, variables{}, true},
+		{"With invalid value 2", "plan", []string{"--var="}, nil, variables{}, true},
+		{"With invalid value 3", "plan", []string{"--var"}, nil, variables{}, true},
+		{"With invalid value 4", "plan", []string{"--var", ""}, nil, variables{}, true},
+		{"With invalid value 5", "plan", []string{"-var", "foo"}, nil, variables{}, true},
+		{"With invalid value 6", "plan", []string{"-var-file"}, nil, variables{}, true},
+		{"With invalid value 7", "plan", []string{"-var-file="}, nil, variables{}, true},
+		{"With invalid file", "plan", []string{"-var-file", "foo"}, nil, variables{}, true},
+		{"With var and var-file", "plan", []string{"-var", "bar=foo", "-var-file", "../test/fixture-args/test.tfvars"}, nil, variables{
+			"foo": ov{Source: varfile, Value: "bar"},
+			"int": ov{Source: varfile, Value: 1},
+			"bar": ov{Source: param, Value: "foo"},
+		}, false},
+		{"With var overwrite", "plan", []string{"-var", "foo=overwritten", "-var-file", "../test/fixture-args/test.tfvars"}, nil, variables{
+			"foo": ov{Source: param, Value: "overwritten"},
+			"int": ov{Source: varfile, Value: 1},
+		}, false},
+		{"With filtered arguments", "whatever",
+			[]string{"-test", "dummy", "-var", "foo=yes", "other", "-var-file", "../test/fixture-args/test.tfvars"},
+			[]string{"-test", "dummy", "other"},
+			variables{
+				"foo": ov{Source: param, Value: "yes"},
+				"int": ov{Source: varfile, Value: 1},
+			}, false},
+	}
+	for _, tt := range tests {
+		var mockOptions = options.NewTerragruntOptionsForTest("test-env-mock")
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := filterVarsAndVarFiles(tt.command, mockOptions, tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("filterVarsAndVarFiles() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err == nil && tt.want == nil {
+				tt.want = tt.args
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("filterVarsAndVarFiles() = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(mockOptions.Variables, tt.vars) {
+				t.Errorf("variables = %v, want %v", mockOptions.Variables, tt.vars)
+			}
+		})
 	}
 }
