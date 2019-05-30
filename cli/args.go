@@ -164,7 +164,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 			if key, value, err := util.SplitEnvVariable(args[i+1]); err != nil {
 				terragruntOptions.Logger.Warning("-var ignored:", args[i+1], err)
 			} else {
-				terragruntOptions.SetVariable(key, value, options.VarParameterExplicit)
+				terragruntOptions.SetVariable(key, convertToNativeType(value), options.VarParameterExplicit)
 			}
 		}
 	}
@@ -199,6 +199,22 @@ func extractVarArgs() []string {
 		}
 	}
 	return commandLineArgs
+}
+
+func convertToNativeType(s string) interface{} {
+	if s := strings.TrimSpace(s); s != "" {
+		if i, err := strconv.ParseInt(s, 10, 0); err == nil {
+			return i
+		} else if f, err := strconv.ParseFloat(s, 64); err == nil {
+			return f
+		} else if b, err := strconv.ParseBool(s); err == nil {
+			return b
+		}
+	}
+	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) || strings.HasPrefix(s, `'`) && strings.HasSuffix(s, `'`) {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
 
 // Return a copy of the given args with all Terragrunt-specific args removed
