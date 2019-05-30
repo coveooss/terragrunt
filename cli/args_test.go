@@ -297,3 +297,35 @@ func Test_filterVarsAndVarFiles(t *testing.T) {
 		})
 	}
 }
+
+func Test_convertToNativeType(t *testing.T) {
+	tests := []struct {
+		name string
+		s    string
+		want interface{}
+	}{
+		{"Empty", "", ""},
+		{"Spaces", "   ", "   "},
+		{"Zero", "0", 0},
+		{"Positive", "1234", 1234},
+		{"Negative", "-1234", -1234},
+		{"Float", "12.34", 12.34},
+		{"Negative Float", "-12.34", -12.34},
+		{"Bool true", "true", true},
+		{"Bool false", "false", false},
+		{"Bool f", "f", false},
+		{"Bool T", "T", true},
+		{"With spaces", "  1234 ", 1234},
+		{"Exp1", "2e10", 2e10},
+		{"Exp2", "2e-10", 2e-10},
+		{"Exp3", "-2e-10", -2e-10},
+		{"String", "Anything else", "Anything else"},
+		{"Quoted string", "'1234'", "1234"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := convertToNativeType(tt.s)
+			assert.EqualValues(t, tt.want, got)
+		})
+	}
+}

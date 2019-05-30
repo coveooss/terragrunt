@@ -168,7 +168,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 				if err != nil {
 					return nil, err
 				}
-				terragruntOptions.SetVariable(key, value, options.VarParameterExplicit)
+				terragruntOptions.SetVariable(key, convertToNativeType(value), options.VarParameterExplicit)
 			} else {
 				// The value represent a file to load
 				vars, err := terragruntOptions.LoadVariablesFromFile(matches["value"])
@@ -195,6 +195,22 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 		return filteredArgs, nil
 	}
 	return args, nil
+}
+
+func convertToNativeType(s string) interface{} {
+	if s := strings.TrimSpace(s); s != "" {
+		if i, err := strconv.ParseInt(s, 10, 0); err == nil {
+			return i
+		} else if f, err := strconv.ParseFloat(s, 64); err == nil {
+			return f
+		} else if b, err := strconv.ParseBool(s); err == nil {
+			return b
+		}
+	}
+	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) || strings.HasPrefix(s, `'`) && strings.HasSuffix(s, `'`) {
+		return s[1 : len(s)-1]
+	}
+	return s
 }
 
 // Return a copy of the given args with all Terragrunt-specific args removed
