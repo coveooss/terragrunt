@@ -1,10 +1,11 @@
 package remote
 
 import (
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
+
+	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestToTerraformInitArgs(t *testing.T) {

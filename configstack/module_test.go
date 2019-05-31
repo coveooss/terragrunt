@@ -1,13 +1,13 @@
 package configstack
 
 import (
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
-
-	"path/filepath"
 )
 
 func TestResolveTerraformModulesNoPaths(t *testing.T) {
