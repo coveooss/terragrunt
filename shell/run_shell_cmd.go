@@ -14,8 +14,8 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/coveo/gotemplate/collections"
-	"github.com/coveo/gotemplate/utils"
+	"github.com/coveo/gotemplate/v3/collections"
+	"github.com/coveo/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"

@@ -3,13 +3,14 @@ package dynamodb
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
+	"testing"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/stretchr/testify/assert"
-	"math/rand"
-	"testing"
-	"time"
 )
 
 // For simplicity, do all testing in the us-east-1 region

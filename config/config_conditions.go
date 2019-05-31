@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/coveo/gotemplate/collections"
-	"github.com/coveo/gotemplate/errors"
+	"github.com/coveo/gotemplate/v3/collections"
+	"github.com/coveo/gotemplate/v3/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 )
 

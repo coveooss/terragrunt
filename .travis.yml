@@ -1,14 +1,16 @@
 language: go
+
 go:
-  - 1.11.x
-go_import_path: github.com/gruntwork-io/terragrunt
+  - 1.12.x
+
+env:
+- GO111MODULE=on
 
 sudo: required
 
 before_install:
-  - go get github.com/Masterminds/glide
-  - go get github.com/mattn/goveralls
-  - wget https://releases.hashicorp.com/terraform/0.11.8/terraform_0.11.8_linux_amd64.zip -O /tmp/terraform.zip
+  - GO111MODULE=off go get github.com/mattn/goveralls
+  - wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip -O /tmp/terraform.zip
   - sudo unzip -d /usr/local/bin/ /tmp/terraform.zip
 
 install:
@@ -29,7 +31,6 @@ script:
   
 after_success:
   - make coveralls
-
 
 notifications:
   email: false
