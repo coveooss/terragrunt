@@ -122,7 +122,7 @@ func (list ImportVariablesList) Import() (err error) {
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.RequiredVarFiles) {
 			pattern = SubstituteVars(pattern, terragruntOptions)
 
-			files := config.globFiles(pattern, folders...)
+			files := config.globFiles(pattern, true, folders...)
 			if len(files) == 0 {
 				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
 			}
@@ -138,7 +138,7 @@ func (list ImportVariablesList) Import() (err error) {
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.OptionalVarFiles) {
 			pattern = SubstituteVars(pattern, terragruntOptions)
 
-			for _, file := range config.globFiles(pattern, folders...) {
+			for _, file := range config.globFiles(pattern, true, folders...) {
 				if util.FileExists(file) {
 					if variablesFiles[item.TFVariablesFile], err = loadVariablesFromFile(terragruntOptions, &item, file, variablesFiles[item.TFVariablesFile]); err != nil {
 						return err

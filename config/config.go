@@ -58,13 +58,17 @@ func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
 	return conf.Terraform.ExtraArgs.Filter(source)
 }
 
-func (conf TerragruntConfig) globFiles(pattern string, folders ...string) (result []string) {
+func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders ...string) (result []string) {
 	pattern = SubstituteVars(pattern, conf.options)
 	if filepath.IsAbs(pattern) {
 		return utils.GlobFuncTrim(pattern)
 	}
 	for i := range folders {
 		result = append(result, utils.GlobFuncTrim(filepath.Join(folders[i], pattern))...)
+		if stopOnMatch && len(result) > 0 {
+			// If the pattern matches files and stopOnMatch is true, we stop looking for other folders
+			break
+		}
 	}
 	return
 }
@@ -132,12 +136,13 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	return &tcf.TerragruntConfig, err
 }
 
-func (config *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool) (string, error) {
-	terragruntOptions := config.options
+// GetSourceFolder returns the
+func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool) (string, error) {
+	terragruntOptions := tcf.options
 
 	if source != "" {
 		source = SubstituteVars(source, terragruntOptions)
-		sourceFolder, err := util.GetSource(source, filepath.Dir(config.Path), terragruntOptions.Logger)
+		sourceFolder, err := util.GetSource(source, filepath.Dir(tcf.Path), terragruntOptions.Logger)
 		if err != nil {
 			if failIfNotFound {
 				return "", err
