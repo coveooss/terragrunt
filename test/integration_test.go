@@ -1,16 +1,15 @@
 package test
 
 import (
-	"fmt"
-	"strings"
-	"testing"
-
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
+	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"

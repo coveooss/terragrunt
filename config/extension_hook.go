@@ -2,12 +2,12 @@ package config
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terragrunt/errors"
 	"os"
 	"sort"
 	"strings"
 
-	"github.com/coveo/gotemplate/utils"
+	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
