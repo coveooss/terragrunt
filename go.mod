@@ -17,7 +17,7 @@ require (
 	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/hashicorp/go-getter v0.0.0-20190312094914-d9c5f687368a
 	github.com/hashicorp/go-uuid v1.0.1 // indirect
-	github.com/hashicorp/go-version v1.1.0
+	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl2 v0.0.0-20190305174554-fdf8e232b64f // indirect
 	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93 // indirect
 	github.com/hashicorp/terraform v0.11.13
