@@ -35,9 +35,7 @@ require (
 	github.com/ulikunitz/xz v0.5.6 // indirect
 	github.com/urfave/cli v1.20.0
 	github.com/zclconf/go-cty v0.0.0-20190212192503-19dda139b164 // indirect
-	golang.org/x/net v0.0.0-20190311183353-d8887717615a // indirect
 	golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421 // indirect
-	golang.org/x/sys v0.0.0-20190312061237-fead79001313 // indirect
 	google.golang.org/appengine v1.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
