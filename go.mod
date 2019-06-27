@@ -11,7 +11,7 @@ require (
 	github.com/blang/semver v0.0.0-20180723201105-3c1074078d32 // indirect
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
-	github.com/coveo/gotemplate/v3 v3.0.2
+	github.com/coveooss/gotemplate/v3 v3.2.0
 	github.com/fatih/color v1.7.0
 	github.com/go-errors/errors v1.0.1
 	github.com/golang/protobuf v1.3.1 // indirect
