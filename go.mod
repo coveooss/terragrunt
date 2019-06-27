@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl2 v0.0.0-20190305174554-fdf8e232b64f // indirect
 	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93 // indirect
-	github.com/hashicorp/terraform v0.11.13
+	github.com/hashicorp/terraform v0.12.3
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mattn/go-zglob v0.0.1
 	github.com/mitchellh/cli v1.0.0 // indirect
