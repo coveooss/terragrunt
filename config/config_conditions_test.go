@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/coveo/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/stretchr/testify/assert"
 )
 
