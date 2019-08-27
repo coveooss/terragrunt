@@ -31,7 +31,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/rs/xid v1.2.1
-	github.com/stretchr/testify v1.3.0
+	github.com/stretchr/testify v1.4.0
 	github.com/ulikunitz/xz v0.5.6 // indirect
 	github.com/urfave/cli v1.21.0
 	github.com/zclconf/go-cty v0.0.0-20190212192503-19dda139b164 // indirect
