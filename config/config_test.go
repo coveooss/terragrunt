@@ -499,7 +499,7 @@ func getExtraArgsConfig(options *options.TerragruntOptions, argConfigs ...argCon
 		base.config().options = options
 		args = append(args, TerraformExtraArguments{TerragruntExtensionBase: base, Arguments: argConfig.extraArgs})
 	}
-	return TerragruntConfig{Terraform: &TerraformConfig{ExtraArgs: args}}
+	return TerragruntConfig{ExtraArgs: args}
 }
 
 func TestMergeConfigIntoIncludedConfig(t *testing.T) {
@@ -632,18 +632,16 @@ terragrunt = {
 	assert.Nil(t, terragruntConfig.RemoteState)
 	assert.Nil(t, terragruntConfig.Dependencies)
 
-	if assert.NotNil(t, terragruntConfig.Terraform) {
-		assert.Equal(t, "secrets", terragruntConfig.Terraform.ExtraArgs[0].Name)
-		assert.Equal(t,
-			[]string{
-				"-var-file=terraform.tfvars",
-				"-var-file=terraform-secret.tfvars",
-			},
-			terragruntConfig.Terraform.ExtraArgs[0].Arguments)
-		assert.Equal(t,
-			TerraformCommandWithVarFile,
-			terragruntConfig.Terraform.ExtraArgs[0].Commands)
-	}
+	assert.Equal(t, "secrets", terragruntConfig.ExtraArgs[0].Name)
+	assert.Equal(t,
+		[]string{
+			"-var-file=terraform.tfvars",
+			"-var-file=terraform-secret.tfvars",
+		},
+		terragruntConfig.ExtraArgs[0].Arguments)
+	assert.Equal(t,
+		TerraformCommandWithVarFile,
+		terragruntConfig.ExtraArgs[0].Commands)
 }
 
 func TestParseTerragruntConfigTerraformWithMultipleExtraArguments(t *testing.T) {
@@ -696,21 +694,18 @@ terragrunt = {
 
 	assert.Nil(t, terragruntConfig.RemoteState)
 	assert.Nil(t, terragruntConfig.Dependencies)
-
-	if assert.NotNil(t, terragruntConfig.Terraform) {
-		assert.Equal(t, "json_output", terragruntConfig.Terraform.ExtraArgs[0].Name)
-		assert.Equal(t, []string{"-json"}, terragruntConfig.Terraform.ExtraArgs[0].Arguments)
-		assert.Equal(t, []string{"output"}, terragruntConfig.Terraform.ExtraArgs[0].Commands)
-		assert.Equal(t, "fmt_diff", terragruntConfig.Terraform.ExtraArgs[1].Name)
-		assert.Equal(t, []string{"-diff=true"}, terragruntConfig.Terraform.ExtraArgs[1].Arguments)
-		assert.Equal(t, []string{"fmt"}, terragruntConfig.Terraform.ExtraArgs[1].Commands)
-		assert.Equal(t, "required_tfvars", terragruntConfig.Terraform.ExtraArgs[2].Name)
-		assert.Equal(t, []string{"file1.tfvars", "file2.tfvars"}, terragruntConfig.Terraform.ExtraArgs[2].RequiredVarFiles)
-		assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.Terraform.ExtraArgs[2].Commands)
-		assert.Equal(t, "optional_tfvars", terragruntConfig.Terraform.ExtraArgs[3].Name)
-		assert.Equal(t, []string{"opt1.tfvars", "opt2.tfvars"}, terragruntConfig.Terraform.ExtraArgs[3].OptionalVarFiles)
-		assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.Terraform.ExtraArgs[3].Commands)
-	}
+	assert.Equal(t, "json_output", terragruntConfig.ExtraArgs[0].Name)
+	assert.Equal(t, []string{"-json"}, terragruntConfig.ExtraArgs[0].Arguments)
+	assert.Equal(t, []string{"output"}, terragruntConfig.ExtraArgs[0].Commands)
+	assert.Equal(t, "fmt_diff", terragruntConfig.ExtraArgs[1].Name)
+	assert.Equal(t, []string{"-diff=true"}, terragruntConfig.ExtraArgs[1].Arguments)
+	assert.Equal(t, []string{"fmt"}, terragruntConfig.ExtraArgs[1].Commands)
+	assert.Equal(t, "required_tfvars", terragruntConfig.ExtraArgs[2].Name)
+	assert.Equal(t, []string{"file1.tfvars", "file2.tfvars"}, terragruntConfig.ExtraArgs[2].RequiredVarFiles)
+	assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.ExtraArgs[2].Commands)
+	assert.Equal(t, "optional_tfvars", terragruntConfig.ExtraArgs[3].Name)
+	assert.Equal(t, []string{"opt1.tfvars", "opt2.tfvars"}, terragruntConfig.ExtraArgs[3].OptionalVarFiles)
+	assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.ExtraArgs[3].Commands)
 }
 
 func TestFindConfigFilesInPathNone(t *testing.T) {

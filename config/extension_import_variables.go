@@ -14,18 +14,20 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
+// ImportVariables is a configuration that allows defintion of variables that will be added to
+// the current execution. Variables could be defined either by loading files (required or optional)
+// or defining vairables directly. It is also possible to define global environment variables.
 type ImportVariables struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Source           string   `hcl:"source"`
-	Vars             []string `hcl:"vars"`
-	RequiredVarFiles []string `hcl:"required_var_files"`
-	OptionalVarFiles []string `hcl:"optional_var_files"`
-
-	NestedUnder string `hcl:"nested_under"`
-
-	TFVariablesFile string `hcl:"output_variables_file"`
-	FlattenLevels   *int   `hcl:"flatten_levels"`
+	Source           string            `hcl:"source"`
+	Vars             []string          `hcl:"vars"`
+	RequiredVarFiles []string          `hcl:"required_var_files"`
+	OptionalVarFiles []string          `hcl:"optional_var_files"`
+	NestedUnder      string            `hcl:"nested_under"`
+	TFVariablesFile  string            `hcl:"output_variables_file"`
+	FlattenLevels    *int              `hcl:"flatten_levels"`
+	EnvVars          map[string]string `hcl:"env_vars"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -37,6 +39,24 @@ func (item ImportVariables) help() (result string) {
 		result += fmt.Sprintf("\n%s\n", item.Description)
 	}
 	return
+}
+
+func (item *ImportVariables) substituteVars() {
+	item.TerragruntExtensionBase.substituteVars()
+	c := item.config()
+	c.substitute(&item.Source)
+	c.substitute(&item.TFVariablesFile)
+	c.substituteEnv(item.EnvVars)
+
+	for i, value := range item.Vars {
+		item.Vars[i] = *c.substitute(&value)
+	}
+	for i, value := range item.RequiredVarFiles {
+		item.RequiredVarFiles[i] = *c.substitute(&value)
+	}
+	for i, value := range item.OptionalVarFiles {
+		item.OptionalVarFiles[i] = *c.substitute(&value)
+	}
 }
 
 // ----------------------- ImportVariablesList -----------------------
@@ -79,6 +99,11 @@ func (list ImportVariablesList) Import() (err error) {
 			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
 				variablesFiles[item.TFVariablesFile] = make(map[string]interface{})
 			}
+		}
+
+		// Set environment variables
+		for key, value := range item.EnvVars {
+			terragruntOptions.Env[key] = value
 		}
 
 		folders := []string{terragruntOptions.WorkingDir}

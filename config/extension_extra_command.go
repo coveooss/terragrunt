@@ -20,15 +20,16 @@ import (
 type ExtraCommand struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Commands     []string `hcl:"commands"`
-	Aliases      []string `hcl:"aliases"`
-	Arguments    []string `hcl:"arguments"`
-	ExpandArgs   *bool    `hcl:"expand_args"`
-	UseState     *bool    `hcl:"use_state"`
-	ActAs        string   `hcl:"act_as"`
-	VersionArg   string   `hcl:"version"`
-	ShellCommand bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
-	IgnoreError  bool     `hcl:"ignore_error"`
+	Commands     []string          `hcl:"commands"`
+	Aliases      []string          `hcl:"aliases"`
+	Arguments    []string          `hcl:"arguments"`
+	ExpandArgs   *bool             `hcl:"expand_args"`
+	UseState     *bool             `hcl:"use_state"`
+	ActAs        string            `hcl:"act_as"`
+	VersionArg   string            `hcl:"version"`
+	ShellCommand bool              `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
+	IgnoreError  bool              `hcl:"ignore_error"`
+	EnvVars      map[string]string `hcl:"env_vars"`
 }
 
 func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
@@ -51,6 +52,23 @@ func (item ExtraCommand) help() (result string) {
 	}
 
 	return result
+}
+
+func (item *ExtraCommand) substituteVars() {
+	item.TerragruntExtensionBase.substituteVars()
+	c := item.config()
+	c.substitute(&item.VersionArg)
+	c.substituteEnv(item.EnvVars)
+
+	for i, cmd := range item.Commands {
+		item.Commands[i] = *c.substitute(&cmd)
+	}
+	for i, alias := range item.Aliases {
+		item.Aliases[i] = *c.substitute(&alias)
+	}
+	for i, arg := range item.Arguments {
+		item.Arguments[i] = *c.substitute(&arg)
+	}
 }
 
 func (item *ExtraCommand) normalize() {
@@ -193,6 +211,9 @@ func (list ExtraCommandList) GetVersions() string {
 func (list ExtraCommandList) ActualCommand(cmd string) ActualCommand {
 	for _, item := range list.Enabled() {
 		if match := item.resolve(cmd); match != nil {
+			for key, value := range item.EnvVars {
+				item.options().Env[key] = value
+			}
 			return *match
 		}
 	}

@@ -326,10 +326,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return
 	}
 
-	conf.SubstituteAllVariables(terragruntOptions, false)
+	conf.SubstituteAllVariables()
 
 	// Applying the extra arguments
-	if conf.Terraform != nil && len(conf.Terraform.ExtraArgs) > 0 {
+	if len(conf.ExtraArgs) > 0 {
 		commandLength := 1
 		if util.ListContainsElement(terraformCommandsWithSubCommand, terragruntOptions.TerraformCliArgs[0]) {
 			commandLength = 2
@@ -349,7 +349,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 		terragruntOptions.TerraformCliArgs = args
 
-		conf.SubstituteAllVariables(terragruntOptions, false)
+		conf.SubstituteAllVariables()
 	}
 
 	// Determinate if the project should be ignored
@@ -363,7 +363,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.Uniqueness = *conf.Uniqueness
 	}
 
-	conf.SubstituteAllVariables(terragruntOptions, true)
+	conf.SubstituteAllVariables()
 
 	// Executing the pre-hook commands that should be ran before the ImportFiles
 	if _, err = conf.PreHooks.Filter(config.BeforeImports).Run(err); stopOnError(err) {
@@ -383,7 +383,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	terragruntOptions.IgnoreRemainingInterpolation = false
-	conf.SubstituteAllVariables(terragruntOptions, true)
+	conf.SubstituteAllVariables()
 
 	if actualCommand.Command == "get-versions" {
 		PrintVersions(terragruntOptions, conf)
