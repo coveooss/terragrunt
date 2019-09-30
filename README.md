@@ -668,7 +668,7 @@ terraform apply -lock-timeout=20m -var foo=bar -var region=us-west-1
 
 #### Required and optional var-files
 
-**Note:** It is recommended to use [Import variables](#import-variables) to import var-files. This is only supported for background compatibility.
+**Note:** It is recommended to use [Import variables](#import-variables) to import var-files. This is only supported for retro compatibility.
 
 One common usage of extra_arguments is to include tfvars files. instead of using arguments, it is simpler to use either `required_var_files`
 or `optional_var_files`. Both options require only to provide the list of file to include. The only difference is that `required_var_files`

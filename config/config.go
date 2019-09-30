@@ -192,7 +192,7 @@ func (deps *ModuleDependencies) String() string {
 
 // TerraformConfig specifies where to find the Terraform configuration files
 type TerraformConfig struct {
-	LegacyExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments"` // Kept here only for background compatibility
+	LegacyExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments"` // Kept here only for retro compatibility
 	Source          string                      `hcl:"source"`
 }
 
