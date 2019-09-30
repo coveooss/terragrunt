@@ -314,7 +314,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return err
 	}
 
-	useTempFolder := hasSourceURL || len(conf.ImportFiles) > 0 || conf.ImportVariables.CreatesVariableFile()
+	useTempFolder := hasSourceURL || len(conf.ImportFiles) > 0 || conf.ImportVariables.ShouldCreateVariablesFile()
 	if useTempFolder {
 		// If there are import files, we force the usage of a temp directory.
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {

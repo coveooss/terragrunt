@@ -50,7 +50,9 @@ func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
 	list.merge(imported, mergeModePrepend, list.argName())
 }
 
-func (list ImportVariablesList) CreatesVariableFile() bool {
+// ShouldCreateVariablesFile indicates if any import_variables statement requires to
+// create a physical variables file
+func (list ImportVariablesList) ShouldCreateVariablesFile() bool {
 	for _, item := range list.Enabled() {
 		if item.TFVariablesFile != "" {
 			return true
@@ -59,6 +61,7 @@ func (list ImportVariablesList) CreatesVariableFile() bool {
 	return false
 }
 
+// Import actually import variables as defined in the configuration
 func (list ImportVariablesList) Import() (err error) {
 	if len(list) == 0 {
 		return nil
