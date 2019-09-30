@@ -235,7 +235,25 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
 		return err
 	}
-	if command == getStackCommand || strings.HasSuffix(command, multiModuleSuffix) {
+	isMultiModules := command == getStackCommand || strings.HasSuffix(command, multiModuleSuffix)
+	terragruntOptions.Context = map[string]interface{}{
+		"Version":              terragruntVersion,
+		"AwsProfile":           terragruntOptions.AwsProfile,
+		"DownloadDir":          terragruntOptions.DownloadDir,
+		"LoggingLevel":         int(util.GetLoggingLevel()),
+		"LoggingLevelName":     util.GetLoggingLevel(),
+		"NbWorkers":            terragruntOptions.NbWorkers,
+		"SourceUpdate":         terragruntOptions.SourceUpdate,
+		"TerraformCliArgs":     terragruntOptions.TerraformCliArgs,
+		"TerraformPath":        terragruntOptions.TerraformPath,
+		"TerragruntConfigPath": terragruntOptions.TerragruntConfigPath,
+		"WorkingDir":           terragruntOptions.WorkingDir,
+		"RunID":                os.Getenv(options.EnvRunID),
+		"Command":              command,
+		"IsMultiModules":       isMultiModules,
+	}
+
+	if isMultiModules {
 		return runMultiModuleCommand(command, terragruntOptions)
 	}
 	return runTerragrunt(terragruntOptions)
@@ -570,15 +588,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	return
 }
 
-// Returns true if the command the user wants to execute is supposed to affect multiple Terraform modules, such as the
-// apply-all or destroy-all command.
-func isMultiModuleCommand(command string) bool {
-	return strings.HasSuffix(command, multiModuleSuffix)
-}
-
 // Execute a command that affects multiple Terraform modules, such as the apply-all or destroy-all command.
 func runMultiModuleCommand(command string, terragruntOptions *options.TerragruntOptions) error {
 	realCommand := strings.TrimSuffix(command, multiModuleSuffix)
+	terragruntOptions.Context["Command"] = realCommand
+
 	if command == getStackCommand {
 		return getStack(terragruntOptions)
 	} else if strings.HasPrefix(command, "plan-") {
