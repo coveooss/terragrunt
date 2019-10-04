@@ -303,6 +303,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Check if the current command is an extra command
 	actualCommand := conf.ExtraCommands.ActualCommand(terragruntOptions.TerraformCliArgs[0])
 	ignoreError := actualCommand.Extra != nil && actualCommand.Extra.IgnoreError
+	terragruntOptions.Env[options.EnvCommand] = terragruntOptions.TerraformCliArgs[0]
 
 	stopOnError := func(err error) bool {
 		if err == nil {
@@ -438,7 +439,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	terragruntOptions.Env[options.EnvCommand] = terragruntOptions.TerraformCliArgs[0]
 	if actualCommand.Extra != nil {
 		terragruntOptions.Env[options.EnvExtraCommand] = actualCommand.Command
 	}
