@@ -13,24 +13,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// hard-code this to match the test fixture for now
-const (
-	TEST_FIXTURE_HOOKS_BEFORE_ONLY_PATH            = "fixture-hooks/before-only"
-	TEST_FIXTURE_HOOKS_AFTER_ONLY_PATH             = "fixture-hooks/after-only"
-	TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_PATH       = "fixture-hooks/before-and-after"
-	TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_MERGE_PATH = "fixture-hooks/before-and-after-merge"
-	TEST_FIXTURE_HOOKS_INTERPOLATIONS_PATH         = "fixture-hooks/interpolations"
-	TEST_FIXTURE_HOOKS_EXITCODE1_PATH              = "fixture-hooks/exitcode-1"
-	TEST_FIXTURE_HOOKS_EXITCODE2_PATH              = "fixture-hooks/exitcode-2"
-	TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH          = "fixture-hooks/exitcode-2-pre"
-)
-
 func TestTerragruntBeforeHook(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_BEFORE_ONLY_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_BEFORE_ONLY_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_BEFORE_ONLY_PATH)
+	testPath := "fixture-hooks/before-only"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 
@@ -42,9 +31,10 @@ func TestTerragruntBeforeHook(t *testing.T) {
 func TestTerragruntAfterHook(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_AFTER_ONLY_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_AFTER_ONLY_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_AFTER_ONLY_PATH)
+	testPath := "fixture-hooks/after-only"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 
@@ -56,9 +46,10 @@ func TestTerragruntAfterHook(t *testing.T) {
 func TestTerragruntBeforeAndAfterHook(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_PATH)
+	testPath := "fixture-hooks/before-and-after"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 
@@ -75,8 +66,9 @@ func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_MERGE_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_MERGE_PATH)
+	testPath := "fixture-hooks/before-and-after-merge"
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 	childPath := util.JoinPath(rootPath, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH)
 	cleanupTerraformFolder(t, childPath)
 
@@ -84,7 +76,7 @@ func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 	t.Logf("bucketName: %s", s3BucketName)
 	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, TEST_FIXTURE_HOOKS_BEFORE_AND_AFTER_MERGE_PATH, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 
@@ -106,9 +98,10 @@ func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 func TestTerragruntHookInterpolation(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_INTERPOLATIONS_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_INTERPOLATIONS_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_INTERPOLATIONS_PATH)
+	testPath := "fixture-hooks/interpolations"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	var (
 		stdout bytes.Buffer
@@ -134,9 +127,10 @@ func TestTerragruntHookInterpolation(t *testing.T) {
 func TestTerragruntHookExitCode1(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE1_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE1_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE1_PATH)
+	testPath := "fixture-hooks/exitcode-1"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
@@ -148,9 +142,10 @@ func TestTerragruntHookExitCode1(t *testing.T) {
 func TestTerragruntHookExitCode2(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+	testPath := "fixture-hooks/exitcode-2"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
@@ -162,9 +157,10 @@ func TestTerragruntHookExitCode2(t *testing.T) {
 func TestTerragruntHookExitCode2InPreHook(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE2_PRE_PATH)
+	testPath := "fixture-hooks/exitcode-2-pre"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
@@ -176,13 +172,31 @@ func TestTerragruntHookExitCode2InPreHook(t *testing.T) {
 func TestTerragruntHookExitCode2PlanAll(t *testing.T) {
 	t.Parallel()
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_HOOKS_EXITCODE2_PATH)
+	testPath := "fixture-hooks/exitcode-2"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan-all -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
 	_, exception := ioutil.ReadFile(rootPath + "/test.out")
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "There are changes in the plan")
+}
+
+func TestTerragruntHookWithEnvVars(t *testing.T) {
+	for i := 1; i <= 2; i++ {
+		withEnv("PATH", func() {
+			testPath := "fixture-hooks/with-envvars"
+			cleanupTerraformFolder(t, testPath)
+			tmpEnvPath := copyEnvironment(t, testPath)
+			rootPath := util.JoinPath(tmpEnvPath, testPath)
+
+			var stdout, stderr bytes.Buffer
+			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt cmd%d --terragrunt-non-interactive --terragrunt-working-dir %s", i, rootPath), &stdout, &stderr)
+			content, err := ioutil.ReadFile(util.JoinPath(rootPath, fmt.Sprintf("result%d", i)))
+			assert.NoError(t, err, "Reading result%d", i)
+			assert.Equal(t, string(content), stdout.String(), "Comparing result %d", i)
+		})
+	}
 }
