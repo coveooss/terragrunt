@@ -117,6 +117,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 	}
 
 	return &TerragruntOptions{
+		Context:              make(map[string]interface{}),
 		TerragruntConfigPath: terragruntConfigPath,
 		TerraformPath:        "terraform",
 		TerraformCliArgs:     []string{},
