@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -70,42 +69,24 @@ func InitAwsSession(awsProfile string) (*session.Session, error) {
 }
 
 // AssumeRoleEnvironmentVariables returns a set of key value pair to use as environment variables to assume a different role
-func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (result map[string]string, err error) {
+func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (map[string]string, error) {
+	if roleArn == "" {
+		// If no role is specified, we just set AWS_SDK_LOAD_CONFIG to ensure that terraform will
+		// use extended AWS Client configuration.
+		os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
+		return nil, nil
+	}
 	session, err := CreateAwsSession("", "")
 	if err != nil {
 		return nil, err
 	}
 
-	svc := sts.New(session)
-	var creds credentials.Value
-
-	if roleArn == "" {
-		// If no role is specified, we just convert the current access to environment variables
-		// if a role is assumed. This is required because terraform does not support AWS_PROFILE
-		// that refers to a configuration that assume a role.
-		creds, err = svc.Config.Credentials.Get()
-	} else {
-		var response *sts.AssumeRoleOutput
-		response, err = svc.AssumeRole(&sts.AssumeRoleInput{
-			RoleArn:         aws.String(roleArn),
-			RoleSessionName: aws.String(sessionName),
-		})
-		if err != nil {
-			return
-		}
-		creds = credentials.Value{
-			AccessKeyID:     *response.Credentials.AccessKeyId,
-			SecretAccessKey: *response.Credentials.SecretAccessKey,
-			SessionToken:    *response.Credentials.SessionToken,
-		}
+	if response, err := sts.New(session).AssumeRole(&sts.AssumeRoleInput{RoleArn: aws.String(roleArn), RoleSessionName: aws.String(sessionName)}); err == nil {
+		return map[string]string{
+			"AWS_ACCESS_KEY_ID":     *response.Credentials.AccessKeyId,
+			"AWS_SECRET_ACCESS_KEY": *response.Credentials.SecretAccessKey,
+			"AWS_SESSION_TOKEN":     *response.Credentials.SessionToken,
+		}, nil
 	}
-
-	result = map[string]string{
-		"AWS_ACCESS_KEY_ID":     creds.AccessKeyID,
-		"AWS_SECRET_ACCESS_KEY": creds.SecretAccessKey,
-	}
-	if creds.SessionToken != "" {
-		result["AWS_SESSION_TOKEN"] = creds.SessionToken
-	}
-	return
+	return nil, nil
 }
