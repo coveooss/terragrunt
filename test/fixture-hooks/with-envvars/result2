@@ -1,0 +1,14 @@
+Hello from PreHook 2
+LOCAL_PRE_HOOK_2 = Pre-Hook #2
+GLOBAL_PRE_HOOK_2 = Pre-Hook #2
+Command 2
+Hello from PostHook 2
+LOCAL_POST_HOOK_2 = Post-Hook #2
+GLOBAL_POST_HOOK_2 = Post-Hook #2
+----- Final environment -----
+EXTRA_ARG1=1
+EXTRA_COMMAND=Extra command 2
+Extra_arg2=Arg2
+GLOBAL_POST_HOOK_2=Post-Hook #2
+GLOBAL_PRE_HOOK_2=Pre-Hook #2
+TERRAGRUNT_EXTRA_COMMAND=echo Command 2

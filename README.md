@@ -59,6 +59,7 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
   * [Conditional execution of a project](#conditional-execution-of-a-project)
   * [Define extra commands](#define-extra-commands)
   * [Run code before and after the actual command](#define-hooks)
+  * [Import variables](#import-variables)
   * [Import files from external sources](#import-files)
   * [Define uniqueness criteria](#uniqueness-criteria)
 * [Terragrunt details](#terragrunt-details)
@@ -330,22 +331,22 @@ In particular:
     terragrunt = {
       terraform {
         source = "git::git@github.com:foo/modules.git//frontend-app?ref=v0.0.3"
+      }
 
-        extra_arguments "custom_vars" {
-          commands = [
-            "apply",
-            "plan",
-            "import",
-            "push",
-            "refresh"
-          ]
+      extra_arguments "custom_vars" {
+        commands = [
+          "apply",
+          "plan",
+          "import",
+          "push",
+          "refresh"
+        ]
 
-          # With the get_tfvars_dir() function, you can use relative paths!
-          arguments = [
-            "-var-file=${get_tfvars_dir()}/../common.tfvars",
-            "-var-file=terraform.tfvars"
-          ]
-        }
+        # With the get_tfvars_dir() function, you can use relative paths!
+        arguments = [
+          "-var-file=${get_tfvars_dir()}/../common.tfvars",
+          "-var-file=terraform.tfvars"
+        ]
       }
     }
     ```
@@ -562,24 +563,22 @@ in your `terraform.tfvars` file:
 
 ```hcl
 terragrunt = {
-  terraform {
-    # Force Terraform to keep trying to acquire a lock for
-    # up to 20 minutes if someone else already has the lock
-    extra_arguments "retry_lock" {
-      commands = [
-        "init",
-        "apply",
-        "refresh",
-        "import",
-        "plan",
-        "taint",
-        "untaint"
-      ]
+  # Force Terraform to keep trying to acquire a lock for
+  # up to 20 minutes if someone else already has the lock
+  extra_arguments "retry_lock" {
+    commands = [
+      "init",
+      "apply",
+      "refresh",
+      "import",
+      "plan",
+      "taint",
+      "untaint"
+    ]
 
-      arguments = [
-        "-lock-timeout=20m"
-      ]
-    }
+    arguments = [
+      "-lock-timeout=20m"
+    ]
   }
 }
 ```
@@ -592,6 +591,9 @@ When available, it is preferable to use interpolation functions such as
 [get_terraform_commands_that_need_locking](#get_terraform_commands_that_need_locking) and
 [get_terraform_commands_that_need_vars](#get_terraform_commands_that_need_vars)
 since they provide the complete list of terraform commands that make use of the desired parameter:
+
+**Note:** `extra_argument` can also be defined into the `terraform` block to ensure retro compatibility
+with previous terragrunt version.
 
 ```hcl
 terragrunt = {
@@ -620,40 +622,38 @@ lock settings, you may also want to pass custom `-var-file` arguments to several
 
 ```hcl
 terragrunt = {
-  terraform {
-    # Force Terraform to keep trying to acquire a lock for
-    # up to 20 minutes if someone else already has the lock
-    extra_arguments "retry_lock" {
-      commands = [
-        "init",
-        "apply",
-        "refresh",
-        "import",
-        "plan",
-        "taint",
-        "untaint"
-      ]
+  # Force Terraform to keep trying to acquire a lock for
+  # up to 20 minutes if someone else already has the lock
+  extra_arguments "retry_lock" {
+    commands = [
+      "init",
+      "apply",
+      "refresh",
+      "import",
+      "plan",
+      "taint",
+      "untaint"
+    ]
 
-      arguments = [
-        "-lock-timeout=20m"
-      ]
-    }
+    arguments = [
+      "-lock-timeout=20m"
+    ]
+  }
 
-    # Pass custom var files to Terraform
-    extra_arguments "custom_vars" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
+  # Pass custom var files to Terraform
+  extra_arguments "custom_vars" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
 
-      arguments = [
-        "-var", "foo=bar",
-        "-var", "region=us-west-1"
-      ]
-    }
+    arguments = [
+      "-var", "foo=bar",
+      "-var", "region=us-west-1"
+    ]
   }
 }
 ```
@@ -667,6 +667,8 @@ terraform apply -lock-timeout=20m -var foo=bar -var region=us-west-1
 ```
 
 #### Required and optional var-files
+
+**Note:** It is recommended to use [Import variables](#import-variables) to import var-files. This is only supported for retro compatibility.
 
 One common usage of extra_arguments is to include tfvars files. instead of using arguments, it is simpler to use either `required_var_files`
 or `optional_var_files`. Both options require only to provide the list of file to include. The only difference is that `required_var_files`
@@ -691,28 +693,27 @@ configurations based on environment variables as you can see in the following ex
 
 ```hcl
 terragrunt = {
-  terraform {
-    extra_arguments "conditional_vars" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
+  extra_arguments "conditional_vars" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
 
-      required_var_files = [
-        "${get_parent_tfvars_dir()}/terraform.tfvars"
-      ]
+    required_var_files = [
+      "${get_parent_tfvars_dir()}/terraform.tfvars"
+    ]
 
-      optional_var_files = [
-        "${get_parent_tfvars_dir()}/${get_env("TF_VAR_env", "dev")}.tfvars",
-        "${get_parent_tfvars_dir()}/${get_env("TF_VAR_region", "us-east-1")}.tfvars"
-        "${get_tfvars_dir()}/${get_env("TF_VAR_env", "dev")}.tfvars",
-        "${get_tfvars_dir()}/${get_env("TF_VAR_region", "us-east-1")}.tfvars"
-      ]
-    }
+    optional_var_files = [
+      "${get_parent_tfvars_dir()}/${get_env("TF_VAR_env", "dev")}.tfvars",
+      "${get_parent_tfvars_dir()}/${get_env("TF_VAR_region", "us-east-1")}.tfvars"
+      "${get_tfvars_dir()}/${get_env("TF_VAR_env", "dev")}.tfvars",
+      "${get_tfvars_dir()}/${get_env("TF_VAR_region", "us-east-1")}.tfvars"
+    ]
   }
+}
 ```
 
 See the [get_tfvars_dir()](#get_tfvars_dir) and [get_parent_tfvars_dir()](#get_parent_tfvars_dir) documentation for more details.
@@ -736,6 +737,27 @@ With the configuration above, when you run `terragrunt apply-all`, Terragrunt wi
 [frontend-app] terraform apply -var-file=/my/tf/terraform.tfvars -var-file=/my/tf/prod.tfvars -var-file=/my/tf/us-west-2.tfvars
 ```
 
+#### Defining environment variables
+
+It is possible to define environment variables when defining extra arguments. The environment variables will only be defined if the `extra_arguments` block is actually applied.
+
+```hcl
+terragrunt = {
+  extra_arguments "env_vars" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
+
+  env_vars = {
+      TF_VAR_var_from_environment = "value"
+  }
+}
+```
+
 #### Handling whitespace
 
 The list of arguments cannot include whitespaces, so if you need to pass command line arguments that include
@@ -744,19 +766,17 @@ spaces (e.g. `-var bucket=example.bucket.name`), then each of the arguments will
 
 ```hcl
 terragrunt = {
-  terraform {
-    extra_arguments "bucket" {
-      arguments = [
-        "-var", "bucket=example.bucket.name",
-      ]
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
-    }
+  extra_arguments "bucket" {
+    arguments = [
+      "-var", "bucket=example.bucket.name",
+    ]
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
   }
 }
 ```
@@ -1046,6 +1066,7 @@ terragrunt = {
     use_state   = true or false       # optional (default = true)
     act_as      = "command"           # optional (default = empty, instructs to consider this extra command and its aliases as another command regarding extra_parameters evaluation)
     version     = ""                  # optional (argument to get the version of the command, if many command are defined, they must all support the same argument to get the version)
+    env_vars    = {}                  # optional (define environment variables only available during hook execution)
   }
 }
 ```
@@ -1101,6 +1122,8 @@ terragrunt = {
     before_imports   = false                          # optional, run command before terraform imports its files
     after_init_state = false                          # optional, run command after the state has been initialized
     order            = 0                              # optional, default run hooks in declaration order (hooks defined in uppermost parent first, negative number are supported)
+    env_vars         = {}                             # optional, define environment variables only available during hook execution
+    global_vars      = {}                             # optional, define global environment variables (exist while and after executing the hook)
   }
 }
 ```
@@ -1114,6 +1137,16 @@ terragrunt = {
     arguments        = ["get"]
     on_commands      = ["plan"]
     after_init_state = true
+
+    env_vars = {
+      VAR1 = "Value 1"
+      VAR2 = 1234
+    }
+
+    global_vars = {
+      GLOBAL1 = "Global Value 1"
+      GLOBAL2 = 1234
+    }
   }
 
   # Print the outputs as json after successful apply
@@ -1121,6 +1154,53 @@ terragrunt = {
     command          = "terraform"
     arguments        = ["output", "-json"]
     on_commands      = ["apply"]
+  }
+```
+
+### Import variables
+
+It is possible to import variables from external files (local or remote) or defined variables directly in a `import_variables` configuration block. It is also possible to define environment variables that will be defined
+during the whole terragrunt command execution.
+
+#### Configure import variables
+
+```hcl
+terragrunt = {
+  import_variables "name" {
+    description            = ""         # Description of the import variables action
+    display_name           = ""         # The name used in documentation (default to block name)
+    source                 = "path"     # Specify the source of the copy (currently only support [S3 sources](https://www.terraform.io/docs/modules/sources.html).))
+    vars                   = []         # Optional, array of key=value statements to define variables
+    required_var_files     = []         # Optional, array of file names containing variables that should be imported
+    optional_var_files     = []         # Optional, same as required_var_files but does not report error if the file does not exist
+    env_vars               = {}         # optional, define environment variables only available during hook execution
+    nester_under           = ""         # Optional, define variables under a specific object
+    output_variables_files = ""         # Optional, local file name used to save the imported variables defined in the block
+    os                  = [list of os]  # Optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
+    disabled            = false         # Optional, provide a mechanism to temporary disable the import variables block
+    flatten_levels         = -1         # Optional, indicates the level used to flatten variables defined as hierarchical blocks, -1 = flatten all
+                                        # Flattened variables such as a.b.c becomes a_b_c
+  }
+}
+```
+
+#### Example of import variables
+
+```hcl
+  import_files "global-variables" {
+    source              = "s3://my_bucket-${var.env}/globals"
+    required_var_files  = ["account.tfvars"]
+    optional_var_files  = ["optional.tfvars", "optional2.tfvars"]
+    vars = [
+      "a=1",
+      "b=hello",
+    ]
+    env_vars = {
+      VAR1 = "Value 1"
+      VAR2 = "Value 2"
+    }
+
+    output_variables_files = "global.tfvars"
   }
 ```
 
@@ -1367,22 +1447,20 @@ Another use case would be to add extra argument to include the common.tfvars fil
 
 ```hcl
 terragrunt = {
-  terraform = {
-    ...
+  ...
 
-    extra_arguments "common_var" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
+  extra_arguments "common_var" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
 
-      arguments = [
-        "-var-file=${get_tfvars_dir()}/${path_relative_from_include()}/common.tfvars",
-      ]
-    }
+    arguments = [
+      "-var-file=${get_tfvars_dir()}/${path_relative_from_include()}/common.tfvars",
+    ]
   }
 }
 ```
@@ -1432,21 +1510,21 @@ Inside of `/terraform-code/frontend-app/terraform.tfvars` you might try to write
 terragrunt = {
   terraform {
     source = "git::git@github.com:foo/modules.git//frontend-app?ref=v0.0.3"
+  }
 
-    extra_arguments "custom_vars" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
+  extra_arguments "custom_vars" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
 
-      arguments = [
-        "-var-file=../common.tfvars", # Note: This relative path will NOT work correctly!
-        "-var-file=terraform.tfvars"
-      ]
-    }
+    arguments = [
+      "-var-file=../common.tfvars", # Note: This relative path will NOT work correctly!
+      "-var-file=terraform.tfvars"
+    ]
   }
 }
 ```
@@ -1464,22 +1542,22 @@ the `.tfvars` file lives:
 terragrunt = {
   terraform {
     source = "git::git@github.com:foo/modules.git//frontend-app?ref=v0.0.3"
+  }
 
-    extra_arguments "custom_vars" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
+  extra_arguments "custom_vars" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
 
-      # With the get_tfvars_dir() function, you can use relative paths!
-      arguments = [
-        "-var-file=${get_tfvars_dir()}/../common.tfvars",
-        "-var-file=terraform.tfvars"
-      ]
-    }
+    # With the get_tfvars_dir() function, you can use relative paths!
+    arguments = [
+      "-var-file=${get_tfvars_dir()}/../common.tfvars",
+      "-var-file=terraform.tfvars"
+    ]
   }
 }
 ```
@@ -1512,20 +1590,18 @@ configuration folder.
 
 ```hcl
 terragrunt = {
-  terraform {
-    extra_arguments "common_vars" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh"
-      ]
+  extra_arguments "common_vars" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh"
+    ]
 
-      arguments = [
-        "-var-file=${get_parent_tfvars_dir()}/common.tfvars"
-      ]
-    }
+    arguments = [
+      "-var-file=${get_parent_tfvars_dir()}/common.tfvars"
+    ]
   }
 }
 ```
@@ -1540,13 +1616,11 @@ Returns the list of terraform commands that accept -var and -var-file parameters
 
 ```hcl
 terragrunt = {
-  terraform = {
-    ...
+  ...
 
-    extra_arguments "common_var" {
-      commands  = ["${get_terraform_commands_that_need_vars()}"]
-      arguments = ["-var-file=${get_aws_account_id()}.tfvars"]
-    }
+  extra_arguments "common_var" {
+    commands  = ["${get_terraform_commands_that_need_vars()}"]
+    arguments = ["-var-file=${get_aws_account_id()}.tfvars"]
   }
 }
 ```
@@ -1559,12 +1633,10 @@ Returns the list of terraform commands that accept -input=(true or false) parame
 
 ```hcl
 terragrunt = {
-  terraform {
-    # Force Terraform to not ask for input value if some variables are undefined.
-    extra_arguments "disable_input" {
-      commands  = ["${get_terraform_commands_that_need_input()}"]
-      arguments = ["-input=false"]
-    }
+  # Force Terraform to not ask for input value if some variables are undefined.
+  extra_arguments "disable_input" {
+    commands  = ["${get_terraform_commands_that_need_input()}"]
+    arguments = ["-input=false"]
   }
 }
 ```
@@ -1577,12 +1649,10 @@ Returns the list of terraform commands that accept -lock-timeout parameter. This
 
 ```hcl
 terragrunt = {
-  terraform {
-    # Force Terraform to keep trying to acquire a lock for up to 20 minutes if someone else already has the lock
-    extra_arguments "retry_lock" {
-      commands  = ["${get_terraform_commands_that_need_locking()}"]
-      arguments = ["-lock-timeout=20m"]
-    }
+  # Force Terraform to keep trying to acquire a lock for up to 20 minutes if someone else already has the lock
+  extra_arguments "retry_lock" {
+    commands  = ["${get_terraform_commands_that_need_locking()}"]
+    arguments = ["-lock-timeout=20m"]
   }
 }
 ```
@@ -1623,13 +1693,11 @@ It is also possible to configure variables specifically based on the account use
 
 ```hcl
 terragrunt = {
-  terraform = {
-    ...
+  ...
 
-    extra_arguments "common_var" {
-      commands = ["${get_terraform_commands_that_need_vars()}"]
-      arguments = ["-var-file=${get_aws_account_id()}.tfvars"]
-    }
+  extra_arguments "common_var" {
+    commands = ["${get_terraform_commands_that_need_vars()}"]
+    arguments = ["-var-file=${get_aws_account_id()}.tfvars"]
   }
 }
 ```

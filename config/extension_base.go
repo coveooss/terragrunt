@@ -23,7 +23,8 @@ type TerragruntExtensioner interface {
 	logger() *logging.Logger
 	name() string
 	itemType() string
-	normalize()
+	normalize()      // Used to assign default values
+	substituteVars() // Used to replace variables by their real values
 	options() *options.TerragruntOptions
 }
 
@@ -43,6 +44,7 @@ func (base TerragruntExtensionBase) id() string          { return base.Name }
 func (base TerragruntExtensionBase) description() string { return base.Description }
 func (base TerragruntExtensionBase) extraInfo() string   { return "" }
 func (base TerragruntExtensionBase) normalize()          {}
+func (base TerragruntExtensionBase) substituteVars()     { base.config().substitute(&base.Description) }
 
 func (base *TerragruntExtensionBase) init(config *TerragruntConfigFile) {
 	base._config = config
