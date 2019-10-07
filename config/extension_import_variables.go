@@ -8,24 +8,27 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveo/gotemplate/v3/hcl"
-	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
+// ImportVariables is a configuration that allows defintion of variables that will be added to
+// the current execution. Variables could be defined either by loading files (required or optional)
+// or defining vairables directly. It is also possible to define global environment variables.
 type ImportVariables struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Source           string   `hcl:"source"`
-	Vars             []string `hcl:"vars"`
-	RequiredVarFiles []string `hcl:"required_var_files"`
-	OptionalVarFiles []string `hcl:"optional_var_files"`
-
-	NestedUnder string `hcl:"nested_under"`
-
-	TFVariablesFile string `hcl:"output_variables_file"`
-	FlattenLevels   *int   `hcl:"flatten_levels"`
+	Source           string            `hcl:"source"`
+	Vars             []string          `hcl:"vars"`
+	RequiredVarFiles []string          `hcl:"required_var_files"`
+	OptionalVarFiles []string          `hcl:"optional_var_files"`
+	NestedUnder      string            `hcl:"nested_under"`
+	TFVariablesFile  string            `hcl:"output_variables_file"`
+	FlattenLevels    *int              `hcl:"flatten_levels"`
+	EnvVars          map[string]string `hcl:"env_vars"`
+	OnCommands       []string          `hcl:"on_commands"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -36,7 +39,29 @@ func (item ImportVariables) help() (result string) {
 	if item.Description != "" {
 		result += fmt.Sprintf("\n%s\n", item.Description)
 	}
+	if item.OnCommands != nil {
+		result += fmt.Sprintf("\nApplies on the following command(s): %s\n", strings.Join(item.OnCommands, ", "))
+	}
+
 	return
+}
+
+func (item *ImportVariables) substituteVars() {
+	item.TerragruntExtensionBase.substituteVars()
+	c := item.config()
+	c.substitute(&item.Source)
+	c.substitute(&item.TFVariablesFile)
+	c.substituteEnv(item.EnvVars)
+
+	for i, value := range item.Vars {
+		item.Vars[i] = *c.substitute(&value)
+	}
+	for i, value := range item.RequiredVarFiles {
+		item.RequiredVarFiles[i] = *c.substitute(&value)
+	}
+	for i, value := range item.OptionalVarFiles {
+		item.OptionalVarFiles[i] = *c.substitute(&value)
+	}
 }
 
 // ----------------------- ImportVariablesList -----------------------
@@ -50,7 +75,9 @@ func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
 	list.merge(imported, mergeModePrepend, list.argName())
 }
 
-func (list ImportVariablesList) CreatesVariableFile() bool {
+// ShouldCreateVariablesFile indicates if any import_variables statement requires to
+// create a physical variables file
+func (list ImportVariablesList) ShouldCreateVariablesFile() bool {
 	for _, item := range list.Enabled() {
 		if item.TFVariablesFile != "" {
 			return true
@@ -59,6 +86,7 @@ func (list ImportVariablesList) CreatesVariableFile() bool {
 	return false
 }
 
+// Import actually import variables as defined in the configuration
 func (list ImportVariablesList) Import() (err error) {
 	if len(list) == 0 {
 		return nil
@@ -70,12 +98,23 @@ func (list ImportVariablesList) Import() (err error) {
 	variablesFiles := make(map[string]map[string]interface{})
 
 	for _, item := range list.Enabled() {
+		fmt.Println("xxx1", options.EnvCommand)
+		fmt.Println("xxx", item.options().Env[options.EnvCommand])
+		if len(item.OnCommands) > 0 && !util.ListContainsElement(item.OnCommands, item.options().Env[options.EnvCommand]) {
+			// The current command is not in the list of command on which the import should be applied
+			return
+		}
 		item.logger().Debugf("Processing import variables statement %s", item.id())
 
 		if item.TFVariablesFile != "" {
 			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
 				variablesFiles[item.TFVariablesFile] = make(map[string]interface{})
 			}
+		}
+
+		// Set environment variables
+		for key, value := range item.EnvVars {
+			terragruntOptions.Env[key] = value
 		}
 
 		folders := []string{terragruntOptions.WorkingDir}

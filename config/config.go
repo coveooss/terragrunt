@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveo/gotemplate/v3/collections"
-	"github.com/coveo/gotemplate/v3/hcl"
-	"github.com/coveo/gotemplate/v3/template"
-	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/collections"
+	"github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/template"
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -31,20 +31,20 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Description    string              `hcl:"description"`
-	RunConditions  RunConditions       `hcl:"run_conditions"`
-	Terraform      *TerraformConfig    `hcl:"terraform"`
-	RemoteState    *remote.RemoteState `hcl:"remote_state"`
-	Dependencies   *ModuleDependencies `hcl:"dependencies"`
-	Uniqueness     *string             `hcl:"uniqueness_criteria"`
-	AssumeRole     interface{}         `hcl:"assume_role"`
-	PreHooks       HookList            `hcl:"pre_hook"`
-	PostHooks      HookList            `hcl:"post_hook"`
-	ExtraCommands  ExtraCommandList    `hcl:"extra_command"`
-	ImportFiles    ImportFilesList     `hcl:"import_files"`
-	ApprovalConfig ApprovalConfigList  `hcl:"approval_config"`
-
-	ImportVariables ImportVariablesList `hcl:"import_variables"`
+	Description     string                      `hcl:"description"`
+	RunConditions   RunConditions               `hcl:"run_conditions"`
+	Terraform       *TerraformConfig            `hcl:"terraform"`
+	RemoteState     *remote.RemoteState         `hcl:"remote_state"`
+	Dependencies    *ModuleDependencies         `hcl:"dependencies"`
+	Uniqueness      *string                     `hcl:"uniqueness_criteria"`
+	AssumeRole      interface{}                 `hcl:"assume_role"`
+	ExtraArgs       TerraformExtraArgumentsList `hcl:"extra_arguments"`
+	PreHooks        HookList                    `hcl:"pre_hook"`
+	PostHooks       HookList                    `hcl:"post_hook"`
+	ExtraCommands   ExtraCommandList            `hcl:"extra_command"`
+	ImportFiles     ImportFilesList             `hcl:"import_files"`
+	ApprovalConfig  ApprovalConfigList          `hcl:"approval_config"`
+	ImportVariables ImportVariablesList         `hcl:"import_variables"`
 
 	options *options.TerragruntOptions
 }
@@ -55,7 +55,7 @@ func (conf TerragruntConfig) String() string {
 
 // ExtraArguments processes the extra_arguments defined in the terraform section of the config file
 func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
-	return conf.Terraform.ExtraArgs.Filter(source)
+	return conf.ExtraArgs.Filter(source)
 }
 
 func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders ...string) (result []string) {
@@ -122,10 +122,12 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	// Make the context available to sub-objects
 	tcf.options = terragruntOptions
 
+	// We combine extra arguments defined in terraform block into the extra arguments defined in the terragrunt block
 	if tcf.Terraform != nil {
-		tcf.Terraform.ExtraArgs.init(tcf)
+		tcf.ExtraArgs = append(tcf.ExtraArgs, tcf.Terraform.LegacyExtraArgs...)
 	}
 
+	tcf.ExtraArgs.init(tcf)
 	tcf.ExtraCommands.init(tcf)
 	tcf.ImportFiles.init(tcf)
 	tcf.ImportVariables.init(tcf)
@@ -136,7 +138,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	return &tcf.TerragruntConfig, err
 }
 
-// GetSourceFolder returns the
+// GetSourceFolder resolves remote source and returns the local temporary folder
 func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool) (string, error) {
 	terragruntOptions := tcf.options
 
@@ -194,8 +196,8 @@ func (deps *ModuleDependencies) String() string {
 
 // TerraformConfig specifies where to find the Terraform configuration files
 type TerraformConfig struct {
-	ExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments"`
-	Source    string                      `hcl:"source"`
+	LegacyExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments"` // Kept here only for retro compatibility
+	Source          string                      `hcl:"source"`
 }
 
 func (conf TerraformConfig) String() string {
@@ -423,8 +425,13 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 
-	// pre_hooks & post_hooks have been renamed to pre_hook & post_hook, we support old naming to avoid breaking change\
+	// We also support before_hook and after_hook to be compatible with upstream terragrunt
+	// TODO: actually convert structure to ensure that fields are also compatible (i.e. commands => on_commands, execute[] => string, run_on_error => IgnoreError)
+	configString = strings.Replace(configString, "before_hook", "pre_hook", -1)
+	configString = strings.Replace(configString, "after_hook", "post_hook", -1)
+
 	before := configString
+	// pre_hooks & post_hooks have been renamed to pre_hook & post_hook, we support old naming to avoid breaking change
 	configString = strings.Replace(configString, "pre_hooks", "pre_hook", -1)
 	configString = strings.Replace(configString, "post_hooks", "post_hook", -1)
 	if !hookWarningGiven && before != configString {
@@ -543,8 +550,6 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 			if conf.Terraform.Source == "" {
 				conf.Terraform.Source = includedConfig.Terraform.Source
 			}
-
-			conf.Terraform.ExtraArgs.Merge(includedConfig.Terraform.ExtraArgs)
 		}
 	}
 
@@ -562,6 +567,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 		conf.AssumeRole = includedConfig.AssumeRole
 	}
 
+	conf.ExtraArgs.Merge(includedConfig.ExtraArgs)
 	conf.RunConditions.Merge(includedConfig.RunConditions)
 	conf.ImportFiles.Merge(includedConfig.ImportFiles)
 	conf.ImportVariables.Merge(includedConfig.ImportVariables)

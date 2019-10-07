@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
@@ -17,15 +17,17 @@ import (
 type Hook struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Command        string   `hcl:"command"`
-	Arguments      []string `hcl:"arguments"`
-	ExpandArgs     bool     `hcl:"expand_args"`
-	OnCommands     []string `hcl:"on_commands"`
-	IgnoreError    bool     `hcl:"ignore_error"`
-	BeforeImports  bool     `hcl:"before_imports"`
-	AfterInitState bool     `hcl:"after_init_state"`
-	Order          int      `hcl:"order"`
-	ShellCommand   bool     `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
+	Command           string            `hcl:"command"`
+	Arguments         []string          `hcl:"arguments"`
+	ExpandArgs        bool              `hcl:"expand_args"`
+	OnCommands        []string          `hcl:"on_commands"`
+	IgnoreError       bool              `hcl:"ignore_error"`
+	BeforeImports     bool              `hcl:"before_imports"`
+	AfterInitState    bool              `hcl:"after_init_state"`
+	Order             int               `hcl:"order"`
+	ShellCommand      bool              `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
+	EnvVars           map[string]string `hcl:"env_vars"`
+	PersistentEnvVars map[string]string `hcl:"persistent_env_vars"`
 }
 
 func (hook Hook) itemType() (result string) { return HookList{}.argName() }
@@ -50,6 +52,17 @@ func (hook Hook) help() (result string) {
 	return
 }
 
+func (hook *Hook) substituteVars() {
+	hook.TerragruntExtensionBase.substituteVars()
+	c := hook.config()
+	c.substituteEnv(hook.EnvVars)
+	c.substituteEnv(hook.PersistentEnvVars)
+	c.substitute(&hook.Command)
+	for i, arg := range hook.Arguments {
+		hook.Arguments[i] = *c.substitute(&arg)
+	}
+}
+
 func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	logger := hook.logger()
 
@@ -69,7 +82,19 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 		return
 	}
 
+	// Add persistent environment variables to the current context
+	// (these variables will be available while and after the execution of the hook)
+	for key, value := range hook.PersistentEnvVars {
+		hook.options().Env[key] = value
+	}
+
 	cmd := shell.NewCmd(hook.options(), hook.Command).Args(hook.Arguments...)
+
+	// Add local environment variables to the current context
+	// (these variables will be available only while execution of the hook)
+	for key, value := range hook.EnvVars {
+		cmd.Env(fmt.Sprintf("%s=%s", key, value))
+	}
 	if hook.ShellCommand {
 		// We must not redirect the stderr on shell command, doing so, remove the prompt
 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr

@@ -8,12 +8,12 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/coveo/gotemplate/v3/collections"
-	"github.com/coveo/gotemplate/v3/hcl"
-	"github.com/coveo/gotemplate/v3/json"
-	"github.com/coveo/gotemplate/v3/template"
-	"github.com/coveo/gotemplate/v3/utils"
-	"github.com/coveo/gotemplate/v3/yaml"
+	"github.com/coveooss/gotemplate/v3/collections"
+	"github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/json"
+	"github.com/coveooss/gotemplate/v3/template"
+	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/yaml"
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file

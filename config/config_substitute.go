@@ -4,110 +4,72 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveo/gotemplate/v3/collections"
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/coveooss/gotemplate/v3/collections"
 )
 
 // SubstituteAllVariables replace all remaining variables by the value
-func (conf *TerragruntConfig) SubstituteAllVariables(terragruntOptions *options.TerragruntOptions, substituteFinal bool) {
-	scriptFolder := filepath.Join(terragruntOptions.WorkingDir, TerragruntScriptFolder)
-	substitute := func(value *string) *string {
-		if value == nil {
-			return nil
-		}
-
-		*value = SubstituteVars(*value, terragruntOptions)
-		if substituteFinal {
-			// We only substitute folders on the last substitute call
-			*value = strings.Replace(*value, getTempFolder, terragruntOptions.DownloadDir, -1)
-			*value = strings.Replace(*value, getScriptsFolder, scriptFolder, -1)
-			*value = strings.TrimSpace(collections.UnIndent(*value))
-		}
-
-		return value
-	}
-
-	substitute(conf.Uniqueness)
+func (conf *TerragruntConfig) SubstituteAllVariables() {
+	conf.substitute(conf.Uniqueness)
 
 	if roles, ok := conf.AssumeRole.([]string); ok {
 		for i := range roles {
-			substitute(&roles[i])
+			conf.substitute(&roles[i])
 		}
 		conf.AssumeRole = roles
 	}
 
-	if conf.Terraform != nil {
-		for i, extraArgs := range conf.Terraform.ExtraArgs {
-			substitute(&extraArgs.Description)
-			conf.Terraform.ExtraArgs[i] = extraArgs
-		}
-		substitute(&conf.Terraform.Source)
-	}
 	if conf.RemoteState != nil && conf.RemoteState.Config != nil {
 		for key, value := range conf.RemoteState.Config {
 			switch val := value.(type) {
 			case string:
-				conf.RemoteState.Config[key] = *substitute(&val)
+				conf.RemoteState.Config[key] = *conf.substitute(&val)
 			}
 		}
 	}
 
-	substituteHooks := func(hooks HookList) {
-		for i, hook := range hooks {
-			substitute(&hook.Command)
-			substitute(&hook.Description)
-			for i, arg := range hook.Arguments {
-				hook.Arguments[i] = *substitute(&arg)
-			}
-			hooks[i] = hook
-		}
+	if conf.Terraform != nil {
+		conf.substitute(&conf.Terraform.Source)
 	}
-	substituteHooks(conf.PreHooks)
-	substituteHooks(conf.PostHooks)
-
-	for i, command := range conf.ExtraCommands {
-		substitute(&command.Description)
-		substitute(&command.VersionArg)
-		for i, cmd := range command.Commands {
-			command.Commands[i] = *substitute(&cmd)
-		}
-		for i, alias := range command.Aliases {
-			command.Aliases[i] = *substitute(&alias)
-		}
-		for i, arg := range command.Arguments {
-			command.Arguments[i] = *substitute(&arg)
-		}
-		conf.ExtraCommands[i] = command
+	for i := range conf.ExtraArgs {
+		conf.ExtraArgs[i].substituteVars()
 	}
+	for i := range conf.PreHooks {
+		conf.PreHooks[i].substituteVars()
+	}
+	for i := range conf.PostHooks {
+		conf.PostHooks[i].substituteVars()
+	}
+	for i := range conf.ExtraCommands {
+		conf.ExtraCommands[i].substituteVars()
+	}
+	for i := range conf.ImportFiles {
+		conf.ImportFiles[i].substituteVars()
+	}
+	for i := range conf.ImportVariables {
+		conf.ImportVariables[i].substituteVars()
+	}
+}
 
-	for i, importer := range conf.ImportFiles {
-		substitute(&importer.Description)
-		substitute(&importer.Source)
-		substitute(&importer.Target)
-		for i, value := range importer.Files {
-			importer.Files[i] = *substitute(&value)
-		}
-		for _, value := range importer.CopyAndRename {
-			substitute(&value.Source)
-			substitute(&value.Target)
-		}
-		conf.ImportFiles[i] = importer
+// substitute is an helper function to convert string in a configuration structure
+func (conf *TerragruntConfig) substitute(value *string) *string {
+	if value == nil {
+		return nil
 	}
 
-	for i, importVariables := range conf.ImportVariables {
-		substitute(&importVariables.Description)
-		substitute(&importVariables.Source)
-		substitute(&importVariables.TFVariablesFile)
+	*value = SubstituteVars(*value, conf.options)
+	if !conf.options.IgnoreRemainingInterpolation {
+		// We only substitute folders on the last substitute call
+		*value = strings.Replace(*value, getTempFolder, conf.options.DownloadDir, -1)
+		*value = strings.Replace(*value, getScriptsFolder, filepath.Join(conf.options.WorkingDir, TerragruntScriptFolder), -1)
+		*value = strings.TrimSpace(collections.UnIndent(*value))
+	}
 
-		for i, value := range importVariables.Vars {
-			importVariables.Vars[i] = *substitute(&value)
-		}
-		for i, value := range importVariables.RequiredVarFiles {
-			importVariables.RequiredVarFiles[i] = *substitute(&value)
-		}
-		for i, value := range importVariables.OptionalVarFiles {
-			importVariables.OptionalVarFiles[i] = *substitute(&value)
-		}
-		conf.ImportVariables[i] = importVariables
+	return value
+}
+
+// substituteEnv is an helper function to convert a map of key/value strings in a configuration structure
+func (conf *TerragruntConfig) substituteEnv(env map[string]string) {
+	for k, v := range env {
+		env[k] = *conf.substitute(&v)
 	}
 }

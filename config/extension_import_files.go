@@ -34,6 +34,21 @@ type copyAndRename struct {
 
 func (item ImportFiles) itemType() (result string) { return ImportFilesList{}.argName() }
 
+func (item *ImportFiles) substituteVars() {
+	item.TerragruntExtensionBase.substituteVars()
+	c := item.config()
+	c.substitute(&item.Source)
+	c.substitute(&item.Target)
+	c.substitute(item.Prefix)
+	for i, value := range item.Files {
+		item.Files[i] = *c.substitute(&value)
+	}
+	for _, value := range item.CopyAndRename {
+		c.substitute(&value.Source)
+		c.substitute(&value.Target)
+	}
+}
+
 func (item *ImportFiles) normalize() {
 	if item.Required == nil {
 		def := true

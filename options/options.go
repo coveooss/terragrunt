@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coveo/gotemplate/v3/collections"
-	"github.com/coveo/gotemplate/v3/hcl"
-	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/collections"
+	"github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/op/go-logging"
@@ -51,6 +51,9 @@ type TerragruntOptions struct {
 
 	// Terraform variables at runtime
 	Variables map[string]Variable
+
+	// The current execution context
+	Context map[string]interface{}
 
 	// Download Terraform configurations from the specified source location into a temporary folder and run
 	// Terraform in that temporary folder
@@ -114,6 +117,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 	}
 
 	return &TerragruntOptions{
+		Context:              make(map[string]interface{}),
 		TerragruntConfigPath: terragruntConfigPath,
 		TerraformPath:        "terraform",
 		TerraformCliArgs:     []string{},
@@ -184,19 +188,11 @@ func (terragruntOptions TerragruntOptions) GetContext() (result collections.IDic
 	for key, value := range terragruntOptions.Variables {
 		result.Set(key, value.Value)
 	}
-	result.Set("TerragruntOptions", map[string]interface{}{
-		"AwsProfile":           terragruntOptions.AwsProfile,
-		"DownloadDir":          terragruntOptions.DownloadDir,
-		"LoggingLevel":         int(util.GetLoggingLevel()),
-		"LoggingLevelName":     util.GetLoggingLevel(),
-		"NbWorkers":            terragruntOptions.NbWorkers,
-		"Source":               terragruntOptions.Source,
-		"SourceUpdate":         terragruntOptions.SourceUpdate,
-		"TerraformCliArgs":     terragruntOptions.TerraformCliArgs,
-		"TerraformPath":        terragruntOptions.TerraformPath,
-		"TerragruntConfigPath": terragruntOptions.TerragruntConfigPath,
-		"WorkingDir":           terragruntOptions.WorkingDir,
-	})
+
+	terragruntOptions.Context["Source"] = terragruntOptions.Source
+	terragruntOptions.Context["TerragruntConfigPath"] = terragruntOptions.TerragruntConfigPath
+	terragruntOptions.Context["WorkingDir"] = terragruntOptions.WorkingDir
+	result.Set("TerragruntOptions", terragruntOptions.Context)
 	return
 }
 

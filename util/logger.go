@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/coveo/gotemplate/v3/errors"
-	"github.com/coveo/gotemplate/v3/template"
-	"github.com/coveo/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/errors"
+	"github.com/coveooss/gotemplate/v3/template"
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/op/go-logging"
 )
 

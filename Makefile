@@ -20,11 +20,9 @@ html-coverage:
 	@sh ./scripts/coverage.sh --html
 
 build:
-	glide install
 	go build
 
 install:
-	glide install
 	go install
 
 .PHONY: test

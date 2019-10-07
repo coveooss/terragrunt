@@ -11,11 +11,12 @@ import (
 type TerraformExtraArguments struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Source           string   `hcl:"source"`
-	Arguments        []string `hcl:"arguments"`
-	RequiredVarFiles []string `hcl:"required_var_files"`
-	OptionalVarFiles []string `hcl:"optional_var_files"`
-	Commands         []string `hcl:"commands"`
+	Source           string            `hcl:"source"`
+	Arguments        []string          `hcl:"arguments"`
+	RequiredVarFiles []string          `hcl:"required_var_files"`
+	OptionalVarFiles []string          `hcl:"optional_var_files"`
+	Commands         []string          `hcl:"commands"`
+	EnvVars          map[string]string `hcl:"env_vars"`
 }
 
 func (item TerraformExtraArguments) itemType() (result string) {
@@ -77,6 +78,11 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 			return nil, err
 		} else if newSource != "" {
 			folders = []string{newSource}
+		}
+
+		// Set the environment variables
+		for key, value := range arg.EnvVars {
+			terragruntOptions.Env[key] = value
 		}
 
 		// If RequiredVarFiles is specified, add -var-file=<file> for each specified files

@@ -472,6 +472,33 @@ func runTerragruntRedirectOutput(t *testing.T, command string, writer io.Writer,
 	}
 }
 
+func withEnv(variables string, testFunction func()) {
+	// We take a copy of the current environment variables
+	env := os.Environ()
+
+	// We create a map of environment variable that should be kept
+	keptVariables := make(map[string]string)
+	for _, env := range strings.Split(variables, ",") {
+		keptVariables[env] = os.Getenv(env)
+	}
+
+	// We clear all environment variables and restore only the variables specified by variables
+	os.Clearenv()
+	for key, value := range keptVariables {
+		os.Setenv(key, value)
+	}
+
+	// We register a deferred function to restore back the original environment variables
+	defer func() {
+		for i := range env {
+			values := strings.SplitN(env[i], "=", 2)
+			os.Setenv(values[0], values[1])
+		}
+	}()
+
+	testFunction()
+}
+
 func copyEnvironment(t *testing.T, environmentPath string) string {
 	tmpDir, err := ioutil.TempDir("", "terragrunt-stack-test")
 	if err != nil {
