@@ -21,15 +21,15 @@ import (
 type ImportVariables struct {
 	TerragruntExtensionBase `hcl:",squash"`
 
-	Vars              []string          `hcl:"vars"`
-	RequiredVarFiles  []string          `hcl:"required_var_files"`
-	OptionalVarFiles  []string          `hcl:"optional_var_files"`
-	SourcesType       interface{}       `hcl:"source"`
-	NestedObjectsType interface{}       `hcl:"nested_under"`
-	TFVariablesFile   string            `hcl:"output_variables_file"`
-	FlattenLevels     *int              `hcl:"flatten_levels"`
-	EnvVars           map[string]string `hcl:"env_vars"`
-	OnCommands        []string          `hcl:"on_commands"`
+	Vars             []string          `hcl:"vars"`
+	RequiredVarFiles []string          `hcl:"required_var_files"`
+	OptionalVarFiles []string          `hcl:"optional_var_files"`
+	Sources          []string          `hcl:"sources"`
+	NestedObjects    []string          `hcl:"nested_under"`
+	TFVariablesFile  string            `hcl:"output_variables_file"`
+	FlattenLevels    *int              `hcl:"flatten_levels"`
+	EnvVars          map[string]string `hcl:"env_vars"`
+	OnCommands       []string          `hcl:"on_commands"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -47,45 +47,10 @@ func (item ImportVariables) help() (result string) {
 	return
 }
 
-func (item *ImportVariables) stringOrArray(property string, object *interface{}) []string {
-	switch source := (*object).(type) {
-	case []string:
-		for i := range source {
-			source[i] = SubstituteVars(source[i], item.options())
-		}
-		return source
-	case string:
-		if source != "" {
-			return []string{SubstituteVars(source, item.options())}
-		}
-		return nil
-	default:
-		if source != nil {
-			item.logger().Warningf("Ignored type (%T) for %s in import_variable %s, type must be string or array of strings", *object, property, item.Name)
-			*object = nil
-		}
-	}
-	return nil
-}
-
-// Sources always returns an array of source since the user may provide either a string or an array of strings
-func (item *ImportVariables) Sources() []string {
-	return item.stringOrArray("source", &item.SourcesType)
-}
-
-// NestedUnder always returns an array of source since the user may provide either a string or an array of strings
-func (item *ImportVariables) NestedUnder() []string {
-	return item.stringOrArray("nested_under", &item.NestedObjectsType)
-}
-
 func (item *ImportVariables) normalize() {
 	if item.FlattenLevels == nil {
 		value := -1
 		item.FlattenLevels = &value
-	}
-
-	if item.NestedObjectsType == nil {
-		item.NestedObjectsType = []string{""}
 	}
 }
 
@@ -99,7 +64,7 @@ func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables
 }
 
 func (item *ImportVariables) loadVariables(currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
-	for _, nested := range item.NestedUnder() {
+	for _, nested := range item.NestedObjects {
 		imported := newVariables
 		if nested != "" {
 			imported = map[string]interface{}{nested: imported}
@@ -126,6 +91,12 @@ func (item *ImportVariables) substituteVars() {
 	}
 	for i, value := range item.OptionalVarFiles {
 		item.OptionalVarFiles[i] = *c.substitute(&value)
+	}
+	for i, value := range item.Sources {
+		item.Sources[i] = *c.substitute(&value)
+	}
+	for i, value := range item.NestedObjects {
+		item.NestedObjects[i] = *c.substitute(&value)
 	}
 }
 
@@ -181,15 +152,14 @@ func (list ImportVariablesList) Import() (err error) {
 		}
 
 		folders := []string{terragruntOptions.WorkingDir}
-		sources := item.Sources()
 		var folderErrors errors.Array
-		if sources != nil {
-			folders = make([]string, 0, len(sources))
-			for i := range sources {
-				if sources[i] == "" {
-					sources[i] = terragruntOptions.WorkingDir
+		if len(item.Sources) > 0 {
+			folders = make([]string, 0, len(item.Sources))
+			for i := range item.Sources {
+				if item.Sources[i] == "" {
+					item.Sources[i] = terragruntOptions.WorkingDir
 				}
-				newSource, err := config.GetSourceFolder(item.Name, sources[i], true)
+				newSource, err := config.GetSourceFolder(item.Name, item.Sources[i], true)
 				if err != nil {
 					folderErrors = append(folderErrors, err)
 					continue
