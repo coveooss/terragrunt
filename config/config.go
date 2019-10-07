@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/hcl"
@@ -339,11 +340,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 				return
 			}
 		}
-		var exist bool
-		config, exist = configFiles[include.Path]
-		if exist {
+		if cached, _ := configFiles.Load(include.Path); cached != nil {
 			terragruntOptions.Logger.Debugf("Config already in the cache %s", include.Path)
-			return
+			return cached.(*TerragruntConfig), nil
 		}
 	}
 
@@ -409,13 +408,13 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}
 
 	if include.isIncludedBy == nil {
-		configFiles[include.Path] = config
+		configFiles.Store(include.Path, config)
 	}
 
 	return
 }
 
-var configFiles = make(map[string]*TerragruntConfig)
+var configFiles sync.Map
 var hookWarningGiven, lockWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
