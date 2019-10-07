@@ -98,8 +98,6 @@ func (list ImportVariablesList) Import() (err error) {
 	variablesFiles := make(map[string]map[string]interface{})
 
 	for _, item := range list.Enabled() {
-		fmt.Println("xxx1", options.EnvCommand)
-		fmt.Println("xxx", item.options().Env[options.EnvCommand])
 		if len(item.OnCommands) > 0 && !util.ListContainsElement(item.OnCommands, item.options().Env[options.EnvCommand]) {
 			// The current command is not in the list of command on which the import should be applied
 			return
