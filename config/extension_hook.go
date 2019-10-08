@@ -115,7 +115,7 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	return
 }
 
-func (hook Hook) setState(err error) {
+func (hook *Hook) setState(err error) {
 	exitCode, errCode := shell.GetExitCode(err)
 	if errCode != nil {
 		exitCode = -1

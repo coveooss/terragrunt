@@ -11,11 +11,13 @@ import (
 )
 
 func TestTerragruntImportVariables(t *testing.T) {
-	tests := []struct {
+	t.Parallel()
+	type test struct {
 		project        string
 		envVariables   map[string]string
 		expectedOutput string
-	}{
+	}
+	tests := []test{
 		{
 			project:        "fixture-variables/basic-file",
 			expectedOutput: "example = 123",
@@ -64,7 +66,7 @@ func TestTerragruntImportVariables(t *testing.T) {
 		},
 		{
 			project:        "fixture-variables/substitute",
-			expectedOutput: "example = hello-hello2",
+			expectedOutput: "example = hello-hello2-hello2 again",
 		},
 		{
 			project:        "fixture-variables/nested",
@@ -88,8 +90,10 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: "example = 1-2-1-2",
 		},
 	}
-	for _, tt := range tests {
+	for _, test := range tests {
+		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
 		t.Run(tt.project, func(t *testing.T) {
+			t.Parallel()
 			tmpEnvPath := copyEnvironment(t, tt.project)
 			defer os.RemoveAll(tmpEnvPath)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)

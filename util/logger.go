@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/coveooss/gotemplate/v3/errors"
 	"github.com/coveooss/gotemplate/v3/template"
@@ -20,16 +21,22 @@ func CreateLogger(prefix string) *logging.Logger {
 
 // SetLoggingLevel sets the logging level
 func SetLoggingLevel(level int) {
+	loggingMutex.Lock()
+	defer loggingMutex.Unlock()
 	logging.SetLevel(logging.Level(level), "")
 }
 
 // GetLoggingLevel returns the current logging level
 func GetLoggingLevel() logging.Level {
+	loggingMutex.Lock()
+	defer loggingMutex.Unlock()
 	return logging.GetLevel("")
 }
 
 // InitLogging must be called to set the logging string, initialize color and logging level
 func InitLogging(levelName string, defaultLevel logging.Level, color bool) (int, error) {
+	loggingMutex.Lock()
+	defer loggingMutex.Unlock()
 	var format string
 	if color {
 		format = `[terragrunt:%{module}] %{time:2006/01/02 15:04:05.000} %{color}%{level:-8s} %{message}%{color:reset}`
@@ -45,6 +52,8 @@ func InitLogging(levelName string, defaultLevel logging.Level, color bool) (int,
 	template.InitLogging()
 	return int(level), err
 }
+
+var loggingMutex sync.Mutex
 
 // LogCatcher traps messsage containing logging level [LOGLEVEL] and redirect them to the logging system
 type LogCatcher struct {

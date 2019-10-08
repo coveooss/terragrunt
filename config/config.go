@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/hcl"
@@ -58,13 +59,17 @@ func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
 	return conf.ExtraArgs.Filter(source)
 }
 
-func (conf TerragruntConfig) globFiles(pattern string, folders ...string) (result []string) {
-	pattern = SubstituteVars(pattern, conf.options)
+func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders ...string) (result []string) {
+	conf.substitute(&pattern)
 	if filepath.IsAbs(pattern) {
 		return utils.GlobFuncTrim(pattern)
 	}
 	for i := range folders {
 		result = append(result, utils.GlobFuncTrim(filepath.Join(folders[i], pattern))...)
+		if stopOnMatch && len(result) > 0 {
+			// If the pattern matches files and stopOnMatch is true, we stop looking for other folders
+			break
+		}
 	}
 	return
 }
@@ -139,7 +144,7 @@ func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, fai
 	terragruntOptions := tcf.options
 
 	if source != "" {
-		source = SubstituteVars(source, terragruntOptions)
+		tcf.substitute(&source)
 		sourceFolder, err := util.GetSource(source, filepath.Dir(tcf.Path), terragruntOptions.Logger)
 		if err != nil {
 			if failIfNotFound {
@@ -335,11 +340,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 				return
 			}
 		}
-		var exist bool
-		config, exist = configFiles[include.Path]
-		if exist {
+		if cached, _ := configFiles.Load(include.Path); cached != nil {
 			terragruntOptions.Logger.Debugf("Config already in the cache %s", include.Path)
-			return
+			return cached.(*TerragruntConfig), nil
 		}
 	}
 
@@ -405,13 +408,13 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}
 
 	if include.isIncludedBy == nil {
-		configFiles[include.Path] = config
+		configFiles.Store(include.Path, config)
 	}
 
 	return
 }
 
-var configFiles = make(map[string]*TerragruntConfig)
+var configFiles sync.Map
 var hookWarningGiven, lockWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.

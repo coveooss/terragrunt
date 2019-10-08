@@ -202,7 +202,7 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 		variables := terragruntOptions.GetContext()
 
 		for file := range terragruntOptions.deferredSaveList {
-			terragruntOptions.Logger.Debug("Saving variables into", file)
+			terragruntOptions.Logger.Info("Saving variables into", file)
 			var content []byte
 			switch strings.ToLower(filepath.Ext(file)) {
 			case ".yml", ".yaml":

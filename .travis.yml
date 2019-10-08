@@ -1,10 +1,10 @@
 language: go
 
 go:
-  - 1.12.x
+  - 1.13.x
 
 env:
-- GO111MODULE=on
+  - GO111MODULE=on
 
 sudo: required
 
@@ -18,17 +18,17 @@ install:
 
 before_script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
-      make full-test;
+    make full-test;
     else
-      make test;
+    make test;
     fi
   - make fmtcheck
 
 script:
   - if [ "${TRAVIS_TAG::1}" = "v" ]; then
-      curl -sL https://git.io/goreleaser | bash;
+    curl -sL https://git.io/goreleaser | bash;
     fi
-  
+
 after_success:
   - make coveralls
 

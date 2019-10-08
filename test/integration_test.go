@@ -19,7 +19,6 @@ import (
 	"github.com/gruntwork-io/terragrunt/cli"
 	"github.com/gruntwork-io/terragrunt/config"
 	terragruntDynamoDb "github.com/gruntwork-io/terragrunt/dynamodb"
-	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/stretchr/testify/assert"
@@ -457,7 +456,6 @@ func removeFolder(t *testing.T, path string) {
 
 func runTerragruntCommand(t *testing.T, command string, writer io.Writer, errwriter io.Writer) error {
 	args := strings.Split(command, " ")
-
 	app := cli.CreateTerragruntCli("TEST", writer, errwriter)
 	return app.Run(args)
 }
@@ -468,7 +466,11 @@ func runTerragrunt(t *testing.T, command string) {
 
 func runTerragruntRedirectOutput(t *testing.T, command string, writer io.Writer, errwriter io.Writer) {
 	if err := runTerragruntCommand(t, command, writer, errwriter); err != nil {
-		t.Fatalf("Failed to run Terragrunt command '%s' due to error: %v", command, errors.PrintErrorWithStackTrace(err))
+		message := ""
+		if err, captured := errwriter.(*bytes.Buffer); captured {
+			message = "\n" + err.String()
+		}
+		t.Fatalf("Failed to run Terragrunt command '%s' due to error: %v%s", command, err, message)
 	}
 }
 
