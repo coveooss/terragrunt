@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/gruntwork-io/terragrunt/util"
@@ -11,11 +12,12 @@ import (
 )
 
 func TestTerragruntImportVariables(t *testing.T) {
-	tests := []struct {
+	type test struct {
 		project        string
 		envVariables   map[string]string
 		expectedOutput string
-	}{
+	}
+	tests := []test{
 		{
 			project:        "fixture-variables/basic-file",
 			expectedOutput: "example = 123",
@@ -64,7 +66,7 @@ func TestTerragruntImportVariables(t *testing.T) {
 		},
 		{
 			project:        "fixture-variables/substitute",
-			expectedOutput: "example = hello-hello2",
+			expectedOutput: "example = hello-hello2-hello2 again",
 		},
 		{
 			project:        "fixture-variables/nested",
@@ -88,25 +90,32 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: "example = 1-2-1-2",
 		},
 	}
+	var wg sync.WaitGroup
 	for _, tt := range tests {
-		t.Run(tt.project, func(t *testing.T) {
-			tmpEnvPath := copyEnvironment(t, tt.project)
-			defer os.RemoveAll(tmpEnvPath)
-			rootPath := util.JoinPath(tmpEnvPath, tt.project)
+		fmt.Println("hello", tt.project)
+		wg.Add(1)
+		go func(tt test) {
+			t.Run(tt.project, func(t *testing.T) {
+				defer wg.Done()
+				tmpEnvPath := copyEnvironment(t, tt.project)
+				defer os.RemoveAll(tmpEnvPath)
+				rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
-			for key, value := range tt.envVariables {
-				os.Setenv(key, value)
-				defer os.Unsetenv(key)
-			}
+				for key, value := range tt.envVariables {
+					os.Setenv(key, value)
+					defer os.Unsetenv(key)
+				}
 
-			var (
-				stdout bytes.Buffer
-				stderr bytes.Buffer
-			)
+				var (
+					stdout bytes.Buffer
+					stderr bytes.Buffer
+				)
 
-			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
-			output := stdout.String()
-			assert.Contains(t, output, tt.expectedOutput)
-		})
+				runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
+				output := stdout.String()
+				assert.Contains(t, output, tt.expectedOutput)
+			})
+		}(tt)
 	}
+	wg.Wait()
 }

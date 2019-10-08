@@ -4,7 +4,7 @@ terragrunt = {
       "var=123",
     ]
 
-    nested_under = "nested1"
+    nested_under = ["nested1"]
 
     output_variables_file = "test.tf"
   }
@@ -14,7 +14,7 @@ terragrunt = {
       "vars.json",
     ]
 
-    nested_under = "nested2"
+    nested_under = ["nested2"]
 
     output_variables_file = "test.tf"
   }

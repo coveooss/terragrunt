@@ -4,7 +4,7 @@ terragrunt = {
       "vars.tf",
     ]
 
-    nested_under          = "loaded"
+    nested_under          = ["loaded"]
     output_variables_file = "test.tf"
   }
 }

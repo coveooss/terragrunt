@@ -60,7 +60,7 @@ func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
 }
 
 func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders ...string) (result []string) {
-	pattern = SubstituteVars(pattern, conf.options)
+	conf.substitute(&pattern)
 	if filepath.IsAbs(pattern) {
 		return utils.GlobFuncTrim(pattern)
 	}
@@ -144,7 +144,7 @@ func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, fai
 	terragruntOptions := tcf.options
 
 	if source != "" {
-		source = SubstituteVars(source, terragruntOptions)
+		tcf.substitute(&source)
 		sourceFolder, err := util.GetSource(source, filepath.Dir(tcf.Path), terragruntOptions.Logger)
 		if err != nil {
 			if failIfNotFound {

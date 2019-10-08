@@ -52,6 +52,10 @@ func (item *ImportVariables) normalize() {
 		value := -1
 		item.FlattenLevels = &value
 	}
+	if len(item.NestedObjects) == 0 {
+		// By default, we load the variables at the root
+		item.NestedObjects = []string{""}
+	}
 }
 
 func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables map[string]interface{}) (map[string]interface{}, error) {
@@ -64,7 +68,9 @@ func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables
 }
 
 func (item *ImportVariables) loadVariables(currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
+	c := item.config()
 	for _, nested := range item.NestedObjects {
+		c.substitute(&nested)
 		imported := newVariables
 		if nested != "" {
 			imported = map[string]interface{}{nested: imported}
@@ -82,22 +88,6 @@ func (item *ImportVariables) substituteVars() {
 	c := item.config()
 	c.substitute(&item.TFVariablesFile)
 	c.substituteEnv(item.EnvVars)
-
-	for i, value := range item.Vars {
-		item.Vars[i] = *c.substitute(&value)
-	}
-	for i, value := range item.RequiredVarFiles {
-		item.RequiredVarFiles[i] = *c.substitute(&value)
-	}
-	for i, value := range item.OptionalVarFiles {
-		item.OptionalVarFiles[i] = *c.substitute(&value)
-	}
-	for i, value := range item.Sources {
-		item.Sources[i] = *c.substitute(&value)
-	}
-	for i, value := range item.NestedObjects {
-		item.NestedObjects[i] = *c.substitute(&value)
-	}
 }
 
 // ----------------------- ImportVariablesList -----------------------
@@ -155,16 +145,17 @@ func (list ImportVariablesList) Import() (err error) {
 		var folderErrors errors.Array
 		if len(item.Sources) > 0 {
 			folders = make([]string, 0, len(item.Sources))
-			for i := range item.Sources {
-				if item.Sources[i] == "" {
-					item.Sources[i] = terragruntOptions.WorkingDir
+			for _, source := range item.Sources {
+				config.substitute(&source)
+				if source == "" {
+					source = terragruntOptions.WorkingDir
 				}
-				newSource, err := config.GetSourceFolder(item.Name, item.Sources[i], true)
+				source, err := config.GetSourceFolder(item.Name, source, true)
 				if err != nil {
 					folderErrors = append(folderErrors, err)
 					continue
 				}
-				folders = append(folders, newSource)
+				folders = append(folders, source)
 			}
 		}
 		if len(folders) == 0 {
@@ -178,7 +169,7 @@ func (list ImportVariablesList) Import() (err error) {
 		keyFunc := func(key string) string { return strings.Split(key, "=")[0] }
 		varList := util.RemoveDuplicatesFromList(item.Vars, true, keyFunc)
 		for _, varDef := range varList {
-			varDef = SubstituteVars(varDef, terragruntOptions)
+			config.substitute(&varDef)
 			var (
 				key   string
 				value interface{}
@@ -204,7 +195,7 @@ func (list ImportVariablesList) Import() (err error) {
 
 		// Process RequiredVarFiles
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.RequiredVarFiles) {
-			pattern = SubstituteVars(pattern, terragruntOptions)
+			config.substitute(&pattern)
 
 			files := config.globFiles(pattern, true, folders...)
 			if len(files) == 0 {
@@ -219,7 +210,7 @@ func (list ImportVariablesList) Import() (err error) {
 
 		// Processes OptionalVarFiles
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.OptionalVarFiles) {
-			pattern = SubstituteVars(pattern, terragruntOptions)
+			config.substitute(&pattern)
 
 			for _, file := range config.globFiles(pattern, true, folders...) {
 				if util.FileExists(file) {

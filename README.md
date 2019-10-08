@@ -1167,19 +1167,19 @@ during the whole terragrunt command execution.
 ```hcl
 terragrunt = {
   import_variables "name" {
-    description            = ""         # Description of the import variables action
-    display_name           = ""         # The name used in documentation (default to block name)
-    source                 = "path"     # Specify the source of the copy (currently only support [S3 sources](https://www.terraform.io/docs/modules/sources.html).))
-    vars                   = []         # Optional, array of key=value statements to define variables
-    required_var_files     = []         # Optional, array of file names containing variables that should be imported
-    optional_var_files     = []         # Optional, same as required_var_files but does not report error if the file does not exist
-    env_vars               = {}         # optional, define environment variables only available during hook execution
-    nester_under           = ""         # Optional, define variables under a specific object
-    output_variables_files = ""         # Optional, local file name used to save the imported variables defined in the block
-    os                  = [list of os]  # Optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
-    disabled            = false         # Optional, provide a mechanism to temporary disable the import variables block
-    flatten_levels         = -1         # Optional, indicates the level used to flatten variables defined as hierarchical blocks, -1 = flatten all
-                                        # Flattened variables such as a.b.c becomes a_b_c
+    description            = ""            # Description of the import variables action
+    display_name           = ""            # The name used in documentation (default to block name)
+    sources                = ["path"]      # Specify the sources of the copy (currently only support S3 sources)
+    vars                   = []            # Optional, array of key=value statements to define variables
+    required_var_files     = []            # Optional, array of file names containing variables that should be imported
+    optional_var_files     = []            # Optional, same as required_var_files but does not report error if the file does not exist
+    env_vars               = {}            # optional, define environment variables only available during hook execution
+    nester_under           = []            # Optional, define variables under a specific object
+    output_variables_files = ""            # Optional, local file name used to save the imported variables defined in the block
+    os                     = [list of os]  # Optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
+    disabled               = false         # Optional, provide a mechanism to temporary disable the import variables block
+    flatten_levels         = -1            # Optional, indicates the level used to flatten variables defined as hierarchical blocks, -1 = flatten all
+                                           # Flattened variables such as a.b.c becomes a_b_c
   }
 }
 ```
