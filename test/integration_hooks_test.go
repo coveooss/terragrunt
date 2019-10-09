@@ -200,3 +200,16 @@ func TestTerragruntHookWithEnvVars(t *testing.T) {
 		})
 	}
 }
+
+func TestTerragruntHookOverwrite(t *testing.T) {
+	testPath := "fixture-hooks/overwrite"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
+
+	var stdout bytes.Buffer
+	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt cmd --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, os.Stderr)
+	content, err := ioutil.ReadFile(util.JoinPath(rootPath, "result"))
+	assert.NoError(t, err, "Reading result")
+	assert.Equal(t, string(content), stdout.String(), "Comparing result")
+}

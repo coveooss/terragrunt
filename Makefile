@@ -20,6 +20,7 @@ html-coverage:
 	@sh ./scripts/coverage.sh --html
 
 build:
+	go generate -x ./...
 	go build
 
 install:
