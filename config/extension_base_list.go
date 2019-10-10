@@ -41,7 +41,7 @@ func (list *GenericItemList) merge(imported GenericItemList, mode mergeMode, arg
 	// Check if there are duplicated elements in the imported list
 	indexImported := make(map[string]int, len(*list))
 	for i, item := range imported {
-		indexImported[IImportVariables(&item).id()] = i
+		indexImported[IGenericItem(&item).id()] = i
 	}
 
 	// Create a list of the hooks that should be added to the list
