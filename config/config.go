@@ -136,6 +136,14 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	tcf.PreHooks.init(tcf)
 	tcf.PostHooks.init(tcf)
 	err = tcf.RunConditions.init(tcf.options)
+
+	if tcf.Include == nil {
+		// If the newly loaded configuration file is not to be merged, we force the merge
+		// process to ensure that duplicated elements will be properly processed
+		newConfig := &TerragruntConfig{options: tcf.options}
+		newConfig.mergeIncludedConfig(tcf.TerragruntConfig, terragruntOptions)
+		return newConfig, err
+	}
 	return &tcf.TerragruntConfig, err
 }
 
@@ -456,8 +464,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 
-	config, err = terragruntConfigFile.convertToTerragruntConfig(terragruntOptions)
-	if err != nil {
+	if config, err = terragruntConfigFile.convertToTerragruntConfig(terragruntOptions); err != nil {
 		return
 	}
 	terragruntOptions.Logger.Infof("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))

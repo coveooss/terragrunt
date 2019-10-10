@@ -28,12 +28,9 @@ func (list GenericItemList) init(config *TerragruntConfigFile) {
 func (list *GenericItemList) merge(imported GenericItemList, mode mergeMode, argName string) {
 	if len(imported) == 0 {
 		return
-	} else if len(*list) == 0 {
-		*list = imported
-		return
 	}
 
-	log := IGenericItem(&(*list)[0]).logger().Debugf
+	log := IGenericItem(&(imported)[0]).logger()
 
 	// Create a map with existing elements
 	index := make(map[string]int, len(*list))
@@ -41,19 +38,34 @@ func (list *GenericItemList) merge(imported GenericItemList, mode mergeMode, arg
 		index[IGenericItem(&item).id()] = i
 	}
 
+	// Check if there are duplicated elements in the imported list
+	indexImported := make(map[string]int, len(*list))
+	for i, item := range imported {
+		indexImported[IGenericItem(&item).id()] = i
+	}
+
 	// Create a list of the hooks that should be added to the list
 	newList := make(GenericItemList, 0, len(imported))
-	for _, item := range imported {
+	for i, item := range imported {
 		name := IGenericItem(&item).id()
+		if pos := indexImported[name]; pos != i {
+			log.Warningf("Skipping previous definition of %s %v as it is overridden in the same file", argName, name)
+			continue
+		}
 		if pos, exist := index[name]; exist {
 			// It already exist in the list, so is is an override
 			// We remove it from its current position and add it to the list of newly added elements to keep its original declaration ordering.
 			newList = append(newList, (*list)[pos])
 			delete(index, name)
-			log("Skipping %s %v as it is overridden in the current config", argName, name)
+			log.Infof("Skipping %s %v as it is overridden in the current config", argName, name)
 			continue
 		}
 		newList = append(newList, item)
+	}
+
+	if len(*list) == 0 {
+		*list = newList
+		return
 	}
 
 	if len(index) != len(*list) {

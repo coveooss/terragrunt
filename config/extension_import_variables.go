@@ -128,7 +128,7 @@ func (list ImportVariablesList) Import() (err error) {
 			// The current command is not in the list of command on which the import should be applied
 			return
 		}
-		item.logger().Debugf("Processing import variables statement %s", item.id())
+		item.logger().Infof("Processing import variables statement %s", item.id())
 
 		if item.TFVariablesFile != "" {
 			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
