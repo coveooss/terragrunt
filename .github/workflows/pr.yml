@@ -21,6 +21,6 @@ jobs:
 
       - name: Run tests
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          make coveralls
+          make codecov

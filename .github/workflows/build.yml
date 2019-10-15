@@ -27,7 +27,7 @@ jobs:
       - name: Run full tests on releases
         if: github.ref != 'refs/heads/master'
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
@@ -36,9 +36,9 @@ jobs:
       - name: Run tests
         if: github.ref == 'refs/heads/master'
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
-          make coveralls
+          make codecov
 
       - name: Build tag
         if: github.ref != 'refs/heads/master'

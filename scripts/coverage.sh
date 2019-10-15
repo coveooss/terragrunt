@@ -4,10 +4,10 @@
 # Works around the fact that `go test -coverprofile` currently does not work
 # with multiple packages, see https://code.google.com/p/go/issues/detail?id=6909
 #
-# Usage: script/coverage [--html|--coveralls]
+# Usage: script/coverage [--html|--codecov]
 #
 #     --html      Additionally create HTML report and open it in browser
-#     --coveralls Push coverage statistics to coveralls.io
+#     --codecov Push coverage statistics to codecov.io
 #
 # Based on https://github.com/mlafeldt/chef-runner/blob/v0.7.0/script/coverage
 
@@ -34,9 +34,10 @@ show_cover_report() {
     go tool cover -${1}="$profile"
 }
 
-push_to_coveralls() {
-    echo "Pushing coverage statistics to coveralls.io"
-    goveralls -coverprofile="$profile" -service=gh-actions -debug
+push_to_codecov() {
+    echo "Pushing coverage statistics to codecov.io"
+    cat $profile >> coverage.txt
+    curl -s https://codecov.io/bash | bash
 }
 
 generate_cover_data $(go list ./...)
@@ -46,8 +47,8 @@ case "$1" in
     ;;
 --html)
     show_cover_report html ;;
---coveralls)
-    push_to_coveralls ;;
+--codecov)
+    push_to_codecov ;;
 *)
     echo >&2 "error: invalid option: $1"; exit 1 ;;
 esac
