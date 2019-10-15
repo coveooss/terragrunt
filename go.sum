@@ -83,8 +83,8 @@ github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3Ee
 github.com/coreos/go-systemd v0.0.0-20161114122254-48702e0da86b/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/pkg v0.0.0-20160727233714-3ac0863d7acf/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
-github.com/coveooss/gotemplate/v3 v3.2.0 h1:SHYQblAb3nAEcLPGUop7jKUcORHMK/9u39asX3TIRPQ=
-github.com/coveooss/gotemplate/v3 v3.2.0/go.mod h1:3XpqHGHbmT7mkwNzU6cU21Tb6o2TBKlW+JqqkOK8LeE=
+github.com/coveooss/gotemplate/v3 v3.2.1 h1:QELvzg+cn+ZBhs214ghPZsq1LICUDEfr96MAfGGYh+M=
+github.com/coveooss/gotemplate/v3 v3.2.1/go.mod h1:3XpqHGHbmT7mkwNzU6cU21Tb6o2TBKlW+JqqkOK8LeE=
 github.com/coveord/kingpin/v2 v2.3.1/go.mod h1:G7snIuRD09h58XUezPxWrLPuZplFdreCh6cmJZMtNUU=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
