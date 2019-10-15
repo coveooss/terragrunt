@@ -89,6 +89,10 @@ func TestTerragruntImportVariables(t *testing.T) {
 			project:        "fixture-variables/map-no-flatten",
 			expectedOutput: "example = 1-2-1-2",
 		},
+		{
+			project:        "fixture-variables/source",
+			expectedOutput: "example = 123456",
+		},
 	}
 	for _, test := range tests {
 		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
