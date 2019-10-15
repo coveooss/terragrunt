@@ -14,6 +14,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
 
+      - name: Install Terraform
+        run: |
+          wget https://releases.hashicorp.com/terraform/0.11.14/terraform_0.11.14_linux_amd64.zip -O /tmp/terraform.zip
+          sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
+
       - name: Run tests
         env:
           COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
