@@ -14,6 +14,7 @@ full-test:
 	go test -v ./...
 
 coveralls:
+	GO111MODULE=off go get github.com/mattn/goveralls
 	@sh ./scripts/coverage.sh --coveralls
 
 html-coverage:

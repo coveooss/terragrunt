@@ -36,7 +36,7 @@ show_cover_report() {
 
 push_to_coveralls() {
     echo "Pushing coverage statistics to coveralls.io"
-    goveralls -coverprofile="$profile" -service=gh-actions
+    goveralls -coverprofile="$profile" -service=gh-actions -debug
 }
 
 generate_cover_data $(go list ./...)
