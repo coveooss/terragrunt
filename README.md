@@ -1,5 +1,5 @@
-[![Build Status](https://travis-ci.org/coveooss/terragrunt.svg?branch=master)](https://travis-ci.org/coveooss/terragrunt)
-[![Coverage Status](https://coveralls.io/repos/github/coveooss/terragrunt/badge.svg?branch=master)](https://coveralls.io/github/coveooss/terragrunt?branch=master)
+[![Build Status](https://github.com/coveooss/terragrunt/workflows/Build/badge.svg)](https://github.com/coveooss/terragrunt/actions)
+[![codecov](https://codecov.io/gh/coveooss/terragrunt/branch/master/graph/badge.svg)](https://codecov.io/gh/coveooss/terragrunt)
 
 # Terragrunt
 
