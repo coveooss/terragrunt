@@ -70,7 +70,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	workingDir := parse(optWorkingDir, currentDir)
-	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), config.DefaultConfigPath(workingDir))
+	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), util.JoinPath(workingDir, config.DefaultTerragruntConfigPath))
 	terraformPath := parse(optTerragruntTFPath, os.Getenv(options.EnvTFPath), "terraform")
 	terraformSource := parse(optTerragruntSource, os.Getenv(options.EnvSource))
 	loggingLevel := parse(OptLoggingLevel, os.Getenv(options.EnvLoggingLevel))

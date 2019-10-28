@@ -23,9 +23,6 @@ const (
 	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
 	DefaultTerragruntConfigPath = "terraform.tfvars"
 
-	// OldTerragruntConfigPath is the name of the legacy file name used to store terragrunt definitions
-	OldTerragruntConfigPath = ".terragrunt"
-
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
 )
@@ -213,19 +210,8 @@ func (conf TerraformConfig) String() string {
 	return collections.PrettyPrintStruct(conf)
 }
 
-// DefaultConfigPath returns the default path to use for the Terragrunt configuration file. The reason this is a method
-// rather than a constant is that older versions of Terragrunt stored configuration in a different file. This method returns
-// the path to the old configuration format if such a file exists and the new format otherwise.
-func DefaultConfigPath(workingDir string) string {
-	path := util.JoinPath(workingDir, OldTerragruntConfigPath)
-	if util.FileExists(path) {
-		return path
-	}
-	return util.JoinPath(workingDir, DefaultTerragruntConfigPath)
-}
-
 // FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.
-// A file is a Terragrunt config file if it has a name as returned by the DefaultConfigPath method and contains Terragrunt
+// A file is a Terragrunt config file if it its name matches the DefaultTerragruntConfigPath constant and contains Terragrunt
 // config contents as returned by the IsTerragruntConfigFile method.
 func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]string, error) {
 	rootPath := terragruntOptions.WorkingDir
@@ -248,7 +234,7 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 				// the folder
 				return nil
 			}
-			configPath := DefaultConfigPath(path)
+			configPath := util.JoinPath(path, DefaultTerragruntConfigPath)
 			isTerragruntConfig, err := IsTerragruntConfigFile(configPath)
 			if err != nil {
 				return err

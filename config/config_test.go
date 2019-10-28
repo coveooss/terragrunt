@@ -15,7 +15,6 @@ import (
 )
 
 var mockOptions = options.NewTerragruntOptionsForTest("test-time-mock")
-var mockOldInclude = IncludeConfig{Path: OldTerragruntConfigPath}
 
 func TestParseTerragruntConfigRemoteStateMinimalConfig(t *testing.T) {
 	t.Parallel()
