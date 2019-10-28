@@ -184,52 +184,6 @@ func TestParseTerragruntConfigRemoteStateDynamoDbTerraformConfigAndDependenciesF
 	}
 }
 
-func TestParseTerragruntConfigRemoteStateDynamoDbTerraformConfigAndDependenciesFullConfigOldConfigFormat(t *testing.T) {
-	t.Parallel()
-
-	config := `
-		terraform {
-		  source = "foo"
-		}
-
-		remote_state {
-		  backend = "s3"
-		  config {
-		    encrypt = true
-		    bucket = "my-bucket"
-		    key = "terraform.tfstate"
-		    region = "us-east-1"
-		  }
-		}
-
-		dependencies {
-		  paths = ["../vpc", "../mysql", "../backend-app"]
-		}
-	`
-
-	terragruntConfig, err := parseConfigString(config, mockOptions, mockOldInclude)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if assert.NotNil(t, terragruntConfig.Terraform) {
-		assert.Equal(t, "foo", terragruntConfig.Terraform.Source)
-	}
-
-	if assert.NotNil(t, terragruntConfig.RemoteState) {
-		assert.Equal(t, "s3", terragruntConfig.RemoteState.Backend)
-		assert.NotEmpty(t, terragruntConfig.RemoteState.Config)
-		assert.Equal(t, true, terragruntConfig.RemoteState.Config["encrypt"])
-		assert.Equal(t, "my-bucket", terragruntConfig.RemoteState.Config["bucket"])
-		assert.Equal(t, "terraform.tfstate", terragruntConfig.RemoteState.Config["key"])
-		assert.Equal(t, "us-east-1", terragruntConfig.RemoteState.Config["region"])
-	}
-
-	if assert.NotNil(t, terragruntConfig.Dependencies) {
-		assert.Equal(t, []string{"../vpc", "../mysql", "../backend-app"}, terragruntConfig.Dependencies.Paths)
-	}
-}
-
 func TestParseTerragruntConfigInclude(t *testing.T) {
 	t.Parallel()
 
@@ -467,19 +421,6 @@ func TestParseTerragruntConfigEmptyConfig(t *testing.T) {
 
 	_, err := parseConfigString(config, mockOptions, mockDefaultInclude)
 	assert.True(t, errors.IsError(err, CouldNotResolveTerragruntConfigInFile(DefaultTerragruntConfigPath)))
-}
-
-func TestParseTerragruntConfigEmptyConfigOldConfig(t *testing.T) {
-	t.Parallel()
-
-	config := ``
-
-	terragruntConfig, err := parseConfigString(config, mockOptions, mockOldInclude)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Nil(t, terragruntConfig.RemoteState)
 }
 
 type argConfig struct {
@@ -724,22 +665,11 @@ func TestFindConfigFilesInPathOneNewConfig(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestFindConfigFilesInPathOneOldConfig(t *testing.T) {
-	t.Parallel()
-
-	expected := []string{"../test/fixture-config-files/one-old-config/subdir/.terragrunt"}
-	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/one-old-config"))
-
-	assert.Nil(t, err, "Unexpected error: %v", err)
-	assert.Equal(t, expected, actual)
-}
-
 func TestFindConfigFilesInPathMultipleConfigs(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{
 		"../test/fixture-config-files/multiple-configs/terraform.tfvars",
-		"../test/fixture-config-files/multiple-configs/subdir-2/subdir/.terragrunt",
 		"../test/fixture-config-files/multiple-configs/subdir-3/terraform.tfvars",
 	}
 	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/multiple-configs"))

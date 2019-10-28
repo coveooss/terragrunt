@@ -26,30 +26,25 @@ import (
 
 // hard-code this to match the test fixture for now
 const (
-	TERRAFORM_REMOTE_STATE_S3_REGION                    = "us-west-2"
-	TEST_FIXTURE_PATH                                   = "fixture/"
-	TEST_FIXTURE_INCLUDE_PATH                           = "fixture-include/"
-	TEST_FIXTURE_INCLUDE_CHILD_REL_PATH                 = "qa/my-app"
-	TEST_FIXTURE_STACK                                  = "fixture-stack/"
-	TEST_FIXTURE_OUTPUT_ALL                             = "fixture-output-all"
-	TEST_FIXTURE_EXTRA_ARGS_PATH                        = "fixture-extra-args/"
-	TEST_FIXTURE_LOCAL_DOWNLOAD_PATH                    = "fixture-download/local"
-	TEST_FIXTURE_REMOTE_DOWNLOAD_PATH                   = "fixture-download/remote"
-	TEST_FIXTURE_OVERRIDE_DOWNLOAD_PATH                 = "fixture-download/override"
-	TEST_FIXTURE_LOCAL_RELATIVE_DOWNLOAD_PATH           = "fixture-download/local-relative"
-	TEST_FIXTURE_REMOTE_RELATIVE_DOWNLOAD_PATH          = "fixture-download/remote-relative"
-	TEST_FIXTURE_LOCAL_WITH_BACKEND                     = "fixture-download/local-with-backend"
-	TEST_FIXTURE_REMOTE_WITH_BACKEND                    = "fixture-download/remote-with-backend"
-	TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER               = "fixture-download/local-with-hidden-folder"
-	TEST_FIXTURE_OLD_CONFIG_INCLUDE_PATH                = "fixture-old-terragrunt-config/include"
-	TEST_FIXTURE_OLD_CONFIG_INCLUDE_CHILD_UPDATED_PATH  = "fixture-old-terragrunt-config/include-child-updated"
-	TEST_FIXTURE_OLD_CONFIG_INCLUDE_PARENT_UPDATED_PATH = "fixture-old-terragrunt-config/include-parent-updated"
-	TEST_FIXTURE_OLD_CONFIG_STACK_PATH                  = "fixture-old-terragrunt-config/stack"
-	TEST_FIXTURE_OLD_CONFIG_DOWNLOAD_PATH               = "fixture-old-terragrunt-config/download"
-	TERRAFORM_FOLDER                                    = ".terraform"
-	TERRAFORM_STATE                                     = "terraform.tfstate"
-	TERRAFORM_STATE_BACKUP                              = "terraform.tfstate.backup"
-	DEFAULT_TEST_REGION                                 = "us-east-1"
+	TERRAFORM_REMOTE_STATE_S3_REGION           = "us-west-2"
+	TEST_FIXTURE_PATH                          = "fixture/"
+	TEST_FIXTURE_INCLUDE_PATH                  = "fixture-include/"
+	TEST_FIXTURE_INCLUDE_CHILD_REL_PATH        = "qa/my-app"
+	TEST_FIXTURE_STACK                         = "fixture-stack/"
+	TEST_FIXTURE_OUTPUT_ALL                    = "fixture-output-all"
+	TEST_FIXTURE_EXTRA_ARGS_PATH               = "fixture-extra-args/"
+	TEST_FIXTURE_LOCAL_DOWNLOAD_PATH           = "fixture-download/local"
+	TEST_FIXTURE_REMOTE_DOWNLOAD_PATH          = "fixture-download/remote"
+	TEST_FIXTURE_OVERRIDE_DOWNLOAD_PATH        = "fixture-download/override"
+	TEST_FIXTURE_LOCAL_RELATIVE_DOWNLOAD_PATH  = "fixture-download/local-relative"
+	TEST_FIXTURE_REMOTE_RELATIVE_DOWNLOAD_PATH = "fixture-download/remote-relative"
+	TEST_FIXTURE_LOCAL_WITH_BACKEND            = "fixture-download/local-with-backend"
+	TEST_FIXTURE_REMOTE_WITH_BACKEND           = "fixture-download/remote-with-backend"
+	TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER      = "fixture-download/local-with-hidden-folder"
+	TERRAFORM_FOLDER                           = ".terraform"
+	TERRAFORM_STATE                            = "terraform.tfstate"
+	TERRAFORM_STATE_BACKUP                     = "terraform.tfstate.backup"
+	DEFAULT_TEST_REGION                        = "us-east-1"
 )
 
 func init() {
@@ -208,17 +203,6 @@ func TestLocalDownloadWithHiddenFolder(t *testing.T) {
 
 	// Run a second time to make sure the temporary folder can be reused without errors
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER))
-}
-
-func TestLocalDownloadWithOldConfig(t *testing.T) {
-	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_OLD_CONFIG_DOWNLOAD_PATH)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_OLD_CONFIG_DOWNLOAD_PATH))
-
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_OLD_CONFIG_DOWNLOAD_PATH))
 }
 
 func TestLocalDownloadWithRelativePath(t *testing.T) {

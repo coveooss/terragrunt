@@ -96,7 +96,7 @@ func shouldConfigureRemoteState(remoteStateFromTerragruntConfig RemoteState, ter
 // we should override the existing remote state setting.
 func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remoteStateFromTerragruntConfig RemoteState, terragruntOptions *options.TerragruntOptions) (bool, error) {
 	if existingBackend.Type != remoteStateFromTerragruntConfig.Backend {
-		terragruntOptions.Logger.Warningf("Terraform remote state is already configured for a different backend", existingBackend.Type)
+		terragruntOptions.Logger.Warning("Terraform remote state is already configured for a different backend", existingBackend.Type)
 		prompt := fmt.Sprintf("Current backend = %s\nNew backend = %s\n\nOverwrite?", existingBackend.Type, remoteStateFromTerragruntConfig.Backend)
 		return shell.PromptUserForYesNo(prompt, terragruntOptions)
 	}
