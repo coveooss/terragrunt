@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -360,20 +359,19 @@ func TestParseTerragruntConfigThreeLevels(t *testing.T) {
 }
 
 func TestParseWithBootStrapFile(t *testing.T) {
-	// Cannot be run in parallel since it defines an environment variable
+	t.Parallel()
+
 	fixture := "../test/fixture-bootstrap/"
-	absolute, _ := filepath.Abs(fixture)
-	os.Setenv(options.EnvBootConfigs, fmt.Sprintf("%[1]s/a.tfvars:%[1]s/b.tfvars", absolute))
-	defer func() { os.Setenv(options.EnvBootConfigs, "") }()
-
 	configPath := fixture + DefaultTerragruntConfigPath
-
 	config, err := util.ReadFileAsString(configPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	terragruntConfig, err := parseConfigString(config, options.NewTerragruntOptionsForTest(configPath), IncludeConfig{Path: configPath})
+	terragruntOptions := options.NewTerragruntOptionsForTest(configPath)
+	absolute, _ := filepath.Abs(fixture)
+	terragruntOptions.BootConfigurationPaths = []string{absolute + "/a.tfvars", absolute + "/b.tfvars"}
+	terragruntConfig, err := parseConfigString(config, terragruntOptions, IncludeConfig{Path: configPath})
 	assert.Nil(t, err)
 	assert.NotNil(t, terragruntConfig)
 	assert.Equal(t, len(terragruntConfig.PreHooks), 2, "Should have 2 pre_hook(s)")

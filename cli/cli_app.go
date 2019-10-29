@@ -32,15 +32,19 @@ const (
 	optWorkingDir                       = "terragrunt-working-dir"
 	optTerragruntSource                 = "terragrunt-source"
 	optTerragruntSourceUpdate           = "terragrunt-source-update"
-	OptTerragruntIgnoreDependencyErrors = "terragrunt-ignore-dependency-errors"
-	OptLoggingLevel                     = "terragrunt-logging-level"
-	OptFlushDelay                       = "terragrunt-flush-delay"
-	OptNbWorkers                        = "terragrunt-workers"
-	OptAWSProfile                       = "profile"
+	optTerragruntIgnoreDependencyErrors = "terragrunt-ignore-dependency-errors"
+	optLoggingLevel                     = "terragrunt-logging-level"
+	optFlushDelay                       = "terragrunt-flush-delay"
+	optNbWorkers                        = "terragrunt-workers"
+	optAWSProfile                       = "profile"
+	optApplyTemplate                    = "terragrunt-apply-template"
+	optTemplatePatterns                 = "terragrunt-template-patterns"
+	optBootConfigs                      = "terragrunt-boot-configs"
+	optPreBootConfigs                   = "terragrunt-pre-boot-configs"
 )
 
-var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, OptTerragruntIgnoreDependencyErrors}
-var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath, optWorkingDir, optTerragruntSource, OptLoggingLevel, OptAWSProfile, optApprovalHandler, OptFlushDelay, OptNbWorkers}
+var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, optTerragruntIgnoreDependencyErrors, optApplyTemplate}
+var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath, optWorkingDir, optTerragruntSource, optLoggingLevel, optAWSProfile, optApprovalHandler, optFlushDelay, optNbWorkers, optTemplatePatterns, optBootConfigs, optPreBootConfigs}
 
 const multiModuleSuffix = "-all"
 const cmdInit = "init"
@@ -450,15 +454,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if actualCommand.BehaveAs != "" {
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
-	if err == nil && useTempFolder && util.ApplyTemplate() {
+	if err == nil && useTempFolder && terragruntOptions.ApplyTemplate {
 		template.SetLogLevel(util.GetLoggingLevel())
 		var t *template.Template
 		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil); stopOnError(err) {
 			return
 		}
 		t.SetOption(template.Overwrite, true)
-		pathSep := string(os.PathListSeparator)
-		patterns := util.RemoveElementFromList(strings.Split("*.tf"+pathSep+os.Getenv(options.EnvTemplatePatterns), pathSep), "")
+		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf")
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
 		modifiedFiles, err := t.ProcessTemplates("", "", files...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
