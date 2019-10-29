@@ -11,12 +11,14 @@ import (
 	"github.com/coveooss/gotemplate/v3/errors"
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/multilogger"
 	"github.com/op/go-logging"
+	"github.com/sirupsen/logrus"
 )
 
 // CreateLogger creates a logger with the given prefix
-func CreateLogger(prefix string) *logging.Logger {
-	return logging.MustGetLogger(prefix)
+func CreateLogger(prefix string) *multilogger.MultiLogger {
+	return multilogger.New(logrus.InfoLevel, multilogger.DisabledLevel, "", prefix)
 }
 
 // SetLoggingLevel sets the logging level
@@ -58,7 +60,7 @@ var loggingMutex sync.Mutex
 // LogCatcher traps messsage containing logging level [LOGLEVEL] and redirect them to the logging system
 type LogCatcher struct {
 	Writer    io.Writer
-	Logger    *logging.Logger
+	Logger    *multilogger.MultiLogger
 	remaining string
 }
 

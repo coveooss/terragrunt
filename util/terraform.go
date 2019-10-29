@@ -59,14 +59,14 @@ func LoadVariablesFromFile(path, cwd string, context ...interface{}) (map[string
 		return nil, err
 	}
 
-	if result, err := LoadVariablesFromSource(string(bytes), path, cwd, context...); err != nil {
+	result, err := LoadVariablesFromSource(string(bytes), path, cwd, context...)
+	if err != nil {
 		return nil, err
-	} else {
-		if len(result) == 1 && result["variable"] != nil {
-			return getDefaultVars(result)
-		}
-		return result, nil
 	}
+	if len(result) == 1 && result["variable"] != nil {
+		return getDefaultVars(result)
+	}
+	return result, nil
 }
 
 // LoadVariables returns a map of the variables defined in the content provider
@@ -92,10 +92,10 @@ func LoadVariablesFromSource(content, fileName, cwd string, context ...interface
 		}
 
 		if t != nil {
-			template.SetLogLevel(GetLoggingLevel())
+			template.InternalLog.SetConsoleLevel(GetLoggingLevel())
 			if modifiedContent, err := t.ProcessContent(content, fileName); err != nil {
 				// In case of error, we simply issue a warning and continue with the original content
-				template.Log.Warning(err)
+				template.InternalLog.Warning(err)
 			} else {
 				content = modifiedContent
 			}

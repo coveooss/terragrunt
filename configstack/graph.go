@@ -5,7 +5,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-// Check for dependency cycles in the given list of modules and return an error if one is found
+// CheckForCycles checks for dependency cycles in the given list of modules and return an error if one is found
 func CheckForCycles(modules []*TerraformModule) error {
 	visitedPaths := []string{}
 	currentTraversalPaths := []string{}

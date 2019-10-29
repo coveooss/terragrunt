@@ -11,7 +11,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/fatih/color"
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -203,7 +203,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 
 	// If AWS is configured, we init the session to ensure that proper environment variables are set
 	if terragruntOptions.AwsProfile != "" || os.Getenv("AWS_PROFILE") != "" && os.Getenv("AWS_ACCESS_KEY_ID") == "" {
-		_, err := aws_helper.InitAwsSession(terragruntOptions.AwsProfile)
+		_, err := awshelper.InitAwsSession(terragruntOptions.AwsProfile)
 		if err != nil {
 			return err
 		}
@@ -451,7 +451,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 	if err == nil && useTempFolder && util.ApplyTemplate() {
-		template.SetLogLevel(util.GetLoggingLevel())
+		template.InternalLog.SetConsoleLevel(util.GetLoggingLevel())
 		var t *template.Template
 		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil); stopOnError(err) {
 			return

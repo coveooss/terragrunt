@@ -25,7 +25,7 @@ var mockOptions = options.NewTerragruntOptionsForTest("dynamo_lock_test_utils")
 // Returns a unique (ish) id we can use to name resources so they don't conflict with each other. Uses base 62 to
 // generate a 6 character string that's unlikely to collide with the handful of tests we run in parallel. Based on code
 // here: http://stackoverflow.com/a/9543797/483528
-func uniqueId() string {
+func uniqueID() string {
 	const BASE_62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	const UNIQUE_ID_LENGTH = 6 // Should be good for 62^6 = 56+ billion combinations
 
@@ -48,7 +48,7 @@ func createDynamoDbClientForTest(t *testing.T) *dynamodb.DynamoDB {
 }
 
 func uniqueTableNameForTest() string {
-	return fmt.Sprintf("terragrunt_test_%s", uniqueId())
+	return fmt.Sprintf("terragrunt_test_%s", uniqueID())
 }
 
 func cleanupTableForTest(t *testing.T, tableName string, client *dynamodb.DynamoDB) {
@@ -57,7 +57,7 @@ func cleanupTableForTest(t *testing.T, tableName string, client *dynamodb.Dynamo
 }
 
 func assertCanWriteToTable(t *testing.T, tableName string, client *dynamodb.DynamoDB) {
-	item := createKeyFromItemId(uniqueId())
+	item := createKeyFromItemId(uniqueID())
 
 	_, err := client.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(tableName),

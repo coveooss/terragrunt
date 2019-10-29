@@ -152,14 +152,14 @@ type PlanMultiError struct {
 }
 
 func (this PlanMultiError) ExitStatus() (int, error) {
-	exitCode := NORMAL_EXIT_CODE
+	exitCode := normalExitCode
 	for i := range this.Errors {
 		if code, err := shell.GetExitCode(this.Errors[i]); err != nil {
-			return UNDEFINED_EXIT_CODE, this
-		} else if code == ERROR_EXIT_CODE || code == errors.ChangeExitCode && exitCode == NORMAL_EXIT_CODE {
+			return undefinedExitCode, this
+		} else if code == errorExitCode || code == errors.ChangeExitCode && exitCode == normalExitCode {
 			// The exit code 1 is more significant that the exit code 2 because it represents an error
 			// while 2 represent a warning.
-			return UNDEFINED_EXIT_CODE, this
+			return undefinedExitCode, this
 		}
 	}
 	return exitCode, nil

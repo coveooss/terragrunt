@@ -6,7 +6,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/dynamodb"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -198,7 +198,7 @@ func createLockTableIfNecessary(s3Config *RemoteStateConfigS3, terragruntOptions
 
 // Create an authenticated client for DynamoDB
 func CreateS3Client(awsRegion, awsProfile string) (*s3.S3, error) {
-	session, err := aws_helper.CreateAwsSession(awsRegion, awsProfile)
+	session, err := awshelper.CreateAwsSession(awsRegion, awsProfile)
 	if err != nil {
 		return nil, err
 	}

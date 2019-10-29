@@ -10,7 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -450,7 +450,7 @@ func (context *resolveContext) getDiscoveredValue() (result interface{}, err err
 }
 
 func (context *resolveContext) getDiscoveredValueInternal(key, region string) (result interface{}, err error) {
-	result, err = aws_helper.GetSSMParameter(key, region)
+	result, err = awshelper.GetSSMParameter(key, region)
 	if err != nil {
 		account, _ := context.getAWSAccountID()
 		err = fmt.Errorf("%s (key=%s region=%s account=%s)", err, key, region, account)
@@ -563,7 +563,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 
 // Return the AWS account id associated to the current set of credentials
 func (context *resolveContext) getAWSAccountID() (interface{}, error) {
-	session, err := aws_helper.CreateAwsSession("", "")
+	session, err := awshelper.CreateAwsSession("", "")
 	if err != nil {
 		return "", err
 	}

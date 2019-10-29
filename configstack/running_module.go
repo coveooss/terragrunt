@@ -14,12 +14,14 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-// Represents the status of a module that we are trying to apply as part of the apply-all or destroy-all command
+// ModuleStatus represents the status of a module that we are trying to apply as part of the apply-all or destroy-all command
 type ModuleStatus int
 
-const NORMAL_EXIT_CODE = 0
-const ERROR_EXIT_CODE = 1
-const UNDEFINED_EXIT_CODE = -1
+const (
+	normalExitCode    = 0
+	errorExitCode     = 1
+	undefinedExitCode = -1
+)
 
 const (
 	Waiting ModuleStatus = iota
@@ -331,10 +333,10 @@ func (e MultiError) Error() string {
 }
 
 func (e MultiError) ExitStatus() (int, error) {
-	exitCode := NORMAL_EXIT_CODE
+	exitCode := normalExitCode
 	for i := range e.Errors {
 		if code, err := shell.GetExitCode(e.Errors[i]); err != nil {
-			return UNDEFINED_EXIT_CODE, e
+			return undefinedExitCode, e
 		} else if code > exitCode {
 			exitCode = code
 		}
