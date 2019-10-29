@@ -23,9 +23,6 @@ const (
 	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
 	DefaultTerragruntConfigPath = "terraform.tfvars"
 
-	// OldTerragruntConfigPath is the name of the legacy file name used to store terragrunt definitions
-	OldTerragruntConfigPath = ".terragrunt"
-
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
 )
@@ -213,19 +210,8 @@ func (conf TerraformConfig) String() string {
 	return collections.PrettyPrintStruct(conf)
 }
 
-// DefaultConfigPath returns the default path to use for the Terragrunt configuration file. The reason this is a method
-// rather than a constant is that older versions of Terragrunt stored configuration in a different file. This method returns
-// the path to the old configuration format if such a file exists and the new format otherwise.
-func DefaultConfigPath(workingDir string) string {
-	path := util.JoinPath(workingDir, OldTerragruntConfigPath)
-	if util.FileExists(path) {
-		return path
-	}
-	return util.JoinPath(workingDir, DefaultTerragruntConfigPath)
-}
-
 // FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.
-// A file is a Terragrunt config file if it has a name as returned by the DefaultConfigPath method and contains Terragrunt
+// A file is a Terragrunt config file if it its name matches the DefaultTerragruntConfigPath constant and contains Terragrunt
 // config contents as returned by the IsTerragruntConfigFile method.
 func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]string, error) {
 	rootPath := terragruntOptions.WorkingDir
@@ -248,7 +234,7 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 				// the folder
 				return nil
 			}
-			configPath := DefaultConfigPath(path)
+			configPath := util.JoinPath(path, DefaultTerragruntConfigPath)
 			isTerragruntConfig, err := IsTerragruntConfigFile(configPath)
 			if err != nil {
 				return err
@@ -267,27 +253,12 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 // IsTerragruntConfigFile returns true if the given path corresponds to file that could be a Terragrunt config file.
 // A file could be a Terragrunt config file if:
 //   1. The file exists
-//   2. It is a .terragrunt file, which is the old Terragrunt-specific file format
 //   3. The file contains HCL contents with a terragrunt = { ... } block
 func IsTerragruntConfigFile(path string) (bool, error) {
 	if !util.FileExists(path) {
 		return false, nil
 	}
 
-	if isOldTerragruntConfig(path) {
-		return true, nil
-	}
-
-	return isNewTerragruntConfig(path)
-}
-
-// Returns true if the given path points to an old Terragrunt config file
-func isOldTerragruntConfig(path string) bool {
-	return strings.HasSuffix(path, OldTerragruntConfigPath)
-}
-
-// Returns true if the given path points to a new (current) Terragrunt config file
-func isNewTerragruntConfig(path string) (bool, error) {
 	configContents, err := util.ReadFileAsString(path)
 	if err != nil {
 		return false, err
@@ -352,10 +323,6 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 			terragruntOptions.Logger.Debugf("Config already in the cache %s", include.Path)
 			return cached.(*TerragruntConfig), nil
 		}
-	}
-
-	if isOldTerragruntConfig(include.Path) {
-		terragruntOptions.Logger.Warningf("DEPRECATION : Found deprecated config file format %s. This old config format will not be supported in the future. Please move your config files into a %s file.", include.Path, DefaultTerragruntConfigPath)
 	}
 
 	var configString, source string
@@ -517,14 +484,6 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 // Parse the given config string, read from the given config file, as a terragruntConfigFile struct. This method solely
 // converts the HCL syntax in the string to the terragruntConfigFile struct; it does not process any interpolations.
 func parseConfigStringAsTerragruntConfigFile(configString string, configPath string) (*TerragruntConfigFile, error) {
-	if isOldTerragruntConfig(configPath) {
-		terragruntConfig := &TerragruntConfigFile{Path: configPath}
-		if err := hcl.Decode(terragruntConfig, configString); err != nil {
-			return nil, errors.WithStackTrace(err)
-		}
-		return terragruntConfig, nil
-	}
-
 	tfvarsConfig := &tfvarsFileWithTerragruntConfig{}
 	if err := hcl.Decode(tfvarsConfig, configString); err != nil {
 		return nil, errors.WithStackTrace(err)

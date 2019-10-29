@@ -509,7 +509,7 @@ func (context *resolveContext) findInParentFolders() (interface{}, error) {
 			return "", parentTerragruntConfigNotFound(context.options.TerragruntConfigPath)
 		}
 
-		configPath := DefaultConfigPath(currentDir)
+		configPath := util.JoinPath(currentDir, DefaultTerragruntConfigPath)
 		if util.FileExists(configPath) {
 			return util.GetPathRelativeTo(configPath, filepath.Dir(context.options.TerragruntConfigPath))
 		}
