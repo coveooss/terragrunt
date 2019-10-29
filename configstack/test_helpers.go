@@ -12,17 +12,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type TerraformModuleByPath []*TerraformModule
+type terraformModuleByPath []*TerraformModule
 
-func (byPath TerraformModuleByPath) Len() int           { return len(byPath) }
-func (byPath TerraformModuleByPath) Swap(i, j int)      { byPath[i], byPath[j] = byPath[j], byPath[i] }
-func (byPath TerraformModuleByPath) Less(i, j int) bool { return byPath[i].Path < byPath[j].Path }
+func (byPath terraformModuleByPath) Len() int           { return len(byPath) }
+func (byPath terraformModuleByPath) Swap(i, j int)      { byPath[i], byPath[j] = byPath[j], byPath[i] }
+func (byPath terraformModuleByPath) Less(i, j int) bool { return byPath[i].Path < byPath[j].Path }
 
-type RunningModuleByPath []*runningModule
+type runningModuleByPath []*runningModule
 
-func (byPath RunningModuleByPath) Len() int      { return len(byPath) }
-func (byPath RunningModuleByPath) Swap(i, j int) { byPath[i], byPath[j] = byPath[j], byPath[i] }
-func (byPath RunningModuleByPath) Less(i, j int) bool {
+func (byPath runningModuleByPath) Len() int      { return len(byPath) }
+func (byPath runningModuleByPath) Swap(i, j int) { byPath[i], byPath[j] = byPath[j], byPath[i] }
+func (byPath runningModuleByPath) Less(i, j int) bool {
 	return byPath[i].Module.Path < byPath[j].Module.Path
 }
 
@@ -34,8 +34,8 @@ func assertModuleListsEqual(t *testing.T, expectedModules []*TerraformModule, ac
 		return
 	}
 
-	sort.Sort(TerraformModuleByPath(expectedModules))
-	sort.Sort(TerraformModuleByPath(actualModules))
+	sort.Sort(terraformModuleByPath(expectedModules))
+	sort.Sort(terraformModuleByPath(actualModules))
 
 	for i := 0; i < len(expectedModules); i++ {
 		expected := expectedModules[i]
@@ -81,8 +81,8 @@ func assertRunningModuleListsEqual(t *testing.T, expectedModules []*runningModul
 		return
 	}
 
-	sort.Sort(RunningModuleByPath(expectedModules))
-	sort.Sort(RunningModuleByPath(actualModules))
+	sort.Sort(runningModuleByPath(expectedModules))
+	sort.Sort(runningModuleByPath(actualModules))
 
 	for i := 0; i < len(expectedModules); i++ {
 		expected := expectedModules[i]
@@ -110,7 +110,7 @@ func assertRunningModulesEqual(t *testing.T, expected *runningModule, actual *ru
 }
 
 // We can't do a simple IsError comparison for UnrecognizedDependency because that error is a struct that
-// contains an array, and in Go, trying to compare arrays gives a "comparing uncomparable type
+// contains an array, and in Go, trying to compare arrays gives a "comparing noncomparable type
 // configstack.UnrecognizedDependency" panic. Therefore, we have to compare that error more manually.
 func assertErrorsEqual(t *testing.T, expected error, actual error, messageAndArgs ...interface{}) {
 	actual = errors.Unwrap(actual)
@@ -160,9 +160,9 @@ func canonical(t *testing.T, path string) string {
 	return out
 }
 
-// Create a RemoteState struct
-func state(t *testing.T, bucket string, key string) *remote.RemoteState {
-	return &remote.RemoteState{
+// Create a State struct
+func state(t *testing.T, bucket string, key string) *remote.State {
+	return &remote.State{
 		Backend: "s3",
 		Config: map[string]interface{}{
 			"bucket": bucket,
@@ -184,12 +184,12 @@ func optionsWithMockTerragruntCommand(terragruntConfigPath string, toReturnFromT
 
 func assertMultiErrorContains(t *testing.T, actualError error, expectedErrors ...error) {
 	actualError = errors.Unwrap(actualError)
-	multiError, isMultiError := actualError.(MultiError)
-	if assert.True(t, isMultiError, "Expected a MutliError, but got: %v", actualError) {
-		assert.Equal(t, len(expectedErrors), len(multiError.Errors))
+	errMulti, isMultiError := actualError.(errMulti)
+	if assert.True(t, isMultiError, "Expected a MultiError, but got: %v", actualError) {
+		assert.Equal(t, len(expectedErrors), len(errMulti.Errors))
 		for _, expectedErr := range expectedErrors {
 			found := false
-			for _, actualErr := range multiError.Errors {
+			for _, actualErr := range errMulti.Errors {
 				if expectedErr == actualErr {
 					found = true
 					break

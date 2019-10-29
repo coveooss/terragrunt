@@ -5,8 +5,8 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-// CheckForCycles checks for dependency cycles in the given list of modules and return an error if one is found
-func CheckForCycles(modules []*TerraformModule) error {
+// checkForCycles checks for dependency cycles in the given list of modules and return an error if one is found
+func checkForCycles(modules []*TerraformModule) error {
 	visitedPaths := []string{}
 	currentTraversalPaths := []string{}
 
@@ -34,7 +34,7 @@ func checkForCyclesUsingDepthFirstSearch(module *TerraformModule, visitedPaths *
 	}
 
 	if util.ListContainsElement(*currentTraversalPaths, module.Path) {
-		return errors.WithStackTrace(DependencyCycle(append(*currentTraversalPaths, module.Path)))
+		return errors.WithStackTrace(errDependencyCycle(append(*currentTraversalPaths, module.Path)))
 	}
 
 	*currentTraversalPaths = append(*currentTraversalPaths, module.Path)

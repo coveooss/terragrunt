@@ -2,4 +2,5 @@
 
 package helpers
 
+// RootFolder represents the root on linux/unix based system
 var RootFolder = "/"

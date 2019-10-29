@@ -63,7 +63,7 @@ func TestWaitForTableToBeActiveTableDoesNotExist(t *testing.T) {
 
 	err := waitForTableToBeActiveWithRandomSleep(tableName, client, retries, 1*time.Millisecond, 500*time.Millisecond, mockOptions)
 
-	assert.True(t, errors.IsError(err, TableActiveRetriesExceeded{TableName: tableName, Retries: retries}), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
+	assert.True(t, errors.IsError(err, tableActiveRetriesExceededError{TableName: tableName, Retries: retries}), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
 }
 
 func TestCreateLockTableIfNecessaryTableAlreadyExists(t *testing.T) {

@@ -60,7 +60,7 @@ func TestCheckForCycles(t *testing.T) {
 
 	testCases := []struct {
 		modules  []*TerraformModule
-		expected DependencyCycle
+		expected errDependencyCycle
 	}{
 		{[]*TerraformModule{}, nil},
 		{[]*TerraformModule{a}, nil},
@@ -69,18 +69,18 @@ func TestCheckForCycles(t *testing.T) {
 		{[]*TerraformModule{a, b, f}, nil},
 		{[]*TerraformModule{a, e, g}, nil},
 		{[]*TerraformModule{a, b, c, e, f, g, h}, nil},
-		{[]*TerraformModule{i}, DependencyCycle([]string{"i", "i"})},
-		{[]*TerraformModule{j, k}, DependencyCycle([]string{"j", "k", "j"})},
-		{[]*TerraformModule{l, o, n, m}, DependencyCycle([]string{"l", "m", "n", "o", "l"})},
-		{[]*TerraformModule{a, l, b, o, n, f, m, h}, DependencyCycle([]string{"l", "m", "n", "o", "l"})},
+		{[]*TerraformModule{i}, errDependencyCycle([]string{"i", "i"})},
+		{[]*TerraformModule{j, k}, errDependencyCycle([]string{"j", "k", "j"})},
+		{[]*TerraformModule{l, o, n, m}, errDependencyCycle([]string{"l", "m", "n", "o", "l"})},
+		{[]*TerraformModule{a, l, b, o, n, f, m, h}, errDependencyCycle([]string{"l", "m", "n", "o", "l"})},
 	}
 
 	for _, testCase := range testCases {
-		actual := CheckForCycles(testCase.modules)
+		actual := checkForCycles(testCase.modules)
 		if testCase.expected == nil {
 			assert.Nil(t, actual)
 		} else if assert.NotNil(t, actual, "For modules %v", testCase.modules) {
-			actualErr := errors.Unwrap(actual).(DependencyCycle)
+			actualErr := errors.Unwrap(actual).(errDependencyCycle)
 			assert.Equal(t, []string(testCase.expected), []string(actualErr), "For modules %v", testCase.modules)
 		}
 	}

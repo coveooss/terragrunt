@@ -643,7 +643,7 @@ func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, 
 
 // If the user entered a Terraform command that uses state (e.g. plan, apply), make sure remote state is configured
 // before running the command.
-func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *options.TerragruntOptions) error {
+func configureRemoteState(remoteState *remote.State, terragruntOptions *options.TerragruntOptions) error {
 	// We only configure remote state for the commands that use the tfstate files. We do not configure it for
 	// commands such as "get" or "version".
 	if util.ListContainsElement(terraformCommandsThatUseState, util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")) {

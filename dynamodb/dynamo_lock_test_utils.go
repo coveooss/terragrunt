@@ -13,9 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// For simplicity, do all testing in the us-east-1 region
-const DEFAULT_TEST_REGION = "us-east-1"
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -26,13 +23,13 @@ var mockOptions = options.NewTerragruntOptionsForTest("dynamo_lock_test_utils")
 // generate a 6 character string that's unlikely to collide with the handful of tests we run in parallel. Based on code
 // here: http://stackoverflow.com/a/9543797/483528
 func uniqueID() string {
-	const BASE_62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	const UNIQUE_ID_LENGTH = 6 // Should be good for 62^6 = 56+ billion combinations
+	const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	const uniqueIDLength = 6 // Should be good for 62^6 = 56+ billion combinations
 
 	var out bytes.Buffer
 
-	for i := 0; i < UNIQUE_ID_LENGTH; i++ {
-		out.WriteByte(BASE_62_CHARS[rand.Intn(len(BASE_62_CHARS))])
+	for i := 0; i < uniqueIDLength; i++ {
+		out.WriteByte(base62Chars[rand.Intn(len(base62Chars))])
 	}
 
 	return out.String()
@@ -40,7 +37,8 @@ func uniqueID() string {
 
 // Create a DynamoDB client we can use at test time. If there are any errors creating the client, fail the test.
 func createDynamoDbClientForTest(t *testing.T) *dynamodb.DynamoDB {
-	client, err := CreateDynamoDbClient(DEFAULT_TEST_REGION, "")
+	// We always use us-east-1 for test purpose
+	client, err := CreateDynamoDbClient("us-east-1", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +55,7 @@ func cleanupTableForTest(t *testing.T, tableName string, client *dynamodb.Dynamo
 }
 
 func assertCanWriteToTable(t *testing.T, tableName string, client *dynamodb.DynamoDB) {
-	item := createKeyFromItemId(uniqueID())
+	item := createKeyFromItemID(uniqueID())
 
 	_, err := client.PutItem(&dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
@@ -78,8 +76,8 @@ func withLockTable(t *testing.T, action func(tableName string, client *dynamodb.
 	action(tableName, client)
 }
 
-func createKeyFromItemId(itemId string) map[string]*dynamodb.AttributeValue {
+func createKeyFromItemID(itemID string) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
-		ATTR_LOCK_ID: &dynamodb.AttributeValue{S: aws.String(itemId)},
+		attrLockID: &dynamodb.AttributeValue{S: aws.String(itemID)},
 	}
 }

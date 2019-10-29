@@ -14,8 +14,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-// A representation of the configuration options available for S3 remote state
-type RemoteStateConfigS3 struct {
+// StateConfigS3 is a representation of the configuration options available for S3 remote state
+type StateConfigS3 struct {
 	Encrypt   bool   `mapstructure:"encrypt"`
 	Bucket    string `mapstructure:"bucket"`
 	Key       string `mapstructure:"key"`
@@ -24,12 +24,12 @@ type RemoteStateConfigS3 struct {
 	LockTable string `mapstructure:"dynamodb_table"`
 }
 
-const MAX_RETRIES_WAITING_FOR_S3_BUCKET = 12
-const SLEEP_BETWEEN_RETRIES_WAITING_FOR_S3_BUCKET = 5 * time.Second
+const maxRetriesWaitingForS3Bucket = 12
+const sleepBetweenRetriesWaitingForS3Bucket = 5 * time.Second
 
 // Initialize the remote state S3 bucket specified in the given config. This function will validate the config
 // parameters, create the S3 bucket if it doesn't already exist, and check that versioning is enabled.
-func InitializeRemoteStateS3(config map[string]interface{}, terragruntOptions *options.TerragruntOptions) error {
+func initializeRemoteStateS3(config map[string]interface{}, terragruntOptions *options.TerragruntOptions) error {
 	s3Config, err := parseS3Config(config)
 	if err != nil {
 		return err
@@ -60,8 +60,8 @@ func InitializeRemoteStateS3(config map[string]interface{}, terragruntOptions *o
 }
 
 // Parse the given map into an S3 config
-func parseS3Config(config map[string]interface{}) (*RemoteStateConfigS3, error) {
-	var s3Config RemoteStateConfigS3
+func parseS3Config(config map[string]interface{}) (*StateConfigS3, error) {
+	var s3Config StateConfigS3
 	if err := mapstructure.Decode(config, &s3Config); err != nil {
 		return nil, errors.WithStackTrace(err)
 	}
@@ -70,17 +70,17 @@ func parseS3Config(config map[string]interface{}) (*RemoteStateConfigS3, error) 
 }
 
 // Validate all the parameters of the given S3 remote state configuration
-func validateS3Config(config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+func validateS3Config(config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	if config.Region == "" {
-		return errors.WithStackTrace(MissingRequiredS3RemoteStateConfig("region"))
+		return errors.WithStackTrace(errMissingRequiredS3RemoteStateConfig("region"))
 	}
 
 	if config.Bucket == "" {
-		return errors.WithStackTrace(MissingRequiredS3RemoteStateConfig("bucket"))
+		return errors.WithStackTrace(errMissingRequiredS3RemoteStateConfig("bucket"))
 	}
 
 	if config.Key == "" {
-		return errors.WithStackTrace(MissingRequiredS3RemoteStateConfig("key"))
+		return errors.WithStackTrace(errMissingRequiredS3RemoteStateConfig("key"))
 	}
 
 	if !config.Encrypt {
@@ -92,7 +92,7 @@ func validateS3Config(config *RemoteStateConfigS3, terragruntOptions *options.Te
 
 // If the bucket specified in the given config doesn't already exist, prompt the user to create it, and if the user
 // confirms, create the bucket and enable versioning for it.
-func createS3BucketIfNecessary(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+func createS3BucketIfNecessary(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	if !DoesS3BucketExist(s3Client, config) {
 		prompt := fmt.Sprintf("Remote state S3 bucket %s does not exist or you don't have permissions to access it. Would you like Terragrunt to create it?", config.Bucket)
 		shouldCreateBucket, err := shell.PromptUserForYesNo(prompt, terragruntOptions)
@@ -101,7 +101,7 @@ func createS3BucketIfNecessary(s3Client *s3.S3, config *RemoteStateConfigS3, ter
 		}
 
 		if shouldCreateBucket {
-			return CreateS3BucketWithVersioning(s3Client, config, terragruntOptions)
+			return createS3BucketWithVersioning(s3Client, config, terragruntOptions)
 		}
 	}
 
@@ -109,7 +109,7 @@ func createS3BucketIfNecessary(s3Client *s3.S3, config *RemoteStateConfigS3, ter
 }
 
 // Check if versioning is enabled for the S3 bucket specified in the given config and warn the user if it is not
-func checkIfVersioningEnabled(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+func checkIfVersioningEnabled(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	out, err := s3Client.GetBucketVersioning(&s3.GetBucketVersioningInput{Bucket: aws.String(config.Bucket)})
 	if err != nil {
 		return errors.WithStackTrace(err)
@@ -125,16 +125,16 @@ func checkIfVersioningEnabled(s3Client *s3.S3, config *RemoteStateConfigS3, terr
 }
 
 // Create the given S3 bucket and enable versioning for it
-func CreateS3BucketWithVersioning(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	if err := CreateS3Bucket(s3Client, config, terragruntOptions); err != nil {
+func createS3BucketWithVersioning(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+	if err := createS3Bucket(s3Client, config, terragruntOptions); err != nil {
 		return err
 	}
 
-	if err := WaitUntilS3BucketExists(s3Client, config, terragruntOptions); err != nil {
+	if err := waitUntilS3BucketExists(s3Client, config, terragruntOptions); err != nil {
 		return err
 	}
 
-	if err := EnableVersioningForS3Bucket(s3Client, config, terragruntOptions); err != nil {
+	if err := enableVersioningForS3Bucket(s3Client, config, terragruntOptions); err != nil {
 		return err
 	}
 
@@ -143,29 +143,29 @@ func CreateS3BucketWithVersioning(s3Client *s3.S3, config *RemoteStateConfigS3, 
 
 // AWS is eventually consistent, so after creating an S3 bucket, this method can be used to wait until the information
 // about that S3 bucket has propagated everywhere
-func WaitUntilS3BucketExists(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	for retries := 0; retries < MAX_RETRIES_WAITING_FOR_S3_BUCKET; retries++ {
+func waitUntilS3BucketExists(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+	for retries := 0; retries < maxRetriesWaitingForS3Bucket; retries++ {
 		if DoesS3BucketExist(s3Client, config) {
 			terragruntOptions.Logger.Noticef("S3 bucket %s created.", config.Bucket)
 			return nil
-		} else if retries < MAX_RETRIES_WAITING_FOR_S3_BUCKET-1 {
-			terragruntOptions.Logger.Warningf("S3 bucket %s has not been created yet. Sleeping for %s and will check again.", config.Bucket, SLEEP_BETWEEN_RETRIES_WAITING_FOR_S3_BUCKET)
-			time.Sleep(SLEEP_BETWEEN_RETRIES_WAITING_FOR_S3_BUCKET)
+		} else if retries < maxRetriesWaitingForS3Bucket-1 {
+			terragruntOptions.Logger.Warningf("S3 bucket %s has not been created yet. Sleeping for %s and will check again.", config.Bucket, sleepBetweenRetriesWaitingForS3Bucket)
+			time.Sleep(sleepBetweenRetriesWaitingForS3Bucket)
 		}
 	}
 
-	return errors.WithStackTrace(MaxRetriesWaitingForS3BucketExceeded(config.Bucket))
+	return errors.WithStackTrace(errMaxRetriesWaitingForS3BucketExceeded(config.Bucket))
 }
 
 // Create the S3 bucket specified in the given config
-func CreateS3Bucket(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+func createS3Bucket(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	terragruntOptions.Logger.Notice("Creating S3 bucket", config.Bucket)
 	_, err := s3Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(config.Bucket)})
 	return errors.WithStackTrace(err)
 }
 
 // Enable versioning for the S3 bucket specified in the given config
-func EnableVersioningForS3Bucket(s3Client *s3.S3, config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+func enableVersioningForS3Bucket(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	terragruntOptions.Logger.Notice("Enabling versioning on S3 bucket", config.Bucket)
 	input := s3.PutBucketVersioningInput{
 		Bucket:                  aws.String(config.Bucket),
@@ -175,15 +175,14 @@ func EnableVersioningForS3Bucket(s3Client *s3.S3, config *RemoteStateConfigS3, t
 	return errors.WithStackTrace(err)
 }
 
-// Returns true if the S3 bucket specified in the given config exists and the current user has the ability to access
-// it.
-func DoesS3BucketExist(s3Client *s3.S3, config *RemoteStateConfigS3) bool {
+// DoesS3BucketExist returns true if the S3 bucket specified in the given config exists and the current user has the ability to access it.
+func DoesS3BucketExist(s3Client *s3.S3, config *StateConfigS3) bool {
 	_, err := s3Client.HeadBucket(&s3.HeadBucketInput{Bucket: aws.String(config.Bucket)})
 	return err == nil
 }
 
 // Create a table for locks in DynamoDB if the user has configured a lock table and the table doesn't already exist
-func createLockTableIfNecessary(s3Config *RemoteStateConfigS3, terragruntOptions *options.TerragruntOptions) error {
+func createLockTableIfNecessary(s3Config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	if s3Config.LockTable == "" {
 		return nil
 	}
@@ -196,7 +195,7 @@ func createLockTableIfNecessary(s3Config *RemoteStateConfigS3, terragruntOptions
 	return dynamodb.CreateLockTableIfNecessary(s3Config.LockTable, dynamodbClient, terragruntOptions)
 }
 
-// Create an authenticated client for DynamoDB
+// CreateS3Client creates an authenticated client for DynamoDB.
 func CreateS3Client(awsRegion, awsProfile string) (*s3.S3, error) {
 	session, err := awshelper.CreateAwsSession(awsRegion, awsProfile)
 	if err != nil {
@@ -208,14 +207,14 @@ func CreateS3Client(awsRegion, awsProfile string) (*s3.S3, error) {
 
 // Custom error types
 
-type MissingRequiredS3RemoteStateConfig string
+type errMissingRequiredS3RemoteStateConfig string
 
-func (configName MissingRequiredS3RemoteStateConfig) Error() string {
+func (configName errMissingRequiredS3RemoteStateConfig) Error() string {
 	return fmt.Sprintf("Missing required S3 remote state configuration %s", string(configName))
 }
 
-type MaxRetriesWaitingForS3BucketExceeded string
+type errMaxRetriesWaitingForS3BucketExceeded string
 
-func (err MaxRetriesWaitingForS3BucketExceeded) Error() string {
-	return fmt.Sprintf("Exceeded max retries (%d) waiting for bucket S3 bucket %s", MAX_RETRIES_WAITING_FOR_S3_BUCKET, string(err))
+func (err errMaxRetriesWaitingForS3BucketExceeded) Error() string {
+	return fmt.Sprintf("Exceeded max retries (%d) waiting for bucket S3 bucket %s", maxRetriesWaitingForS3Bucket, string(err))
 }

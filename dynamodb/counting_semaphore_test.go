@@ -11,7 +11,7 @@ import (
 func TestCountingSemaphoreHappyPath(t *testing.T) {
 	t.Parallel()
 
-	semaphore := NewCountingSemaphore(1)
+	semaphore := newCountingSemaphore(1)
 	semaphore.Acquire()
 	semaphore.Release()
 }
@@ -25,7 +25,7 @@ func TestCountingSemaphoreConcurrency(t *testing.T) {
 
 	permits := 10
 	goroutines := 100
-	semaphore := NewCountingSemaphore(permits)
+	semaphore := newCountingSemaphore(permits)
 
 	var goRoutinesExecutingSimultaneously uint32
 	var waitForAllGoRoutinesToFinish sync.WaitGroup

@@ -62,21 +62,24 @@ func TestTerragruntBeforeAndAfterHook(t *testing.T) {
 
 func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-hooks/before-and-after-merge"
+	const testFixtureIncludeChildRelativePath = "qa/my-app"
+
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	const testPath = "fixture-hooks/before-and-after-merge"
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
-	childPath := util.JoinPath(rootPath, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH)
+	childPath := util.JoinPath(rootPath, testFixtureIncludeChildRelativePath)
 	cleanupTerraformFolder(t, childPath)
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 	t.Logf("bucketName: %s", s3BucketName)
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, testFixtureIncludeChildRelativePath, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 
@@ -185,9 +188,9 @@ func TestTerragruntHookExitCode2PlanAll(t *testing.T) {
 }
 
 func TestTerragruntHookWithEnvVars(t *testing.T) {
+	const testPath = "fixture-hooks/with-envvars"
 	for i := 1; i <= 2; i++ {
 		withEnv("PATH", func() {
-			const testPath = "fixture-hooks/with-envvars"
 			cleanupTerraformFolder(t, testPath)
 			tmpEnvPath := copyEnvironment(t, testPath)
 			rootPath := util.JoinPath(tmpEnvPath, testPath)
