@@ -202,7 +202,7 @@ func resolveExternalDependenciesForModule(module *TerraformModule, canonicalTerr
 			return map[string]*TerraformModule{}, err
 		}
 
-		terragruntConfigPath := config.DefaultConfigPath(dependencyPath)
+		terragruntConfigPath := util.JoinPath(dependencyPath, config.DefaultTerragruntConfigPath)
 		if !util.ListContainsElement(canonicalTerragruntConfigPaths, terragruntConfigPath) {
 			externalTerragruntConfigPaths = append(externalTerragruntConfigPaths, terragruntConfigPath)
 		}

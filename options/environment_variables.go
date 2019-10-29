@@ -14,6 +14,7 @@ const (
 	EnvApplyTemplate    = "TERRAGRUNT_TEMPLATE"          // Used to configure whether or not go template should be applied on terraform (.tf and .tfvars) file
 	EnvTemplatePatterns = "TERRAGRUNT_TEMPLATE_PATTERNS" // Used to configure the extra files (other than .tf) that should be processed by go template
 	EnvBootConfigs      = "TERRAGRUNT_BOOT_CONFIGS"      // Used to set defaults configuration when launching terragrunt
+	EnvPreBootConfigs   = "TERRAGRUNT_PREBOOT_CONFIGS"   // Used to set defaults configuration when launching terragrunt (loaded before user files)
 )
 
 // All environment variables that are published during Terragrunt execution to share current context during shell execution

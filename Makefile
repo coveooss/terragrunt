@@ -13,8 +13,8 @@ test:
 full-test:
 	go test -v ./...
 
-coveralls:
-	@sh ./scripts/coverage.sh --coveralls
+codecov:
+	@sh ./scripts/coverage.sh --codecov
 
 html-coverage:
 	@sh ./scripts/coverage.sh --html

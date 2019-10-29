@@ -96,6 +96,17 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 		},
 
 		{
+			[]string{"--foo", "--terragrunt-apply-template", "--terragrunt-template-patterns", "test" + string(os.PathListSeparator) + "123"},
+			func() *options.TerragruntOptions {
+				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo"}, false, "", false)
+				terragruntOptions.ApplyTemplate = true
+				terragruntOptions.TemplateAdditionalPatterns = []string{"test", "123"}
+				return terragruntOptions
+			}(),
+			nil,
+		},
+
+		{
 			[]string{"--terragrunt-config"},
 			nil,
 			ErrArgMissingValue("terragrunt-config"),
@@ -137,6 +148,9 @@ func assertOptionsEqual(t *testing.T, expected options.TerragruntOptions, actual
 	assert.Equal(t, expected.WorkingDir, actual.WorkingDir, msgAndArgs...)
 	assert.Equal(t, expected.Source, actual.Source, msgAndArgs...)
 	assert.Equal(t, expected.IgnoreDependencyErrors, actual.IgnoreDependencyErrors, msgAndArgs...)
+	assert.Equal(t, expected.ApplyTemplate, actual.ApplyTemplate, msgAndArgs...)
+	assert.Equal(t, expected.TemplateAdditionalPatterns, actual.TemplateAdditionalPatterns, msgAndArgs...)
+	assert.Equal(t, expected.BootConfigurationPaths, actual.BootConfigurationPaths, msgAndArgs...)
 }
 
 func mockOptions(terragruntConfigPath string, workingDir string, terraformCliArgs []string, nonInteractive bool, terragruntSource string, ignoreDependencyErrors bool) *options.TerragruntOptions {

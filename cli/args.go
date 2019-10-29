@@ -55,52 +55,55 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	parse := func(argName string, defaultValues ...string) (result string) {
-		if err == nil {
-			if result, err = parseStringArg(args, argName, ""); err == nil && result == "" {
-				for _, def := range defaultValues {
-					result = def
-					if result != "" {
-						break
-					}
+		if err != nil {
+			return
+		}
+		if result, err = parseStringArg(args, argName, ""); err == nil && result == "" {
+			for _, def := range defaultValues {
+				result = def
+				if result != "" {
+					break
 				}
 			}
-
 		}
 		return
 	}
 
-	workingDir := parse(optWorkingDir, currentDir)
-	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), config.DefaultConfigPath(workingDir))
-	terraformPath := parse(optTerragruntTFPath, os.Getenv(options.EnvTFPath), "terraform")
-	terraformSource := parse(optTerragruntSource, os.Getenv(options.EnvSource))
-	loggingLevel := parse(OptLoggingLevel, os.Getenv(options.EnvLoggingLevel))
-	awsProfile := parse(OptAWSProfile)
-	approvalHandler := parse(optApprovalHandler)
-	ignoreDependencyErrors := parseBooleanArg(args, OptTerragruntIgnoreDependencyErrors, false)
-	flushDelay := parse(OptFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
-	nbWorkers := parse(OptNbWorkers, os.Getenv(options.EnvWorkers), "10")
-
-	sourceUpdateDefaultValue := false
-	if value, ok := os.LookupEnv(options.EnvSourceUpdate); ok && (strings.ToLower(value) == "true" || value == "1") {
-		sourceUpdateDefaultValue = true
+	parsePaths := func(argName string, defaultValues ...string) []string {
+		result := parse(argName, defaultValues...)
+		if err != nil {
+			return nil
+		}
+		return util.RemoveElementFromList(strings.Split(result, string(os.PathListSeparator)), "")
 	}
-	sourceUpdate := parseBooleanArg(args, optTerragruntSourceUpdate, sourceUpdateDefaultValue)
+
+	workingDir := parse(optWorkingDir, currentDir)
+	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), util.JoinPath(workingDir, config.DefaultTerragruntConfigPath))
+	terraformPath := parse(optTerragruntTFPath, os.Getenv(options.EnvTFPath), "terraform")
+
+	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
+	opts.TerraformPath = filepath.ToSlash(terraformPath)
+	opts.NonInteractive = parseBooleanArg(args, optNonInteractive, "", false)
+	opts.TerraformCliArgs = filterTerragruntArgs(args)
+	opts.WorkingDir = filepath.ToSlash(workingDir)
+	opts.RunTerragrunt = runTerragrunt
+	opts.Source = parse(optTerragruntSource, os.Getenv(options.EnvSource))
+	opts.SourceUpdate = parseBooleanArg(args, optTerragruntSourceUpdate, options.EnvSourceUpdate, false)
+	opts.IgnoreDependencyErrors = parseBooleanArg(args, optTerragruntIgnoreDependencyErrors, "", false)
+	opts.AwsProfile = parse(optAWSProfile)
+	opts.ApprovalHandler = parse(optApprovalHandler)
+	opts.ApplyTemplate = parseBooleanArg(args, optApplyTemplate, options.EnvApplyTemplate, false)
+	opts.TemplateAdditionalPatterns = parsePaths(optTemplatePatterns, os.Getenv(options.EnvTemplatePatterns))
+	opts.BootConfigurationPaths = parsePaths(optBootConfigs, os.Getenv(options.EnvBootConfigs))
+	opts.PreBootConfigurationPaths = parsePaths(optPreBootConfigs, os.Getenv(options.EnvPreBootConfigs))
+
+	flushDelay := parse(optFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
+	nbWorkers := parse(optNbWorkers, os.Getenv(options.EnvWorkers), "10")
+	loggingLevel := parse(optLoggingLevel, os.Getenv(options.EnvLoggingLevel))
 
 	if err != nil {
 		return nil, err
 	}
-
-	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
-	opts.TerraformPath = filepath.ToSlash(terraformPath)
-	opts.NonInteractive = parseBooleanArg(args, optNonInteractive, false)
-	opts.TerraformCliArgs = filterTerragruntArgs(args)
-	opts.WorkingDir = filepath.ToSlash(workingDir)
-	opts.RunTerragrunt = runTerragrunt
-	opts.Source = terraformSource
-	opts.SourceUpdate = sourceUpdate
-	opts.IgnoreDependencyErrors = ignoreDependencyErrors
-	opts.AwsProfile = awsProfile
-	opts.ApprovalHandler = approvalHandler
 
 	if opts.RefreshOutputDelay, err = time.ParseDuration(flushDelay); err != nil {
 		return nil, fmt.Errorf("Refresh delay must be expressed with unit (i.e. 45s)")
@@ -240,7 +243,10 @@ func filterTerragruntArgs(args []string) []string {
 
 // Find a boolean argument (e.g. --foo) of the given name in the given list of arguments. If it's present, return true.
 // If it isn't, return defaultValue.
-func parseBooleanArg(args []string, argName string, defaultValue bool) bool {
+func parseBooleanArg(args []string, argName string, envVar string, defaultValue bool) bool {
+	if value, ok := os.LookupEnv(envVar); envVar != "" && ok {
+		defaultValue = (strings.ToLower(value) == "true" || value == "1")
+	}
 	argName = fmt.Sprintf("--%s", argName)
 	for _, arg := range args {
 		if arg == argName {
