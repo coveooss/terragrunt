@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -53,13 +52,13 @@ func LoadDefaultValues(folder string) (result map[string]interface{}, err error)
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
-func LoadVariablesFromFile(path, cwd string, context ...interface{}) (map[string]interface{}, error) {
+func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...interface{}) (map[string]interface{}, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	if result, err := LoadVariablesFromSource(string(bytes), path, cwd, context...); err != nil {
+	if result, err := LoadVariablesFromSource(string(bytes), path, cwd, applyTemplate, context...); err != nil {
 		return nil, err
 	} else {
 		if len(result) == 1 && result["variable"] != nil {
@@ -70,14 +69,14 @@ func LoadVariablesFromFile(path, cwd string, context ...interface{}) (map[string
 }
 
 // LoadVariables returns a map of the variables defined in the content provider
-func LoadVariables(content string, cwd string, context ...interface{}) (map[string]interface{}, error) {
-	return LoadVariablesFromSource(content, "Terragrunt content", cwd, context...)
+func LoadVariables(content string, cwd string, applyTemplate bool, context ...interface{}) (map[string]interface{}, error) {
+	return LoadVariablesFromSource(content, "Terragrunt content", cwd, applyTemplate, context...)
 }
 
 // LoadVariablesFromSource returns a map of the variables defined in the content provider
-func LoadVariablesFromSource(content, fileName, cwd string, context ...interface{}) (result map[string]interface{}, err error) {
+func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, context ...interface{}) (result map[string]interface{}, err error) {
 	result = make(map[string]interface{})
-	if ApplyTemplate() && template.IsCode(content) {
+	if applyTemplate && template.IsCode(content) {
 		var t *template.Template
 		switch len(context) {
 		case 0:
@@ -123,17 +122,6 @@ func LoadVariablesFromSource(content, fileName, cwd string, context ...interface
 		}
 	}
 	return
-}
-
-// ApplyTemplate determines if go template should be applied on terraform files.
-func ApplyTemplate() bool {
-	template := os.Getenv("TERRAGRUNT_TEMPLATE")
-	switch strings.ToLower(template) {
-	case "", "0", "false":
-		return false
-	default:
-		return true
-	}
 }
 
 // Returns the list of terraform files in a folder in alphabetical order (override files are always at the end)

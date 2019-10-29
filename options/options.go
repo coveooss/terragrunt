@@ -101,6 +101,18 @@ type TerragruntOptions struct {
 
 	// Represent the raw terragrunt config variable
 	TerragruntRawConfig collections.IDictionary
+
+	// ApplyTemplate configures whether or not go template should be applied on terraform (.tf and .tfvars) file
+	ApplyTemplate bool
+
+	// TemplateAdditionalPatterns configures additional paths where templating should be applied. Does nothing if ApplyTemplate is false
+	TemplateAdditionalPatterns []string
+
+	// BootConfigurationPaths is used to set defaults configuration when launching terragrunt. These will be loaded after the user's config
+	BootConfigurationPaths []string
+
+	// PreBootConfigurationPaths is used to set defaults configuration when launching terragrunt. These will be loaded before the user's config
+	PreBootConfigurationPaths []string
 }
 
 // NewTerragruntOptions creates a new TerragruntOptions object with reasonable defaults for real usage
@@ -131,6 +143,9 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		RunTerragrunt: func(terragruntOptions *TerragruntOptions) error {
 			return errors.WithStackTrace(ErrRunTerragruntCommandNotSet)
 		},
+		TemplateAdditionalPatterns: []string{},
+		BootConfigurationPaths:     []string{},
+		PreBootConfigurationPaths:  []string{},
 	}
 }
 
@@ -231,13 +246,13 @@ func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (
 	if !strings.Contains(path, "/") {
 		path = util.JoinPath(terragruntOptions.WorkingDir, path)
 	}
-	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, terragruntOptions.GetContext())
+	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, terragruntOptions.ApplyTemplate, terragruntOptions.GetContext())
 	return vars, err
 }
 
 // ImportVariables load variables from the content, source indicates the path from where the content has been loaded
 func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) (terragrunt interface{}, err error) {
-	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, context...)
+	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, terragruntOptions.ApplyTemplate, context...)
 	if err != nil {
 		return nil, err
 	}

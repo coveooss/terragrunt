@@ -14,7 +14,7 @@ func TestTerragruntImportVariables(t *testing.T) {
 	t.Parallel()
 	type test struct {
 		project        string
-		envVariables   map[string]string
+		args           string
 		expectedOutput string
 	}
 	tests := []test{
@@ -33,7 +33,7 @@ func TestTerragruntImportVariables(t *testing.T) {
 		},
 		{
 			project:        "fixture-variables/no-tf-variables",
-			envVariables:   map[string]string{"TERRAGRUNT_TEMPLATE": "true"},
+			args:           "--terragrunt-apply-template",
 			expectedOutput: "example = 123456789",
 		},
 		{
@@ -83,7 +83,7 @@ func TestTerragruntImportVariables(t *testing.T) {
 		{
 			project:        "fixture-variables/map",
 			expectedOutput: "example = 1-2-1-2-1-2",
-			envVariables:   map[string]string{"TERRAGRUNT_TEMPLATE": "true"},
+			args:           "--terragrunt-apply-template",
 		},
 		{
 			project:        "fixture-variables/map-no-flatten",
@@ -102,17 +102,12 @@ func TestTerragruntImportVariables(t *testing.T) {
 			defer os.RemoveAll(tmpEnvPath)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
-			for key, value := range tt.envVariables {
-				os.Setenv(key, value)
-				defer os.Unsetenv(key)
-			}
-
 			var (
 				stdout bytes.Buffer
 				stderr bytes.Buffer
 			)
 
-			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
+			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s %s", rootPath, tt.args), &stdout, &stderr)
 			output := stdout.String()
 			assert.Contains(t, output, tt.expectedOutput)
 		})

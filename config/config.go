@@ -337,7 +337,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return nil, err
 	}
 
-	if util.ApplyTemplate() {
+	if terragruntOptions.ApplyTemplate {
 		collections.ListHelper = hcl.GenericListHelper
 		collections.DictionaryHelper = hcl.DictionaryHelper
 
@@ -450,7 +450,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 			isIncludedBy: &include,
 		})
 		// We check if we should merge bootstrap files defined by environment variable TERRAGRUNT_BOOT_CONFIGS
-		paths := strings.Split(os.Getenv(options.EnvBootConfigs), string(os.PathListSeparator))
+		paths := terragruntOptions.BootConfigurationPaths
 		for _, bootstrapFile := range collections.AsList(paths).Reverse().Strings() {
 			bootstrapFile = strings.TrimSpace(bootstrapFile)
 			if bootstrapFile != "" {
