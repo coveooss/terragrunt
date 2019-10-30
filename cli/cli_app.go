@@ -11,7 +11,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/fatih/color"
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/configstack"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -207,7 +207,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 
 	// If AWS is configured, we init the session to ensure that proper environment variables are set
 	if terragruntOptions.AwsProfile != "" || os.Getenv("AWS_PROFILE") != "" && os.Getenv("AWS_ACCESS_KEY_ID") == "" {
-		_, err := aws_helper.InitAwsSession(terragruntOptions.AwsProfile)
+		_, err := awshelper.InitAwsSession(terragruntOptions.AwsProfile)
 		if err != nil {
 			return err
 		}
@@ -643,7 +643,7 @@ func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, 
 
 // If the user entered a Terraform command that uses state (e.g. plan, apply), make sure remote state is configured
 // before running the command.
-func configureRemoteState(remoteState *remote.RemoteState, terragruntOptions *options.TerragruntOptions) error {
+func configureRemoteState(remoteState *remote.State, terragruntOptions *options.TerragruntOptions) error {
 	// We only configure remote state for the commands that use the tfstate files. We do not configure it for
 	// commands such as "get" or "version".
 	if util.ListContainsElement(terraformCommandsThatUseState, util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")) {

@@ -58,14 +58,14 @@ func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...inte
 		return nil, err
 	}
 
-	if result, err := LoadVariablesFromSource(string(bytes), path, cwd, applyTemplate, context...); err != nil {
+	result, err := LoadVariablesFromSource(string(bytes), path, cwd, applyTemplate, context...)
+	if err != nil {
 		return nil, err
-	} else {
-		if len(result) == 1 && result["variable"] != nil {
-			return getDefaultVars(result)
-		}
-		return result, nil
 	}
+	if len(result) == 1 && result["variable"] != nil {
+		return getDefaultVars(result)
+	}
+	return result, nil
 }
 
 // LoadVariables returns a map of the variables defined in the content provider

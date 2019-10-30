@@ -10,7 +10,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/options"
 )
 
-// Represents a stack of Terraform modules (i.e. folders with Terraform templates) that you can "spin up" or
+// Stack represents a stack of Terraform modules (i.e. folders with Terraform templates) that you can "spin up" or
 // "spin down" in a single command
 type Stack struct {
 	Path    string
@@ -84,21 +84,21 @@ func (stack *Stack) Output(command string, terragruntOptions *options.Terragrunt
 		}
 		return output, err
 	}
-	return RunModulesWithHandler(stack.Modules, handler, NormalOrder)
+	return runModulesWithHandler(stack.Modules, handler, NormalOrder)
 }
 
-// Run the specified command on all modules in the given stack in their specified order.
-func (stack *Stack) RunAll(command []string, terragruntOptions *options.TerragruntOptions, order DependencyOrder) error {
+// RunAll runs the specified command on all modules in the given stack in their specified order.
+func (stack *Stack) RunAll(command []string, terragruntOptions *options.TerragruntOptions, order dependencyOrder) error {
 	stack.setTerraformCommand(command)
-	return RunModulesWithHandler(stack.Modules, nil, order)
+	return runModulesWithHandler(stack.Modules, nil, order)
 }
 
 // Return an error if there is a dependency cycle in the modules of this stack.
-func (stack *Stack) CheckForCycles() error {
-	return CheckForCycles(stack.Modules)
+func (stack *Stack) checkForCycles() error {
+	return checkForCycles(stack.Modules)
 }
 
-// Find all the Terraform modules in the subfolders of the working directory of the given TerragruntOptions and
+// FindStackInSubfolders finds all the Terraform modules in the subfolders of the working directory of the given TerragruntOptions and
 // assemble them into a Stack object that can be applied or destroyed in a single command
 func FindStackInSubfolders(terragruntOptions *options.TerragruntOptions) (*Stack, error) {
 	terragruntConfigFiles, err := config.FindConfigFilesInPath(terragruntOptions)
@@ -132,7 +132,7 @@ func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []st
 	}
 
 	stack := &Stack{Path: path, Modules: modules}
-	if err := stack.CheckForCycles(); err != nil {
+	if err := stack.checkForCycles(); err != nil {
 		return nil, err
 	}
 
@@ -141,8 +141,8 @@ func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []st
 
 // Custom error types
 
-type DependencyCycle []string
+type errDependencyCycle []string
 
-func (err DependencyCycle) Error() string {
+func (err errDependencyCycle) Error() string {
 	return fmt.Sprintf("Found a dependency cycle between modules: %s", strings.Join([]string(err), " -> "))
 }

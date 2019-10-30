@@ -50,7 +50,7 @@ func TestParseTerragruntConfigRemoteStateMissingBackend(t *testing.T) {
 	`
 
 	_, err := parseConfigString(config, mockOptions, mockDefaultInclude)
-	assert.True(t, errors.IsError(err, remote.RemoteBackendMissing), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
+	assert.True(t, errors.IsError(err, remote.ErrBackendMissing), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
 }
 
 func TestParseTerragruntConfigRemoteStateFullConfig(t *testing.T) {
@@ -459,18 +459,18 @@ func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 		},
 		{
 			TerragruntConfig{},
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "foo"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
 			TerragruntConfig{Terraform: &TerraformConfig{Source: "foo"}},
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
-			TerragruntConfig{RemoteState: &remote.RemoteState{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "bar"}, Terraform: &TerraformConfig{Source: "bar"}},
+			TerragruntConfig{RemoteState: &remote.State{Backend: "bar"}, Terraform: &TerraformConfig{Source: "foo"}},
 		},
 		{
 			getExtraArgsConfig(options, argConfig{name: "childArgs"}),

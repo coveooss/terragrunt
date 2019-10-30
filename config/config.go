@@ -32,7 +32,7 @@ type TerragruntConfig struct {
 	Description     string                      `hcl:"description"`
 	RunConditions   RunConditions               `hcl:"run_conditions"`
 	Terraform       *TerraformConfig            `hcl:"terraform"`
-	RemoteState     *remote.RemoteState         `hcl:"remote_state"`
+	RemoteState     *remote.State               `hcl:"remote_state"`
 	Dependencies    *ModuleDependencies         `hcl:"dependencies"`
 	Uniqueness      *string                     `hcl:"uniqueness_criteria"`
 	AssumeRole      interface{}                 `hcl:"assume_role"`
@@ -94,7 +94,6 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	}
 
 	if tcf.RemoteState != nil {
-		tcf.RemoteState.FillDefaults()
 		if err = tcf.RemoteState.Validate(); err != nil {
 			return
 		}

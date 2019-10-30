@@ -14,23 +14,25 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-// Represents the status of a module that we are trying to apply as part of the apply-all or destroy-all command
+// ModuleStatus represents the status of a module that we are trying to apply as part of the apply-all or destroy-all command
 type ModuleStatus int
 
-const NORMAL_EXIT_CODE = 0
-const ERROR_EXIT_CODE = 1
-const UNDEFINED_EXIT_CODE = -1
-
 const (
-	Waiting ModuleStatus = iota
-	Running
-	Finished
+	normalExitCode    = 0
+	errorExitCode     = 1
+	undefinedExitCode = -1
 )
 
-// Using CreateMultiErrors as a variable instead of a function allows us to override the function used to compose multi error object.
+const (
+	waiting ModuleStatus = iota
+	running
+	finished
+)
+
+// CreateMultiErrors declared as a variable instead of a function allows us to override the function used to compose multi error object.
 // It is used if a command wants to change the default behavior of the severity analysis that is implemented by default.
 var CreateMultiErrors = func(errs []error) error {
-	return MultiError{Errors: errs}
+	return errMulti{Errors: errs}
 }
 
 // Represents a module we are trying to "run" (i.e. apply or destroy) as part of the apply-all or destroy-all command
@@ -56,14 +58,16 @@ func (module runningModule) displayName() string {
 }
 
 // This controls in what order dependencies should be enforced between modules
-type DependencyOrder int
+type dependencyOrder int
 
 const (
-	NormalOrder DependencyOrder = iota
+	// NormalOrder describes the normal path for module execution.
+	NormalOrder dependencyOrder = iota
+	// ReverseOrder is used to execute modules in reverse order.
 	ReverseOrder
 )
 
-// Handler function prototype to inject interaction during the processing.
+// ModuleHandler is a function prototype to inject interaction during the processing.
 // The function receive the current module, its output and its error in parameter.
 // Normally, the handler should return the same error as received in parameter, but it is possible to
 // alter the normal course of the proccess by changing the error result.
@@ -75,7 +79,7 @@ type ModuleHandler func(TerraformModule, string, error) (string, error)
 func newRunningModule(module *TerraformModule, mutex *sync.Mutex) *runningModule {
 	return &runningModule{
 		Module:         module,
-		Status:         Waiting,
+		Status:         waiting,
 		DependencyDone: make(chan *runningModule, 1000), // Use a huge buffer to ensure senders are never blocked
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -87,15 +91,15 @@ func newRunningModule(module *TerraformModule, mutex *sync.Mutex) *runningModule
 // Run the given map of module path to runningModule. To "run" a module, execute the RunTerragrunt command in its
 // TerragruntOptions object. The modules will be executed in an order determined by their inter-dependencies, using
 // as much concurrency as possible.
-func RunModules(modules []*TerraformModule) error {
-	return RunModulesWithHandler(modules, nil, NormalOrder)
+func runModules(modules []*TerraformModule) error {
+	return runModulesWithHandler(modules, nil, NormalOrder)
 }
 
 // Run the given map of module path to runningModule. To "run" a module, execute the RunTerragrunt command in its
 // TerragruntOptions object. The modules will be executed in the reverse order of their inter-dependencies, using
 // as much concurrency as possible.
-func RunModulesReverseOrder(modules []*TerraformModule) error {
-	return RunModulesWithHandler(modules, nil, ReverseOrder)
+func runModulesReverseOrder(modules []*TerraformModule) error {
+	return runModulesWithHandler(modules, nil, ReverseOrder)
 }
 
 // Run the given map of module path to runningModule. To "run" a module, execute the RunTerragrunt command in its
@@ -103,7 +107,7 @@ func RunModulesReverseOrder(modules []*TerraformModule) error {
 // as much concurrency as possible.
 // This version accepts a function as parameter (see: ModuleHander). The handler is called when the command is
 // completed (either succeeded or failed).
-func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, order DependencyOrder) error {
+func runModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, order dependencyOrder) error {
 	runningModules, err := toRunningModules(modules, order)
 	if err != nil {
 		return err
@@ -146,8 +150,8 @@ func RunModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 
 // Convert the list of modules to a map from module path to a runningModule struct. This struct contains information
 // about executing the module, such as whether it has finished running or not and any errors that happened. Note that
-// this does NOT actually run the module. For that, see the RunModules method.
-func toRunningModules(modules []*TerraformModule, dependencyOrder DependencyOrder) (map[string]*runningModule, error) {
+// this does NOT actually run the module. For that, see the runModules method.
+func toRunningModules(modules []*TerraformModule, dependencyOrder dependencyOrder) (map[string]*runningModule, error) {
 	var mutex sync.Mutex
 
 	runningModules := map[string]*runningModule{}
@@ -163,12 +167,12 @@ func toRunningModules(modules []*TerraformModule, dependencyOrder DependencyOrde
 // * If dependencyOrder is NormalOrder, plug in all the modules M depends on into the Dependencies field and all the
 //   modules that depend on M into the NotifyWhenDone field.
 // * If dependencyOrder is ReverseOrder, do the reverse.
-func crossLinkDependencies(modules map[string]*runningModule, dependencyOrder DependencyOrder) (map[string]*runningModule, error) {
+func crossLinkDependencies(modules map[string]*runningModule, dependencyOrder dependencyOrder) (map[string]*runningModule, error) {
 	for _, module := range modules {
 		for _, dependency := range module.Module.Dependencies {
 			runningDependency, hasDependency := modules[dependency.Path]
 			if !hasDependency {
-				return modules, errors.WithStackTrace(DependencyNotFoundWhileCrossLinking{module, dependency})
+				return modules, errors.WithStackTrace(errDependencyNotFoundWhileCrossLinking{module, dependency})
 			}
 			if dependencyOrder == NormalOrder {
 				module.Dependencies[runningDependency.Module.Path] = runningDependency
@@ -253,7 +257,7 @@ func (module *runningModule) waitForDependencies() error {
 
 // Run a module right now by executing the RunTerragrunt command of its TerragruntOptions field.
 func (module *runningModule) runNow() error {
-	module.Status = Running
+	module.Status = running
 
 	if module.Module.AssumeAlreadyApplied {
 		module.Module.TerragruntOptions.Logger.Debugf("Assuming module %s has already been applied and skipping it", module.displayName())
@@ -291,7 +295,7 @@ func (module *runningModule) moduleFinished(moduleErr error) {
 		fmt.Fprintln(module.Writer, output)
 	}
 
-	module.Status = Finished
+	module.Status = finished
 	module.Err = moduleErr
 
 	for _, toNotify := range module.NotifyWhenDone {
@@ -318,11 +322,11 @@ func (e dependencyFinishedWithError) ExitStatus() (int, error) {
 	return -1, e
 }
 
-type MultiError struct {
+type errMulti struct {
 	Errors []error
 }
 
-func (e MultiError) Error() string {
+func (e errMulti) Error() string {
 	errorStrings := []string{}
 	for _, err := range e.Errors {
 		errorStrings = append(errorStrings, err.Error())
@@ -330,11 +334,11 @@ func (e MultiError) Error() string {
 	return fmt.Sprintf("Encountered the following errors:\n%s", strings.Join(errorStrings, "\n"))
 }
 
-func (e MultiError) ExitStatus() (int, error) {
-	exitCode := NORMAL_EXIT_CODE
+func (e errMulti) ExitStatus() (int, error) {
+	exitCode := normalExitCode
 	for i := range e.Errors {
 		if code, err := shell.GetExitCode(e.Errors[i]); err != nil {
-			return UNDEFINED_EXIT_CODE, e
+			return undefinedExitCode, e
 		} else if code > exitCode {
 			exitCode = code
 		}
@@ -342,11 +346,11 @@ func (e MultiError) ExitStatus() (int, error) {
 	return exitCode, nil
 }
 
-type DependencyNotFoundWhileCrossLinking struct {
+type errDependencyNotFoundWhileCrossLinking struct {
 	Module     *runningModule
 	Dependency *TerraformModule
 }
 
-func (err DependencyNotFoundWhileCrossLinking) Error() string {
+func (err errDependencyNotFoundWhileCrossLinking) Error() string {
 	return fmt.Sprintf("Module %v specifies a dependency on module %v, but could not find that module while cross-linking dependencies. This is most likely a bug in Terragrunt. Please report it.", err.Module, err.Dependency)
 }

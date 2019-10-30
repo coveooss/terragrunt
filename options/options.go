@@ -260,6 +260,7 @@ func (terragruntOptions *TerragruntOptions) ImportVariables(content string, sour
 	return
 }
 
+// ImportVariablesMap imports a list of variable into the current configuration.
 func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (terragrunt interface{}) {
 	for key, value := range vars {
 		if key == "terragrunt" {

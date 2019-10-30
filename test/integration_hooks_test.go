@@ -16,7 +16,7 @@ import (
 func TestTerragruntBeforeHook(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/before-only"
+	const testPath = "fixture-hooks/before-only"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -31,7 +31,7 @@ func TestTerragruntBeforeHook(t *testing.T) {
 func TestTerragruntAfterHook(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/after-only"
+	const testPath = "fixture-hooks/after-only"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -46,7 +46,7 @@ func TestTerragruntAfterHook(t *testing.T) {
 func TestTerragruntBeforeAndAfterHook(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/before-and-after"
+	const testPath = "fixture-hooks/before-and-after"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -62,21 +62,24 @@ func TestTerragruntBeforeAndAfterHook(t *testing.T) {
 
 func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-hooks/before-and-after-merge"
+	const testFixtureIncludeChildRelativePath = "qa/my-app"
+
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	testPath := "fixture-hooks/before-and-after-merge"
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
-	childPath := util.JoinPath(rootPath, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH)
+	childPath := util.JoinPath(rootPath, testFixtureIncludeChildRelativePath)
 	cleanupTerraformFolder(t, childPath)
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 	t.Logf("bucketName: %s", s3BucketName)
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, testFixtureIncludeChildRelativePath, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 
@@ -98,7 +101,7 @@ func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 func TestTerragruntHookInterpolation(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/interpolations"
+	const testPath = "fixture-hooks/interpolations"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -127,7 +130,7 @@ func TestTerragruntHookInterpolation(t *testing.T) {
 func TestTerragruntHookExitCode1(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/exitcode-1"
+	const testPath = "fixture-hooks/exitcode-1"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -142,7 +145,7 @@ func TestTerragruntHookExitCode1(t *testing.T) {
 func TestTerragruntHookExitCode2(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/exitcode-2"
+	const testPath = "fixture-hooks/exitcode-2"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -157,7 +160,7 @@ func TestTerragruntHookExitCode2(t *testing.T) {
 func TestTerragruntHookExitCode2InPreHook(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/exitcode-2-pre"
+	const testPath = "fixture-hooks/exitcode-2-pre"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -172,7 +175,7 @@ func TestTerragruntHookExitCode2InPreHook(t *testing.T) {
 func TestTerragruntHookExitCode2PlanAll(t *testing.T) {
 	t.Parallel()
 
-	testPath := "fixture-hooks/exitcode-2"
+	const testPath = "fixture-hooks/exitcode-2"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -185,9 +188,9 @@ func TestTerragruntHookExitCode2PlanAll(t *testing.T) {
 }
 
 func TestTerragruntHookWithEnvVars(t *testing.T) {
+	const testPath = "fixture-hooks/with-envvars"
 	for i := 1; i <= 2; i++ {
 		withEnv("PATH", func() {
-			testPath := "fixture-hooks/with-envvars"
 			cleanupTerraformFolder(t, testPath)
 			tmpEnvPath := copyEnvironment(t, testPath)
 			rootPath := util.JoinPath(tmpEnvPath, testPath)
@@ -202,7 +205,7 @@ func TestTerragruntHookWithEnvVars(t *testing.T) {
 }
 
 func TestTerragruntHookOverwrite(t *testing.T) {
-	testPath := "fixture-hooks/overwrite"
+	const testPath = "fixture-hooks/overwrite"
 	cleanupTerraformFolder(t, testPath)
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)

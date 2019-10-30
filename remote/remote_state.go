@@ -13,40 +13,34 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-// Configuration for Terraform remote state
-type RemoteState struct {
+// State is the configuration for Terraform remote state
+type State struct {
 	Backend string                 `hcl:"backend"`
 	Config  map[string]interface{} `hcl:"config"`
 }
 
-func (remoteState *RemoteState) String() string {
+func (remoteState *State) String() string {
 	return fmt.Sprintf("RemoteState{Backend = %v, Config = %v}", remoteState.Backend, remoteState.Config)
 }
 
-type RemoteStateInitializer func(map[string]interface{}, *options.TerragruntOptions) error
+type remoteStateInitializer func(map[string]interface{}, *options.TerragruntOptions) error
 
 // TODO: initialization actions for other remote state backends can be added here
-var remoteStateInitializers = map[string]RemoteStateInitializer{
-	"s3": InitializeRemoteStateS3,
-}
-
-// Fill in any default configuration for remote state
-func (remoteState *RemoteState) FillDefaults() {
-	// Nothing to do
+var remoteStateInitializers = map[string]remoteStateInitializer{
+	"s3": initializeRemoteStateS3,
 }
 
 // Validate that the remote state is configured correctly
-func (remoteState *RemoteState) Validate() error {
+func (remoteState *State) Validate() error {
 	if remoteState.Backend == "" {
-		return errors.WithStackTrace(RemoteBackendMissing)
+		return errors.WithStackTrace(ErrBackendMissing)
 	}
-
 	return nil
 }
 
 // Initialize performs any actions necessary to initialize the remote state before it's used for storage. For example, if you're
 // using S3 for remote state storage, this may create the S3 bucket if it doesn't exist already.
-func (remoteState *RemoteState) Initialize(terragruntOptions *options.TerragruntOptions) error {
+func (remoteState *State) Initialize(terragruntOptions *options.TerragruntOptions) error {
 	initializer, hasInitializer := remoteStateInitializers[remoteState.Backend]
 	if hasInitializer {
 		return initializer(remoteState.Config, terragruntOptions)
@@ -56,7 +50,7 @@ func (remoteState *RemoteState) Initialize(terragruntOptions *options.Terragrunt
 }
 
 // ConfigureRemoteState configures Terraform remote state
-func (remoteState RemoteState) ConfigureRemoteState(terragruntOptions *options.TerragruntOptions) error {
+func (remoteState State) ConfigureRemoteState(terragruntOptions *options.TerragruntOptions) error {
 	shouldConfigure, err := shouldConfigureRemoteState(remoteState, terragruntOptions)
 	if err != nil {
 		return err
@@ -79,13 +73,13 @@ func (remoteState RemoteState) ConfigureRemoteState(terragruntOptions *options.T
 //
 // 1. Remote state has not already been configured
 // 2. Remote state has been configured, but for a different backend type, and the user confirms it's OK to overwrite it.
-func shouldConfigureRemoteState(remoteStateFromTerragruntConfig RemoteState, terragruntOptions *options.TerragruntOptions) (bool, error) {
-	state, err := ParseTerraformStateFileFromLocation(terragruntOptions.WorkingDir)
+func shouldConfigureRemoteState(remoteStateFromTerragruntConfig State, terragruntOptions *options.TerragruntOptions) (bool, error) {
+	state, err := parseTerraformStateFileFromLocation(terragruntOptions.WorkingDir)
 	if err != nil {
 		return false, err
 	}
 
-	if state != nil && state.IsRemote() {
+	if state != nil && state.isRemote() {
 		return shouldOverrideExistingRemoteState(state.Backend, remoteStateFromTerragruntConfig, terragruntOptions)
 	}
 	return true, nil
@@ -94,7 +88,7 @@ func shouldConfigureRemoteState(remoteStateFromTerragruntConfig RemoteState, ter
 // Check if the remote state that is already configured matches the one specified in the Terragrunt config. If it does,
 // return false to indicate remote state does not need to be configured again. If it doesn't, prompt the user whether
 // we should override the existing remote state setting.
-func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remoteStateFromTerragruntConfig RemoteState, terragruntOptions *options.TerragruntOptions) (bool, error) {
+func shouldOverrideExistingRemoteState(existingBackend *terraformBackend, remoteStateFromTerragruntConfig State, terragruntOptions *options.TerragruntOptions) (bool, error) {
 	if existingBackend.Type != remoteStateFromTerragruntConfig.Backend {
 		terragruntOptions.Logger.Warning("Terraform remote state is already configured for a different backend", existingBackend.Type)
 		prompt := fmt.Sprintf("Current backend = %s\nNew backend = %s\n\nOverwrite?", existingBackend.Type, remoteStateFromTerragruntConfig.Backend)
@@ -136,12 +130,12 @@ func shouldOverrideExistingRemoteState(existingBackend *TerraformBackend, remote
 	return false, nil
 }
 
-func initCommand(remoteState RemoteState) []string {
+func initCommand(remoteState State) []string {
 	return append([]string{"init"}, remoteState.ToTerraformInitArgs()...)
 }
 
-// ToTerraformInitArgs converts the RemoteState config into the format used by the terraform init command
-func (remoteState RemoteState) ToTerraformInitArgs() []string {
+// ToTerraformInitArgs converts the State config into the format used by the terraform init command
+func (remoteState State) ToTerraformInitArgs() []string {
 	backendConfigArgs := make([]string, 0, len(remoteState.Config))
 	for key, value := range remoteState.Config {
 		arg := fmt.Sprintf("-backend-config=%s=%v", key, value)
@@ -152,4 +146,5 @@ func (remoteState RemoteState) ToTerraformInitArgs() []string {
 	return backendConfigArgs
 }
 
-var RemoteBackendMissing = fmt.Errorf("The remote_state.backend field cannot be empty")
+// ErrBackendMissing indicates that there is no backend configration defined.
+var ErrBackendMissing = fmt.Errorf("The remote_state.backend field cannot be empty")

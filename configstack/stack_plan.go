@@ -26,14 +26,14 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 	// We override the multi errors creator to use a specialized error type for plan
 	// because error severity in plan is not standard (i.e. exit code 2 is less significant that exit code 1).
 	CreateMultiErrors = func(errs []error) error {
-		return PlanMultiError{MultiError{errs}}
+		return PlanMultiError{errMulti{errs}}
 	}
 
 	detailedExitCode := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-detailed-exitcode")
 
 	hasChanges := false
 	results := make([]moduleResult, 0, len(stack.Modules))
-	err := RunModulesWithHandler(stack.Modules, getResultHandler(detailedExitCode, &results, &hasChanges), NormalOrder)
+	err := runModulesWithHandler(stack.Modules, getResultHandler(detailedExitCode, &results, &hasChanges), NormalOrder)
 	printSummary(terragruntOptions, results)
 
 	// If there is no error, but -detail-exitcode is specified, we return an error with the number of changes.
@@ -145,21 +145,22 @@ func extractSummaryResultFromPlan(output string) (string, int) {
 	return "No effective change", 0
 }
 
-// This is a specialized version of MultiError type
+// PlanMultiError is a specialized version of errMulti type
 // It handles the exit code differently from the base implementation
 type PlanMultiError struct {
-	MultiError
+	errMulti
 }
 
-func (this PlanMultiError) ExitStatus() (int, error) {
-	exitCode := NORMAL_EXIT_CODE
-	for i := range this.Errors {
-		if code, err := shell.GetExitCode(this.Errors[i]); err != nil {
-			return UNDEFINED_EXIT_CODE, this
-		} else if code == ERROR_EXIT_CODE || code == errors.ChangeExitCode && exitCode == NORMAL_EXIT_CODE {
+// ExitStatus returns the numeric status corresponding with the list of errors.
+func (e PlanMultiError) ExitStatus() (int, error) {
+	exitCode := normalExitCode
+	for i := range e.Errors {
+		if code, err := shell.GetExitCode(e.Errors[i]); err != nil {
+			return undefinedExitCode, e
+		} else if code == errorExitCode || code == errors.ChangeExitCode && exitCode == normalExitCode {
 			// The exit code 1 is more significant that the exit code 2 because it represents an error
 			// while 2 represent a warning.
-			return UNDEFINED_EXIT_CODE, this
+			return undefinedExitCode, e
 		}
 	}
 	return exitCode, nil

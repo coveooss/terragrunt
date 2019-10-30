@@ -32,8 +32,8 @@ func TestParseTerraformStateLocal(t *testing.T) {
 		Version: 1,
 		Serial:  0,
 		Backend: nil,
-		Modules: []TerraformStateModule{
-			TerraformStateModule{
+		Modules: []terraformStateModule{
+			terraformStateModule{
 				Path:      []string{"root"},
 				Outputs:   map[string]interface{}{},
 				Resources: map[string]interface{}{},
@@ -45,7 +45,7 @@ func TestParseTerraformStateLocal(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedTerraformState, actualTerraformState)
-	assert.False(t, actualTerraformState.IsRemote())
+	assert.False(t, actualTerraformState.isRemote())
 }
 
 func TestParseTerraformStateRemote(t *testing.T) {
@@ -80,7 +80,7 @@ func TestParseTerraformStateRemote(t *testing.T) {
 	expectedTerraformState := &TerraformState{
 		Version: 5,
 		Serial:  12,
-		Backend: &TerraformBackend{
+		Backend: &terraformBackend{
 			Type: "s3",
 			Config: map[string]interface{}{
 				"bucket":  "bucket",
@@ -89,8 +89,8 @@ func TestParseTerraformStateRemote(t *testing.T) {
 				"region":  "us-east-1",
 			},
 		},
-		Modules: []TerraformStateModule{
-			TerraformStateModule{
+		Modules: []terraformStateModule{
+			terraformStateModule{
 				Path:      []string{"root"},
 				Outputs:   map[string]interface{}{},
 				Resources: map[string]interface{}{},
@@ -102,7 +102,7 @@ func TestParseTerraformStateRemote(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedTerraformState, actualTerraformState)
-	assert.True(t, actualTerraformState.IsRemote())
+	assert.True(t, actualTerraformState.isRemote())
 }
 
 func TestParseTerraformStateRemoteFull(t *testing.T) {
@@ -210,7 +210,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 	expectedTerraformState := &TerraformState{
 		Version: 1,
 		Serial:  51,
-		Backend: &TerraformBackend{
+		Backend: &terraformBackend{
 			Type: "s3",
 			Config: map[string]interface{}{
 				"bucket":  "bucket",
@@ -219,8 +219,8 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 				"region":  "us-east-1",
 			},
 		},
-		Modules: []TerraformStateModule{
-			TerraformStateModule{
+		Modules: []terraformStateModule{
+			terraformStateModule{
 				Path: []string{"root"},
 				Outputs: map[string]interface{}{
 					"key1": "value1",
@@ -229,7 +229,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 				},
 				Resources: map[string]interface{}{},
 			},
-			TerraformStateModule{
+			terraformStateModule{
 				Path: []string{"root", "module_with_outputs_no_resources"},
 				Outputs: map[string]interface{}{
 					"key1": "",
@@ -237,7 +237,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 				},
 				Resources: map[string]interface{}{},
 			},
-			TerraformStateModule{
+			terraformStateModule{
 				Path:    []string{"root", "module_with_resources_no_outputs"},
 				Outputs: map[string]interface{}{},
 				Resources: map[string]interface{}{
@@ -277,7 +277,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 					},
 				},
 			},
-			TerraformStateModule{
+			terraformStateModule{
 				Path:      []string{"root", "module_level_1", "module_level_2"},
 				Outputs:   map[string]interface{}{},
 				Resources: map[string]interface{}{},
@@ -289,7 +289,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedTerraformState, actualTerraformState)
-	assert.True(t, actualTerraformState.IsRemote())
+	assert.True(t, actualTerraformState.isRemote())
 }
 
 func TestParseTerraformStateEmpty(t *testing.T) {
@@ -303,7 +303,7 @@ func TestParseTerraformStateEmpty(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, expectedTerraformState, actualTerraformState)
-	assert.False(t, actualTerraformState.IsRemote())
+	assert.False(t, actualTerraformState.isRemote())
 }
 
 func TestParseTerraformStateInvalid(t *testing.T) {

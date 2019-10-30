@@ -29,7 +29,7 @@ func TestToRunningModulesOneModuleNoDependencies(t *testing.T) {
 
 	runningModuleA := &runningModule{
 		Module:         moduleA,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -53,7 +53,7 @@ func TestToRunningModulesTwoModulesNoDependencies(t *testing.T) {
 
 	runningModuleA := &runningModule{
 		Module:         moduleA,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -68,7 +68,7 @@ func TestToRunningModulesTwoModulesNoDependencies(t *testing.T) {
 
 	runningModuleB := &runningModule{
 		Module:         moduleB,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -92,7 +92,7 @@ func TestToRunningModulesTwoModulesWithDependencies(t *testing.T) {
 
 	runningModuleA := &runningModule{
 		Module:         moduleA,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -107,7 +107,7 @@ func TestToRunningModulesTwoModulesWithDependencies(t *testing.T) {
 
 	runningModuleB := &runningModule{
 		Module:         moduleB,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{"a": runningModuleA},
 		NotifyWhenDone: []*runningModule{},
@@ -133,7 +133,7 @@ func TestToRunningModulesTwoModulesWithDependenciesReverseOrder(t *testing.T) {
 
 	runningModuleA := &runningModule{
 		Module:         moduleA,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -148,7 +148,7 @@ func TestToRunningModulesTwoModulesWithDependenciesReverseOrder(t *testing.T) {
 
 	runningModuleB := &runningModule{
 		Module:         moduleB,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{runningModuleA},
@@ -174,7 +174,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T)
 
 	runningModuleA := &runningModule{
 		Module:         moduleA,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -189,7 +189,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T)
 
 	runningModuleB := &runningModule{
 		Module:         moduleB,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{"a": runningModuleA},
 		NotifyWhenDone: []*runningModule{},
@@ -204,7 +204,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T)
 
 	runningModuleC := &runningModule{
 		Module:         moduleC,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{"a": runningModuleA},
 		NotifyWhenDone: []*runningModule{},
@@ -219,7 +219,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T)
 
 	runningModuleD := &runningModule{
 		Module:         moduleD,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{"c": runningModuleC},
 		NotifyWhenDone: []*runningModule{},
@@ -234,7 +234,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T)
 
 	runningModuleE := &runningModule{
 		Module: moduleE,
-		Status: Waiting,
+		Status: waiting,
 		Err:    nil,
 		Dependencies: map[string]*runningModule{
 			"a": runningModuleA,
@@ -274,7 +274,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t
 
 	runningModuleA := &runningModule{
 		Module:         moduleA,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{},
@@ -289,7 +289,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t
 
 	runningModuleB := &runningModule{
 		Module:         moduleB,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{runningModuleA},
@@ -304,7 +304,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t
 
 	runningModuleC := &runningModule{
 		Module:         moduleC,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{runningModuleA},
@@ -319,7 +319,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t
 
 	runningModuleD := &runningModule{
 		Module:         moduleD,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{runningModuleC},
@@ -334,7 +334,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t
 
 	runningModuleE := &runningModule{
 		Module:         moduleE,
-		Status:         Waiting,
+		Status:         waiting,
 		Err:            nil,
 		Dependencies:   map[string]*runningModule{},
 		NotifyWhenDone: []*runningModule{runningModuleA, runningModuleB, runningModuleC, runningModuleD},
@@ -357,7 +357,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t
 	testToRunningModules(t, modules, ReverseOrder, expected)
 }
 
-func testToRunningModules(t *testing.T, modules []*TerraformModule, order DependencyOrder, expected map[string]*runningModule) {
+func testToRunningModules(t *testing.T, modules []*TerraformModule, order dependencyOrder, expected map[string]*runningModule) {
 	actual, err := toRunningModules(modules, order)
 	if assert.Nil(t, err, "For modules %v and order %v", modules, order) {
 		assertRunningModuleMapsEqual(t, expected, actual, true, "For modules %v and order %v", modules, order)
@@ -367,7 +367,7 @@ func testToRunningModules(t *testing.T, modules []*TerraformModule, order Depend
 func TestRunModulesNoModules(t *testing.T) {
 	t.Parallel()
 
-	err := RunModules([]*TerraformModule{})
+	err := runModules([]*TerraformModule{})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 }
 
@@ -382,7 +382,7 @@ func TestRunModulesOneModuleSuccess(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("a", nil, &aRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA})
+	err := runModules([]*TerraformModule{moduleA})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.True(t, aRan)
 }
@@ -399,7 +399,7 @@ func TestRunModulesOneModuleAssumeAlreadyRan(t *testing.T) {
 		AssumeAlreadyApplied: true,
 	}
 
-	err := RunModules([]*TerraformModule{moduleA})
+	err := runModules([]*TerraformModule{moduleA})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.False(t, aRan)
 }
@@ -415,7 +415,7 @@ func TestRunModulesReverseOrderOneModuleSuccess(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("a", nil, &aRan),
 	}
 
-	err := RunModulesReverseOrder([]*TerraformModule{moduleA})
+	err := runModulesReverseOrder([]*TerraformModule{moduleA})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.True(t, aRan)
 }
@@ -432,7 +432,7 @@ func TestRunModulesOneModuleError(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("a", expectedErrA, &aRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA})
+	err := runModules([]*TerraformModule{moduleA})
 	assertMultiErrorContains(t, err, expectedErrA)
 	assert.True(t, aRan)
 }
@@ -449,7 +449,7 @@ func TestRunModulesReverseOrderOneModuleError(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("a", expectedErrA, &aRan),
 	}
 
-	err := RunModulesReverseOrder([]*TerraformModule{moduleA})
+	err := runModulesReverseOrder([]*TerraformModule{moduleA})
 	assertMultiErrorContains(t, err, expectedErrA)
 	assert.True(t, aRan)
 }
@@ -481,7 +481,7 @@ func TestRunModulesMultipleModulesNoDependenciesSuccess(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 
 	assert.True(t, aRan)
@@ -516,7 +516,7 @@ func TestRunModulesReverseOrderMultipleModulesNoDependenciesSuccess(t *testing.T
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	err := RunModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 
 	assert.True(t, aRan)
@@ -552,7 +552,7 @@ func TestRunModulesMultipleModulesNoDependenciesOneFailure(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrB)
 
 	assert.True(t, aRan)
@@ -590,7 +590,7 @@ func TestRunModulesMultipleModulesNoDependenciesMultipleFailures(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", expectedErrC, &cRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrA, expectedErrB, expectedErrC)
 
 	assert.True(t, aRan)
@@ -625,7 +625,7 @@ func TestRunModulesMultipleModulesWithDependenciesSuccess(t *testing.T) {
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 
 	assert.True(t, aRan)
@@ -669,7 +669,7 @@ func TestRunModulesMultipleModulesWithDependenciesWithAssumeAlreadyRanSuccess(t 
 		TerragruntOptions: optionsWithMockTerragruntCommand("d", nil, &dRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 
 	assert.True(t, aRan)
@@ -705,7 +705,7 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesSuccess(t *testing
 		TerragruntOptions: optionsWithMockTerragruntCommand("c", nil, &cRan),
 	}
 
-	err := RunModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 
 	assert.True(t, aRan)
@@ -743,7 +743,7 @@ func TestRunModulesMultipleModulesWithDependenciesOneFailure(t *testing.T) {
 
 	expectedErrC := dependencyFinishedWithError{moduleC, moduleB, expectedErrB}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrB, expectedErrC)
 
 	assert.True(t, aRan)
@@ -785,7 +785,7 @@ func TestRunModulesMultipleModulesWithDependenciesOneFailureIgnoreDependencyErro
 		TerragruntOptions: terragruntOptionsC,
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrB)
 
 	assert.True(t, aRan)
@@ -823,7 +823,7 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesOneFailure(t *test
 
 	expectedErrA := dependencyFinishedWithError{moduleA, moduleB, expectedErrB}
 
-	err := RunModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrB, expectedErrA)
 
 	assert.False(t, aRan)
@@ -862,7 +862,7 @@ func TestRunModulesMultipleModulesWithDependenciesMultipleFailures(t *testing.T)
 	expectedErrB := dependencyFinishedWithError{moduleB, moduleA, expectedErrA}
 	expectedErrC := dependencyFinishedWithError{moduleC, moduleB, expectedErrB}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC})
 	assertMultiErrorContains(t, err, expectedErrA, expectedErrB, expectedErrC)
 
 	assert.True(t, aRan)
@@ -921,7 +921,7 @@ func TestRunModulesMultipleModulesWithDependenciesLargeGraphAllSuccess(t *testin
 		TerragruntOptions: optionsWithMockTerragruntCommand("f", nil, &fRan),
 	}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF})
 	assert.Nil(t, err)
 
 	assert.True(t, aRan)
@@ -996,7 +996,7 @@ func TestRunModulesMultipleModulesWithDependenciesLargeGraphPartialFailure(t *te
 	expectedErrD := dependencyFinishedWithError{moduleD, moduleC, expectedErrC}
 	expectedErrF := dependencyFinishedWithError{moduleF, moduleD, expectedErrD}
 
-	err := RunModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF, moduleG})
+	err := runModules([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF, moduleG})
 	assertMultiErrorContains(t, err, expectedErrC, expectedErrD, expectedErrF)
 
 	assert.True(t, aRan)
@@ -1063,7 +1063,7 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesLargeGraphPartialF
 	expectedErrB := dependencyFinishedWithError{moduleB, moduleC, expectedErrC}
 	expectedErrA := dependencyFinishedWithError{moduleA, moduleB, expectedErrB}
 
-	err := RunModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF})
+	err := runModulesReverseOrder([]*TerraformModule{moduleA, moduleB, moduleC, moduleD, moduleE, moduleF})
 	assertMultiErrorContains(t, err, expectedErrC, expectedErrB, expectedErrA)
 
 	assert.False(t, aRan)

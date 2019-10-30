@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -15,21 +15,21 @@ import (
 
 // DynamoDB only allows 10 table creates/deletes simultaneously. To ensure we don't hit this error, especially when
 // running many automated tests in parallel, we use a counting semaphore
-var tableCreateDeleteSemaphore = NewCountingSemaphore(10)
+var tableCreateDeleteSemaphore = newCountingSemaphore(10)
 
 // Terraform requires the DynamoDB table to have a primary key with this name
-const ATTR_LOCK_ID = "LockID"
+const attrLockID = "LockID"
 
 // Default is to retry for up to 5 minutes
-const MAX_RETRIES_WAITING_FOR_TABLE_TO_BE_ACTIVE = 30
-const SLEEP_BETWEEN_TABLE_STATUS_CHECKS = 10 * time.Second
+const maxRetriesWaitingForTableToBeActive = 30
+const sleepBetweenTableStatusChecks = 10 * time.Second
 
-const DEFAULT_READ_CAPACITY_UNITS = 1
-const DEFAULT_WRITE_CAPACITY_UNITS = 1
+const defaultReadCapacityUnits = 1
+const defaultWriteCapacityUnits = 1
 
-// Create an authenticated client for DynamoDB
+// CreateDynamoDbClient creates an authenticated client for DynamoDB
 func CreateDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.DynamoDB, error) {
-	session, err := aws_helper.CreateAwsSession(awsRegion, awsProfile)
+	session, err := awshelper.CreateAwsSession(awsRegion, awsProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func CreateDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.DynamoDB, err
 	return dynamodb.New(session), nil
 }
 
-// Create the lock table in DynamoDB if it doesn't already exist
+// CreateLockTableIfNecessary creates the lock table in DynamoDB if it doesn't already exist
 func CreateLockTableIfNecessary(tableName string, client *dynamodb.DynamoDB, terragruntOptions *options.TerragruntOptions) error {
 	tableExists, err := lockTableExistsAndIsActive(tableName, client)
 	if err != nil {
@@ -46,7 +46,7 @@ func CreateLockTableIfNecessary(tableName string, client *dynamodb.DynamoDB, ter
 
 	if !tableExists {
 		terragruntOptions.Logger.Warningf("Lock table %s does not exist in DynamoDB. Will need to create it just this first time.", tableName)
-		return CreateLockTable(tableName, DEFAULT_READ_CAPACITY_UNITS, DEFAULT_WRITE_CAPACITY_UNITS, client, terragruntOptions)
+		return createLockTable(tableName, defaultReadCapacityUnits, defaultWriteCapacityUnits, client, terragruntOptions)
 	}
 
 	return nil
@@ -58,9 +58,8 @@ func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bo
 	if err != nil {
 		if awsErr, isAwsErr := err.(awserr.Error); isAwsErr && awsErr.Code() == "ResourceNotFoundException" {
 			return false, nil
-		} else {
-			return false, errors.WithStackTrace(err)
 		}
+		return false, errors.WithStackTrace(err)
 	}
 
 	return *output.Table.TableStatus == dynamodb.TableStatusActive, nil
@@ -68,18 +67,18 @@ func lockTableExistsAndIsActive(tableName string, client *dynamodb.DynamoDB) (bo
 
 // Create a lock table in DynamoDB and wait until it is in "active" state. If the table already exists, merely wait
 // until it is in "active" state.
-func CreateLockTable(tableName string, readCapacityUnits int, writeCapacityUnits int, client *dynamodb.DynamoDB, terragruntOptions *options.TerragruntOptions) error {
+func createLockTable(tableName string, readCapacityUnits int, writeCapacityUnits int, client *dynamodb.DynamoDB, terragruntOptions *options.TerragruntOptions) error {
 	tableCreateDeleteSemaphore.Acquire()
 	defer tableCreateDeleteSemaphore.Release()
 
 	terragruntOptions.Logger.Noticef("Creating table %s in DynamoDB", tableName)
 
 	attributeDefinitions := []*dynamodb.AttributeDefinition{
-		&dynamodb.AttributeDefinition{AttributeName: aws.String(ATTR_LOCK_ID), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
+		&dynamodb.AttributeDefinition{AttributeName: aws.String(attrLockID), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
 	}
 
 	keySchema := []*dynamodb.KeySchemaElement{
-		&dynamodb.KeySchemaElement{AttributeName: aws.String(ATTR_LOCK_ID), KeyType: aws.String(dynamodb.KeyTypeHash)},
+		&dynamodb.KeySchemaElement{AttributeName: aws.String(attrLockID), KeyType: aws.String(dynamodb.KeyTypeHash)},
 	}
 
 	_, err := client.CreateTable(&dynamodb.CreateTableInput{
@@ -100,10 +99,10 @@ func CreateLockTable(tableName string, readCapacityUnits int, writeCapacityUnits
 		}
 	}
 
-	return waitForTableToBeActive(tableName, client, MAX_RETRIES_WAITING_FOR_TABLE_TO_BE_ACTIVE, SLEEP_BETWEEN_TABLE_STATUS_CHECKS, terragruntOptions)
+	return waitForTableToBeActive(tableName, client, maxRetriesWaitingForTableToBeActive, sleepBetweenTableStatusChecks, terragruntOptions)
 }
 
-// Delete the given table in DynamoDB
+// DeleteTable deletes the given table in DynamoDB
 func DeleteTable(tableName string, client *dynamodb.DynamoDB) error {
 	tableCreateDeleteSemaphore.Acquire()
 	defer tableCreateDeleteSemaphore.Release()
@@ -144,23 +143,14 @@ func waitForTableToBeActiveWithRandomSleep(tableName string, client *dynamodb.Dy
 		time.Sleep(sleepBetweenRetries)
 	}
 
-	return errors.WithStackTrace(TableActiveRetriesExceeded{TableName: tableName, Retries: maxRetries})
+	return errors.WithStackTrace(tableActiveRetriesExceededError{TableName: tableName, Retries: maxRetries})
 }
 
-type TableActiveRetriesExceeded struct {
+type tableActiveRetriesExceededError struct {
 	TableName string
 	Retries   int
 }
 
-func (err TableActiveRetriesExceeded) Error() string {
+func (err tableActiveRetriesExceededError) Error() string {
 	return fmt.Sprintf("Table %s is still not in active state after %d retries.", err.TableName, err.Retries)
-}
-
-type TableDoesNotExist struct {
-	TableName  string
-	Underlying error
-}
-
-func (err TableDoesNotExist) Error() string {
-	return fmt.Sprintf("Table %s does not exist in DynamoDB! Original error from AWS: %v", err.TableName, err.Underlying)
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
-// Represents a single module (i.e. folder with Terraform templates), including the Terragrunt configuration for that
+// TerraformModule represents a single module (i.e. folder with Terraform templates), including the Terragrunt configuration for that
 // module and the list of other modules that this module depends on
 type TerraformModule struct {
 	Path                 string
@@ -67,8 +67,8 @@ func (modules SimpleTerraformModules) MakeRelative() (result SimpleTerraformModu
 	return
 }
 
-// Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents
-// into a TerraformModule struct. Return the list of these TerraformModule structs.
+// ResolveTerraformModules goes through each of the given Terragrunt configuration files and resolve the module that configuration file represents
+// into a TerraformModule struct. Return the list of these TerraformModule structures.
 func ResolveTerraformModules(terragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions) ([]*TerraformModule, error) {
 	canonicalTerragruntConfigPaths, err := util.CanonicalPaths(terragruntConfigPaths, ".")
 	if err != nil {
@@ -287,6 +287,7 @@ func getDependenciesForModule(module *TerraformModule, moduleMap map[string]*Ter
 
 // Custom error types
 
+// UnrecognizedDependency describes error when a dependency cannot be resolved
 type UnrecognizedDependency struct {
 	ModulePath            string
 	DependencyPath        string

@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/cli"
 	"github.com/gruntwork-io/terragrunt/config"
 	terragruntDynamoDb "github.com/gruntwork-io/terragrunt/dynamodb"
@@ -24,28 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// hard-code this to match the test fixture for now
-const (
-	TERRAFORM_REMOTE_STATE_S3_REGION           = "us-west-2"
-	TEST_FIXTURE_PATH                          = "fixture/"
-	TEST_FIXTURE_INCLUDE_PATH                  = "fixture-include/"
-	TEST_FIXTURE_INCLUDE_CHILD_REL_PATH        = "qa/my-app"
-	TEST_FIXTURE_STACK                         = "fixture-stack/"
-	TEST_FIXTURE_OUTPUT_ALL                    = "fixture-output-all"
-	TEST_FIXTURE_EXTRA_ARGS_PATH               = "fixture-extra-args/"
-	TEST_FIXTURE_LOCAL_DOWNLOAD_PATH           = "fixture-download/local"
-	TEST_FIXTURE_REMOTE_DOWNLOAD_PATH          = "fixture-download/remote"
-	TEST_FIXTURE_OVERRIDE_DOWNLOAD_PATH        = "fixture-download/override"
-	TEST_FIXTURE_LOCAL_RELATIVE_DOWNLOAD_PATH  = "fixture-download/local-relative"
-	TEST_FIXTURE_REMOTE_RELATIVE_DOWNLOAD_PATH = "fixture-download/remote-relative"
-	TEST_FIXTURE_LOCAL_WITH_BACKEND            = "fixture-download/local-with-backend"
-	TEST_FIXTURE_REMOTE_WITH_BACKEND           = "fixture-download/remote-with-backend"
-	TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER      = "fixture-download/local-with-hidden-folder"
-	TERRAFORM_FOLDER                           = ".terraform"
-	TERRAFORM_STATE                            = "terraform.tfstate"
-	TERRAFORM_STATE_BACKUP                     = "terraform.tfstate.backup"
-	DEFAULT_TEST_REGION                        = "us-east-1"
-)
+const terraformRemoteStateS3Region = "us-west-2"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -53,58 +32,65 @@ func init() {
 
 func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 	t.Parallel()
+
+	const testFixturePath = "fixture/"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	cleanupTerraformFolder(t, TEST_FIXTURE_PATH)
+	cleanupTerraformFolder(t, testFixturePath)
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
-	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
+	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueID()))
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfig(t, TEST_FIXTURE_PATH, s3BucketName, lockTableName, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfig(t, testFixturePath, s3BucketName, lockTableName, config.DefaultTerragruntConfigPath)
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
-	defer cleanupTableForTest(t, lockTableName, TERRAFORM_REMOTE_STATE_S3_REGION)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
+	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
 
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, TEST_FIXTURE_PATH))
-	validateS3BucketExists(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, testFixturePath))
+	validateS3BucketExists(t, terraformRemoteStateS3Region, s3BucketName)
 }
 
 func TestTerragruntWorksWithIncludes(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-include/"
+	const relative = "qa/my-app"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	childPath := util.JoinPath(TEST_FIXTURE_INCLUDE_PATH, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH)
+	childPath := util.JoinPath(testPath, relative)
 	cleanupTerraformFolder(t, childPath)
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, TEST_FIXTURE_INCLUDE_PATH, TEST_FIXTURE_INCLUDE_CHILD_REL_PATH, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, relative, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 }
 
 func TestTerragruntOutputAllCommand(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-output-all"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_OUTPUT_ALL)
+	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_OUTPUT_ALL, config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, "not-used")
 
-	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, TEST_FIXTURE_OUTPUT_ALL)
+	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply-all --terragrunt-non-interactive --terragrunt-working-dir %s -var terraform_remote_state_s3_bucket=\"%s\"", environmentPath, s3BucketName))
 
@@ -124,20 +110,22 @@ func TestTerragruntOutputAllCommand(t *testing.T) {
 
 func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-output-all"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_OUTPUT_ALL)
+	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_OUTPUT_ALL, config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, "not-used")
 
-	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, TEST_FIXTURE_OUTPUT_ALL)
+	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply-all --terragrunt-non-interactive --terragrunt-working-dir %s -var terraform_remote_state_s3_bucket=\"%s\"", environmentPath, s3BucketName))
 
@@ -155,14 +143,16 @@ func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *tes
 
 func TestTerragruntStackCommands(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-stack/"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
-	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
+	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueID()))
 
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_STACK)
+	tmpEnvPath := copyEnvironment(t, testPath)
 
 	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, "fixture-stack", config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
@@ -170,8 +160,8 @@ func TestTerragruntStackCommands(t *testing.T) {
 	mgmtEnvironmentPath := fmt.Sprintf("%s/fixture-stack/mgmt", tmpEnvPath)
 	stageEnvironmentPath := fmt.Sprintf("%s/fixture-stack/stage", tmpEnvPath)
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
-	defer cleanupTableForTest(t, lockTableName, TERRAFORM_REMOTE_STATE_S3_REGION)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
+	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply-all --terragrunt-non-interactive --terragrunt-working-dir %s -var terraform_remote_state_s3_bucket=\"%s\"", mgmtEnvironmentPath, s3BucketName))
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply-all --terragrunt-non-interactive --terragrunt-working-dir %s -var terraform_remote_state_s3_bucket=\"%s\"", stageEnvironmentPath, s3BucketName))
@@ -185,131 +175,120 @@ func TestTerragruntStackCommands(t *testing.T) {
 
 func TestLocalDownload(t *testing.T) {
 	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_LOCAL_DOWNLOAD_PATH)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_DOWNLOAD_PATH))
-
+	const testPath = "fixture-download/local"
+	cleanupTerraformFolder(t, testPath)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_DOWNLOAD_PATH))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 }
 
 func TestLocalDownloadWithHiddenFolder(t *testing.T) {
 	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER))
-
+	const testPath = "fixture-download/local-with-hidden-folder"
+	cleanupTerraformFolder(t, testPath)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_WITH_HIDDEN_FOLDER))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 }
 
 func TestLocalDownloadWithRelativePath(t *testing.T) {
 	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_LOCAL_RELATIVE_DOWNLOAD_PATH)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_RELATIVE_DOWNLOAD_PATH))
-
+	const testPath = "fixture-download/local-relative"
+	cleanupTerraformFolder(t, testPath)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_LOCAL_RELATIVE_DOWNLOAD_PATH))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 }
 
 func TestRemoteDownload(t *testing.T) {
 	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_REMOTE_DOWNLOAD_PATH)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_REMOTE_DOWNLOAD_PATH))
-
+	const testPath = "fixture-download/remote"
+	cleanupTerraformFolder(t, testPath)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_REMOTE_DOWNLOAD_PATH))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 }
 
 func TestRemoteDownloadWithRelativePath(t *testing.T) {
 	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_REMOTE_RELATIVE_DOWNLOAD_PATH)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_REMOTE_RELATIVE_DOWNLOAD_PATH))
-
+	const testPath = "fixture-download/remote-relative"
+	cleanupTerraformFolder(t, testPath)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", TEST_FIXTURE_REMOTE_RELATIVE_DOWNLOAD_PATH))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
 }
 
 func TestRemoteDownloadOverride(t *testing.T) {
 	t.Parallel()
-
-	cleanupTerraformFolder(t, TEST_FIXTURE_OVERRIDE_DOWNLOAD_PATH)
-
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-source %s", TEST_FIXTURE_OVERRIDE_DOWNLOAD_PATH, "../hello-world"))
-
+	const testPath = "fixture-download/override"
+	cleanupTerraformFolder(t, testPath)
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-source %s", testPath, "../hello-world"))
 	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-source %s", TEST_FIXTURE_OVERRIDE_DOWNLOAD_PATH, "../hello-world"))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-source %s", testPath, "../hello-world"))
 }
 
 func TestLocalWithBackend(t *testing.T) {
 	t.Parallel()
+	const testPath = "fixture-download/local-with-backend"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
-	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueId()))
-
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
+	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueID()))
 	tmpEnvPath := copyEnvironment(t, "fixture-download")
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_LOCAL_WITH_BACKEND)
-
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
-	defer cleanupTableForTest(t, lockTableName, TERRAFORM_REMOTE_STATE_S3_REGION)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
+	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
-
 	// Run a second time to make sure the temporary folder can be reused without errors
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 }
 
 func TestRemoteWithBackend(t *testing.T) {
 	t.Parallel()
+
+	const testPath = "fixture-download/remote-with-backend"
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueId()))
-	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueId()))
+	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
+	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueID()))
 
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_REMOTE_WITH_BACKEND)
-	rootPath := util.JoinPath(tmpEnvPath, TEST_FIXTURE_REMOTE_WITH_BACKEND)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
-	defer deleteS3Bucket(t, TERRAFORM_REMOTE_STATE_S3_REGION, s3BucketName)
-	defer cleanupTableForTest(t, lockTableName, TERRAFORM_REMOTE_STATE_S3_REGION)
+	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
+	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
-
 	// Run a second time to make sure the temporary folder can be reused without errors
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 }
 
 func TestExtraArguments(t *testing.T) {
-	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
+	// Do not use t.Parallel() on this testPath, it will infers with the other TestExtraArguments.* tests
+	const testPath = "fixture-extra-args/"
 	out := new(bytes.Buffer)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
+	tmpEnvPath := copyEnvironment(t, testPath) + "/" + testPath
 	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
 	assert.Contains(t, out.String(), "Hello, World from dev!")
 }
 
 func TestExtraArgumentsWithEnv(t *testing.T) {
-	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
+	// Do not use t.Parallel() on this testPath, it will infers with the other TestExtraArguments.* tests
+	const testPath = "fixture-extra-args/"
 	out := new(bytes.Buffer)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
+	tmpEnvPath := copyEnvironment(t, testPath) + "/" + testPath
 	os.Setenv("TF_VAR_env", "prod")
 	defer os.Unsetenv("TF_VAR_env")
 	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", tmpEnvPath), out, os.Stderr)
@@ -318,9 +297,10 @@ func TestExtraArgumentsWithEnv(t *testing.T) {
 }
 
 func TestExtraArgumentsWithRegion(t *testing.T) {
-	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
+	// Do not use t.Parallel() on this testPath, it will infers with the other TestExtraArguments.* tests
+	const testPath = "fixture-extra-args/"
 	out := new(bytes.Buffer)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
+	tmpEnvPath := copyEnvironment(t, testPath) + "/" + testPath
 	os.Setenv("TF_VAR_region", "us-west-2")
 	defer os.Unsetenv("TF_VAR_region")
 	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", tmpEnvPath), out, os.Stderr)
@@ -329,9 +309,10 @@ func TestExtraArgumentsWithRegion(t *testing.T) {
 }
 
 func TestPriorityOrderOfArgument(t *testing.T) {
-	// Do not use t.Parallel() on this test, it will infers with the other TestExtraArguments.* tests
+	// Do not use t.Parallel() on this testPath, it will infers with the other TestExtraArguments.* tests
+	const testPath = "fixture-extra-args/"
 	out := new(bytes.Buffer)
-	tmpEnvPath := copyEnvironment(t, TEST_FIXTURE_EXTRA_ARGS_PATH) + "/" + TEST_FIXTURE_EXTRA_ARGS_PATH
+	tmpEnvPath := copyEnvironment(t, testPath) + "/" + testPath
 	injectedValue := "Injected-directly-by-argument"
 	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -var extra_var=%s --terragrunt-non-interactive --terragrunt-working-dir %s", injectedValue, tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
@@ -341,9 +322,9 @@ func TestPriorityOrderOfArgument(t *testing.T) {
 }
 
 func cleanupTerraformFolder(t *testing.T, templatesPath string) {
-	removeFile(t, util.JoinPath(templatesPath, TERRAFORM_STATE))
-	removeFile(t, util.JoinPath(templatesPath, TERRAFORM_STATE_BACKUP))
-	removeFolder(t, util.JoinPath(templatesPath, TERRAFORM_FOLDER))
+	removeFile(t, util.JoinPath(templatesPath, "terraform.tfstate"))
+	removeFile(t, util.JoinPath(templatesPath, "terraform.tfstate.backup"))
+	removeFolder(t, util.JoinPath(templatesPath, ".terraform"))
 }
 
 func removeFile(t *testing.T, path string) {
@@ -504,14 +485,14 @@ func copyTerragruntConfigAndFillPlaceholders(t *testing.T, configSrcPath string,
 // Returns a unique (ish) id we can attach to resources and tfstate files so they don't conflict with each other
 // Uses base 62 to generate a 6 character string that's unlikely to collide with the handful of tests we run in
 // parallel. Based on code here: http://stackoverflow.com/a/9543797/483528
-func uniqueId() string {
-	const BASE_62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	const UNIQUE_ID_LENGTH = 6 // Should be good for 62^6 = 56+ billion combinations
+func uniqueID() string {
+	const base62Chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	const uniqueIDLength = 6 // Should be good for 62^6 = 56+ billion combinations
 
 	var out bytes.Buffer
 
-	for i := 0; i < UNIQUE_ID_LENGTH; i++ {
-		out.WriteByte(BASE_62_CHARS[rand.Intn(len(BASE_62_CHARS))])
+	for i := 0; i < uniqueIDLength; i++ {
+		out.WriteByte(base62Chars[rand.Intn(len(base62Chars))])
 	}
 
 	return out.String()
@@ -524,7 +505,7 @@ func validateS3BucketExists(t *testing.T, awsRegion string, bucketName string) {
 		t.Fatalf("Error creating S3 client: %v", err)
 	}
 
-	remoteStateConfig := remote.RemoteStateConfigS3{Bucket: bucketName, Region: awsRegion}
+	remoteStateConfig := remote.StateConfigS3{Bucket: bucketName, Region: awsRegion}
 	assert.True(t, remote.DoesS3BucketExist(s3Client, &remoteStateConfig), "Terragrunt failed to create remote state S3 bucket %s", bucketName)
 }
 
@@ -566,8 +547,8 @@ func deleteS3Bucket(t *testing.T, awsRegion string, bucketName string) {
 }
 
 // Create an authenticated client for DynamoDB
-func createDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.DynamoDB, error) {
-	session, err := aws_helper.CreateAwsSession(awsRegion, awsProfile)
+func CreateDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.DynamoDB, error) {
+	session, err := awshelper.CreateAwsSession(awsRegion, awsProfile)
 	if err != nil {
 		return nil, err
 	}
@@ -576,7 +557,7 @@ func createDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.DynamoDB, err
 }
 
 func createDynamoDbClientForTest(t *testing.T, awsRegion string) *dynamodb.DynamoDB {
-	client, err := createDynamoDbClient(awsRegion, "")
+	client, err := CreateDynamoDbClient(awsRegion, "")
 	if err != nil {
 		t.Fatal(err)
 	}

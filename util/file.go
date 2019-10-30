@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gruntwork-io/terragrunt/aws_helper"
+	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	getter "github.com/hashicorp/go-getter"
 	"github.com/hashicorp/terraform/config/module"
@@ -207,7 +207,7 @@ func GetTempDownloadFolder(folders ...string) string {
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
 func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
-	source, err := aws_helper.ConvertS3Path(source)
+	source, err := awshelper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
 	}
@@ -221,11 +221,11 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
-	s3Object, _ := aws_helper.GetBucketObjectInfoFromURL(source)
+	s3Object, _ := awshelper.GetBucketObjectInfoFromURL(source)
 	if s3Object != nil {
 		// This is an S3 bucket object, we make sure that the path is well formed
 		source = s3Object.String()
-		err = aws_helper.CheckS3Status(cacheDir)
+		err = awshelper.CheckS3Status(cacheDir)
 	} else if strings.HasPrefix(source, "file://") {
 		err = fmt.Errorf("Local path always copied")
 	}
@@ -260,7 +260,7 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 			if s3Object != nil {
 				// Since it is an S3 Bucket object, we save its md5 value
 				// to avoid multiple download of the same object
-				err = aws_helper.SaveS3Status(s3Object, cacheDir)
+				err = awshelper.SaveS3Status(s3Object, cacheDir)
 			}
 			if err != nil {
 				return "", fmt.Errorf("%v while saving status for %s", err, source)

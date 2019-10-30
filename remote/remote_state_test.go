@@ -11,7 +11,7 @@ import (
 func TestToTerraformInitArgs(t *testing.T) {
 	t.Parallel()
 
-	remoteState := RemoteState{
+	remoteState := State{
 		Backend: "s3",
 		Config: map[string]interface{}{
 			"encrypt": true,
@@ -28,7 +28,7 @@ func TestToTerraformInitArgs(t *testing.T) {
 func TestToTerraformInitArgsNoBackendConfigs(t *testing.T) {
 	t.Parallel()
 
-	remoteState := RemoteState{Backend: "s3"}
+	remoteState := State{Backend: "s3"}
 	args := remoteState.ToTerraformInitArgs()
 	assertTerraformInitArgsEqual(t, args, "-force-copy -get=false")
 }
@@ -39,49 +39,49 @@ func TestShouldOverrideExistingRemoteState(t *testing.T) {
 	terragruntOptions := options.NewTerragruntOptionsForTest("remote_state_test")
 
 	testCases := []struct {
-		existingBackend TerraformBackend
-		stateFromConfig RemoteState
+		existingBackend terraformBackend
+		stateFromConfig State
 		shouldOverride  bool
 	}{
-		{TerraformBackend{}, RemoteState{}, false},
-		{TerraformBackend{Type: "s3"}, RemoteState{Backend: "s3"}, false},
-		{TerraformBackend{Type: "s3"}, RemoteState{Backend: "atlas"}, true},
+		{terraformBackend{}, State{}, false},
+		{terraformBackend{Type: "s3"}, State{Backend: "s3"}, false},
+		{terraformBackend{Type: "s3"}, State{Backend: "atlas"}, true},
 		{
-			TerraformBackend{
+			terraformBackend{
 				Type:   "s3",
 				Config: map[string]interface{}{"bucket": "foo", "key": "bar", "region": "us-east-1"},
 			},
-			RemoteState{
+			State{
 				Backend: "s3",
 				Config:  map[string]interface{}{"bucket": "foo", "key": "bar", "region": "us-east-1"},
 			},
 			false,
 		}, {
-			TerraformBackend{
+			terraformBackend{
 				Type:   "s3",
 				Config: map[string]interface{}{"bucket": "foo", "key": "bar", "region": "us-east-1"},
 			},
-			RemoteState{
+			State{
 				Backend: "s3",
 				Config:  map[string]interface{}{"bucket": "different", "key": "bar", "region": "us-east-1"},
 			},
 			true,
 		}, {
-			TerraformBackend{
+			terraformBackend{
 				Type:   "s3",
 				Config: map[string]interface{}{"bucket": "foo", "key": "bar", "region": "us-east-1"},
 			},
-			RemoteState{
+			State{
 				Backend: "s3",
 				Config:  map[string]interface{}{"bucket": "foo", "key": "different", "region": "us-east-1"},
 			},
 			true,
 		}, {
-			TerraformBackend{
+			terraformBackend{
 				Type:   "s3",
 				Config: map[string]interface{}{"bucket": "foo", "key": "bar", "region": "us-east-1"},
 			},
-			RemoteState{
+			State{
 				Backend: "s3",
 				Config:  map[string]interface{}{"bucket": "foo", "key": "bar", "region": "different"},
 			},
