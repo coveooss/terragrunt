@@ -136,6 +136,82 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 	}
 }
 
+func TestParseBooleanEnvironment(t *testing.T) {
+	testCases := []struct {
+		args         []string
+		argName      string
+		envValue     string
+		defaultValue bool
+		expected     bool
+	}{
+		{
+			args:         []string{},
+			argName:      "",
+			envValue:     "",
+			defaultValue: false,
+			expected:     false,
+		},
+		{
+			args:         []string{},
+			argName:      "",
+			envValue:     "",
+			defaultValue: true,
+			expected:     true,
+		},
+		{
+			args:         []string{"--trash", "123", "--test", "--other-arg"},
+			argName:      "test",
+			envValue:     "",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			args:         []string{},
+			argName:      "",
+			envValue:     "t",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			args:         []string{},
+			argName:      "",
+			envValue:     "on",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			args:         []string{},
+			argName:      "",
+			envValue:     "yes",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			args:         []string{},
+			argName:      "",
+			envValue:     "1",
+			defaultValue: false,
+			expected:     true,
+		},
+		{
+			args:         []string{"--test"},
+			argName:      "test",
+			envValue:     "n",
+			defaultValue: false,
+			expected:     true,
+		},
+	}
+	for _, testCase := range testCases {
+		if testCase.envValue != "" {
+			os.Setenv("TEST_ENV_VAR_VALUE", testCase.envValue)
+			defer os.Unsetenv("TEST_ENV_VAR_VALUE")
+		}
+
+		assert.Equal(t, testCase.expected, parseBooleanArg(testCase.args, testCase.argName, "TEST_ENV_VAR_VALUE", testCase.defaultValue), testCase)
+	}
+
+}
+
 // We can't do a direct comparison between TerragruntOptions objects because we can't compare Logger or RunTerragrunt
 // instances. Therefore, we have to manually check everything else.
 func assertOptionsEqual(t *testing.T, expected options.TerragruntOptions, actual options.TerragruntOptions, msgAndArgs ...interface{}) {
