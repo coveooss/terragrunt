@@ -245,7 +245,9 @@ func filterTerragruntArgs(args []string) []string {
 // If it isn't, return defaultValue.
 func parseBooleanArg(args []string, argName string, envVar string, defaultValue bool) bool {
 	if value, ok := os.LookupEnv(envVar); envVar != "" && ok {
-		defaultValue = (strings.ToLower(value) == "true" || value == "1")
+		value = strings.ToLower(value)
+		parsedValue, err := strconv.ParseBool(value)
+		defaultValue = (parsedValue && err == nil) || value == "on" || value == "yes" || value == "y"
 	}
 	argName = fmt.Sprintf("--%s", argName)
 	for _, arg := range args {
