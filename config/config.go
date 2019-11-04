@@ -351,6 +351,8 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return nil, err
 	}
 
+	// TODO: Make this a trace
+	terragruntOptions.Logger.Debugf("Read configuration file at %s\n%s", include.Path, configString)
 	if terragruntOptions.ApplyTemplate {
 		collections.ListHelper = hcl.GenericListHelper
 		collections.DictionaryHelper = hcl.DictionaryHelper
@@ -372,9 +374,19 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		}
 		t.GetNewContext(filepath.Dir(source), true).AddFunctions(includeContext.getHelperFunctions(), "Terragrunt", nil)
 
+		oldConfigString := configString
 		if configString, err = t.ProcessContent(configString, source); err != nil {
 			terragruntOptions.Logger.Debugf("Error running gotemplate on %s: %v", include.Path, err)
 			return
+		}
+
+		if oldConfigString != configString {
+			terragruntOptions.Logger.Debugf("Configuration file at %s was modified by gotemplate", include.Path)
+			// TODO: Make this a trace
+			terragruntOptions.Logger.Debugf("Result:\n%s", configString)
+		} else {
+			terragruntOptions.Logger.Debugf("Configuration file at %s was not modified by gotemplate", include.Path)
+
 		}
 	}
 
