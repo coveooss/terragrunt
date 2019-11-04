@@ -504,16 +504,15 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 	for _, bootstrapFile := range collections.AsList(bootConfigsPath).Reverse().Strings() {
 		bootstrapFile = strings.TrimSpace(bootstrapFile)
 		if bootstrapFile != "" {
-			stat, _ := os.Stat(bootstrapFile)
-			if stat == nil || stat.IsDir() {
-				include.Source = bootstrapFile
-				include.Path = ""
-			} else {
-				include.Source = path.Dir(bootstrapFile)
-				include.Path = path.Base(bootstrapFile)
+			bootstrapDir := path.Dir(bootstrapFile)
+			sourcePath, err := util.GetSource(bootstrapDir, terragruntOptions.WorkingDir, terragruntOptions.Logger)
+			if err != nil {
+				return err
 			}
+			include.Source = sourcePath
+			include.Path = path.Base(bootstrapFile)
 			var bootConfig *TerragruntConfig
-			bootConfig, err := parseIncludedConfig(include, terragruntOptions)
+			bootConfig, err = parseIncludedConfig(include, terragruntOptions)
 			if err != nil {
 				return err
 			}

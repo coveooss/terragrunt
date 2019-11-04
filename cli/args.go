@@ -69,12 +69,12 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return
 	}
 
-	parsePaths := func(argName string, defaultValues ...string) []string {
+	parseList := func(argName string, defaultValues ...string) []string {
 		result := parse(argName, defaultValues...)
 		if err != nil {
 			return nil
 		}
-		return util.RemoveElementFromList(strings.Split(result, string(os.PathListSeparator)), "")
+		return util.RemoveElementFromList(strings.Split(result, string(",")), "")
 	}
 
 	workingDir := parse(optWorkingDir, currentDir)
@@ -93,9 +93,9 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.AwsProfile = parse(optAWSProfile)
 	opts.ApprovalHandler = parse(optApprovalHandler)
 	opts.ApplyTemplate = parseBooleanArg(args, optApplyTemplate, options.EnvApplyTemplate, false)
-	opts.TemplateAdditionalPatterns = parsePaths(optTemplatePatterns, os.Getenv(options.EnvTemplatePatterns))
-	opts.BootConfigurationPaths = parsePaths(optBootConfigs, os.Getenv(options.EnvBootConfigs))
-	opts.PreBootConfigurationPaths = parsePaths(optPreBootConfigs, os.Getenv(options.EnvPreBootConfigs))
+	opts.TemplateAdditionalPatterns = parseList(optTemplatePatterns, os.Getenv(options.EnvTemplatePatterns))
+	opts.BootConfigurationPaths = parseList(optBootConfigs, os.Getenv(options.EnvBootConfigs))
+	opts.PreBootConfigurationPaths = parseList(optPreBootConfigs, os.Getenv(options.EnvPreBootConfigs))
 
 	flushDelay := parse(optFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
 	nbWorkers := parse(optNbWorkers, os.Getenv(options.EnvWorkers), "10")
