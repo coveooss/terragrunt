@@ -22,27 +22,27 @@ func TestTerragruntBootstrap(t *testing.T) {
 		bootstrap      []string
 		expectedOutput string
 	}{
-		// {
-		// 	project:        "fixture-bootstrap/simple",
-		// 	bootstrap:      []string{absoluteTestPath + "/simple/a.tfvars", absoluteTestPath + "/simple/b.tfvars"},
-		// 	expectedOutput: "applyHook", // This is output by the hook
-		// },
-		// {
-		// 	project:        "fixture-bootstrap/preboot",
-		// 	preboot:        []string{absoluteTestPath + "/preboot/variables.json"},
-		// 	expectedOutput: "my_value my_value2", // This is output by the hook
-		// },
-		// {
-		// 	project:        "fixture-bootstrap/refer-to-other-source",
-		// 	terragruntPath: "/terragrunt_files/my_project",
-		// 	bootstrap:      []string{absoluteTestPath + "/_external_dir/refer-to-other-source.tfvars"},
-		// 	expectedOutput: "test output",
-		// },
-		// {
-		// 	project:        "fixture-bootstrap/templating-in-bootstrap",
-		// 	bootstrap:      []string{absoluteTestPath + "/_external_dir/templating-in-bootstrap.tfvars"},
-		// 	expectedOutput: "test variable", // This is output by the hook
-		// },
+		{
+			project:        "fixture-bootstrap/simple",
+			bootstrap:      []string{absoluteTestPath + "/simple/a.tfvars", absoluteTestPath + "/simple/b.tfvars"},
+			expectedOutput: "applyHook", // This is output by the hook
+		},
+		{
+			project:        "fixture-bootstrap/preboot",
+			preboot:        []string{absoluteTestPath + "/preboot/variables.json"},
+			expectedOutput: "my_value my_value2", // This is output by the hook
+		},
+		{
+			project:        "fixture-bootstrap/refer-to-other-source",
+			terragruntPath: "/terragrunt_files/my_project",
+			bootstrap:      []string{absoluteTestPath + "/_external_dir/refer-to-other-source.tfvars"},
+			expectedOutput: "test output",
+		},
+		{
+			project:        "fixture-bootstrap/templating-in-bootstrap",
+			bootstrap:      []string{absoluteTestPath + "/_external_dir/templating-in-bootstrap.tfvars"},
+			expectedOutput: "test variable", // This is output by the hook
+		},
 		{
 			project: "fixture-bootstrap/chain-preboot-configs",
 			preboot: []string{absoluteTestPath + "/chain-preboot-configs/preboot.hcl", absoluteTestPath + "/chain-preboot-configs/variables.json"},

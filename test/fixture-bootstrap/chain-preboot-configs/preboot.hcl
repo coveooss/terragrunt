@@ -1,8 +1,8 @@
 /*@
   @variables := dict()
 
-  @foreach($key, $value := .my_map)
-    @variables[$key] = $value
+  @foreach ($key, $value := my_map)
+    @set(variables, $key, $value)
   @end foreach
 
   @toPrettyHcl(variables)
