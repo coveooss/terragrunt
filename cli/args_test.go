@@ -96,11 +96,22 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 		},
 
 		{
-			[]string{"--foo", "--terragrunt-apply-template", "--terragrunt-template-patterns", "test" + string(os.PathListSeparator) + "123"},
+			[]string{"--foo", "--terragrunt-apply-template", "--terragrunt-template-patterns", "test,123"},
 			func() *options.TerragruntOptions {
 				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo"}, false, "", false)
 				terragruntOptions.ApplyTemplate = true
 				terragruntOptions.TemplateAdditionalPatterns = []string{"test", "123"}
+				return terragruntOptions
+			}(),
+			nil,
+		},
+
+		{
+			[]string{"--foo", "--terragrunt-apply-template", "--terragrunt-boot-configs", "file://test,test123.txt"},
+			func() *options.TerragruntOptions {
+				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo"}, false, "", false)
+				terragruntOptions.ApplyTemplate = true
+				terragruntOptions.BootConfigurationPaths = []string{"file://test", "test123.txt"}
 				return terragruntOptions
 			}(),
 			nil,

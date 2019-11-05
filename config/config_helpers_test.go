@@ -567,31 +567,31 @@ func TestResolveMultipleInterpolationsConfigString(t *testing.T) {
 	}
 }
 
-func TestGetTfVarsDirAbsPath(t *testing.T) {
+func TestGetLeafDirAbsPath(t *testing.T) {
 	t.Parallel()
 	workingDir, err := os.Getwd()
 	assert.Nil(t, err, "Could not get current working dir: %v", err)
-	testGetTfVarsDir(t, "/foo/bar/terraform.tfvars", fmt.Sprintf("%s/foo/bar", filepath.VolumeName(workingDir)))
+	testGetLeafDir(t, "/foo/bar/terraform.tfvars", fmt.Sprintf("%s/foo/bar", filepath.VolumeName(workingDir)))
 }
 
-func TestGetTfVarsDirRelPath(t *testing.T) {
+func TestGetLeafDirRelPath(t *testing.T) {
 	t.Parallel()
 	workingDir, err := os.Getwd()
 	assert.Nil(t, err, "Could not get current working dir: %v", err)
 	workingDir = filepath.ToSlash(workingDir)
 
-	testGetTfVarsDir(t, "foo/bar/terraform.tfvars", fmt.Sprintf("%s/foo/bar", workingDir))
+	testGetLeafDir(t, "foo/bar/terraform.tfvars", fmt.Sprintf("%s/foo/bar", workingDir))
 }
 
-func testGetTfVarsDir(t *testing.T, configPath string, expectedPath string) {
+func testGetLeafDir(t *testing.T, configPath string, expectedPath string) {
 	context := resolveContext{include: mockDefaultInclude, options: options.NewTerragruntOptionsForTest(configPath)}
-	actualPath, err := context.getTfVarsDir()
+	actualPath, err := context.getLeafDir()
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
 	assert.Equal(t, expectedPath, actualPath)
 }
 
-func TestGetParentTfVarsDir(t *testing.T) {
+func TestGetParentDir(t *testing.T) {
 	t.Parallel()
 
 	currentDir, err := os.Getwd()
@@ -647,7 +647,7 @@ func TestGetParentTfVarsDir(t *testing.T) {
 
 	for _, testCase := range testCases {
 		context := resolveContext{include: testCase.include, options: testCase.terragruntOptions}
-		actualPath, actualErr := context.getParentTfVarsDir()
+		actualPath, actualErr := context.getParentDir()
 		assert.Nil(t, actualErr, "For include %v and options %v, unexpected error: %v", testCase.include, testCase.terragruntOptions, actualErr)
 		assert.Equal(t, testCase.expectedPath, actualPath, "For include %v and options %v", testCase.include, testCase.terragruntOptions)
 	}
