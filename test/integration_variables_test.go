@@ -15,83 +15,87 @@ func TestTerragruntImportVariables(t *testing.T) {
 	type test struct {
 		project        string
 		args           string
-		expectedOutput string
+		expectedOutput []string
 	}
 	tests := []test{
 		{
 			project:        "fixture-variables/basic-file",
-			expectedOutput: "example = 123",
+			expectedOutput: []string{"example = 123"},
 		},
 		// Hook prints out the content of the subfolder. Shouldn't contain test.tf
 		{
 			project:        "fixture-variables/basic",
-			expectedOutput: "sub folder content:\nzzz_unrelated.yaml\n",
+			expectedOutput: []string{"sub folder content:\nzzz_unrelated.yaml\n"},
 		},
 		{
 			project:        "fixture-variables/glob-file",
-			expectedOutput: "example = json1-yaml1-json2-yaml2",
+			expectedOutput: []string{"example = json1-yaml1-json2-yaml2"},
 		},
 		{
 			project:        "fixture-variables/no-tf-variables",
 			args:           "--terragrunt-apply-template",
-			expectedOutput: "example = 123456789",
+			expectedOutput: []string{"example = 123456789"},
 		},
 		{
 			project:        "fixture-variables/flatten",
-			expectedOutput: "example = 1-2-hello-123",
+			expectedOutput: []string{"example = 1-2-hello-123"},
 		},
 		{
-			project:        "fixture-variables/flatten-levels",
-			expectedOutput: "example = 1-2-hello-123",
+			project: "fixture-variables/flatten-levels",
+			expectedOutput: []string{
+				"example = 1-2-hello-123",
+				"example_gotemplate = 1-2-hello-123",
+			},
+			args: "--terragrunt-apply-template",
 		},
 		{
 			project:        "fixture-variables/flatten-all",
-			expectedOutput: "example = 1-2-hello-123",
+			expectedOutput: []string{"example = 1-2-hello-123"},
 		},
 		{
 			project:        "fixture-variables/flatten-overwrite",
-			expectedOutput: "example = 1-3-4",
+			expectedOutput: []string{"example = 1-3-4"},
 		},
 		{
 			project:        "fixture-variables/overwrite",
-			expectedOutput: "example = 456",
+			expectedOutput: []string{"example = 456"},
 		},
 		{
 			project:        "fixture-variables/overwrite-with-file",
-			expectedOutput: "example = 456",
+			expectedOutput: []string{"example = 456"},
 		},
 		{
 			project:        "fixture-variables/placeholder-var",
-			expectedOutput: "example = 123",
+			expectedOutput: []string{"example = 123"},
 		},
 		{
 			project:        "fixture-variables/substitute",
-			expectedOutput: "example = hello-hello2-hello2 again",
+			expectedOutput: []string{"example = hello-hello2-hello2 again"},
 		},
 		{
 			project:        "fixture-variables/nested",
-			expectedOutput: "example = 123-456",
+			expectedOutput: []string{"example = 123-456"},
 		},
 		{
 			project:        "fixture-variables/different-types",
-			expectedOutput: "example = first-hello",
+			expectedOutput: []string{"example = first-hello"},
 		},
 		{
 			project:        "fixture-variables/load-tf-variables",
-			expectedOutput: "example = hello1-hello2-hello1-hello2",
+			expectedOutput: []string{"example = hello1-hello2-hello1-hello2"},
 		},
 		{
 			project:        "fixture-variables/map",
-			expectedOutput: "example = 1-2-1-2-1-2",
+			expectedOutput: []string{"example = 1-2-1-2-1-2"},
 			args:           "--terragrunt-apply-template",
 		},
 		{
 			project:        "fixture-variables/map-no-flatten",
-			expectedOutput: "example = 1-2-1-2",
+			expectedOutput: []string{"example = 1-2-1-2"},
 		},
 		{
 			project:        "fixture-variables/source",
-			expectedOutput: "example = 123456",
+			expectedOutput: []string{"example = 123456"},
 		},
 	}
 	for _, test := range tests {
@@ -109,7 +113,9 @@ func TestTerragruntImportVariables(t *testing.T) {
 
 			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s %s", rootPath, tt.args), &stdout, &stderr)
 			output := stdout.String()
-			assert.Contains(t, output, tt.expectedOutput)
+			for _, expectedOutput := range tt.expectedOutput {
+				assert.Contains(t, output, expectedOutput)
+			}
 		})
 	}
 }

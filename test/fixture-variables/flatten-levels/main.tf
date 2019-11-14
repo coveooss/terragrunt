@@ -5,3 +5,7 @@ data "template_file" "example" {
 output "example" {
   value = "${data.template_file.example.rendered}"
 }
+
+output "example_gotemplate" {
+  value = "@(infra.common.testmap.test1)-@(infra.common.testmap.test2)-@(infra.common.test3)-@(infra.other.hello)"
+}

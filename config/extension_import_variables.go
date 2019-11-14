@@ -310,15 +310,20 @@ func flatten(nestedMap map[string]interface{}, prefix string, numberOfLevels int
 
 		}
 	}
-	for _, key := range keysToRemove {
-		delete(nestedMap, key)
-	}
-	for key, value := range itemsToAdd {
-		nestedMap[key] = value
-	}
 	newMap := make(map[string]interface{})
 	for key, value := range nestedMap {
-		newMap[prefix+key] = value
+		newMap[key] = value
 	}
-	return newMap
+
+	for _, key := range keysToRemove {
+		delete(newMap, key)
+	}
+	for key, value := range itemsToAdd {
+		newMap[key] = value
+	}
+	prefixedMap := make(map[string]interface{})
+	for key, value := range newMap {
+		prefixedMap[prefix+key] = value
+	}
+	return prefixedMap
 }
