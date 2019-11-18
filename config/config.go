@@ -359,7 +359,6 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 		var t *template.Template
 		options := template.DefaultOptions()
-		options[template.StrictErrorCheck] = true
 		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", options); err != nil {
 			terragruntOptions.Logger.Debugf("Error creating template for %s: %v", terragruntOptions.WorkingDir, err)
 			return
