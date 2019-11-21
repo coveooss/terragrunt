@@ -71,7 +71,7 @@ func createLockTable(tableName string, readCapacityUnits int, writeCapacityUnits
 	tableCreateDeleteSemaphore.Acquire()
 	defer tableCreateDeleteSemaphore.Release()
 
-	terragruntOptions.Logger.Noticef("Creating table %s in DynamoDB", tableName)
+	terragruntOptions.Logger.Infof("Creating table %s in DynamoDB", tableName)
 
 	attributeDefinitions := []*dynamodb.AttributeDefinition{
 		&dynamodb.AttributeDefinition{AttributeName: aws.String(attrLockID), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
@@ -134,7 +134,7 @@ func waitForTableToBeActiveWithRandomSleep(tableName string, client *dynamodb.Dy
 		}
 
 		if tableReady {
-			terragruntOptions.Logger.Noticef("Success! Table %s is now in active state.", tableName)
+			terragruntOptions.Logger.Infof("Success! Table %s is now in active state.", tableName)
 			return nil
 		}
 

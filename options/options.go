@@ -14,9 +14,9 @@ import (
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
-	"github.com/op/go-logging"
 	"gopkg.in/yaml.v2"
 )
 
@@ -44,7 +44,7 @@ type TerragruntOptions struct {
 	AwsProfile string
 
 	// The logger to use for all logging
-	Logger *logging.Logger
+	Logger *multilogger.Logger
 
 	// Environment variables at runtime
 	Env map[string]string
@@ -134,7 +134,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		TerraformPath:        "terraform",
 		TerraformCliArgs:     []string{},
 		WorkingDir:           workingDir,
-		Logger:               util.CreateLogger("main"),
+		Logger:               multilogger.New("terragrunt"),
 		Env:                  make(map[string]string),
 		Variables:            make(map[string]Variable),
 		DownloadDir:          downloadDir,
@@ -162,7 +162,7 @@ func (terragruntOptions TerragruntOptions) Clone(terragruntConfigPath string) *T
 	newOptions := terragruntOptions
 	newOptions.TerragruntConfigPath = terragruntConfigPath
 	newOptions.WorkingDir = filepath.Dir(terragruntConfigPath)
-	newOptions.Logger = util.CreateLogger(util.GetPathRelativeToWorkingDir(newOptions.WorkingDir))
+	newOptions.Logger = terragruntOptions.Logger.Child(util.GetPathRelativeToWorkingDir(newOptions.WorkingDir))
 	newOptions.Env = make(map[string]string, len(terragruntOptions.Env))
 	newOptions.Variables = make(map[string]Variable, len(terragruntOptions.Variables))
 
@@ -217,7 +217,7 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 		variables := terragruntOptions.GetContext()
 
 		for file := range terragruntOptions.deferredSaveList {
-			terragruntOptions.Logger.Info("Saving variables into", file)
+			terragruntOptions.Logger.Info("Saving variables into ", file)
 			var content []byte
 			switch strings.ToLower(filepath.Ext(file)) {
 			case ".yml", ".yaml":
@@ -388,7 +388,7 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 		}
 		status := NewVariable
 		if target.Source != UndefinedSource {
-			terragruntOptions.Logger.Infof("Overwriting value for %s with %v", key, value)
+			terragruntOptions.Logger.Debugf("Overwriting value for %s with %v", key, value)
 			status = IgnoredVariable
 		}
 		terragruntOptions.Variables[key] = Variable{source, value}

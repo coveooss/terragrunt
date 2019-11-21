@@ -13,7 +13,6 @@ import (
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
-	logging "github.com/op/go-logging"
 )
 
 // ExtraCommand is a definition of user extra command that should be executed in place of terraform
@@ -170,11 +169,6 @@ func (list ExtraCommandList) GetVersions() string {
 			result += fmt.Sprintf("\n%s\n", item.Name)
 		}
 		for _, cmd := range item.Commands {
-			logLevel := logging.GetLevel("")
-			if logLevel == logging.NOTICE {
-				logging.SetLevel(logging.WARNING, "")
-			}
-
 			actualCmd := item.VersionArg
 			if strings.HasPrefix(actualCmd, "-") {
 				// If the command is just a parameter to the actual command, we prefix it with the actual command
@@ -196,9 +190,8 @@ func (list ExtraCommandList) GetVersions() string {
 				c.DisplayCommand = actualCmd
 				out, err = c.Output()
 			}
-			logging.SetLevel(logLevel, "")
 			if err != nil {
-				item.logger().Infof("Got %s %s while getting version for %s", color.RedString(err.Error()), out, item.id())
+				item.logger().Debugf("Got %s %s while getting version for %s", color.RedString(err.Error()), out, item.id())
 			} else {
 				result += fmt.Sprintln(strings.TrimSpace(out))
 			}

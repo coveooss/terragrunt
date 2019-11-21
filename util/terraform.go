@@ -13,6 +13,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/gotemplate/v3/yaml"
+	"github.com/sirupsen/logrus"
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
@@ -91,10 +92,12 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 		}
 
 		if t != nil {
-			template.SetLogLevel(GetLoggingLevel())
+			if err := template.TemplateLog.SetDefaultConsoleHookLevel(logrus.InfoLevel); err != nil {
+				return nil, fmt.Errorf("Unable to set logging level for templates: %v", err)
+			}
 			if modifiedContent, err := t.ProcessContent(content, fileName); err != nil {
 				// In case of error, we simply issue a warning and continue with the original content
-				template.Log.Warning(err)
+				template.TemplateLog.Warning(err)
 			} else {
 				content = modifiedContent
 			}

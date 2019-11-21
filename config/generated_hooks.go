@@ -56,7 +56,7 @@ func (list *HookList) merge(imported HookList, mode mergeMode, argName string) {
 			// We remove it from its current position and add it to the list of newly added elements to keep its original declaration ordering.
 			newList = append(newList, (*list)[pos])
 			delete(index, name)
-			log.Infof("Skipping %s %v as it is overridden in the current config", argName, name)
+			log.Debugf("Skipping %s %v as it is overridden in the current config", argName, name)
 			continue
 		}
 		newList = append(newList, item)

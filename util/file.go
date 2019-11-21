@@ -10,11 +10,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	getter "github.com/hashicorp/go-getter"
 	"github.com/hashicorp/terraform/config/module"
-	logging "github.com/op/go-logging"
 	"gopkg.in/matryer/try.v1"
 )
 
@@ -183,7 +183,7 @@ func ReadFileAsString(path string) (string, error) {
 // ReadFileAsStringFromSource returns the contents of the file at the given path
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
-func ReadFileAsStringFromSource(source, path string, logger *logging.Logger) (localFile, content string, err error) {
+func ReadFileAsStringFromSource(source, path string, logger *multilogger.Logger) (localFile, content string, err error) {
 	cacheDir, err := GetSource(source, "", logger)
 	if err != nil {
 		return "", "", err
@@ -206,7 +206,7 @@ func GetTempDownloadFolder(folders ...string) string {
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
-func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
+func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 	source, err := awshelper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
@@ -233,7 +233,7 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 	_, alreadyInCache := sharedContent[cacheDir]
 	if !alreadyInCache || err != nil {
 		if logger != nil {
-			logger.Infof("Adding %s to the cache", source)
+			logger.Debugf("Adding %s to the cache", source)
 		}
 		if !FileExists(cacheDir) || err != nil {
 			if logger != nil {
@@ -241,7 +241,7 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 				if err != nil {
 					reason = fmt.Sprintf("because status = %v", err)
 				}
-				logger.Info("Getting source files", source, reason)
+				logger.Debug("Getting source files", source, reason)
 			}
 			if !alreadyInCache {
 				err = os.RemoveAll(cacheDir)
@@ -266,7 +266,7 @@ func GetSource(source, pwd string, logger *logging.Logger) (string, error) {
 				return "", fmt.Errorf("%v while saving status for %s", err, source)
 			}
 			if logger != nil {
-				logger.Info("Files from", source, "successfully added to the cache at", cacheDir)
+				logger.Debug("Files from", source, "successfully added to the cache at", cacheDir)
 			}
 		}
 		sharedContent[cacheDir] = true

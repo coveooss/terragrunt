@@ -11,6 +11,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/sirupsen/logrus"
 )
 
 // State is the configuration for Terraform remote state
@@ -57,13 +58,13 @@ func (remoteState State) ConfigureRemoteState(terragruntOptions *options.Terragr
 	}
 
 	if shouldConfigure {
-		terragruntOptions.Logger.Infof("Initializing remote state for the %s backend", remoteState.Backend)
+		terragruntOptions.Logger.Debugf("Initializing remote state for the %s backend", remoteState.Backend)
 		if err := remoteState.Initialize(terragruntOptions); err != nil {
 			return err
 		}
 
-		terragruntOptions.Logger.Infof("Configuring remote state for the %s backend", remoteState.Backend)
-		return shell.NewTFCmd(terragruntOptions).Args(initCommand(remoteState)...).WithRetries(3).LogOutput()
+		terragruntOptions.Logger.Debugf("Configuring remote state for the %s backend", remoteState.Backend)
+		return shell.NewTFCmd(terragruntOptions).Args(initCommand(remoteState)...).WithRetries(3).LogOutput(logrus.DebugLevel)
 	}
 
 	return nil
@@ -126,7 +127,7 @@ func shouldOverrideExistingRemoteState(existingBackend *terraformBackend, remote
 		return shell.PromptUserForYesNo(prompt, terragruntOptions)
 	}
 
-	terragruntOptions.Logger.Info("Remote state is already configured for backend", existingBackend.Type)
+	terragruntOptions.Logger.Debug("Remote state is already configured for backend", existingBackend.Type)
 	return false, nil
 }
 

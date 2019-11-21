@@ -3,11 +3,11 @@ package main
 import (
 	"os"
 
+	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/cli"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/shell"
-	"github.com/gruntwork-io/terragrunt/util"
 )
 
 // VERSION is set at build time using -ldflags parameters. For more info, see http://stackoverflow.com/a/11355611/483528
@@ -28,7 +28,7 @@ func checkForErrorsAndExit(err error) {
 	if err == nil {
 		os.Exit(0)
 	} else {
-		logger := util.CreateLogger("main")
+		logger := multilogger.New("terragrunt")
 
 		if _, ok := errors.Unwrap(err).(errors.PlanWithChanges); !ok {
 			// Plan status are not considred as an error

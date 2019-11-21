@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/coveooss/gotemplate/v3/errors"
+	"github.com/coveooss/multilogger/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 )
 

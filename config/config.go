@@ -351,11 +351,10 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return nil, err
 	}
 
-	// TODO: Make this a trace
-	terragruntOptions.Logger.Debugf("Read configuration file at %s\n%s", include.Path, configString)
+	terragruntOptions.Logger.Tracef("Read configuration file at %s\n%s", include.Path, configString)
 	if terragruntOptions.ApplyTemplate {
-		collections.ListHelper = hcl.GenericListHelper
-		collections.DictionaryHelper = hcl.DictionaryHelper
+		collections.SetListHelper(hcl.GenericListHelper)
+		collections.SetDictionaryHelper(hcl.DictionaryHelper)
 
 		var t *template.Template
 		options := template.DefaultOptions()
@@ -381,8 +380,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 		if oldConfigString != configString {
 			terragruntOptions.Logger.Debugf("Configuration file at %s was modified by gotemplate", include.Path)
-			// TODO: Make this a trace
-			terragruntOptions.Logger.Debugf("Result:\n%s", configString)
+			terragruntOptions.Logger.Tracef("Result:\n%s", configString)
 		} else {
 			terragruntOptions.Logger.Debugf("Configuration file at %s was not modified by gotemplate", include.Path)
 
@@ -468,7 +466,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 	config.variablesSet = variables
-	terragruntOptions.Logger.Infof("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
+	terragruntOptions.Logger.Debugf("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
 
 	if !path.IsAbs(include.Path) {
 		include.Path, _ = filepath.Abs(include.Path)

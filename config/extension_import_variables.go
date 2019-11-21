@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveooss/gotemplate/v3/errors"
 	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/multilogger/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
@@ -59,7 +59,7 @@ func (item *ImportVariables) normalize() {
 }
 
 func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables map[string]interface{}) (map[string]interface{}, error) {
-	item.logger().Info("Importing", file)
+	item.logger().Debug("Importing ", file)
 	vars, err := item.options().LoadVariablesFromFile(file)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (list ImportVariablesList) Import() (err error) {
 			// The current command is not in the list of command on which the import should be applied
 			return
 		}
-		item.logger().Infof("Processing import variables statement %s", item.id())
+		item.logger().Debugf("Processing import variables statement %s", item.id())
 
 		if item.TFVariablesFile != "" {
 			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
@@ -238,7 +238,7 @@ func (list ImportVariablesList) Import() (err error) {
 			}
 			for _, dirFile := range filesInDir {
 				if filepath.Ext(dirFile.Name()) == ".tf" {
-					terragruntOptions.Logger.Info("Writing terraform variables to directory: " + walkPath)
+					terragruntOptions.Logger.Debug("Writing terraform variables to directory: " + walkPath)
 					writeTerraformVariables(path.Join(walkPath, fileName), variables)
 					break
 				}

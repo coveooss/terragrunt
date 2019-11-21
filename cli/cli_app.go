@@ -20,6 +20,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/rs/xid"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -34,6 +35,8 @@ const (
 	optTerragruntSourceUpdate           = "terragrunt-source-update"
 	optTerragruntIgnoreDependencyErrors = "terragrunt-ignore-dependency-errors"
 	optLoggingLevel                     = "terragrunt-logging-level"
+	optLoggingFileDir                   = "terragrunt-logging-file-dir"
+	optLoggingFileLevel                 = "terragrunt-logging-file-level"
 	optFlushDelay                       = "terragrunt-flush-delay"
 	optNbWorkers                        = "terragrunt-workers"
 	optAWSProfile                       = "profile"
@@ -44,7 +47,7 @@ const (
 )
 
 var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, optTerragruntIgnoreDependencyErrors, optApplyTemplate}
-var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath, optWorkingDir, optTerragruntSource, optLoggingLevel, optAWSProfile, optApprovalHandler, optFlushDelay, optNbWorkers, optTemplatePatterns, optBootConfigs, optPreBootConfigs}
+var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath, optWorkingDir, optTerragruntSource, optLoggingLevel, optAWSProfile, optApprovalHandler, optFlushDelay, optNbWorkers, optTemplatePatterns, optBootConfigs, optPreBootConfigs, optLoggingFileDir, optLoggingFileLevel}
 
 const multiModuleSuffix = "-all"
 const cmdInit = "init"
@@ -117,15 +120,17 @@ GLOBAL OPTIONS:
    terragrunt-source                    Download Terraform configurations from the specified source into a temporary folder, and run Terraform in that temporary folder.
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
-   terragrunt-logging-level             CRITICAL (0), ERROR (1), WARNING (2), NOTICE (3), INFO (4), DEBUG (5).
+   terragrunt-logging-level             PANIC(0), FATAL (1), ERROR (2), WARNING (3), INFO (4), DEBUG (5), TRACE (6).
+   terragrunt-logging-file-dir          Used to configure the directory where (verbose) file logs will be saved
+   terragrunt-logging-file-level        Used to configure the logging level in files
    terragrunt-approval                  Program to use for approval. {val} will be replaced by the current terragrunt output. Ex: approval.py --value {val}
-   terragrunt-flush-delay               Maximum delay on -all commands before printing out traces (NOTICE) indicating that the process is still alive (default 60s).
+   terragrunt-flush-delay               Maximum delay on -all commands before printing out traces (INFO) indicating that the process is still alive (default 60s).
    terragrunt-workers                   Number of concurrent workers (default 10).
    profile                              Specify an AWS profile to use.
 
 ENVIRONMENT VARIABLES:
    The following environment variables could be set to avoid specifying parameters on command line:
-	  TERRAGRUNT_CONFIG, TERRAGRUNT_TFPATH, TERRAGRUNT_SOURCE, TERRAGRUNT_LOGGING_LEVEL, TERRAGRUNT_FLUSH_DELAY, TERRAGRUNT_WORKERS
+	  TERRAGRUNT_CONFIG, TERRAGRUNT_TFPATH, TERRAGRUNT_SOURCE, TERRAGRUNT_LOGGING_LEVEL, TERRAGRUNT_FLUSH_DELAY, TERRAGRUNT_WORKERS, TERRAGRUNT_LOGGING_FILE_DIR, TERRAGRUNT_LOGGING_FILE_LEVEL
 	  
    TERRAGRUNT_DEBUG  If set, this enable detailed stack trace in case of application crash
    TERRAGRUNT_CACHE  If set, it defines the root folder used to store temporary files
@@ -199,7 +204,6 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		cli.ShowAppHelp(cliContext)
 
 		fmt.Fprintln(cliContext.App.Writer)
-		util.SetLoggingLevel(2)
 		terragruntOptions.Println(title("TERRAFORM\n"))
 		shell.NewTFCmd(terragruntOptions).Args("--help").Run()
 		return nil
@@ -244,8 +248,8 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 		"Version":              terragruntVersion,
 		"AwsProfile":           terragruntOptions.AwsProfile,
 		"DownloadDir":          terragruntOptions.DownloadDir,
-		"LoggingLevel":         int(util.GetLoggingLevel()),
-		"LoggingLevelName":     util.GetLoggingLevel(),
+		"LoggingLevel":         terragruntOptions.Logger.GetHookLevel(""),
+		"LoggingLevelName":     terragruntOptions.Logger.GetHookLevel("").String(),
 		"NbWorkers":            terragruntOptions.NbWorkers,
 		"SourceUpdate":         terragruntOptions.SourceUpdate,
 		"TerraformCliArgs":     terragruntOptions.TerraformCliArgs,
@@ -433,7 +437,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 				break
 			}
 			if err := setRoleEnvironmentVariables(terragruntOptions, role); err == nil {
-				terragruntOptions.Logger.Notice("Assuming role", role)
+				terragruntOptions.Logger.Debug("Assuming role", role)
 				roleAssumed = true
 				break
 			}
@@ -455,7 +459,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 	if err == nil && useTempFolder && terragruntOptions.ApplyTemplate {
-		template.SetLogLevel(util.GetLoggingLevel())
+		template.TemplateLog.SetDefaultConsoleHookLevel(terragruntOptions.Logger.GetLevel())
 		var t *template.Template
 		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil); stopOnError(err) {
 			return
@@ -472,7 +476,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			}
 		}
 		if len(modifiedFiles) > 0 {
-			terragruntOptions.Logger.Noticef("File(s) modified by go template: %s", filterPath(strings.Join(modifiedFiles, ", ")))
+			terragruntOptions.Logger.Debugf("File(s) modified by go template: %s", filterPath(strings.Join(modifiedFiles, ", ")))
 		}
 	}
 
@@ -621,7 +625,7 @@ func downloadModules(terragruntOptions *options.TerragruntOptions) error {
 			return err
 		}
 		if shouldDownload {
-			return shell.NewTFCmd(terragruntOptions).Args("get", "-update").LogOutput()
+			return shell.NewTFCmd(terragruntOptions).Args("get", "-update").LogOutput(logrus.DebugLevel)
 		}
 	}
 
@@ -661,7 +665,7 @@ func runAll(command string, terragruntOptions *options.TerragruntOptions) error 
 		return err
 	}
 
-	terragruntOptions.Logger.Notice(stack)
+	terragruntOptions.Logger.Debug(stack)
 	return stack.RunAll([]string{command}, terragruntOptions, configstack.NormalOrder)
 }
 
@@ -673,7 +677,7 @@ func planAll(command string, terragruntOptions *options.TerragruntOptions) error
 		return err
 	}
 
-	terragruntOptions.Logger.Notice(stack.String())
+	terragruntOptions.Logger.Debug(stack.String())
 	return stack.Plan(command, terragruntOptions)
 }
 
@@ -727,7 +731,7 @@ func outputAll(command string, terragruntOptions *options.TerragruntOptions) err
 		return err
 	}
 
-	terragruntOptions.Logger.Notice(stack)
+	terragruntOptions.Logger.Debug(stack)
 	return stack.Output(command, terragruntOptions)
 }
 
