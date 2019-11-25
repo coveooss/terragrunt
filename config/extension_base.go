@@ -5,10 +5,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/coveooss/multilogger"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
-	logging "github.com/op/go-logging"
 )
 
 // TerragruntExtensioner defines the interface that must be implemented by Terragrunt Extension objects
@@ -20,7 +20,7 @@ type TerragruntExtensioner interface {
 	help() string
 	id() string
 	init(*TerragruntConfigFile)
-	logger() *logging.Logger
+	logger() *multilogger.Logger
 	name() string
 	itemType() string
 	normalize()      // Used to assign default values
@@ -78,7 +78,7 @@ func (base TerragruntExtensionBase) options() *options.TerragruntOptions {
 }
 
 // Returns the current logger to use on the object
-func (base TerragruntExtensionBase) logger() *logging.Logger {
+func (base TerragruntExtensionBase) logger() *multilogger.Logger {
 	if logger := base.options().Logger; logger != nil {
 		return logger
 	}

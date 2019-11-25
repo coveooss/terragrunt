@@ -16,10 +16,11 @@ import (
 
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
-	"github.com/op/go-logging"
+	"github.com/sirupsen/logrus"
 )
 
 // CommandContext is the description of the command that must be executed
@@ -33,7 +34,7 @@ type CommandContext struct {
 	expandArgs          bool
 	expectedStatements  []string
 	completedStatements []string
-	log                 *logging.Logger
+	log                 *multilogger.Logger
 	env                 []string
 	workingDir          string
 	retries             int
@@ -104,12 +105,12 @@ func (c CommandContext) Output() (string, error) {
 }
 
 // LogOutput runs the current command and log the output (stdout and stderr)
-func (c CommandContext) LogOutput() error {
+func (c CommandContext) LogOutput(logLevel logrus.Level) error {
 	out, err := c.Output()
 	if err != nil {
 		c.log.Error(out)
 	} else {
-		c.log.Info(out)
+		c.log.Log(logLevel, out)
 	}
 	return err
 }
@@ -123,7 +124,6 @@ func (c CommandContext) Run() error {
 	// If the output is captured, we use a different logging level
 	c.Stdout = iif(c.Stdout, c.Stdout, c.options.Writer).(io.Writer)
 	c.Stderr = iif(c.Stderr, c.Stderr, c.options.ErrWriter).(io.Writer)
-	logger := iif(c.Stdout == c.options.Writer, c.log.Notice, c.log.Info).(func(...interface{}))
 
 	if c.command == c.options.TerraformPath {
 		const noColor = "-no-color"
@@ -162,7 +162,7 @@ func (c CommandContext) Run() error {
 			return errors.WithStackTrace(err)
 		}
 
-		verb := "Running"
+		verb := "Running "
 		if try > 0 {
 			verb = fmt.Sprintf("Trying(#%d)", try+1)
 			// On subsequent retry, we ignore the output to avoid displaying the same output many times
@@ -171,9 +171,9 @@ func (c CommandContext) Run() error {
 		}
 
 		if c.DisplayCommand == "" {
-			logger(verb, "command:", filepath.Base(cmd.Args[0]), strings.Join(cmd.Args[1:], " "))
+			c.log.Debug(verb, "command: ", filepath.Base(cmd.Args[0]), " ", strings.Join(cmd.Args[1:], " "))
 		} else {
-			logger(verb, "command:", c.DisplayCommand)
+			c.log.Debug(verb, "command: ", c.DisplayCommand)
 		}
 
 		if tempFile != "" {
@@ -257,7 +257,7 @@ func FilterPlanError(err error, command string) error {
 type SignalsForwarder chan os.Signal
 
 // NewSignalsForwarder returns a new SignalsForwarder
-func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *logging.Logger, cmdChannel chan error) SignalsForwarder {
+func NewSignalsForwarder(signals []os.Signal, c *exec.Cmd, logger *multilogger.Logger, cmdChannel chan error) SignalsForwarder {
 	signalChannel := make(chan os.Signal, 1)
 	signal.Notify(signalChannel, signals...)
 

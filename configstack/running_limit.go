@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/gruntwork-io/terragrunt/util"
 )
 
 const waitTimeBetweenThread = 2500
@@ -35,7 +34,7 @@ func (module *runningModule) OutputPeriodicLogs(completed *bool) {
 	if module.Module.TerragruntOptions.RefreshOutputDelay == 0 {
 		return
 	}
-	writer := module.Module.TerragruntOptions.Writer.(*util.LogCatcher).Logger.Noticef
+	writer := module.Module.TerragruntOptions.Logger.Infof
 	for {
 		time.Sleep(module.Module.TerragruntOptions.RefreshOutputDelay)
 		if *completed {

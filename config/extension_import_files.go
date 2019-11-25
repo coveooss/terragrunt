@@ -226,13 +226,13 @@ func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 			sourceFiles = append(sourceFiles, newFiles...)
 
 			if len(newFiles) == 1 {
-				logger.Infof("Import file %s%s", util.GetPathRelativeToMax(newFiles[0].source, item.options().WorkingDir, 2), contextMessage)
+				logger.Debugf("Import file %s%s", util.GetPathRelativeToMax(newFiles[0].source, item.options().WorkingDir, 2), contextMessage)
 			} else {
 				copiedFiles := make([]string, len(newFiles))
 				for i := range newFiles {
 					copiedFiles[i] = util.GetPathRelativeToMax(newFiles[i].target, item.options().WorkingDir, 2)
 				}
-				logger.Infof("Import file %s: %s%s", name, strings.Join(copiedFiles, ", "), contextMessage)
+				logger.Debugf("Import file %s: %s%s", name, strings.Join(copiedFiles, ", "), contextMessage)
 			}
 		}
 
@@ -254,7 +254,7 @@ func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 				if !filepath.IsAbs(source.Target) {
 					source.Target = filepath.Join(importerTarget, source.Target)
 				}
-				logger.Infof("Import file %s to %s%s", filepath.Base(source.Source), source.Target, contextMessage)
+				logger.Debugf("Import file %s to %s%s", filepath.Base(source.Source), source.Target, contextMessage)
 				if err = copy(source.Source, source.Target); err != nil {
 					return
 				}
@@ -336,7 +336,7 @@ func (list ImportFilesList) Run(status error, args ...interface{}) (err error) {
 	list.sort()
 
 	for _, item := range list.Enabled() {
-		item.logger().Infof("Running %s (%s): %s", item.itemType(), item.id(), item.name())
+		item.logger().Debugf("Running %s (%s): %s", item.itemType(), item.id(), item.name())
 		if err := item.importFiles(args...); err != nil {
 			return err
 		}

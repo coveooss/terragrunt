@@ -106,15 +106,10 @@ func TestTerragruntImportVariables(t *testing.T) {
 			defer os.RemoveAll(tmpEnvPath)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
-			var (
-				stdout bytes.Buffer
-				stderr bytes.Buffer
-			)
-
+			var stdout, stderr bytes.Buffer
 			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s %s", rootPath, tt.args), &stdout, &stderr)
-			output := stdout.String()
 			for _, expectedOutput := range tt.expectedOutput {
-				assert.Contains(t, output, expectedOutput)
+				assert.Contains(t, stdout.String(), expectedOutput)
 			}
 		})
 	}

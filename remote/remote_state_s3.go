@@ -146,7 +146,7 @@ func createS3BucketWithVersioning(s3Client *s3.S3, config *StateConfigS3, terrag
 func waitUntilS3BucketExists(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
 	for retries := 0; retries < maxRetriesWaitingForS3Bucket; retries++ {
 		if DoesS3BucketExist(s3Client, config) {
-			terragruntOptions.Logger.Noticef("S3 bucket %s created.", config.Bucket)
+			terragruntOptions.Logger.Infof("S3 bucket %s created.", config.Bucket)
 			return nil
 		} else if retries < maxRetriesWaitingForS3Bucket-1 {
 			terragruntOptions.Logger.Warningf("S3 bucket %s has not been created yet. Sleeping for %s and will check again.", config.Bucket, sleepBetweenRetriesWaitingForS3Bucket)
@@ -159,14 +159,14 @@ func waitUntilS3BucketExists(s3Client *s3.S3, config *StateConfigS3, terragruntO
 
 // Create the S3 bucket specified in the given config
 func createS3Bucket(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Notice("Creating S3 bucket", config.Bucket)
+	terragruntOptions.Logger.Info("Creating S3 bucket", config.Bucket)
 	_, err := s3Client.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(config.Bucket)})
 	return errors.WithStackTrace(err)
 }
 
 // Enable versioning for the S3 bucket specified in the given config
 func enableVersioningForS3Bucket(s3Client *s3.S3, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Notice("Enabling versioning on S3 bucket", config.Bucket)
+	terragruntOptions.Logger.Info("Enabling versioning on S3 bucket", config.Bucket)
 	input := s3.PutBucketVersioningInput{
 		Bucket:                  aws.String(config.Bucket),
 		VersioningConfiguration: &s3.VersioningConfiguration{Status: aws.String(s3.BucketVersioningStatusEnabled)},

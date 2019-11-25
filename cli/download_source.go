@@ -55,7 +55,7 @@ func downloadTerraformSource(source *TerraformSource, terragruntOptions *options
 		return err
 	}
 
-	terragruntOptions.Logger.Info("Setting working directory to", source.WorkingDir)
+	terragruntOptions.Logger.Debug("Setting working directory to", source.WorkingDir)
 	terragruntOptions.WorkingDir = source.WorkingDir
 
 	return nil
@@ -64,7 +64,7 @@ func downloadTerraformSource(source *TerraformSource, terragruntOptions *options
 // Download the specified TerraformSource if the latest code hasn't already been downloaded.
 func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terragruntOptions *options.TerragruntOptions) error {
 	if terragruntOptions.SourceUpdate {
-		terragruntOptions.Logger.Noticef("The --%s flag is set, so deleting the temporary folder %s before downloading source.", optTerragruntSourceUpdate, terraformSource.DownloadDir)
+		terragruntOptions.Logger.Debugf("The --%s flag is set, so deleting the temporary folder %s before downloading source.", optTerragruntSourceUpdate, terraformSource.DownloadDir)
 		if err := os.RemoveAll(terraformSource.DownloadDir); err != nil {
 			return errors.WithStackTrace(err)
 		}
@@ -84,7 +84,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 		return err
 	}
 
-	terragruntOptions.Logger.Infof("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
+	terragruntOptions.Logger.Debugf("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
 	if err := module.GetCopy(terraformSource.DownloadDir, terraformSource.CanonicalSourceURL.String()); err != nil {
 		return err
 	}
@@ -307,7 +307,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 		return nil
 	}
 
-	terragruntOptions.Logger.Info("Cleaning up existing *.tf files in", path)
+	terragruntOptions.Logger.Debug("Cleaning up existing *.tf files in", path)
 
 	files, err := zglob.Glob(util.JoinPath(path, "**/*.tf"))
 	if err != nil {

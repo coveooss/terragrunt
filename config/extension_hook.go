@@ -76,6 +76,8 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 		return
 	}
 
+	logger.Infof("Running %s (%s): %s", hook.itemType(), hook.id(), hook.name())
+
 	hook.Command = strings.TrimSpace(hook.Command)
 	if len(hook.Command) == 0 {
 		logger.Debugf("Hook %s skipped, no command to execute", hook.Name)
@@ -182,7 +184,6 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 		if (status != nil || errOccurred) && !hook.IgnoreError {
 			continue
 		}
-		hook.logger().Infof("Running %s (%s): %s", hook.itemType(), hook.id(), hook.name())
 		hook.normalize()
 		temp, currentErr := hook.run(args...)
 		currentErr = shell.FilterPlanError(currentErr, hook.options().TerraformCliArgs[0])

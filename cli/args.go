@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/multilogger/reutils"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
-	"github.com/op/go-logging"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
@@ -24,16 +24,8 @@ func ParseTerragruntOptions(cliContext *cli.Context) (*options.TerragruntOptions
 	if err != nil {
 		return nil, err
 	}
-
-	terragruntOptions.Writer = &util.LogCatcher{
-		Writer: cliContext.App.Writer,
-		Logger: terragruntOptions.Logger,
-	}
-	terragruntOptions.ErrWriter = &util.LogCatcher{
-		Writer: cliContext.App.ErrWriter,
-		Logger: terragruntOptions.Logger,
-	}
-
+	terragruntOptions.Writer = terragruntOptions.Logger.Copy().SetStdout(cliContext.App.Writer)
+	terragruntOptions.ErrWriter = terragruntOptions.Logger.Copy().SetStdout(cliContext.App.ErrWriter)
 	return terragruntOptions, nil
 }
 
@@ -99,7 +91,9 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 
 	flushDelay := parse(optFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
 	nbWorkers := parse(optNbWorkers, os.Getenv(options.EnvWorkers), "10")
-	loggingLevel := parse(optLoggingLevel, os.Getenv(options.EnvLoggingLevel))
+	loggingLevel := parse(optLoggingLevel, os.Getenv(options.EnvLoggingLevel), logrus.InfoLevel.String())
+	fileLoggingDir := parse(optLoggingFileDir, os.Getenv(options.EnvLoggingFileDir))
+	fileLoggingLevel := parse(optLoggingFileLevel, os.Getenv(options.EnvLoggingFileLevel), logrus.DebugLevel.String())
 
 	if err != nil {
 		return nil, err
@@ -113,8 +107,17 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return nil, fmt.Errorf("Number of workers must be expressed as integer")
 	}
 
-	level, err := util.InitLogging(loggingLevel, logging.NOTICE, !util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
-	os.Setenv(options.EnvLoggingLevel, fmt.Sprintf("%d", level))
+	opts.Logger.SetDefaultConsoleHookLevel(loggingLevel)
+	opts.Logger.SetColor(!util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
+	if fileLoggingDir != "" {
+		absLoggingFileDir, err := filepath.Abs(fileLoggingDir)
+		if err != nil {
+			return nil, err
+		}
+		opts.Logger.AddFile(filepath.Join(absLoggingFileDir, opts.Logger.GetModule())+".txt", fileLoggingLevel)
+	}
+
+	os.Setenv(options.EnvLoggingLevel, opts.Logger.GetHookLevel("").String())
 	os.Setenv(options.EnvTFPath, terraformPath)
 
 	parseEnvironmentVariables(opts, os.Environ())
@@ -158,7 +161,7 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 	}
 
 	for i := 0; i < len(args); i++ {
-		if matches, match := utils.MultiMatch(args[i], reVarFile); match >= 0 {
+		if matches, match := reutils.MultiMatch(args[i], reVarFile); match >= 0 {
 			if matches["value"] == "" && i+1 < len(args) {
 				// The value is specified in the next argument
 				matches["value"] = args[i+1]

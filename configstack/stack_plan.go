@@ -47,9 +47,9 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 			if sum > 1 {
 				article, plural = "are", "s"
 			}
-			terragruntOptions.Logger.Noticef("There %s %v change%s to apply", article, sum, plural)
+			terragruntOptions.Logger.Infof("There %s %v change%s to apply", article, sum, plural)
 		} else if hasChanges {
-			terragruntOptions.Logger.Noticef("There are no terraform changes but hooks have reported changes.")
+			terragruntOptions.Logger.Infof("There are no terraform changes but hooks have reported changes.")
 		}
 		if hasChanges {
 			return errors.PlanWithChanges{}
