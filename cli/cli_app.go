@@ -335,6 +335,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
+	if conf.Uniqueness != nil {
+		// If uniqueness_criteria has been defined, we set it in the options to ensure that
+		// we use distinct folder based on this criteria
+		terragruntOptions.Uniqueness = *conf.Uniqueness
+	}
+
 	// Copy the deployment files to the working directory
 	terraformSource, err := processTerraformSource(sourceURL, terragruntOptions)
 	if stopOnError(err) {
@@ -382,12 +388,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Determinate if the project should be ignored
 	if !conf.RunConditions.ShouldRun() {
 		return nil
-	}
-
-	if conf.Uniqueness != nil {
-		// If uniqueness_criteria has been defined, we set it in the options to ensure that
-		// we use distinct folder based on this criteria
-		terragruntOptions.Uniqueness = *conf.Uniqueness
 	}
 
 	conf.SubstituteAllVariables()

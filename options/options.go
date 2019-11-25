@@ -204,10 +204,14 @@ func (terragruntOptions TerragruntOptions) GetContext() (result collections.IDic
 		result.Set(key, value.Value)
 	}
 
-	terragruntOptions.Context["Source"] = terragruntOptions.Source
-	terragruntOptions.Context["TerragruntConfigPath"] = terragruntOptions.TerragruntConfigPath
-	terragruntOptions.Context["WorkingDir"] = terragruntOptions.WorkingDir
-	result.Set("TerragruntOptions", terragruntOptions.Context)
+	context := make(map[string]interface{}, len(terragruntOptions.Context))
+	for key, value := range terragruntOptions.Context {
+		context[key] = value
+	}
+	context["Source"] = terragruntOptions.Source
+	context["TerragruntConfigPath"] = terragruntOptions.TerragruntConfigPath
+	context["WorkingDir"] = terragruntOptions.WorkingDir
+	result.Set("TerragruntOptions", context)
 	return
 }
 

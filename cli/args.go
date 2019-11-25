@@ -110,11 +110,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.Logger.SetDefaultConsoleHookLevel(loggingLevel)
 	opts.Logger.SetColor(!util.ListContainsElement(opts.TerraformCliArgs, "-no-color"))
 	if fileLoggingDir != "" {
-		absLoggingFileDir, err := filepath.Abs(fileLoggingDir)
-		if err != nil {
-			return nil, err
-		}
-		opts.Logger.AddFile(filepath.Join(absLoggingFileDir, opts.Logger.GetModule())+".txt", fileLoggingLevel)
+		opts.Logger.AddFile(fileLoggingDir, true, fileLoggingLevel)
 	}
 
 	os.Setenv(options.EnvLoggingLevel, opts.Logger.GetHookLevel("").String())
