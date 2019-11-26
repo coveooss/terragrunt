@@ -29,20 +29,20 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Description     string                      `hcl:"description"`
-	RunConditions   RunConditions               `hcl:"run_conditions"`
-	Terraform       *TerraformConfig            `hcl:"terraform"`
-	RemoteState     *remote.State               `hcl:"remote_state"`
-	Dependencies    *ModuleDependencies         `hcl:"dependencies"`
-	Uniqueness      *string                     `hcl:"uniqueness_criteria"`
-	AssumeRole      interface{}                 `hcl:"assume_role"`
-	ExtraArgs       TerraformExtraArgumentsList `hcl:"extra_arguments"`
-	PreHooks        HookList                    `hcl:"pre_hook"`
-	PostHooks       HookList                    `hcl:"post_hook"`
-	ExtraCommands   ExtraCommandList            `hcl:"extra_command"`
-	ImportFiles     ImportFilesList             `hcl:"import_files"`
-	ApprovalConfig  ApprovalConfigList          `hcl:"approval_config"`
-	ImportVariables ImportVariablesList         `hcl:"import_variables"`
+	Description        string                      `hcl:"description"`
+	RunConditions      RunConditions               `hcl:"run_conditions"`
+	Terraform          *TerraformConfig            `hcl:"terraform"`
+	RemoteState        *remote.State               `hcl:"remote_state"`
+	Dependencies       *ModuleDependencies         `hcl:"dependencies"`
+	UniquenessCriteria *string                     `hcl:"uniqueness_criteria"`
+	AssumeRole         interface{}                 `hcl:"assume_role"`
+	ExtraArgs          TerraformExtraArgumentsList `hcl:"extra_arguments"`
+	PreHooks           HookList                    `hcl:"pre_hook"`
+	PostHooks          HookList                    `hcl:"post_hook"`
+	ExtraCommands      ExtraCommandList            `hcl:"extra_command"`
+	ImportFiles        ImportFilesList             `hcl:"import_files"`
+	ApprovalConfig     ApprovalConfigList          `hcl:"approval_config"`
+	ImportVariables    ImportVariablesList         `hcl:"import_variables"`
 
 	options      *options.TerragruntOptions
 	variablesSet []hcl.Dictionary
@@ -539,8 +539,8 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 		conf.Dependencies.Paths = append(conf.Dependencies.Paths, includedConfig.Dependencies.Paths...)
 	}
 
-	if conf.Uniqueness == nil {
-		conf.Uniqueness = includedConfig.Uniqueness
+	if conf.UniquenessCriteria == nil {
+		conf.UniquenessCriteria = includedConfig.UniquenessCriteria
 	}
 
 	if conf.AssumeRole == nil {

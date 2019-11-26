@@ -317,10 +317,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
-	if conf.Uniqueness != nil {
+	if conf.UniquenessCriteria != nil {
 		// If uniqueness_criteria has been defined, we set it in the options to ensure that
 		// we use distinct folder based on this criteria
-		terragruntOptions.Uniqueness = *conf.Uniqueness
+		terragruntOptions.UniquenessCriteria = *conf.UniquenessCriteria
 	}
 
 	// Copy the deployment files to the working directory
