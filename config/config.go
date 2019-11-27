@@ -29,20 +29,20 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Description     string                      `hcl:"description"`
-	RunConditions   RunConditions               `hcl:"run_conditions"`
-	Terraform       *TerraformConfig            `hcl:"terraform"`
-	RemoteState     *remote.State               `hcl:"remote_state"`
-	Dependencies    *ModuleDependencies         `hcl:"dependencies"`
-	Uniqueness      *string                     `hcl:"uniqueness_criteria"`
-	AssumeRole      interface{}                 `hcl:"assume_role"`
-	ExtraArgs       TerraformExtraArgumentsList `hcl:"extra_arguments"`
-	PreHooks        HookList                    `hcl:"pre_hook"`
-	PostHooks       HookList                    `hcl:"post_hook"`
-	ExtraCommands   ExtraCommandList            `hcl:"extra_command"`
-	ImportFiles     ImportFilesList             `hcl:"import_files"`
-	ApprovalConfig  ApprovalConfigList          `hcl:"approval_config"`
-	ImportVariables ImportVariablesList         `hcl:"import_variables"`
+	Description        string                      `hcl:"description"`
+	RunConditions      RunConditions               `hcl:"run_conditions"`
+	Terraform          *TerraformConfig            `hcl:"terraform"`
+	RemoteState        *remote.State               `hcl:"remote_state"`
+	Dependencies       *ModuleDependencies         `hcl:"dependencies"`
+	UniquenessCriteria *string                     `hcl:"uniqueness_criteria"`
+	AssumeRole         interface{}                 `hcl:"assume_role"`
+	ExtraArgs          TerraformExtraArgumentsList `hcl:"extra_arguments"`
+	PreHooks           HookList                    `hcl:"pre_hook"`
+	PostHooks          HookList                    `hcl:"post_hook"`
+	ExtraCommands      ExtraCommandList            `hcl:"extra_command"`
+	ImportFiles        ImportFilesList             `hcl:"import_files"`
+	ApprovalConfig     ApprovalConfigList          `hcl:"approval_config"`
+	ImportVariables    ImportVariablesList         `hcl:"import_variables"`
 
 	options      *options.TerragruntOptions
 	variablesSet []hcl.Dictionary
@@ -83,7 +83,6 @@ type TerragruntConfigFile struct {
 	Path             string
 	TerragruntConfig `hcl:",squash"`
 	Include          *IncludeConfig
-	Lock             *LockConfig
 }
 
 func (tcf TerragruntConfigFile) String() string {
@@ -92,14 +91,6 @@ func (tcf TerragruntConfigFile) String() string {
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
 func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
-	if tcf.Lock != nil {
-		terragruntOptions.Logger.Warningf(""+
-			"Found a lock configuration in the Terraform configuration at %s. Terraform added native support for locking as "+
-			"of version 0.9.0, so this feature has been removed from Terragrunt and will have no effect. See your Terraform "+
-			"backend docs for how to configure locking: https://www.terraform.io/docs/backends/types/index.html.",
-			terragruntOptions.TerragruntConfigPath)
-	}
-
 	if tcf.RemoteState != nil {
 		if err = tcf.RemoteState.Validate(); err != nil {
 			return
@@ -168,11 +159,6 @@ func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, fai
 
 	return "", nil
 }
-
-// LockConfig is older versions of Terraform did not support locking, so Terragrunt offered locking as a feature. As of version 0.9.0,
-// Terraform supports locking natively, so this feature was removed from Terragrunt. However, we keep around the
-// LockConfig so we can log a warning for Terragrunt users who are still trying to use it.
-type LockConfig map[interface{}]interface{}
 
 // tfvarsFileWithTerragruntConfig represents a .tfvars file that contains a terragrunt = { ... } block
 type tfvarsFileWithTerragruntConfig struct {
@@ -418,7 +404,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles sync.Map
-var hookWarningGiven, lockWarningGiven bool
+var hookWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig, variables []hcl.Dictionary) (config *TerragruntConfig, err error) {
@@ -440,14 +426,6 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		// We should issue this warning only once
 		hookWarningGiven = true
 		terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
-	}
-
-	before = configString
-	configString = strings.Replace(configString, "lock_table", "dynamodb_table", -1)
-	if !lockWarningGiven && before != configString {
-		// We should issue this warning only once
-		lockWarningGiven = true
-		terragruntOptions.Logger.Warning("lock_table is deprecated, please use dynamodb_table instead")
 	}
 
 	terragruntConfigFile, err := parseConfigStringAsTerragruntConfigFile(configString, include.Path)
@@ -561,8 +539,8 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 		conf.Dependencies.Paths = append(conf.Dependencies.Paths, includedConfig.Dependencies.Paths...)
 	}
 
-	if conf.Uniqueness == nil {
-		conf.Uniqueness = includedConfig.Uniqueness
+	if conf.UniquenessCriteria == nil {
+		conf.UniquenessCriteria = includedConfig.UniquenessCriteria
 	}
 
 	if conf.AssumeRole == nil {

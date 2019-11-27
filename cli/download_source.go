@@ -190,7 +190,7 @@ func processTerraformSource(source string, terragruntOptions *options.Terragrunt
 
 	// We add the uniqueness factor to the folder name to ensure that distinct environment are processed in
 	// distinct directory
-	encodedWorkingDir := util.EncodeBase64Sha1(canonicalWorkingDir + terragruntOptions.Uniqueness)
+	encodedWorkingDir := util.EncodeBase64Sha1(canonicalWorkingDir + terragruntOptions.UniquenessCriteria)
 	downloadDir := util.JoinPath(terragruntOptions.DownloadDir, encodedWorkingDir, rootPath)
 	workingDir := util.JoinPath(downloadDir, modulePath)
 	versionFile := util.JoinPath(downloadDir, ".terragrunt-source-version")

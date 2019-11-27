@@ -84,7 +84,7 @@ type TerragruntOptions struct {
 	// If set in terragrunt configuration, this string is added to the directory name before calculating the hashing
 	// This allow differentiation based on certain attribute to ensure that different config (env, region) are executed
 	// in distinct folder
-	Uniqueness string
+	UniquenessCriteria string
 
 	// If set, this indicate that remaining interpolation are not considered as an error during the configuration
 	// resolving process. This allows further resolution of variables that are not initially defined.

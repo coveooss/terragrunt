@@ -9,7 +9,7 @@ import (
 
 // SubstituteAllVariables replace all remaining variables by the value
 func (conf *TerragruntConfig) SubstituteAllVariables() {
-	conf.substitute(conf.Uniqueness)
+	conf.substitute(conf.UniquenessCriteria)
 
 	if roles, ok := conf.AssumeRole.([]string); ok {
 		for i := range roles {

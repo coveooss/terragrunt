@@ -148,7 +148,7 @@ func assertConfigsEqual(t *testing.T, expected config.TerragruntConfig, actual c
 	assert.Equal(t, expected.PreHooks, actual.PreHooks, messageAndArgs...)
 	assert.Equal(t, expected.RemoteState, actual.RemoteState, messageAndArgs...)
 	assert.Equal(t, expected.Terraform, actual.Terraform, messageAndArgs...)
-	assert.Equal(t, expected.Uniqueness, actual.Uniqueness, messageAndArgs...)
+	assert.Equal(t, expected.UniquenessCriteria, actual.UniquenessCriteria, messageAndArgs...)
 }
 
 // Return the absolute path for the given path

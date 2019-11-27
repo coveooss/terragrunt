@@ -9,9 +9,8 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
 
 1. [Install Terraform](https://www.terraform.io/intro/getting-started/install.html).
 
-1. Install Terragrunt by going to the [Releases Page](https://github.com/gruntwork-io/terragrunt/releases),
+1. Install Terragrunt by going to the [Releases Page](https://github.com/coveooss/terragrunt/releases),
    downloading the binary for your OS, renaming it to `terragrunt`, and adding it to your PATH.
-     * See the [Install Terragrunt](#install-terragrunt) docs for other installation options.
 
 1. Go into a folder with your Terraform configurations (`.tf` files) and create a `terraform.tfvars` file with a
    `terragrunt = { ... }` block that contains the configuration for Terragrunt (check out the [Use cases](#use-cases)
@@ -43,13 +42,8 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
    [How to create reusable infrastructure with Terraform modules](https://blog.gruntwork.io/how-to-create-reusable-infrastructure-with-terraform-modules-25526d65f73d)
    and [How to use Terraform as a team](https://blog.gruntwork.io/how-to-use-terraform-as-a-team-251bc1104973).
 
-1. Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
-   and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example)
-   repository for fully-working sample code that demonstrates how to use Terragrunt.
-
 ## Table of Contents
 
-* [Install Terragrunt](#install-terragrunt)
 * [Use cases](#use-cases)
   * [Keep your Terraform code DRY](#keep-your-terraform-code-dry)
   * [Keep your remote state configuration DRY] #keep-your-remote-state-configuration-dry)
@@ -71,27 +65,6 @@ Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that pro
   * [Migrating from Terragrunt v0.11.x and Terraform 0.8.x and older](#migrating-from-terragrunt-v011x-and-terraform-08x-and-older)
   * [Developing Terragrunt](#developing-terragrunt)
   * [License](#license)
-
-## Install Terragrunt
-
-Note that third-party Terragrunt packages may not be updated with the latest version, but are often close.
-Please check your version against the latest available on the
-[Releases Page](https://github.com/gruntwork-io/terragrunt/releases).
-
-### OSX
-
-You can install Terragrunt on OSX using [Homebrew](https://brew.sh/): `brew install terragrunt`.
-
-### Linux
-
-**WARNING**: the snap installer seems to have a bug where it does not allow Terragrunt to work with Terraform and Git dependencies, so we currently do not recommend using it. See the manual install instructions below, instead.
-
-You can install Terragrunt on Linux systems using [snap](https://snapcraft.io/docs/core/install): `snap install terragrunt`.
-
-### Manual
-
-You can install Terragrunt manually by going to the [Releases Page](https://github.com/gruntwork-io/terragrunt/releases),
-downloading the binary for your OS, renaming it to `terragrunt`, and adding it to your PATH.
 
 ## Use cases
 
@@ -249,10 +222,6 @@ Notice how the two `terraform.tfvars` files set the `source` URL to the same `ap
 versions (i.e. `stage` is testing out a newer version of the module). They also set the parameters for the
 `app` module to different values that are appropriate for the environment: smaller/fewer servers in `stage`
 to save money, larger/more instances in `prod` for scalability and high availability.
-
-Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
-and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example)
-repository for fully-working sample code that demonstrates this new folder structure.
 
 #### How to use remote configurations
 
@@ -522,10 +491,6 @@ The `terraform.tfvars` files above use two Terragrunt built-in functions:
   parameter resolve to `frontend-app/terraform.tfstate`.
 
 See [the Interpolation Syntax docs](#interpolation-syntax) for more info.
-
-Check out the [terragrunt-infrastructure-modules-example](https://github.com/gruntwork-io/terragrunt-infrastructure-modules-example)
-and [terragrunt-infrastructure-live-example](https://github.com/gruntwork-io/terragrunt-infrastructure-live-example)
-repository for fully-working sample code that demonstrates how to use Terragrunt to manage remote state.
 
 #### Create remote state and locking resources automatically
 
@@ -1766,17 +1731,6 @@ Terragrunt figures out the path to its config file according to the following ru
   terragrunt plan --terragrunt-config example.tfvars --var-file example.tfvars
 ```
 
-#### Previous Versions of Terragrunt
-
-Terragrunt v0.11.x and earlier defined the config in a .terragrunt file. Note that the .terragrunt format
-is now deprecated. You will get a warning in your logs every time you run Terragrunt with a .terragrunt file,
-and we will eventually stop supporting this older format.
-
-### Migrating from Terragrunt v0.11.x and Terraform 0.8.x and older
-
-After we released support for Terraform 0.9.x, we wrote a guide on
-[Upgrading to Terragrunt 0.12.x](_docs/migration_guides/upgrading_to_terragrunt_0.12.x.md).
-
 ### Developing terragrunt
 
 #### Running locally
@@ -1864,17 +1818,6 @@ Makefile that can help with this (mostly taken from the [terraform repo](https:/
     Installs a git pre-commit hook that will run all of the source files through `gofmt`.
 
 To ensure that your changes get properly formatted, please install the git pre-commit hook with `make install-pre-commit-hook`.
-
-#### Releasing new versions
-
-To release a new version, just go to the [Releases Page](https://github.com/gruntwork-io/terragrunt/releases) and
-create a new release. The CircleCI job for this repo has been configured to:
-
-1. Automatically detect new tags.
-1. Build binaries for every OS using that tag as a version number.
-1. Upload the binaries to the release in GitHub.
-
-See `circle.yml` and `_ci/build-and-push-release-asset.sh` for details.
 
 ### License
 

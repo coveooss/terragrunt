@@ -52,12 +52,6 @@ var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath,
 const multiModuleSuffix = "-all"
 const cmdInit = "init"
 
-// deprecatedCommands is a map of deprecated commands to the commands that replace them.
-var deprecatedCommands = map[string]string{
-	"spin-up":   "apply-all",
-	"tear-down": "destroy-all",
-}
-
 var terraformCommandsThatUseState = []string{
 	"init",
 	"apply",
@@ -221,19 +215,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		return err
 	}
 
-	givenCommand := cliContext.Args().First()
-	command := checkDeprecated(givenCommand, terragruntOptions)
-	return runCommand(command, terragruntOptions)
-}
-
-// checkDeprecated checks if the given command is deprecated.  If so: prints a message and returns the new command.
-func checkDeprecated(command string, terragruntOptions *options.TerragruntOptions) string {
-	newCommand, deprecated := deprecatedCommands[command]
-	if deprecated {
-		terragruntOptions.Logger.Warningf("%v is deprecated; running %v instead.\n", command, newCommand)
-		return newCommand
-	}
-	return command
+	return runCommand(cliContext.Args().First(), terragruntOptions)
 }
 
 // runCommand runs one or many terraform commands based on the type of
@@ -335,10 +317,10 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return false
 	}
 
-	if conf.Uniqueness != nil {
+	if conf.UniquenessCriteria != nil {
 		// If uniqueness_criteria has been defined, we set it in the options to ensure that
 		// we use distinct folder based on this criteria
-		terragruntOptions.Uniqueness = *conf.Uniqueness
+		terragruntOptions.UniquenessCriteria = *conf.UniquenessCriteria
 	}
 
 	// Copy the deployment files to the working directory
