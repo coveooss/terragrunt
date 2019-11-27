@@ -201,6 +201,8 @@ func (c CommandContext) Run() error {
 		cmdChannel <- finalStatus
 		if finalStatus == nil {
 			break
+		} else {
+			c.log.Debugf("Caught error on command: %s", finalStatus)
 		}
 	}
 
