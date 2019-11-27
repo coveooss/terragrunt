@@ -11,7 +11,7 @@ require (
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/coveooss/gotemplate/v3 v3.3.4
-	github.com/coveooss/multilogger v0.4.0
+	github.com/coveooss/multilogger v0.4.3
 	github.com/fatih/color v1.7.0
 	github.com/go-errors/errors v1.0.1
 	github.com/google/go-cmp v0.3.1 // indirect
@@ -29,6 +29,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/ulikunitz/xz v0.5.6 // indirect
 	github.com/urfave/cli v1.22.2
+	golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.2.7
