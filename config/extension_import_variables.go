@@ -256,7 +256,7 @@ func writeTerraformVariables(fileName string, variables map[string]interface{}) 
 		return
 	}
 
-	f, err := os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.Create(fileName)
 	if err != nil {
 		panic(err)
 	}

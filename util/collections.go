@@ -66,6 +66,16 @@ func RemoveDuplicatesFromList(list []string, keepLast bool, getKey func(key stri
 	return out
 }
 
+// FilterList returns a copy of the given list with elements that don't match the test function filtered out
+func FilterList(list []string, test func(string) bool) (ret []string) {
+	for _, s := range list {
+		if test(s) {
+			ret = append(ret, s)
+		}
+	}
+	return
+}
+
 func removeElementFromList(list []string, element string, getKey func(key string) string) []string {
 	out := []string{}
 	for _, item := range list {
