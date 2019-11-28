@@ -222,7 +222,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 // terragrunt command
 func runCommand(command string, terragruntOptions *options.TerragruntOptions) (finalEff error) {
 	terragruntOptions.IgnoreRemainingInterpolation = true
-	if err := setRoleEnvironmentVariables(terragruntOptions, ""); err != nil {
+	if err := setRoleEnvironmentVariables(terragruntOptions, "", nil); err != nil {
 		return err
 	}
 	isMultiModules := command == getStackCommand || strings.HasSuffix(command, multiModuleSuffix)
@@ -418,8 +418,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 				roleAssumed = true
 				break
 			}
-			if err := setRoleEnvironmentVariables(terragruntOptions, role); err == nil {
-				terragruntOptions.Logger.Debug("Assuming role", role)
+			if err := setRoleEnvironmentVariables(terragruntOptions, role, conf.AssumeRoleDurationHours); err == nil {
+				terragruntOptions.Logger.Debug("Assumed role ", role)
 				roleAssumed = true
 				break
 			}
