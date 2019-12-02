@@ -25,7 +25,7 @@ func TestTerragruntImportVariables(t *testing.T) {
 		// Hook prints out the content of the subfolder. Shouldn't contain test.tf
 		{
 			project:        "fixture-variables/basic",
-			expectedOutput: []string{"sub folder content:\nzzz_unrelated.yaml\n"},
+			expectedOutput: []string{"sub folder content: zzz_unrelated.yaml"},
 		},
 		{
 			project:        "fixture-variables/glob-file",
@@ -96,6 +96,15 @@ func TestTerragruntImportVariables(t *testing.T) {
 		{
 			project:        "fixture-variables/source",
 			expectedOutput: []string{"example = 123456"},
+		},
+		{
+			project:        "fixture-variables/module-inline",
+			expectedOutput: []string{"example = 123"},
+		},
+		{
+			project:        "fixture-variables/module-external-folder",
+			expectedOutput: []string{"example = 123"},
+			args:           "--terragrunt-apply-template",
 		},
 	}
 	for _, test := range tests {

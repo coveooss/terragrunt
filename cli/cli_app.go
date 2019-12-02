@@ -449,8 +449,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		t.SetOption(template.Overwrite, true)
 		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf")
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
-		modifiedFiles, err := t.ProcessTemplates("", "", files...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
+		files = util.FilterList(files, func(item string) bool {
+			return !strings.HasPrefix(filterPath(item), ".terraform") // Do not run on cached modules
+		})
+		modifiedFiles, err := t.ProcessTemplates("", "", files...)
 		if err != nil {
 			err = fmt.Errorf("Error(s) while applying go template\n%s", filterPath(err.Error()))
 			if stopOnError(err) {
@@ -490,8 +493,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(err); stopOnError(err) {
 		return
 	}
-
-	shell.NewTFCmd(terragruntOptions).Args([]string{"get", "-update"}...).WithRetries(3).Output()
 
 	// Configure remote state if required
 	if conf.RemoteState != nil {
