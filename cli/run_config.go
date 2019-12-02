@@ -18,8 +18,8 @@ func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder
 	return nil
 }
 
-func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, roleArn string) error {
-	roleVars, err := awshelper.AssumeRoleEnvironmentVariables(roleArn, "terragrunt")
+func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, roleArn string, assumeDuration *int) error {
+	roleVars, err := awshelper.AssumeRoleEnvironmentVariables(terragruntOptions.Logger, roleArn, "terragrunt", assumeDuration)
 	if err != nil {
 		return err
 	}

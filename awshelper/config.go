@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/errors"
 )
 
@@ -69,7 +70,7 @@ func InitAwsSession(awsProfile string) (*session.Session, error) {
 }
 
 // AssumeRoleEnvironmentVariables returns a set of key value pair to use as environment variables to assume a different role
-func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (map[string]string, error) {
+func AssumeRoleEnvironmentVariables(logger *multilogger.Logger, roleArn, sessionName string, assumeDuration *int) (map[string]string, error) {
 	if roleArn == "" {
 		// If no role is specified, we just set AWS_SDK_LOAD_CONFIG to ensure that terraform will
 		// use extended AWS Client configuration.
@@ -81,12 +82,31 @@ func AssumeRoleEnvironmentVariables(roleArn string, sessionName string) (map[str
 		return nil, err
 	}
 
-	if response, err := sts.New(session).AssumeRole(&sts.AssumeRoleInput{RoleArn: aws.String(roleArn), RoleSessionName: aws.String(sessionName)}); err == nil {
+	if assumeDuration != nil {
+		logger.Debugf("Trying to assume role `%s` with a %d hour duration", roleArn, *assumeDuration)
+		if role, err := assumeRole(session, roleArn, sessionName, int64(*assumeDuration*3600)); err != nil {
+			logger.Debugf("Caught error assuming role `%s`: %s", roleArn, err)
+		} else {
+			return role, err
+		}
+	}
+
+	logger.Debugf("Assuming role `%s` with a 1 hour duration", roleArn)
+	return assumeRole(session, roleArn, sessionName, 3600)
+}
+
+func assumeRole(session *session.Session, roleArn, sessionName string, durationSeconds int64) (map[string]string, error) {
+	response, err := sts.New(session).AssumeRole(&sts.AssumeRoleInput{
+		RoleArn:         aws.String(roleArn),
+		RoleSessionName: aws.String(sessionName),
+		DurationSeconds: aws.Int64(durationSeconds),
+	})
+	if err == nil {
 		return map[string]string{
 			"AWS_ACCESS_KEY_ID":     *response.Credentials.AccessKeyId,
 			"AWS_SECRET_ACCESS_KEY": *response.Credentials.SecretAccessKey,
 			"AWS_SESSION_TOKEN":     *response.Credentials.SessionToken,
 		}, nil
 	}
-	return nil, nil
+	return nil, err
 }

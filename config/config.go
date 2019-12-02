@@ -29,20 +29,21 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	Description        string                      `hcl:"description"`
-	RunConditions      RunConditions               `hcl:"run_conditions"`
-	Terraform          *TerraformConfig            `hcl:"terraform"`
-	RemoteState        *remote.State               `hcl:"remote_state"`
-	Dependencies       *ModuleDependencies         `hcl:"dependencies"`
-	UniquenessCriteria *string                     `hcl:"uniqueness_criteria"`
-	AssumeRole         interface{}                 `hcl:"assume_role"`
-	ExtraArgs          TerraformExtraArgumentsList `hcl:"extra_arguments"`
-	PreHooks           HookList                    `hcl:"pre_hook"`
-	PostHooks          HookList                    `hcl:"post_hook"`
-	ExtraCommands      ExtraCommandList            `hcl:"extra_command"`
-	ImportFiles        ImportFilesList             `hcl:"import_files"`
-	ApprovalConfig     ApprovalConfigList          `hcl:"approval_config"`
-	ImportVariables    ImportVariablesList         `hcl:"import_variables"`
+	Description             string                      `hcl:"description"`
+	RunConditions           RunConditions               `hcl:"run_conditions"`
+	Terraform               *TerraformConfig            `hcl:"terraform"`
+	RemoteState             *remote.State               `hcl:"remote_state"`
+	Dependencies            *ModuleDependencies         `hcl:"dependencies"`
+	UniquenessCriteria      *string                     `hcl:"uniqueness_criteria"`
+	AssumeRole              interface{}                 `hcl:"assume_role"`
+	AssumeRoleDurationHours *int                        `hcl:"assume_role_duration_hours"`
+	ExtraArgs               TerraformExtraArgumentsList `hcl:"extra_arguments"`
+	PreHooks                HookList                    `hcl:"pre_hook"`
+	PostHooks               HookList                    `hcl:"post_hook"`
+	ExtraCommands           ExtraCommandList            `hcl:"extra_command"`
+	ImportFiles             ImportFilesList             `hcl:"import_files"`
+	ApprovalConfig          ApprovalConfigList          `hcl:"approval_config"`
+	ImportVariables         ImportVariablesList         `hcl:"import_variables"`
 
 	options      *options.TerragruntOptions
 	variablesSet []hcl.Dictionary
@@ -545,6 +546,10 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 
 	if conf.AssumeRole == nil {
 		conf.AssumeRole = includedConfig.AssumeRole
+	}
+
+	if conf.AssumeRoleDurationHours == nil {
+		conf.AssumeRoleDurationHours = includedConfig.AssumeRoleDurationHours
 	}
 
 	conf.ExtraArgs.Merge(includedConfig.ExtraArgs)
