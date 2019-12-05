@@ -262,15 +262,16 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 				// to avoid multiple download of the same object
 				err = awshelper.SaveS3Status(s3Object, cacheDir)
 			}
-			if err != nil {
-				return "", fmt.Errorf("%v while saving status for %s", err, source)
-			}
 			if logger != nil {
+				if err != nil {
+					logger.Warnf("%v while saving status for %s. The cache will be reset on the next fetch, even if the files haven't changed", err, source)
+				}
 				logger.Debug("Files from", source, "successfully added to the cache at", cacheDir)
 			}
 		}
 		sharedContent[cacheDir] = true
 	}
+
 	return cacheDir, nil
 }
 
