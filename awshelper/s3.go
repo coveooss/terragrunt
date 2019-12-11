@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,6 +18,8 @@ import (
 
 // CacheFile is the name of the file that hold the S3 source configuration for the folder
 const CacheFile = ".terragrunt.cache"
+
+var bucketRegionsCache sync.Map
 
 // ConvertS3Path returns an S3 compatible path
 func ConvertS3Path(path string) (string, error) {
@@ -188,6 +191,10 @@ func getS3Status(info BucketInfo) (*bucketStatus, error) {
 }
 
 func getBucketRegion(bucketName string) (string, error) {
+	if region, ok := bucketRegionsCache.Load(bucketName); ok {
+		return region.(string), nil
+	}
+
 	session, err := CreateAwsSession("", "")
 	if err != nil {
 		return "", err
@@ -204,5 +211,7 @@ func getBucketRegion(bucketName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return *result.LocationConstraint, nil
+	region := *result.LocationConstraint
+	bucketRegionsCache.Store(bucketName, region)
+	return region, nil
 }

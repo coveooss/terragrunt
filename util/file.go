@@ -15,6 +15,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/errors"
 	getter "github.com/hashicorp/go-getter"
 	"github.com/hashicorp/terraform/config/module"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/matryer/try.v1"
 )
 
@@ -207,23 +208,33 @@ func GetTempDownloadFolder(folders ...string) string {
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed
 func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
+	logf := func(level logrus.Level, format string, args ...interface{}) {
+		if logger != nil {
+			logger.Logf(level, format, args...)
+		}
+	}
+
+	logf(logrus.TraceLevel, "Converting S3 path to be compatible with getter for %s", source)
 	source, err := awshelper.ConvertS3Path(source)
 	if err != nil {
 		return "", err
 	}
 
+	logf(logrus.TraceLevel, "Calling getter.Detect (pattern matching in the getter library) on %s", source)
 	source, err = getter.Detect(source, pwd, getter.Detectors)
 	if err != nil {
 		return "", err
 	}
 
+	logf(logrus.TraceLevel, "Fetching and locking cache for %s", source)
 	cacheDir := GetTempDownloadFolder("terragrunt-cache", EncodeBase64Sha1(source))
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
+	logf(logrus.TraceLevel, "Getting S3 bucket info for %s", source)
 	s3Object, _ := awshelper.GetBucketObjectInfoFromURL(source)
 	if s3Object != nil {
-		// This is an S3 bucket object, we make sure that the path is well formed
+		logf(logrus.TraceLevel, "Confirmed that this is an S3 object. Checking status for %s", source)
 		source = s3Object.String()
 		err = awshelper.CheckS3Status(cacheDir)
 	} else if strings.HasPrefix(source, "file://") {
@@ -232,17 +243,13 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 
 	_, alreadyInCache := sharedContent[cacheDir]
 	if !alreadyInCache || err != nil {
-		if logger != nil {
-			logger.Debugf("Adding %s to the cache", source)
-		}
+		logf(logrus.DebugLevel, "Adding %s to the cache", source)
 		if !FileExists(cacheDir) || err != nil {
-			if logger != nil {
-				var reason string
-				if err != nil {
-					reason = fmt.Sprintf("because status = %v", err)
-				}
-				logger.Debug("Getting source files", source, reason)
+			var reason string
+			if err != nil {
+				reason = fmt.Sprintf("because status = %v", err)
 			}
+			logf(logrus.DebugLevel, "Getting source files %s %s", source, reason)
 			if !alreadyInCache {
 				err = os.RemoveAll(cacheDir)
 				if err != nil {
@@ -251,7 +258,9 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 			}
 
 			err = try.Do(func(attempt int) (bool, error) {
-				return attempt < 3, module.GetCopy(cacheDir, source)
+				err := module.GetCopy(cacheDir, source)
+				logf(logrus.TraceLevel, "Tried to fetch %s, attempt %d, err: %v", source, attempt, err)
+				return attempt < 3, err
 			})
 			if err != nil {
 				return "", fmt.Errorf("%v while copying source from %s", err, source)
@@ -262,14 +271,14 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 				// to avoid multiple download of the same object
 				err = awshelper.SaveS3Status(s3Object, cacheDir)
 			}
-			if logger != nil {
-				if err != nil {
-					logger.Warnf("%v while saving status for %s. The cache will be reset on the next fetch, even if the files haven't changed", err, source)
-				}
-				logger.Debug("Files from", source, "successfully added to the cache at", cacheDir)
+			if err != nil {
+				logf(logrus.WarnLevel, "%v while saving status for %s. The cache will be reset on the next fetch, even if the files haven't changed", err, source)
 			}
+			logf(logrus.DebugLevel, "Files from %s successfully added to the cache at %s", source, cacheDir)
 		}
 		sharedContent[cacheDir] = true
+	} else {
+		logf(logrus.TraceLevel, "Already in cache: %s", source)
 	}
 
 	return cacheDir, nil
