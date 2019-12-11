@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -13,32 +14,44 @@ import (
 	"github.com/gruntwork-io/terragrunt/errors"
 )
 
+var sessionCache sync.Map
+
 // CreateAwsSession returns an AWS session object for the given region, ensuring that the credentials are available
 func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
-	options := session.Options{
-		Profile:           awsProfile,
-		SharedConfigState: session.SharedConfigEnable,
-		AssumeRoleTokenProvider: func() (string, error) {
-			fmt.Print("Enter MFA Code: ")
-			reader := bufio.NewReader(os.Stdin)
-			mfa, err := reader.ReadString('\n')
-			return strings.TrimSpace(mfa), err
-		},
-	}
-	if awsRegion != "" {
-		options.Config = aws.Config{Region: aws.String(awsRegion)}
-	}
-	session, err := session.NewSessionWithOptions(options)
-	if err != nil {
-		return nil, errors.WithStackTraceAndPrefix(err, "Error initializing session")
+	awsSessionKey := awsRegion + "/" + awsProfile
+
+	var (
+		awsSession *session.Session
+		err        error
+	)
+	if cacheValue, ok := sessionCache.Load(awsSessionKey); ok {
+		awsSession = cacheValue.(*session.Session)
+	} else {
+		options := session.Options{
+			Profile:           awsProfile,
+			SharedConfigState: session.SharedConfigEnable,
+			AssumeRoleTokenProvider: func() (string, error) {
+				fmt.Print("Enter MFA Code: ")
+				reader := bufio.NewReader(os.Stdin)
+				mfa, err := reader.ReadString('\n')
+				return strings.TrimSpace(mfa), err
+			},
+		}
+		if awsRegion != "" {
+			options.Config = aws.Config{Region: aws.String(awsRegion)}
+		}
+		if awsSession, err = session.NewSessionWithOptions(options); err != nil {
+			return nil, errors.WithStackTraceAndPrefix(err, "Error initializing session")
+		}
+		sessionCache.Store(awsSessionKey, awsSession)
 	}
 
-	if os.Getenv("AWS_REGION") == "" && *session.Config.Region != "" {
+	if os.Getenv("AWS_REGION") == "" && *awsSession.Config.Region != "" {
 		// If the default region is not set, we retain it
-		os.Setenv("AWS_REGION", *session.Config.Region)
+		os.Setenv("AWS_REGION", *awsSession.Config.Region)
 	}
 
-	return session, nil
+	return awsSession, nil
 }
 
 // InitAwsSession configures environment variables to ensure that all following AWS operations will be able to
