@@ -23,6 +23,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	listOnly := app.Flag("list", "Only list the element names").Short('l').Bool()
 	extraArgs := app.Flag("args", "List the extra_arguments configurations").Short('A').Bool()
 	imports := app.Flag("imports", "List the import_files configurations").Short('I').Bool()
+	variables := app.Flag("variables", "List the import_variables configurations").Short('V').Bool()
 	hooks := app.Flag("hooks", "List the pre_hook & post_hook configurations").Short('H').Bool()
 	commands := app.Flag("commands", "List the extra_command configurations").Short('C').Bool()
 	approvalConfigs := app.Flag("approval-configs", "List the approval configurations").Bool()
@@ -31,7 +32,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 	filters := app.Arg("filters", "Filter the result").Strings()
 	app.HelpFlag.Short('h')
 	app.Parse(terragruntOptions.TerraformCliArgs[1:])
-	all := !(*hooks || *extraArgs || *imports || *commands || *approvalConfigs)
+	all := !(*hooks || *extraArgs || *imports || *variables || *commands || *approvalConfigs)
 	if *noColor {
 		color.NoColor = true
 	} else if *useColor {
@@ -64,6 +65,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 		print("Pre hooks before imports (in execution order):", "%s\n", beforeImports, true)
 	}
 
+	print("Import variables (in execution order)", "%s\n", conf.ImportVariables.Help(*listOnly, *filters...), *variables)
 	print("File importers (in execution order)", "%s\n", conf.ImportFiles.Help(*listOnly, *filters...), *imports)
 	if *hooks || all {
 		pre1 := conf.PreHooks.Filter(config.BeforeInitState).Help(*listOnly, *filters...)
