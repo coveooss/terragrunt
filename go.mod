@@ -12,7 +12,7 @@ require (
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/coveooss/gotemplate/v3 v3.3.4
 	github.com/coveooss/multilogger v0.4.3
-	github.com/fatih/color v1.8.0
+	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.0.1
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
