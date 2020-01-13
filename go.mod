@@ -16,7 +16,7 @@ require (
 	github.com/go-errors/errors v1.0.1
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-getter v1.4.0
+	github.com/hashicorp/go-getter v1.4.1
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80 // indirect
 	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93 // indirect
