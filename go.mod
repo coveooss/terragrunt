@@ -14,10 +14,12 @@ require (
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.3.0
 	github.com/hashicorp/terraform v0.12.21
+	github.com/lithammer/dedent v1.1.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mattn/go-zglob v0.0.1
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/rs/xid v1.2.1
+	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/stretchr/testify v1.5.1
 	github.com/ulikunitz/xz v0.5.6 // indirect
