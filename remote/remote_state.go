@@ -148,4 +148,4 @@ func (remoteState State) ToTerraformInitArgs() []string {
 }
 
 // ErrBackendMissing indicates that there is no backend configration defined.
-var ErrBackendMissing = fmt.Errorf("The remote_state.backend field cannot be empty")
+var ErrBackendMissing = fmt.Errorf("the remote_state.backend field cannot be empty")

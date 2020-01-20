@@ -263,11 +263,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}()
 
 	if util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFile)) {
-		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFile)
+		return fmt.Errorf("folder ignored because %s is present", options.IgnoreFile)
 	}
 
 	if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(terragruntOptions.WorkingDir, options.IgnoreFileNonInteractive)) {
-		return fmt.Errorf("Folder ignored because %s is present", options.IgnoreFileNonInteractive)
+		return fmt.Errorf("folder ignored because %s is present", options.IgnoreFileNonInteractive)
 	}
 
 	terragruntOptions.IgnoreRemainingInterpolation = true
@@ -427,7 +427,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			}
 		}
 		if !roleAssumed {
-			return fmt.Errorf("Unable to assume any of the roles: %s", strings.Join(roles, " "))
+			return fmt.Errorf("unable to assume any of the roles: %s", strings.Join(roles, " "))
 		}
 	}
 
@@ -476,7 +476,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		})
 		modifiedFiles, err := t.ProcessTemplates("", "", files...)
 		if err != nil {
-			err = fmt.Errorf("Error(s) while applying go template\n%s", filterPath(err.Error()))
+			err = fmt.Errorf("error(s) while applying go template\n%s", filterPath(err.Error()))
 			if stopOnError(err) {
 				return
 			}
@@ -736,8 +736,6 @@ func outputAll(command string, terragruntOptions *options.TerragruntOptions) err
 }
 
 // Custom error types
-
-var errDontManuallyConfigureRemoteState = fmt.Errorf("Instead of manually using the 'remote config' command, define your remote state settings in %s and Terragrunt will automatically configure it for you (and all your team members) next time you run it", config.DefaultTerragruntConfigPath)
 
 type unrecognizedCommand string
 

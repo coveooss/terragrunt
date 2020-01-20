@@ -12,7 +12,7 @@ import (
 
 // The terraform --version output is of the format: Terraform v0.9.5-dev (cad024a5fe131a546936674ef85445215bbc4226+CHANGES)
 // where -dev and (committed+CHANGES) is for custom builds or if TF_LOG is set for debug purposes
-var terraformVersionRegex = regexp.MustCompile("Terraform (v?[\\d\\.]+)(?:-dev)?(?: .+)?")
+var terraformVersionRegex = regexp.MustCompile(`Terraform (v?[\d\.]+)(?:-dev)?(?: .+)?`)
 
 // CheckTerraformVersion checks that the currently installed Terraform version works meets the specified version constraint
 // and returns an error if it doesn't

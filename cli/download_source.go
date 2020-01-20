@@ -239,7 +239,7 @@ func parseSourceURL(source string) (*url.URL, error) {
 // rest of the URL. This code is copied from the getForcedGetter method of go-getter/get.go, as that method is not
 // exported publicly.
 func getForcedGetter(sourceURL string) (string, string) {
-	if matches := forcedRegexp.FindStringSubmatch(sourceURL); matches != nil && len(matches) > 2 {
+	if matches := forcedRegexp.FindStringSubmatch(sourceURL); len(matches) > 2 {
 		return matches[1], matches[2]
 	}
 

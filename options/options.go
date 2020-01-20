@@ -439,4 +439,4 @@ const (
 //go:generate stringer -type=SetVariableResult -output generated_set_variables.go
 
 // ErrRunTerragruntCommandNotSet is a custom error
-var ErrRunTerragruntCommandNotSet = fmt.Errorf("The RunTerragrunt option has not been set on this TerragruntOptions object")
+var ErrRunTerragruntCommandNotSet = fmt.Errorf("the RunTerragrunt option has not been set on this TerragruntOptions object")

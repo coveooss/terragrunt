@@ -86,7 +86,7 @@ func GetBucketObjectInfoFromURL(url string) (*BucketInfo, error) {
 			return result, nil
 		}
 	}
-	return nil, fmt.Errorf("Non valid bucket url %s", url)
+	return nil, fmt.Errorf("non valid bucket url %s", url)
 }
 
 // BucketInfo represents the basic information relative to an S3 URL
@@ -146,16 +146,16 @@ func CheckS3Status(folder string) error {
 	var status bucketStatus
 	err = json.Unmarshal(content, &status)
 	if err != nil {
-		return fmt.Errorf("Content of %s/%s (%s) is not valid JSON: %v", folder, CacheFile, content, err)
+		return fmt.Errorf("content of %s/%s (%s) is not valid JSON: %v", folder, CacheFile, content, err)
 	}
 
 	s3Status, err := getS3Status(status.BucketInfo)
 	if err != nil {
-		return fmt.Errorf("Error while reading %s: %v", status.BucketInfo, err)
+		return fmt.Errorf("error while reading %s: %v", status.BucketInfo, err)
 	}
 
 	if !reflect.DeepEqual(status, *s3Status) {
-		return fmt.Errorf("Checksum changed for %s", status.BucketInfo)
+		return fmt.Errorf("checksum changed for %s", status.BucketInfo)
 	}
 	return nil
 }

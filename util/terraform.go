@@ -21,7 +21,7 @@ func LoadDefaultValues(folder string) (map[string]interface{}, error) {
 	parser := configs.NewParser(nil)
 	terraformConfig, err := parser.LoadConfigDir(folder)
 	if err != nil {
-		return map[string]interface{}{}, fmt.Errorf("Caught error while trying to load default variable values: %v", err)
+		return map[string]interface{}{}, fmt.Errorf("caught error while trying to load default variable values: %v", err)
 	}
 	return getTerraformVariableValues(terraformConfig, false)
 }
@@ -69,7 +69,7 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 
 		if t != nil {
 			if err := template.TemplateLog.SetDefaultConsoleHookLevel(logrus.InfoLevel); err != nil {
-				return nil, fmt.Errorf("Unable to set logging level for templates: %v", err)
+				return nil, fmt.Errorf("unable to set logging level for templates: %v", err)
 			}
 			if modifiedContent, err := t.ProcessContent(content, fileName); err != nil {
 				// In case of error, we simply issue a warning and continue with the original content
@@ -98,7 +98,7 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 			err = nil
 		} else {
 			// We add the file name to the error
-			err = fmt.Errorf("Error in %s:%s", fileName, strings.TrimPrefix(err.Error(), "At "))
+			err = fmt.Errorf("error in %s:%s", fileName, strings.TrimPrefix(err.Error(), "At "))
 		}
 	}
 	return

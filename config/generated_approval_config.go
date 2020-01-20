@@ -2,6 +2,8 @@
 // Any changes will be lost if this file is regenerated.
 // see https://github.com/cheekybits/genny
 
+//lint:file-ignore U1000 Ignore all unused code, it's generated
+
 package config
 
 import (

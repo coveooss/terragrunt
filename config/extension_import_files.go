@@ -1,3 +1,5 @@
+//lint:file-ignore U1000 Ignore all unused code, it's generated
+
 package config
 
 import (
@@ -198,7 +200,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 			var files []string
 			files, err = filepath.Glob(pattern)
 			if err != nil {
-				err = fmt.Errorf("Invalid pattern in %s", pattern)
+				err = fmt.Errorf("invalid pattern in %s", pattern)
 				return
 			}
 
@@ -211,7 +213,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 			}
 
 			if *item.Required && len(newFiles) == 0 {
-				err = fmt.Errorf("Unable to import required file %s", strings.Join(item.Files, ", "))
+				err = fmt.Errorf("unable to import required file %s", strings.Join(item.Files, ", "))
 				return
 			}
 
@@ -241,7 +243,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 					return
 				}
 			} else if *item.Required {
-				err = fmt.Errorf("Unable to import required file %s", source)
+				err = fmt.Errorf("unable to import required file %s", source)
 				return
 			} else if !isModule {
 				logger.Debugf("Skipping copy of %s, the source is not found", source)
@@ -258,7 +260,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 					return
 				}
 			} else if *item.Required {
-				err = fmt.Errorf("Unable to import required file %s", source.Source)
+				err = fmt.Errorf("unable to import required file %s", source.Source)
 				return
 			} else if !isModule {
 				logger.Debugf("Skipping copy of %s, the source is not found", source)
@@ -272,7 +274,7 @@ func ensureIsFile(file string) error {
 	if stat, err := util.FileStat(file); err != nil {
 		return err
 	} else if stat.IsDir() {
-		return fmt.Errorf("Folder ignored %s", file)
+		return fmt.Errorf("folder ignored %s", file)
 	}
 	return nil
 }

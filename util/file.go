@@ -136,7 +136,7 @@ func GetPathRelativeToWorkingDir(path string) (result string) {
 	currentDir, err := os.Getwd()
 	result = path
 	if err == nil {
-		result, err = GetPathRelativeTo(path, currentDir)
+		result, _ = GetPathRelativeTo(path, currentDir)
 	}
 	return
 }
@@ -237,7 +237,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		source = s3Object.String()
 		err = awshelper.CheckS3Status(cacheDir)
 	} else if strings.HasPrefix(source, "file://") {
-		err = fmt.Errorf("Local path always copied")
+		err = fmt.Errorf("local path always copied")
 	}
 
 	_, alreadyInCache := sharedContent[cacheDir]
@@ -378,12 +378,11 @@ func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 			if !filepath.IsAbs(arg) {
 				arg = prefix + arg
 			}
-			if expanded, _ := filepath.Glob(arg); expanded != nil {
-				for i := range expanded {
-					// We remove the prefix from the result as if it was executed directly in the folder directory
-					expanded[i] = strings.TrimPrefix(expanded[i], prefix)
-					result = append(result, expanded[i])
-				}
+			expanded, _ := filepath.Glob(arg)
+			for i := range expanded {
+				// We remove the prefix from the result as if it was executed directly in the folder directory
+				expanded[i] = strings.TrimPrefix(expanded[i], prefix)
+				result = append(result, expanded[i])
 			}
 			continue
 		}

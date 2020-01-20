@@ -8,11 +8,10 @@ import (
 )
 
 const waitTimeBetweenThread = 2500
-const defaultWorkersLimit = 10
 
 func initWorkers(n int) {
 	if n <= 0 {
-		panic(fmt.Errorf("The number of workers must be greater than 0 (%d)", n))
+		panic(fmt.Errorf("the number of workers must be greater than 0 (%d)", n))
 	}
 	if burstyLimiter == nil {
 		burstyLimiter = make(chan int, n)

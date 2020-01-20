@@ -458,12 +458,6 @@ func (context *resolveContext) getDiscoveredValueInternal(key, region string) (r
 	return
 }
 
-type invalidDiscoveryParameters string
-
-func (err invalidDiscoveryParameters) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected discover(key, env, region) but got '%s'", string(err))
-}
-
 type errorOnDiscovery struct {
 	sourceError error
 	parameters  string
@@ -578,7 +572,7 @@ func (context *resolveContext) getAWSAccountID() (interface{}, error) {
 func (context *resolveContext) getParameters(regex *regexp.Regexp) ([]string, error) {
 	matches := regex.FindStringSubmatch(context.parameters)
 	if len(matches) != len(regex.SubexpNames()) {
-		return nil, fmt.Errorf("Mistmatch number of parameters")
+		return nil, fmt.Errorf("mistmatch number of parameters")
 	}
 
 	var result []string
