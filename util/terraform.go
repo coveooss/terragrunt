@@ -198,20 +198,6 @@ func getDefaultVars(content map[string]interface{}) (map[string]interface{}, err
 		return nil, fmt.Errorf("Unknown variable type %[1]T: %[1]v", variables)
 	}
 
-	switch locals := content["locals"].(type) {
-	case map[string]interface{}:
-		result["local"] = locals
-	case []interface{}:
-		localMaps := make([]map[string]interface{}, len(locals))
-		for i := range localMaps {
-			localMaps[i] = locals[i].(map[string]interface{})
-		}
-		result["local"], err = utils.MergeDictionaries(localMaps...)
-	case nil:
-	default:
-		return nil, fmt.Errorf("Unknown local type %T", locals)
-	}
-
 	return result, err
 }
 

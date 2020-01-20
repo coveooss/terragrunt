@@ -550,7 +550,6 @@ func TestParseTerragruntConfigTerraformWithExtraArguments(t *testing.T) {
 		  terraform {
 		    extra_arguments "secrets" {
 		      arguments = [
-		        "-var-file=terraform.tfvars",
 		        "-var-file=terraform-secret.tfvars"
 		      ]
 		      commands = ["${get_terraform_commands_that_need_vars()}"]
@@ -570,7 +569,6 @@ func TestParseTerragruntConfigTerraformWithExtraArguments(t *testing.T) {
 	assert.Equal(t, "secrets", terragruntConfig.ExtraArgs[0].Name)
 	assert.Equal(t,
 		[]string{
-			"-var-file=terraform.tfvars",
 			"-var-file=terraform-secret.tfvars",
 		},
 		terragruntConfig.ExtraArgs[0].Arguments)
@@ -656,7 +654,7 @@ func TestFindConfigFilesInPathNone(t *testing.T) {
 func TestFindConfigFilesInPathOneNewConfig(t *testing.T) {
 	t.Parallel()
 
-	expected := []string{"../test/fixture-config-files/one-new-config/subdir/terraform.tfvars"}
+	expected := []string{"../test/fixture-config-files/one-new-config/subdir/terragrunt.tfvars"}
 	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/one-new-config"))
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
@@ -667,8 +665,8 @@ func TestFindConfigFilesInPathMultipleConfigs(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{
-		"../test/fixture-config-files/multiple-configs/terraform.tfvars",
-		"../test/fixture-config-files/multiple-configs/subdir-3/terraform.tfvars",
+		"../test/fixture-config-files/multiple-configs/terragrunt.tfvars",
+		"../test/fixture-config-files/multiple-configs/subdir-3/terragrunt.tfvars",
 	}
 	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/multiple-configs"))
 

@@ -14,7 +14,6 @@ import (
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	getter "github.com/hashicorp/go-getter"
-	"github.com/hashicorp/terraform/config/module"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/matryer/try.v1"
 )
@@ -258,7 +257,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 			}
 
 			err = try.Do(func(attempt int) (bool, error) {
-				err := module.GetCopy(cacheDir, source)
+				err := GetCopy(cacheDir, source)
 				logf(logrus.TraceLevel, "Tried to fetch %s, attempt %d, err: %v", source, attempt, err)
 				return attempt < 3, err
 			})

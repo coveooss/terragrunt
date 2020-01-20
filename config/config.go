@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
-	DefaultTerragruntConfigPath = "terraform.tfvars"
+	DefaultTerragruntConfigPath = "terragrunt.tfvars"
 
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
@@ -79,7 +79,7 @@ func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders
 	return
 }
 
-// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terraform.tfvars or .terragrunt)
+// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terragrunt.tfvars or .terragrunt)
 type TerragruntConfigFile struct {
 	Path             string
 	TerragruntConfig `hcl:",squash"`
