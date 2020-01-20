@@ -2,10 +2,8 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/hcl"
@@ -76,8 +74,10 @@ func (item *ImportVariables) loadVariables(currentVariables map[string]interface
 			imported = map[string]interface{}{nested: imported}
 		}
 		item.options().ImportVariablesMap(imported, source)
+		flattenedVariables := flatten(imported, "", *item.FlattenLevels)
+		item.options().ImportVariablesMap(flattenedVariables, source)
 		if currentVariables != nil {
-			return utils.MergeDictionaries(flatten(imported, "", *item.FlattenLevels), currentVariables)
+			return utils.MergeDictionaries(flattenedVariables, currentVariables)
 		}
 	}
 	return nil, nil
@@ -113,15 +113,15 @@ func (list ImportVariablesList) ShouldCreateVariablesFile() bool {
 }
 
 // Import actually process the variables importers to load and define all variables in the current context
-func (list ImportVariablesList) Import() (err error) {
+func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]interface{}, err error) {
+	variablesFiles = make(map[string]map[string]interface{})
+
 	if len(list) == 0 {
-		return nil
+		return variablesFiles, nil
 	}
 
 	config := IImportVariables(&list[0]).config()
 	terragruntOptions := config.options
-
-	variablesFiles := make(map[string]map[string]interface{})
 
 	for _, item := range list.Enabled() {
 		if len(item.OnCommands) > 0 && !util.ListContainsElement(item.OnCommands, item.options().Env[options.EnvCommand]) {
@@ -160,7 +160,7 @@ func (list ImportVariablesList) Import() (err error) {
 		}
 		if len(folders) == 0 {
 			if len(item.RequiredVarFiles) > 0 {
-				return folderErrors
+				return nil, folderErrors
 			}
 			continue
 		}
@@ -189,7 +189,7 @@ func (list ImportVariablesList) Import() (err error) {
 			}
 
 			if variablesFiles[item.TFVariablesFile], err = item.loadVariables(variablesFiles[item.TFVariablesFile], map[string]interface{}{key: value}, options.VarParameter); err != nil {
-				return err
+				return
 			}
 		}
 
@@ -199,11 +199,11 @@ func (list ImportVariablesList) Import() (err error) {
 
 			files := config.globFiles(pattern, true, folders...)
 			if len(files) == 0 {
-				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
+				return nil, fmt.Errorf("%s: No file matches %s", item.name(), pattern)
 			}
 			for _, file := range files {
 				if variablesFiles[item.TFVariablesFile], err = item.loadVariablesFromFile(file, variablesFiles[item.TFVariablesFile]); err != nil {
-					return err
+					return
 				}
 			}
 		}
@@ -215,7 +215,7 @@ func (list ImportVariablesList) Import() (err error) {
 			for _, file := range config.globFiles(pattern, true, folders...) {
 				if util.FileExists(file) {
 					if variablesFiles[item.TFVariablesFile], err = item.loadVariablesFromFile(file, variablesFiles[item.TFVariablesFile]); err != nil {
-						return err
+						return
 					}
 				} else {
 					terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
@@ -224,28 +224,24 @@ func (list ImportVariablesList) Import() (err error) {
 		}
 	}
 
+	return
+}
+
+func (list ImportVariablesList) Write(variablesFiles map[string]map[string]interface{}, folders ...string) (err error) {
+	if len(list) == 0 {
+		return nil
+	}
+
+	config := IImportVariables(&list[0]).config()
+	terragruntOptions := config.options
+
 	for fileName, variables := range variablesFiles {
 		if len(variables) == 0 {
 			continue
 		}
-		if err := filepath.Walk(terragruntOptions.WorkingDir, func(walkPath string, info os.FileInfo, err error) error {
-			if !info.IsDir() {
-				return nil
-			}
-			filesInDir, err := ioutil.ReadDir(walkPath)
-			if err != nil {
-				return err
-			}
-			for _, dirFile := range filesInDir {
-				if filepath.Ext(dirFile.Name()) == ".tf" {
-					terragruntOptions.Logger.Debug("Writing terraform variables to directory: " + walkPath)
-					writeTerraformVariables(path.Join(walkPath, fileName), variables)
-					break
-				}
-			}
-			return nil
-		}); err != nil {
-			return err
+		for _, folder := range folders {
+			terragruntOptions.Logger.Debug("Writing terraform variables to directory: " + folder)
+			writeTerraformVariables(path.Join(folder, fileName), variables)
 		}
 	}
 	return nil
@@ -274,7 +270,7 @@ func writeTerraformVariables(fileName string, variables map[string]interface{}) 
 			} else if _, isList := value.([]interface{}); isList {
 				terraformValue["type"] = "list"
 			}
-			variableContent, err := hcl.MarshalIndent(terraformValue, "  ", "  ")
+			variableContent, err := hcl.MarshalTFVarsIndent(terraformValue, "  ", "  ")
 			if err != nil {
 				panic(err)
 			}

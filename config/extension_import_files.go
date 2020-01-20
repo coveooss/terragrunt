@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 )
 
@@ -97,7 +96,7 @@ func (item ImportFiles) help() (result string) {
 	return
 }
 
-func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
+func (item *ImportFiles) importFiles(folders ...string) (err error) {
 	logger := item.logger()
 
 	if !item.enabled() {
@@ -112,7 +111,7 @@ func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 
 	// If no folders are specified, we only copy elements to the working folder
 	if len(folders) == 0 {
-		folders = []interface{}{item.options().WorkingDir}
+		folders = []string{item.options().WorkingDir}
 	}
 
 	var sourceFolder, sourceFolderPrefix string
@@ -130,13 +129,13 @@ func (item *ImportFiles) importFiles(folders ...interface{}) (err error) {
 		if item.Source != "" {
 			messages = append(messages, fmt.Sprintf("from %s", item.Source))
 		}
-		folder := folder.(string)
 		isModule := item.options().WorkingDir != folder
-		if isModule {
-			if !item.ImportIntoModules {
-				// We skip import in the folder if the item doesn't require to be applied on modules
-				continue
-			}
+		skipped := isModule && !item.ImportIntoModules
+		relativePath, _ := filepath.Rel(item.options().WorkingDir, folder)
+		logger.Debugf("Running import files statement '%s' into folder %s, skipped: %v", item.Name, relativePath, skipped)
+		if skipped {
+			// We skip import in the folder if the item doesn't require to be applied on modules
+			continue
 		}
 
 		// Check if the item has a specific target folder
@@ -289,47 +288,8 @@ func (list *ImportFilesList) Merge(imported ImportFilesList) {
 	list.merge(imported, mergeModePrepend, list.argName())
 }
 
-// RunOnModules executes list configuration on module folders
-func (list ImportFilesList) RunOnModules(terragruntOptions *options.TerragruntOptions) (err error) {
-	if len(list) == 0 {
-		return
-	}
-
-	modules, _ := filepath.Glob(filepath.Join(terragruntOptions.WorkingDir, ".terraform", "modules", "*"))
-	folders := make(map[string]int)
-	for _, module := range modules {
-		stat, err := util.FileStat(module)
-		if err != nil {
-			return err
-		}
-		if !stat.IsDir() {
-			continue
-		}
-
-		stat, _ = os.Lstat(module)
-		if !stat.IsDir() {
-			link, err := os.Readlink(module)
-			if err != nil {
-				return err
-			}
-			module = link
-		}
-		folders[module] = folders[module] + 1
-	}
-	if len(folders) == 0 {
-		return
-	}
-
-	keys := make([]interface{}, 0, len(folders))
-	for key := range folders {
-		keys = append(keys, key)
-	}
-
-	return list.Run(nil, keys...)
-}
-
 // Run execute the content of the list
-func (list ImportFilesList) Run(status error, args ...interface{}) (err error) {
+func (list ImportFilesList) Run(status error, args ...string) (err error) {
 	if len(list) == 0 {
 		return
 	}
