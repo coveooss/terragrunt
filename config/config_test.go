@@ -654,7 +654,7 @@ func TestFindConfigFilesInPathNone(t *testing.T) {
 func TestFindConfigFilesInPathOneNewConfig(t *testing.T) {
 	t.Parallel()
 
-	expected := []string{"../test/fixture-config-files/one-new-config/subdir/terragrunt.tfvars"}
+	expected := []string{"../test/fixture-config-files/one-new-config/subdir/terragrunt.hcl"}
 	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/one-new-config"))
 
 	assert.Nil(t, err, "Unexpected error: %v", err)
@@ -665,8 +665,8 @@ func TestFindConfigFilesInPathMultipleConfigs(t *testing.T) {
 	t.Parallel()
 
 	expected := []string{
-		"../test/fixture-config-files/multiple-configs/terragrunt.tfvars",
-		"../test/fixture-config-files/multiple-configs/subdir-3/terragrunt.tfvars",
+		"../test/fixture-config-files/multiple-configs/terragrunt.hcl",
+		"../test/fixture-config-files/multiple-configs/subdir-3/terragrunt.hcl",
 	}
 	actual, err := FindConfigFilesInPath(newOptionsWorkingDir("../test/fixture-config-files/multiple-configs"))
 
