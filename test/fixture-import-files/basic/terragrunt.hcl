@@ -1,6 +1,4 @@
-terragrunt = {
-  import_files "test" {
-    source = "source"
-    files  = ["*.tf"]
-  }
+import_files "test" {
+  source = "source"
+  files  = ["*.tf"]
 }

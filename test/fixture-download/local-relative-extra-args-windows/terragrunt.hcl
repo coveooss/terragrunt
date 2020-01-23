@@ -1,5 +1,4 @@
-terragrunt = {
-  terraform {
+terraform {
     source = "..\\hello-world"
 
     extra_arguments "custom_vars" {
@@ -16,4 +15,3 @@ terragrunt = {
       ]
     }
   }
-}

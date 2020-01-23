@@ -25,8 +25,7 @@ type TerragruntExtensioner interface {
 	logger() *multilogger.Logger
 	name() string
 	itemType() string
-	normalize()      // Used to assign default values
-	substituteVars() // Used to replace variables by their real values
+	normalize() // Used to assign default values
 	options() *options.TerragruntOptions
 }
 
@@ -34,11 +33,11 @@ type TerragruntExtensioner interface {
 type TerragruntExtensionBase struct {
 	_config *TerragruntConfigFile
 
-	Name        string   `hcl:",key"`
-	DisplayName string   `hcl:"display_name"`
-	Description string   `hcl:"description"`
-	OS          []string `hcl:"os"`
-	Disabled    bool     `hcl:"disabled"`
+	Name        string   `hcl:"name,label"`
+	DisplayName string   `hcl:"display_name,optional"`
+	Description string   `hcl:"description,optional"`
+	OS          []string `hcl:"os,optional"`
+	Disabled    bool     `hcl:"disabled,optional"`
 }
 
 func (base TerragruntExtensionBase) String() string      { return base.id() }
@@ -46,7 +45,6 @@ func (base TerragruntExtensionBase) id() string          { return base.Name }
 func (base TerragruntExtensionBase) description() string { return base.Description }
 func (base TerragruntExtensionBase) extraInfo() string   { return "" }
 func (base TerragruntExtensionBase) normalize()          {}
-func (base TerragruntExtensionBase) substituteVars()     { base.config().substitute(&base.Description) }
 
 func (base *TerragruntExtensionBase) init(config *TerragruntConfigFile) {
 	base._config = config

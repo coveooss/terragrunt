@@ -15,16 +15,16 @@ import (
 // ImportFiles is a configuration of files that must be imported from another directory to the terraform directory
 // prior executing terraform commands
 type ImportFiles struct {
-	TerragruntExtensionBase `hcl:",squash"`
+	TerragruntExtensionBase `hcl:",remain"`
 
-	Source            string          `hcl:"source"`
+	Source            string          `hcl:"source,optional"`
 	Files             []string        `hcl:"files"`
-	CopyAndRename     []copyAndRename `hcl:"copy_and_remove"`
-	Required          *bool           `hcl:"required,omitempty"`
-	ImportIntoModules bool            `hcl:"import_into_modules"`
-	FileMode          *int            `hcl:"file_mode"`
-	Target            string          `hcl:"target"`
-	Prefix            *string         `hcl:"prefix"`
+	CopyAndRename     []copyAndRename `hcl:"copy_and_remove,optional"`
+	Required          *bool           `hcl:"required,optional"`
+	ImportIntoModules bool            `hcl:"import_into_modules,optional"`
+	FileMode          *int            `hcl:"file_mode,optional"`
+	Target            string          `hcl:"target,optional"`
+	Prefix            *string         `hcl:"prefix,optional"`
 }
 
 // CopyAndRename is a structure used by ImportFiles to rename the imported files
@@ -34,21 +34,6 @@ type copyAndRename struct {
 }
 
 func (item ImportFiles) itemType() (result string) { return ImportFilesList{}.argName() }
-
-func (item *ImportFiles) substituteVars() {
-	item.TerragruntExtensionBase.substituteVars()
-	c := item.config()
-	c.substitute(&item.Source)
-	c.substitute(&item.Target)
-	c.substitute(item.Prefix)
-	for i, value := range item.Files {
-		item.Files[i] = *c.substitute(&value)
-	}
-	for _, value := range item.CopyAndRename {
-		c.substitute(&value.Source)
-		c.substitute(&value.Target)
-	}
-}
 
 func (item *ImportFiles) normalize() {
 	if item.Required == nil {

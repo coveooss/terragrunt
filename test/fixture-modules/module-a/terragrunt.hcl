@@ -1,5 +1,3 @@
-terragrunt = {
-  terraform {
-    source = "test"
-  }
+terraform {
+  source = "test"
 }

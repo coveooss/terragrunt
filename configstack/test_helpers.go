@@ -10,6 +10,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/stretchr/testify/assert"
+	"github.com/zclconf/go-cty/cty"
 )
 
 type terraformModuleByPath []*TerraformModule
@@ -138,6 +139,9 @@ func assertOptionsEqual(t *testing.T, expected options.TerragruntOptions, actual
 
 // We can't do a direct comparison between TerragruntConfig objects because they contain option objects.
 func assertConfigsEqual(t *testing.T, expected config.TerragruntConfig, actual config.TerragruntConfig, messageAndArgs ...interface{}) {
+	if actual.RemoteState != nil {
+		actual.RemoteState.ConfigHclDefinition = cty.NilVal
+	}
 	assert.Equal(t, expected.ApprovalConfig, actual.ApprovalConfig, messageAndArgs...)
 	assert.Equal(t, expected.AssumeRole, actual.AssumeRole, messageAndArgs...)
 	assert.Equal(t, expected.Dependencies, actual.Dependencies, messageAndArgs...)

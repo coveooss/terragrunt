@@ -1,5 +1,3 @@
-terragrunt = {
-  dependencies {
-    paths = ["../module-h"]
-  }
+dependencies {
+  paths = ["../module-h"]
 }

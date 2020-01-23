@@ -1,7 +1,6 @@
-name = "World"
-
-terragrunt = {
-  terraform {
-    source = "../hello-world"
-  }
+terraform {
+  source = "../hello-world"
+}
+inputs = {
+  name = "World"
 }

@@ -5,14 +5,19 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/coveooss/multilogger/errors"
 	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/zclconf/go-cty/cty"
 )
+
+type RunConditionsHclDefinition struct {
+	Condition    cty.Value `hcl:"condition,attr"`
+	IgnoreIfTrue bool      `hcl:"ignore_if_true,optional"`
+}
 
 // RunConditions defines the rules that are evaluated in order to determine
 type RunConditions struct {
-	Allows []Condition `hcl:"run_if"`
-	Denies []Condition `hcl:"ignore_if"`
+	Allows []Condition `hcl:"run_if,block"`
+	Denies []Condition `hcl:"ignore_if,block"`
 }
 
 func (c RunConditions) String() (result string) {
@@ -87,27 +92,11 @@ func (c RunConditions) rules(conditions []Condition) string {
 }
 
 func (c *RunConditions) init(options *options.TerragruntOptions) (err error) {
-	if options.TerragruntRawConfig == nil {
-		// If there is no TerragruntRawConfig, we do not have to initialize the RunConditions
-		// object, we are probably in test context.
-		return nil
+	for _, condition := range c.Allows {
+		condition.init(options)
 	}
-	// There is a problem with the native hcl parser and we lost grouping in conditions
-	// so, we reinitialize the structure with the raw information
-	defer func() { err = errors.Trap(err, recover()) }()
-	dict := func(i interface{}) map[string]interface{} { return collections.AsDictionary(i).AsMap() }
-	list := func(i interface{}) []interface{} { return collections.AsList(i).AsArray() }
-
-	conditions := list(options.TerragruntRawConfig.Get("run_conditions"))
-	c.Allows, c.Denies = nil, nil
-	for _, condition := range conditions {
-		condition := dict(condition)
-		for _, allow := range list(condition["run_if"]) {
-			c.Allows = append(c.Allows, Condition(dict(allow)).init(options))
-		}
-		for _, deny := range list(condition["ignore_if"]) {
-			c.Denies = append(c.Denies, Condition(dict(deny)).init(options))
-		}
+	for _, condition := range c.Denies {
+		condition.init(options)
 	}
 	return
 }
@@ -119,32 +108,14 @@ func (c Condition) options() *options.TerragruntOptions {
 	return c[optionsConfigKey].(*options.TerragruntOptions)
 }
 
-func (c Condition) getVariable(v string) string {
-	options := c.options()
-	if options == nil {
-		return v
-	}
-	if value, found := options.GetVariableValue(v); found {
-		return fmt.Sprint(value)
-	}
-	if value := SubstituteVars(v, options); value != v {
-		return value
-	}
-	return noValue
-}
-
-const noValue = "<no value>"
-
 func (c Condition) String() string {
 	conditions := make([]string, 0, len(c))
 	for key, val := range c {
 		if list, _ := val.(collections.IGenericList); list != nil {
-			keyValue := c.getVariable(key)
-			keyValue = collections.IIf(keyValue == noValue, "", fmt.Sprintf("(%s)", keyValue)).(string)
 			if list.Len() == 1 {
-				conditions = append(conditions, fmt.Sprintf("%s%s = %s", key, keyValue, list.First()))
+				conditions = append(conditions, fmt.Sprintf("%s = %s", key, list.First()))
 			} else {
-				conditions = append(conditions, fmt.Sprintf("%s%s in [%s]", key, keyValue, list.Join(", ")))
+				conditions = append(conditions, fmt.Sprintf("%s in [%s]", key, list.Join(", ")))
 			}
 		}
 	}
@@ -155,9 +126,9 @@ const optionsConfigKey = "#config!"
 
 func (c Condition) init(options *options.TerragruntOptions) Condition {
 	for key, val := range c {
-		list, _ := val.(collections.IGenericList)
+		list, _ := val.([]interface{})
 		if list != nil {
-			c[key] = collections.AsList(list)
+			c[key] = collections.NewList(list...)
 		} else {
 			c[key] = collections.NewList(fmt.Sprint(val))
 		}
@@ -169,13 +140,16 @@ func (c Condition) init(options *options.TerragruntOptions) Condition {
 func (c Condition) isTrue() (bool, error) {
 	for key, values := range c {
 		if list, _ := values.(collections.IGenericList); list != nil {
-			v := c.getVariable(key)
-			if strings.Contains(v, noValue) {
-				return false, fmt.Errorf("variable undefined (%s)", key)
+			keyValue, ok := c.options().GetVariableValue(key)
+			if !list.Contains(key) { // Direct match
+				if !ok {
+					return false, fmt.Errorf("variable undefined (%s)", key)
+				}
+				if !list.Contains(keyValue) {
+					return false, nil
+				}
 			}
-			if !list.Contains(v) {
-				return false, nil
-			}
+
 		}
 	}
 	return true, nil

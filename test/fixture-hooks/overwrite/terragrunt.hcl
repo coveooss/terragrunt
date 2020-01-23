@@ -1,17 +1,15 @@
-terragrunt {
-  extra_command "cmd" {
-    commands = ["echo Completed"]
-  }
+extra_command "cmd" {
+  commands = ["echo Completed"]
+}
 
-  pre_hook "hook" {
-    command = "echo Pre-hook"
-  }
+pre_hook "hook" {
+  command = "echo Pre-hook"
+}
 
-  post_hook "hook" {
-    command = "echo Post-hook"
-  }
+post_hook "hook" {
+  command = "echo Post-hook"
+}
 
-  pre_hook "hook" {
-    command = "echo Pre-hook redefined"
-  }
+pre_hook "hook" {
+  command = "echo Pre-hook redefined"
 }

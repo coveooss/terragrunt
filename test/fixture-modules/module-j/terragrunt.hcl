@@ -1,8 +1,6 @@
-terragrunt = {
-  terraform {
-    source = "temp"
-  }
-  dependencies {
-    paths = ["../module-i"]
-  }
+terraform {
+  source = "temp"
+}
+dependencies {
+  paths = ["../module-i"]
 }

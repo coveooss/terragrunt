@@ -3,7 +3,7 @@ package options
 // All environment variables that could be used to configure Terragrunt
 const (
 	EnvCacheFolder      = "TERRAGRUNT_CACHE_FOLDER"       // Used to configure the cache folder (optional, default determined by os temp folder)
-	EnvConfig           = "TERRAGRUNT_CONFIG"             // Used to configure the location of the Terragrunt configuration file (optional, default terraform.tfvars in the current folder)
+	EnvConfig           = "TERRAGRUNT_CONFIG"             // Used to configure the location of the Terragrunt configuration file (optional, default terragrunt.hcl in the current folder)
 	EnvDebug            = "TERRAGRUNT_DEBUG"              // Used to enable Terragrunt debug mode
 	EnvFlushDelay       = "TERRAGRUNT_FLUSH_DELAY"        // Used to configure the flush delay on long -all operation (default 60s)
 	EnvLoggingLevel     = "TERRAGRUNT_LOGGING_LEVEL"      // Used to configure the current logging level

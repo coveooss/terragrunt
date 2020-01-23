@@ -4,65 +4,20 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
-	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/hashicorp/hcl/v2"
+	tflang "github.com/hashicorp/terraform/lang"
+	"github.com/zclconf/go-cty/cty"
+	"github.com/zclconf/go-cty/cty/function"
 )
 
-const (
-	getTempFolder    = "<TEMP_FOLDER>"
-	getScriptsFolder = "<SCRIPT_FOLDER>"
-)
-
-var (
-	interpolationVars                 = `var\.([\p{L}_][\p{L}_\-\d\.]*)\s*`
-	interpolationParameters           = fmt.Sprintf(`(\s*(%s)\s*,?\s*)*`, getVarParams(1))
-	interpolationSyntaxRegex          = regexp.MustCompile(fmt.Sprintf(`\$\{\s*(\w+\(%s\)|%s)\s*\}`, interpolationParameters, interpolationVars))
-	interpolationSyntaxRegexSingle    = regexp.MustCompile(fmt.Sprintf(`"(%s)"`, interpolationSyntaxRegex))
-	interpolationSyntaxRegexRemaining = regexp.MustCompile(`\$\{.*?\}`)
-	helperFunctionSyntaxRegex         = regexp.MustCompile(`^\$\{\s*(.*?)\((.*?)\)\s*\}$`)
-	helperVarRegex                    = regexp.MustCompile(fmt.Sprintf(`\$\{%s\}`, interpolationVars))
-	maxParentFoldersToCheck           = 100
-)
-
-func getVarParams(count int) string {
-	const parameterRegexBase = `\s*(?:"(?P<string%d>[^\"]*?)"|var\.(?P<var%d>[[:alpha:]][\w-]*)|(?P<func%d>\w+\(.*?\)))\s*`
-	var params []string
-	for i := 1; i <= count; i++ {
-		params = append(params, fmt.Sprintf(parameterRegexBase, i, i, i))
-	}
-	return strings.Join(params, ",")
-}
-
-/*
-To help identifying terraform commands that requires specific args, you can use the following function in a bash shell:
-
-function find-tf-usage() {
-	local arg
-	for arg in "$@"
-	do
-		echo
-		local name="TerraformCommandWith$(echo ${arg} | sed -r 's/(^|[-_])([a-z])/\U\2/g')"
-		echo "// $name is the list of Terraform commands accepting -${arg}"
-		echo "var $name = []string{"
-		terraform |
-			sed -E "s/^\s{4}/CMD /g" |
-			grep "^CMD " |
-			cut -f2 -d' ' |
-			xargs -n1 -I{} sh -c 'f() { terraform {} --help 2>&1| grep -- "${1}[ =]" >/dev/null&& echo "    \"{}\",";}; f $1' - $arg
-		echo "}"
-	done
-}
-
-find-tf-usage -lock-timeout var-file -input
-*/
+var maxParentFoldersToCheck = 100
 
 // TerraformCommandWithLockTimeout is the list of Terraform commands accepting --lock-timeout
 var TerraformCommandWithLockTimeout = []string{
@@ -98,270 +53,123 @@ var TerraformCommandWithInput = []string{
 }
 
 type resolveContext struct {
-	include    IncludeConfig
-	options    *options.TerragruntOptions
-	parameters string
+	include IncludeConfig
+	options *options.TerragruntOptions
 }
 
 func (context *resolveContext) ErrorOnUndefined() bool {
 	return !context.options.IgnoreRemainingInterpolation
 }
 
-// ResolveTerragruntConfigString Given a string value from a Terragrunt configuration, parse the string, resolve any calls to helper functions using
-// the syntax ${...}, and return the final value.
-func ResolveTerragruntConfigString(terragruntConfigString string, include IncludeConfig, terragruntOptions *options.TerragruntOptions) (string, error) {
-	context := &resolveContext{
-		include: include,
-		options: terragruntOptions,
+type helperFunction struct {
+	function   func(parameters ...string) (interface{}, error)
+	returnType cty.Type
+}
+
+func (context *resolveContext) getHelperFunctions() map[string]helperFunction {
+	return map[string]helperFunction{
+		"find_in_parent_folders":     helperFunction{function: context.findInParentFolders},
+		"path_relative_to_include":   helperFunction{function: context.pathRelativeToInclude},
+		"path_relative_from_include": helperFunction{function: context.pathRelativeFromInclude},
+		"get_env":                    helperFunction{function: context.getEnvironmentVariable},
+		"get_current_dir":            helperFunction{function: context.getCurrentDir},
+		"get_leaf_dir":               helperFunction{function: context.getLeafDir},
+		"get_tfvars_dir":             helperFunction{function: context.getLeafDir},
+		"get_parent_dir":             helperFunction{function: context.getParentDir},
+		"get_parent_tfvars_dir":      helperFunction{function: context.getParentDir},
+		"get_aws_account_id":         helperFunction{function: context.getAWSAccountID},
+		"save_variables":             helperFunction{function: context.saveVariables},
+		"get_terraform_commands_that_need_vars": helperFunction{
+			function:   func(...string) (interface{}, error) { return TerraformCommandWithVarFile, nil },
+			returnType: cty.List(cty.String),
+		},
+		"get_terraform_commands_that_need_locking": helperFunction{
+			function:   func(...string) (interface{}, error) { return TerraformCommandWithLockTimeout, nil },
+			returnType: cty.List(cty.String),
+		},
+		"get_terraform_commands_that_need_input": helperFunction{
+			function:   func(...string) (interface{}, error) { return TerraformCommandWithInput, nil },
+			returnType: cty.List(cty.String),
+		},
+	}
+}
+
+func (context *resolveContext) getHelperFunctionsInterfaces() map[string]interface{} {
+	functions := map[string]interface{}{}
+	for key, function := range context.getHelperFunctions() {
+		functions[key] = function.function
+	}
+	return functions
+}
+
+// Create an EvalContext for the HCL2 parser.
+// We can define functions and variables in this context that the HCL2 parser will make available to the Terragrunt configuration during parsing.
+func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext, error) {
+	functions := map[string]function.Function{}
+
+	tfscope := tflang.Scope{
+		BaseDir: filepath.Dir(context.include.Path),
+	}
+	for k, v := range tfscope.Functions() {
+		functions[k] = v
 	}
 
-	// First, we replace all single interpolation syntax (i.e. function directly enclosed within quotes "${function()}")
-	terragruntConfigString, err := context.processSingleInterpolationInString(terragruntConfigString)
+	for key, helperFunction := range context.getHelperFunctions() {
+		helperFunction := helperFunction
+		returnType := cty.String
+		if helperFunction.returnType != cty.NilType {
+			returnType = helperFunction.returnType
+		}
+		functions[key] = function.New(&function.Spec{
+			Type: function.StaticReturnType(returnType),
+			VarParam: &function.Parameter{
+				Name:             "vals",
+				Type:             cty.DynamicPseudoType,
+				AllowUnknown:     true,
+				AllowDynamicType: true,
+				AllowNull:        true,
+			},
+			Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
+				argStrings, err := ctySliceToStringSlice(args)
+				if err != nil {
+					return cty.NullVal(helperFunction.returnType), err
+				}
+				out, err := helperFunction.function(argStrings...)
+				if err != nil {
+					return cty.NullVal(helperFunction.returnType), err
+				}
+				if returnType == cty.String {
+					return cty.StringVal(out.(string)), nil
+				} else if returnType == cty.List(cty.String) {
+					outVals := []cty.Value{}
+					for _, val := range out.([]string) {
+						outVals = append(outVals, cty.StringVal(val))
+					}
+					return cty.ListVal(outVals), nil
+				}
+				return cty.NullVal(helperFunction.returnType), fmt.Errorf("unsupported return type to %s. Type: %s", key, returnType)
+			},
+		})
+	}
+
+	variables := context.options.GetContext()
+	// Legacy, variables used to be called with `var.`
+	variables.Set("var", variables.Clone())
+
+	ctyVariables, err := util.ToCtyValue(variables.AsMap())
 	if err != nil {
-		return terragruntConfigString, err
+		return nil, err
 	}
-	// Then, we replace all other interpolation functions (i.e. functions not directly enclosed within quotes)
-	return context.processMultipleInterpolationsInString(terragruntConfigString)
-}
-
-// SubstituteVars substitutes any variables in the string if there is a value associated with the variable
-func SubstituteVars(str string, terragruntOptions *options.TerragruntOptions) string {
-	context := &resolveContext{options: terragruntOptions}
-	if newStr, ok := context.resolveTerragruntVars(str); ok {
-		return newStr
-	}
-	return str
-}
-
-// Execute a single Terragrunt helper function and return its value as a string
-func (context *resolveContext) getHelperFunctions() map[string]interface{} {
-	return map[string]interface{}{
-		"find_in_parent_folders":                   context.findInParentFolders,
-		"path_relative_to_include":                 context.pathRelativeToInclude,
-		"path_relative_from_include":               context.pathRelativeFromInclude,
-		"discover":                                 context.getDiscoveredValueInternal,
-		"get_env":                                  context.getEnvironmentVariableInternal,
-		"get_current_dir":                          context.getCurrentDir,
-		"get_leaf_dir":                             context.getLeafDir,
-		"get_tfvars_dir":                           context.getLeafDir,
-		"get_parent_dir":                           context.getParentDir,
-		"get_parent_tfvars_dir":                    context.getParentDir,
-		"get_aws_account_id":                       context.getAWSAccountID,
-		"get_terraform_commands_that_need_vars":    func() interface{} { return collections.AsList(TerraformCommandWithVarFile) },
-		"get_terraform_commands_that_need_locking": func() interface{} { return collections.AsList(TerraformCommandWithLockTimeout) },
-		"get_terraform_commands_that_need_input":   func() interface{} { return collections.AsList(TerraformCommandWithInput) },
-	}
-}
-
-// Execute a single Terragrunt helper function and return its value as a string
-func (context *resolveContext) executeTerragruntHelperFunction(functionName string, parameters string) (result interface{}, err error) {
-	defer func() {
-		context.options.Logger.Debugf("%s(%s) = %v, %v", functionName, parameters, result, err)
-	}()
-
-	if functionMap == nil {
-		// We only initialize the function mapping on the first call
-		functionMap = map[string]interface{}{
-			"find_in_parent_folders":                   (*resolveContext).findInParentFolders,
-			"path_relative_to_include":                 (*resolveContext).pathRelativeToInclude,
-			"path_relative_from_include":               (*resolveContext).pathRelativeFromInclude,
-			"get_env":                                  (*resolveContext).getEnvironmentVariable,
-			"default":                                  (*resolveContext).getDefaultValue,
-			"discover":                                 (*resolveContext).getDiscoveredValue,
-			"get_current_dir":                          (*resolveContext).getCurrentDir,
-			"get_leaf_dir":                             (*resolveContext).getLeafDir,
-			"get_tfvars_dir":                           (*resolveContext).getLeafDir,
-			"get_parent_dir":                           (*resolveContext).getParentDir,
-			"get_parent_tfvars_dir":                    (*resolveContext).getParentDir,
-			"get_aws_account_id":                       (*resolveContext).getAWSAccountID,
-			"save_variables":                           (*resolveContext).saveVariables,
-			"get_terraform_commands_that_need_vars":    TerraformCommandWithVarFile,
-			"get_terraform_commands_that_need_locking": TerraformCommandWithLockTimeout,
-			"get_terraform_commands_that_need_input":   TerraformCommandWithInput,
-			"get_temp_folder":                          getTempFolder,
-			"get_script_folder":                        getScriptsFolder,
-		}
-	}
-
-	// We create a new context with the parameters
-	context = &resolveContext{
-		include:    context.include,
-		options:    context.options,
-		parameters: parameters,
-	}
-	switch invoke := functionMap[functionName].(type) {
-	case func(*resolveContext) (interface{}, error):
-		result, err := invoke(context)
-		if err != nil {
-			err = errors.WithStackTraceAndPrefix(err, "Error while calling %s(%s)", functionName, parameters)
-		}
-		return result, err
-	case string, []string:
-		return invoke, nil
-	default:
-		return "", errors.WithStackTrace(UnknownHelperFunction(functionName))
-	}
-}
-
-var functionMap map[string]interface{}
-
-// UnknownHelperFunction indicates an unknown invoked command
-type UnknownHelperFunction string
-
-func (err UnknownHelperFunction) Error() string {
-	return fmt.Sprintf("Unknown helper function: %s", string(err))
-}
-
-// For all interpolation functions that are called using the syntax "${function_name()}" (i.e. single interpolation function within string,
-// functions that return a non-string value we have to get rid of the surrounding quotes and convert the output to HCL syntax. For example,
-// for an array, we need to return "v1", "v2", "v3".
-func (context *resolveContext) processSingleInterpolationInString(terragruntConfigString string) (resolved string, finalErr error) {
-	// The function we pass to ReplaceAllStringFunc cannot return an error, so we have to use named error parameters to capture such errors.
-	resolved = interpolationSyntaxRegexSingle.ReplaceAllStringFunc(terragruntConfigString, func(str string) string {
-		matches := interpolationSyntaxRegexSingle.FindStringSubmatch(str)
-
-		out, err := context.resolveTerragruntInterpolation(matches[1])
-		if err != nil {
-			finalErr = err
-			return str
-		}
-
-		switch out := out.(type) {
-		case string:
-			return fmt.Sprintf(`"%s"`, out)
-		case []string:
-			return util.CommaSeparatedStrings(out)
-		default:
-			return fmt.Sprintf("%v", out)
-		}
-	})
-	return
-}
-
-// For all interpolation functions that are called using the syntax "${function_a()}-${function_b()}" (i.e. multiple interpolation function
-// within the same string) or "Some text ${function_name()}" (i.e. string composition), we just replace the interpolation function call
-// by the string representation of its return.
-func (context *resolveContext) processMultipleInterpolationsInString(terragruntConfigString string) (resolved string, finalErr error) {
-	// The function we pass to ReplaceAllStringFunc cannot return an error, so we have to use named error parameters to capture such errors.
-	resolved = interpolationSyntaxRegex.ReplaceAllStringFunc(terragruntConfigString, func(str string) string {
-		out, err := context.resolveTerragruntInterpolation(str)
-		if err != nil {
-			finalErr = err
-			return str
-		}
-
-		return fmt.Sprintf("%v", out)
-	})
-
-	if finalErr == nil {
-		// If there is no error, we check if there are remaining look-a-like interpolation strings
-		// that have not been considered. If so, they are certainly malformed.
-		remaining := interpolationSyntaxRegexRemaining.FindAllString(resolved, -1)
-		if len(remaining) > 0 {
-			if resolved == terragruntConfigString && context.ErrorOnUndefined() {
-				remaining = util.RemoveDuplicatesFromListKeepFirst(remaining)
-				finalErr = invalidInterpolationSyntax(strings.Join(remaining, ", "))
-			} else if resolved != terragruntConfigString {
-				// There was a change, so we retry the conversion to catch cases where there is an
-				// interpolation in the interpolation "${func("${func2()}")}" which is legit in
-				// terraform
-				return context.processMultipleInterpolationsInString(resolved)
-			}
-		}
-	}
-
-	return
-}
-
-// Resolve the references to variables ${var.name} if there are
-func (context *resolveContext) resolveTerragruntVars(str string) (string, bool) {
-	var match = false
-	str = helperVarRegex.ReplaceAllStringFunc(str, func(str string) string {
-		match = true
-		matches := helperVarRegex.FindStringSubmatch(str)
-		if strings.Contains(matches[1], ".") {
-			if result, ok := context.resolveTerragruntMapVars(matches[1]); ok {
-				return result
-			}
-		} else if found, ok := context.options.Variables[matches[1]]; ok {
-			result := fmt.Sprint(found.Value)
-			if strings.Contains(result, "#{") {
-				delayedVar := strings.Replace(result, "#{", "${", 1)
-				if resolvedValue, ok := context.resolveTerragruntVars(delayedVar); ok {
-					context.options.SetVariable(matches[1], resolvedValue, found.Source)
-					result = resolvedValue
-				}
-			}
-			return result
-		}
-
-		if context.ErrorOnUndefined() {
-			if !warningDone[matches[0]] {
-				context.options.Logger.Warningf("Variable %s undefined", matches[0])
-				warningDone[matches[0]] = true
-			}
-			return ""
-		}
-		return matches[0]
-	})
-
-	return str, match
-}
-
-// resolveTerragruntMapVars returns the value of map variable element, i.e. var.a.b
-func (context *resolveContext) resolveTerragruntMapVars(str string) (string, bool) {
-	selection := strings.Split(str, ".")
-	if found, ok := context.options.Variables[selection[0]]; ok {
-		v := found.Value
-		for i, sel := range selection[1:] {
-			if reflect.TypeOf(v).Kind() != reflect.Map {
-				name := strings.Join(selection[:i+1], ".")
-				if !warningDone[name] {
-					context.options.Logger.Errorf("Variable %s must be a map", name)
-					warningDone[name] = true
-				}
-				return "", false
-			}
-			element := reflect.ValueOf(v).MapIndex(reflect.ValueOf(sel))
-			if !element.IsValid() {
-				return "", false
-			}
-			v = element.Interface()
-		}
-		return fmt.Sprint(v), true
-	}
-	return "", false
-}
-
-var warningDone = map[string]bool{}
-
-// Resolve a single call to an interpolation function of the format ${some_function()} of ${var.some_var} in a Terragrunt configuration
-func (context *resolveContext) resolveTerragruntInterpolation(str string) (interface{}, error) {
-	if result, ok := context.resolveTerragruntVars(str); ok {
-		return result, nil
-	}
-
-	matches := helperFunctionSyntaxRegex.FindStringSubmatch(str)
-	if len(matches) == 3 {
-		return context.executeTerragruntHelperFunction(matches[1], matches[2])
-	}
-
-	return "", errors.WithStackTrace(invalidInterpolationSyntax(str))
-}
-
-type invalidInterpolationSyntax string
-
-func (err invalidInterpolationSyntax) Error() string {
-	return fmt.Sprintf("Invalid interpolation syntax. Expected syntax of the form '${function_name()}', but got '%s'", string(err))
+	return &hcl.EvalContext{Functions: functions, Variables: ctyVariables.AsValueMap()}, nil
 }
 
 // Return the directory of the current include file that is processed
-func (context *resolveContext) getCurrentDir() (interface{}, error) {
+func (context *resolveContext) getCurrentDir(...string) (interface{}, error) {
 	return filepath.ToSlash(filepath.Dir(context.include.Path)), nil
 }
 
 // Return the directory where the Terragrunt configuration file lives
-func (context *resolveContext) getLeafDir() (interface{}, error) {
+func (context *resolveContext) getLeafDir(...string) (interface{}, error) {
 	terragruntConfigFileAbsPath, err := filepath.Abs(context.options.TerragruntConfigPath)
 	if err != nil {
 		return "", err
@@ -371,7 +179,7 @@ func (context *resolveContext) getLeafDir() (interface{}, error) {
 }
 
 // Return the parent directory where the Terragrunt configuration file lives
-func (context *resolveContext) getParentDir() (interface{}, error) {
+func (context *resolveContext) getParentDir(...string) (interface{}, error) {
 	parentPath, err := context.pathRelativeFromInclude()
 	if err != nil {
 		return "", err
@@ -386,16 +194,11 @@ func (context *resolveContext) getParentDir() (interface{}, error) {
 	return filepath.ToSlash(parentPath.(string)), nil
 }
 
-var p1Regex = regexp.MustCompile(`^` + getVarParams(1) + `$`)
-var p2Regex = regexp.MustCompile(`^` + getVarParams(2) + `$`)
-var p3Regex = regexp.MustCompile(`^` + getVarParams(3) + `$`)
-
 // Returns the named environment variable or default value if it does not exist
 //     get_env(variable_name, default_value)
-func (context *resolveContext) getEnvironmentVariable() (interface{}, error) {
-	parameters, err := context.getParameters(p2Regex)
-	if err != nil || parameters[0] == "" {
-		return "", invalidGetEnvParameters(context.parameters)
+func (context *resolveContext) getEnvironmentVariable(parameters ...string) (interface{}, error) {
+	if parameters[0] == "" {
+		return "", invalidGetEnvParameters(parameters)
 	}
 	return context.getEnvironmentVariableInternal(parameters[0], parameters[1]), nil
 }
@@ -407,87 +210,22 @@ func (context *resolveContext) getEnvironmentVariableInternal(env, defValue stri
 	return defValue
 }
 
-type invalidGetEnvParameters string
+type invalidGetEnvParameters []string
 
 func (err invalidGetEnvParameters) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected get_env(variable_name, default_value) but got '%s'", string(err))
-}
-
-// Returns the value of a variable or default value if the variable is not defined
-//     default(var.name, default_value)
-func (context *resolveContext) getDefaultValue() (interface{}, error) {
-	parameters, err := context.getParameters(p2Regex)
-	if err != nil {
-		return "", invalidDefaultParameters(context.parameters)
-	}
-
-	if strings.HasPrefix(parameters[0], "${") {
-		return parameters[1], nil
-	}
-	return parameters[0], nil
-}
-
-type invalidDefaultParameters string
-
-func (err invalidDefaultParameters) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected default(var.name, default) but got '%s'", string(err))
-}
-
-// Returns the value from the parameter store
-//     discover(key_name, folder, region)
-func (context *resolveContext) getDiscoveredValue() (result interface{}, err error) {
-	parameters, err := context.getParameters(p3Regex)
-	if err != nil {
-		return
-	}
-
-	key := fmt.Sprintf("/%s/terragrunt/%s", parameters[1], parameters[0])
-	region := parameters[2]
-	if result, err = context.getDiscoveredValueInternal(key, region); err != nil {
-		return "", errorOnDiscovery{err, context.parameters}
-	}
-	return result, nil
-}
-
-func (context *resolveContext) getDiscoveredValueInternal(key, region string) (result interface{}, err error) {
-	result, err = awshelper.GetSSMParameter(key, region)
-	if err != nil {
-		account, _ := context.getAWSAccountID()
-		err = fmt.Errorf("%s (key=%s region=%s account=%s)", err, key, region, account)
-	}
-	return
-}
-
-type errorOnDiscovery struct {
-	sourceError error
-	parameters  string
-}
-
-func (err errorOnDiscovery) Error() string {
-	return fmt.Sprintf("Error while calling discovery(%s): %v", err.parameters, err.sourceError)
+	return fmt.Sprintf("Invalid parameters. Expected get_env(variable_name, default_value) but got '%s'", strings.Join(err, ", "))
 }
 
 // Saves variables into a file
 //     save_variables(filename)
-func (context *resolveContext) saveVariables() (interface{}, error) {
-	parameters, err := context.getParameters(p1Regex)
-	if err != nil {
-		return "", invalidSaveVariablesParameters(context.parameters)
-	}
-
+func (context *resolveContext) saveVariables(parameters ...string) (interface{}, error) {
 	context.options.AddDeferredSaveVariables(parameters[0])
 	return parameters[0], nil
 }
 
-type invalidSaveVariablesParameters string
-
-func (err invalidSaveVariablesParameters) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected save_variables(filename) but got '%s'", string(err))
-}
-
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file
 // and return its path
-func (context *resolveContext) findInParentFolders() (interface{}, error) {
+func (context *resolveContext) findInParentFolders(...string) (interface{}, error) {
 	previousDir, err := filepath.Abs(filepath.Dir(context.options.TerragruntConfigPath))
 	previousDir = filepath.ToSlash(previousDir)
 
@@ -528,14 +266,14 @@ func (err checkedTooManyParentFolders) Error() string {
 
 // Return the relative path between the included Terragrunt configuration file and the current Terragrunt configuration
 // file
-func (context *resolveContext) pathRelativeToInclude() (interface{}, error) {
+func (context *resolveContext) pathRelativeToInclude(...string) (interface{}, error) {
 	parent := context.getParentLocalConfigFilesLocation()
 	child := filepath.Dir(context.options.TerragruntConfigPath)
 	return util.GetPathRelativeTo(child, parent)
 }
 
 // Return the relative path from the current Terragrunt configuration to the included Terragrunt configuration file
-func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
+func (context *resolveContext) pathRelativeFromInclude(...string) (interface{}, error) {
 	parent := context.getParentLocalConfigFilesLocation()
 	child := filepath.Dir(context.options.TerragruntConfigPath)
 	return util.GetPathRelativeTo(parent, child)
@@ -543,7 +281,7 @@ func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
 
 func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 	for cursor := &context.include; cursor != nil; cursor = cursor.isIncludedBy {
-		includePath, _ := ResolveTerragruntConfigString(cursor.Path, context.include, context.options)
+		includePath := cursor.Path
 		if !cursor.isBootstrap {
 			if !path.IsAbs(includePath) {
 				includePath = util.JoinPath(context.options.WorkingDir, includePath)
@@ -555,7 +293,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 }
 
 // Return the AWS account id associated to the current set of credentials
-func (context *resolveContext) getAWSAccountID() (interface{}, error) {
+func (context *resolveContext) getAWSAccountID(...string) (interface{}, error) {
 	session, err := awshelper.CreateAwsSession("", "")
 	if err != nil {
 		return "", err
@@ -569,43 +307,24 @@ func (context *resolveContext) getAWSAccountID() (interface{}, error) {
 	return *identity.Account, nil
 }
 
-func (context *resolveContext) getParameters(regex *regexp.Regexp) ([]string, error) {
-	matches := regex.FindStringSubmatch(context.parameters)
-	if len(matches) != len(regex.SubexpNames()) {
-		return nil, fmt.Errorf("mistmatch number of parameters")
-	}
-
-	var result []string
-	for index, name := range regex.SubexpNames()[1:] {
-		value := strings.TrimSpace(matches[index+1])
-
-		subMatches := parameterTypeRegex.FindStringSubmatch(name)
-		if len(subMatches) > 0 {
-			switch subMatches[1] {
-			case "string":
-				result = append(result, value)
-			case "var":
-				i := len(result) - 1
-				if value != "" {
-					varName := fmt.Sprintf("${var.%v}", value)
-					result[i], _ = context.resolveTerragruntVars(varName)
-				}
-			case "func":
-				i := len(result) - 1
-				if value != "" {
-					function := fmt.Sprintf("${%v}", value)
-					funcResult, err := context.resolveTerragruntInterpolation(function)
-					if err != nil {
-						return nil, err
-					}
-					result[i] = fmt.Sprintf("%v", funcResult)
-				}
-			}
-		} else {
-			result = append(result, value)
+// Convert the slice of cty values to a slice of strings. If any of the values in the given slice is not a string,
+// return an error.
+func ctySliceToStringSlice(args []cty.Value) ([]string, error) {
+	var out []string
+	for _, arg := range args {
+		if arg.Type() != cty.String {
+			return nil, errors.WithStackTrace(InvalidParameterType{Expected: "string", Actual: arg.Type().FriendlyName()})
 		}
+		out = append(out, arg.AsString())
 	}
-	return result, nil
+	return out, nil
 }
 
-var parameterTypeRegex = regexp.MustCompile(`^(string|var|func)(\d+)$`)
+type InvalidParameterType struct {
+	Expected string
+	Actual   string
+}
+
+func (err InvalidParameterType) Error() string {
+	return fmt.Sprintf("Expected param of type %s but got %s", err.Expected, err.Actual)
+}
