@@ -3,7 +3,7 @@
         "test1": 1,
         "test2": 2
     },
-    "flattened": {
+    "nested": {
         "testmap2": {
             "test1": 1,
             "test2": 2

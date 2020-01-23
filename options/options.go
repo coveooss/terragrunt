@@ -1,10 +1,8 @@
 package options
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,7 +15,6 @@ import (
 	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/util"
-	"gopkg.in/yaml.v2"
 )
 
 // TerragruntOptions represents options that configure the behavior of the Terragrunt program
@@ -95,9 +92,6 @@ type TerragruntOptions struct {
 
 	// Indicates the number of concurrent workers
 	NbWorkers int
-
-	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
-	deferredSaveList map[string]bool
 
 	// ApplyTemplate configures whether or not go template should be applied on terraform (.tf and .tfvars) file
 	ApplyTemplate bool
@@ -212,36 +206,6 @@ func (terragruntOptions TerragruntOptions) GetContext() (result collections.IDic
 	return
 }
 
-// SaveVariables - Actually save the variables to the list of deferred files
-func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
-	if terragruntOptions.deferredSaveList != nil {
-		variables := terragruntOptions.GetContext()
-
-		for file := range terragruntOptions.deferredSaveList {
-			terragruntOptions.Logger.Info("Saving variables into ", file)
-			var content []byte
-			switch strings.ToLower(filepath.Ext(file)) {
-			case ".yml", ".yaml":
-				content, err = yaml.Marshal(variables)
-			case ".tfvars":
-				content, err = hcl.MarshalTFVarsIndent(variables, "", "  ")
-			case ".hcl":
-				content, err = hcl.MarshalIndent(variables, "", "  ")
-			default:
-				content, err = json.MarshalIndent(variables, "", "  ")
-			}
-			if err != nil {
-				return
-			}
-			if len(content) > 0 && content[len(content)-1] != '\n' {
-				content = append(content, '\n')
-			}
-			err = ioutil.WriteFile(filepath.Join(terragruntOptions.WorkingDir, file), content, 0644)
-		}
-	}
-	return
-}
-
 // LoadVariablesFromFile loads variables from the file indicated by path
 func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (map[string]interface{}, error) {
 	if !strings.Contains(path, "/") {
@@ -262,14 +226,6 @@ func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]i
 		result[terragruntOptions.SetVariable(key, value, origin)][key] = value
 	}
 	return result
-}
-
-// AddDeferredSaveVariables - Add a path where to save the variable list
-func (terragruntOptions *TerragruntOptions) AddDeferredSaveVariables(filename string) {
-	if terragruntOptions.deferredSaveList == nil {
-		terragruntOptions.deferredSaveList = map[string]bool{}
-	}
-	terragruntOptions.deferredSaveList[filename] = true
 }
 
 // VariablesExplicitlyProvided returns the list of variables that have been explicitly provided as argument

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	hcl2 "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/configs"
 
 	"github.com/coveooss/gotemplate/v3/collections"
@@ -17,13 +18,14 @@ import (
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
-func LoadDefaultValues(folder string) (map[string]interface{}, error) {
+func LoadDefaultValues(folder string) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
+	var terraformConfig *configs.Module
 	parser := configs.NewParser(nil)
-	terraformConfig, err := parser.LoadConfigDir(folder)
-	if err != nil {
-		return map[string]interface{}{}, fmt.Errorf("caught error while trying to load default variable values: %v", err)
+	if terraformConfig, err = parser.LoadConfigDir(folder); err != nil && err.(hcl2.Diagnostics).HasErrors() {
+		return map[string]interface{}{}, nil, fmt.Errorf("caught error while trying to load default variable values: %v", err)
 	}
-	return getTerraformVariableValues(terraformConfig, false)
+	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
+	return importedVariables, terraformConfig.Variables, err
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file

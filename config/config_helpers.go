@@ -78,7 +78,6 @@ func (context *resolveContext) getHelperFunctions() map[string]helperFunction {
 		"get_parent_dir":             helperFunction{function: context.getParentDir},
 		"get_parent_tfvars_dir":      helperFunction{function: context.getParentDir},
 		"get_aws_account_id":         helperFunction{function: context.getAWSAccountID},
-		"save_variables":             helperFunction{function: context.saveVariables},
 		"get_terraform_commands_that_need_vars": helperFunction{
 			function:   func(...string) (interface{}, error) { return TerraformCommandWithVarFile, nil },
 			returnType: cty.List(cty.String),
@@ -214,13 +213,6 @@ type invalidGetEnvParameters []string
 
 func (err invalidGetEnvParameters) Error() string {
 	return fmt.Sprintf("Invalid parameters. Expected get_env(variable_name, default_value) but got '%s'", strings.Join(err, ", "))
-}
-
-// Saves variables into a file
-//     save_variables(filename)
-func (context *resolveContext) saveVariables(parameters ...string) (interface{}, error) {
-	context.options.AddDeferredSaveVariables(parameters[0])
-	return parameters[0], nil
 }
 
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file

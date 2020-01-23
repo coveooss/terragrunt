@@ -223,11 +223,8 @@ import_variables "name" {
   optional_var_files     = []            # Optional, same as required_var_files but does not report error if the file does not exist
   env_vars               = {}            # optional, define environment variables only available during hook execution
   nester_under           = []            # Optional, define variables under a specific object
-  output_variables_files = ""            # Optional, local file name used to save the imported variables defined in the block
   os                     = [list of os]  # Optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
   disabled               = false         # Optional, provide a mechanism to temporary disable the import variables block
-  flatten_levels         = -1            # Optional, indicates the level used to flatten variables defined as hierarchical blocks, -1 = flatten all
-                                          # Flattened variables such as a.b.c becomes a_b_c
 }
 ```
 
@@ -246,8 +243,6 @@ import_variables "name" {
       VAR1 = "Value 1"
       VAR2 = "Value 2"
     }
-
-    output_variables_files = "global.tfvars"
   }
 ```
 
@@ -304,6 +299,18 @@ Terragrunt create may temporary folders for each of your terraform project based
 
 ```hcl
 uniqueness_criteria = "${var.env}${var.region}/${var.project}"
+```
+
+### Export variables to a file
+
+There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are not accesible by Terraform directly  
+To write your imported variables to a file, use the `export_variables` block. Example:  
+
+```hcl
+export_variables {
+  format = "tf" (Accepted values: "tfvars", "yaml", "json", "tf", "hcl")
+  path   = "path_to_file.tf"
+}
 ```
 
 ## License

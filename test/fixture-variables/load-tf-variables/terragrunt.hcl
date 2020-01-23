@@ -3,6 +3,10 @@ import_variables "test" {
     "vars.tf",
   ]
 
-  nested_under          = ["loaded"]
-  output_variables_file = "test.tf"
+  nested_under = ["loaded"]
+}
+
+// Only variables that aren't already in vars.tf should be exported, otherwise there will be conflicts
+export_variables {
+  path = "test.tf"
 }

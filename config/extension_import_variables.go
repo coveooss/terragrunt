@@ -4,12 +4,8 @@ package config
 
 import (
 	"fmt"
-	"os"
-	"path"
 	"strings"
 
-	"github.com/coveooss/gotemplate/v3/hcl"
-	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
@@ -26,8 +22,6 @@ type ImportVariables struct {
 	OptionalVarFiles []string          `hcl:"optional_var_files,optional"`
 	Sources          []string          `hcl:"sources,optional"`
 	NestedObjects    []string          `hcl:"nested_under,optional"`
-	TFVariablesFile  string            `hcl:"output_variables_file,optional"`
-	FlattenLevels    *int              `hcl:"flatten_levels"`
 	EnvVars          map[string]string `hcl:"env_vars,optional"`
 	OnCommands       []string          `hcl:"on_commands,optional"`
 }
@@ -48,39 +42,30 @@ func (item ImportVariables) help() (result string) {
 }
 
 func (item *ImportVariables) normalize() {
-	if item.FlattenLevels == nil {
-		value := -1
-		item.FlattenLevels = &value
-	}
 	if len(item.NestedObjects) == 0 {
 		// By default, we load the variables at the root
 		item.NestedObjects = []string{""}
 	}
 }
 
-func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables map[string]interface{}) (map[string]interface{}, error) {
+func (item *ImportVariables) loadVariablesFromFile(file string) error {
 	item.logger().Debug("Importing ", file)
 	vars, err := item.options().LoadVariablesFromFile(file)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return item.loadVariables(currentVariables, vars, options.VarFile)
+	item.loadVariables(vars, options.VarFile)
+	return nil
 }
 
-func (item *ImportVariables) loadVariables(currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
+func (item *ImportVariables) loadVariables(newVariables map[string]interface{}, source options.VariableSource) {
 	for _, nested := range item.NestedObjects {
 		imported := newVariables
 		if nested != "" {
 			imported = map[string]interface{}{nested: imported}
 		}
 		item.options().ImportVariablesMap(imported, source)
-		flattenedVariables := flatten(imported, "", *item.FlattenLevels)
-		item.options().ImportVariablesMap(flattenedVariables, source)
-		if currentVariables != nil {
-			return utils.MergeDictionaries(flattenedVariables, currentVariables)
-		}
 	}
-	return nil, nil
 }
 
 // ----------------------- ImportVariablesList -----------------------
@@ -94,23 +79,10 @@ func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
 	list.merge(imported, mergeModePrepend, list.argName())
 }
 
-// ShouldCreateVariablesFile indicates if any import_variables statement requires to
-// create a physical variables file
-func (list ImportVariablesList) ShouldCreateVariablesFile() bool {
-	for _, item := range list.Enabled() {
-		if item.TFVariablesFile != "" {
-			return true
-		}
-	}
-	return false
-}
-
 // Import actually process the variables importers to load and define all variables in the current context
-func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]interface{}, err error) {
-	variablesFiles = make(map[string]map[string]interface{})
-
+func (list ImportVariablesList) Import() (err error) {
 	if len(list) == 0 {
-		return variablesFiles, nil
+		return nil
 	}
 
 	config := IImportVariables(&list[0]).config()
@@ -122,12 +94,6 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 			return
 		}
 		item.logger().Debugf("Processing import variables statement %s", item.id())
-
-		if item.TFVariablesFile != "" {
-			if _, ok := variablesFiles[item.TFVariablesFile]; !ok {
-				variablesFiles[item.TFVariablesFile] = make(map[string]interface{})
-			}
-		}
 
 		// Set environment variables
 		for key, value := range item.EnvVars {
@@ -152,7 +118,7 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 		}
 		if len(folders) == 0 {
 			if len(item.RequiredVarFiles) > 0 {
-				return nil, folderErrors
+				return folderErrors
 			}
 			continue
 		}
@@ -178,20 +144,17 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 			if util.ListContainsElement(terragruntOptions.VariablesExplicitlyProvided(), key) {
 				continue
 			}
-
-			if variablesFiles[item.TFVariablesFile], err = item.loadVariables(variablesFiles[item.TFVariablesFile], map[string]interface{}{key: value}, options.VarParameter); err != nil {
-				return
-			}
+			item.loadVariables(map[string]interface{}{key: value}, options.VarParameter)
 		}
 
 		// Process RequiredVarFiles
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.RequiredVarFiles) {
 			files := config.globFiles(pattern, true, folders...)
 			if len(files) == 0 {
-				return nil, fmt.Errorf("%s: No file matches %s", item.name(), pattern)
+				return fmt.Errorf("%s: No file matches %s", item.name(), pattern)
 			}
 			for _, file := range files {
-				if variablesFiles[item.TFVariablesFile], err = item.loadVariablesFromFile(file, variablesFiles[item.TFVariablesFile]); err != nil {
+				if err = item.loadVariablesFromFile(file); err != nil {
 					return
 				}
 			}
@@ -201,7 +164,7 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.OptionalVarFiles) {
 			for _, file := range config.globFiles(pattern, true, folders...) {
 				if util.FileExists(file) {
-					if variablesFiles[item.TFVariablesFile], err = item.loadVariablesFromFile(file, variablesFiles[item.TFVariablesFile]); err != nil {
+					if err = item.loadVariablesFromFile(file); err != nil {
 						return
 					}
 				} else {
@@ -212,101 +175,4 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 	}
 
 	return
-}
-
-func (list ImportVariablesList) Write(variablesFiles map[string]map[string]interface{}, folders ...string) (err error) {
-	if len(list) == 0 {
-		return nil
-	}
-
-	config := IImportVariables(&list[0]).config()
-	terragruntOptions := config.options
-
-	for fileName, variables := range variablesFiles {
-		if len(variables) == 0 {
-			continue
-		}
-		for _, folder := range folders {
-			terragruntOptions.Logger.Debug("Writing terraform variables to directory: " + folder)
-			writeTerraformVariables(path.Join(folder, fileName), variables)
-		}
-	}
-	return nil
-}
-
-func writeTerraformVariables(fileName string, variables map[string]interface{}) {
-	if variables == nil {
-		return
-	}
-
-	f, err := os.Create(fileName)
-	if err != nil {
-		panic(err)
-	}
-
-	defer f.Close()
-
-	lines := []string{}
-
-	for key, value := range variables {
-		lines = append(lines, fmt.Sprintf("variable \"%s\" {\n", key))
-		if value != nil {
-			terraformValue := map[string]interface{}{"default": value}
-			if _, isMap := value.(map[string]interface{}); isMap {
-				terraformValue["type"] = "map"
-			} else if _, isList := value.([]interface{}); isList {
-				terraformValue["type"] = "list"
-			}
-			variableContent, err := hcl.MarshalTFVarsIndent(terraformValue, "  ", "  ")
-			if err != nil {
-				panic(err)
-			}
-			lines = append(lines, string(variableContent))
-		}
-		lines = append(lines, "\n}\n\n")
-	}
-	for _, line := range lines {
-		if _, err = f.WriteString(line); err != nil {
-			panic(err)
-		}
-	}
-}
-
-func flatten(nestedMap map[string]interface{}, prefix string, numberOfLevels int) map[string]interface{} {
-	keysToRemove := []string{}
-	itemsToAdd := make(map[string]interface{})
-
-	for key, value := range nestedMap {
-		if valueMap, ok := value.(map[string]interface{}); ok {
-			isTopLevel := true
-			for _, childValue := range valueMap {
-				if _, childIsMap := childValue.(map[string]interface{}); childIsMap {
-					isTopLevel = false
-				}
-			}
-			if (numberOfLevels < 0 && !isTopLevel) || numberOfLevels >= 1 {
-				keysToRemove = append(keysToRemove, key)
-				for key, value := range flatten(valueMap, key+"_", numberOfLevels-1) {
-					itemsToAdd[key] = value
-				}
-			}
-
-		}
-	}
-	newMap := make(map[string]interface{})
-	for key, value := range nestedMap {
-		newMap[key] = value
-	}
-
-	for _, key := range keysToRemove {
-		delete(newMap, key)
-	}
-	for key, value := range itemsToAdd {
-		newMap[key] = value
-	}
-	prefixedMap := make(map[string]interface{})
-	for key, value := range newMap {
-		prefixedMap[prefix+key] = value
-	}
-	return prefixedMap
 }

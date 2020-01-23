@@ -48,7 +48,7 @@ func TestLoadDefaultValues(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult, err := LoadDefaultValues(tt.args.folder)
+			gotResult, _, err := LoadDefaultValues(tt.args.folder)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

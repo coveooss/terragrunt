@@ -38,6 +38,7 @@ type TerragruntConfig struct {
 	AssumeRoleDurationHours *int                        `hcl:"assume_role_duration_hours,attr"`
 	Dependencies            *ModuleDependencies         `hcl:"dependencies,block"`
 	Description             string                      `hcl:"description,optional"`
+	ExportVariables         []ExportVariables           `hcl:"export_variables,block"`
 	ExtraArgs               TerraformExtraArgumentsList `hcl:"extra_arguments,block"`
 	ExtraCommands           ExtraCommandList            `hcl:"extra_command,block"`
 	ImportFiles             ImportFilesList             `hcl:"import_files,block"`
@@ -553,6 +554,12 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 	if includedConfig.Inputs != nil {
 		conf.Inputs, _ = utils.MergeDictionaries(conf.Inputs, includedConfig.Inputs)
 
+	}
+
+	if conf.ExportVariables == nil {
+		conf.ExportVariables = includedConfig.ExportVariables
+	} else if includedConfig.ExportVariables != nil {
+		conf.ExportVariables = append(conf.ExportVariables, includedConfig.ExportVariables...)
 	}
 
 	conf.ExtraArgs.Merge(includedConfig.ExtraArgs)

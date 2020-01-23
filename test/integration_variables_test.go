@@ -37,36 +37,12 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: []string{"example = 123456789"},
 		},
 		{
-			project:        "fixture-variables/flatten",
-			expectedOutput: []string{"example = 1-2-hello-123"},
-		},
-		{
-			project: "fixture-variables/flatten-levels",
-			expectedOutput: []string{
-				"example = 1-2-hello-123",
-				"example_gotemplate = 1-2-hello-123",
-			},
-			args: "--terragrunt-apply-template",
-		},
-		{
-			project:        "fixture-variables/flatten-all",
-			expectedOutput: []string{"example = 1-2-hello-123"},
-		},
-		{
-			project:        "fixture-variables/flatten-overwrite",
-			expectedOutput: []string{"example = 1-3-4"},
-		},
-		{
 			project:        "fixture-variables/overwrite",
 			expectedOutput: []string{"example = 456"},
 		},
 		{
 			project:        "fixture-variables/overwrite-with-file",
-			expectedOutput: []string{"example = 456"},
-		},
-		{
-			project:        "fixture-variables/placeholder-var",
-			expectedOutput: []string{"example = 123"},
+			expectedOutput: []string{"example = stay the same -> Cool value, sis"},
 		},
 		{
 			project:        "fixture-variables/nested",
@@ -84,10 +60,6 @@ func TestTerragruntImportVariables(t *testing.T) {
 			project:        "fixture-variables/map",
 			expectedOutput: []string{"example = 1-2-1-2-1-2"},
 			args:           "--terragrunt-apply-template",
-		},
-		{
-			project:        "fixture-variables/map-no-flatten",
-			expectedOutput: []string{"example = 1-2-1-2"},
 		},
 		{
 			project:        "fixture-variables/source",
