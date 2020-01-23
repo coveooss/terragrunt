@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -337,7 +338,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	if err = conf.ImportVariables.Import(); stopOnError(err) {
+	importedVariables, err := conf.ImportVariables.Import()
+	if stopOnError(err) {
 		return
 	}
 
@@ -440,6 +442,25 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if actualCommand.BehaveAs != "" {
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
+
+	terraformFiles := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, "*.tf")
+	foldersWithTerraformFiles := []string{}
+	for _, file := range terraformFiles {
+		// All folders except `.terraform`
+		if dir := filepath.Dir(file); !util.ListContainsElement(foldersWithTerraformFiles, dir) && !strings.HasPrefix(dir, path.Join(terragruntOptions.WorkingDir, ".terraform")) {
+			foldersWithTerraformFiles = append(foldersWithTerraformFiles, dir)
+		}
+	}
+
+	if err = conf.ImportVariables.Write(importedVariables, foldersWithTerraformFiles...); stopOnError(err) {
+		return
+	}
+
+	if err := conf.ImportFiles.Run(err, foldersWithTerraformFiles...); stopOnError(err) {
+		return
+	}
+
+	// Run Gotemplate
 	if err == nil && useTempFolder && terragruntOptions.ApplyTemplate {
 		template.TemplateLog.SetDefaultConsoleHookLevel(terragruntOptions.Logger.GetLevel())
 		var t *template.Template
@@ -466,10 +487,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	if err := downloadModules(terragruntOptions); stopOnError(err) {
-		return
-	}
-
-	if err := conf.ImportFiles.RunOnModules(terragruntOptions); stopOnError(err) {
 		return
 	}
 
