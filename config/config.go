@@ -409,6 +409,11 @@ var hookWarningGiven bool
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig, variables []hcl.Dictionary) (config *TerragruntConfig, err error) {
+	if util.ListContainsElement([]string{".yaml", ".yml", ".json"}, filepath.Ext(include.Path)) {
+		// These aren't actual configuration files
+		return
+	}
+
 	configString, err = ResolveTerragruntConfigString(configString, include, terragruntOptions)
 	if err != nil {
 		return

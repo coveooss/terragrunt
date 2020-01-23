@@ -110,6 +110,7 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 	}
 	if strings.HasSuffix(fileName, ".yaml") || strings.HasSuffix(fileName, ".yml") {
 		err = yaml.Unmarshal([]byte(content), &result)
+		return
 	}
 
 	// We first try to read using hcl parser

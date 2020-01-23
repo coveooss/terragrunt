@@ -32,14 +32,14 @@ func TestTerragruntBootstrap(t *testing.T) {
 		{
 			name:           "Simple pre-bootstrap (adding variables)",
 			project:        "fixture-bootstrap/preboot",
-			preboot:        []string{absoluteTestPath + "/preboot/variables.json"},
-			expectedOutput: "my_value my_value2", // This is output by the hook
+			preboot:        []string{absoluteTestPath + "/preboot/variables.json", absoluteTestPath + "/preboot/variables.yml"},
+			expectedOutput: "my_value my_value2 my_value3", // This is output by the hook
 		},
 		{
 			name:           "Simple pre-bootstrap with a file prependend with file:// (Testing accepted values)",
 			project:        "fixture-bootstrap/preboot",
-			preboot:        []string{"file://" + absoluteTestPath + "/preboot/variables.json"},
-			expectedOutput: "my_value my_value2", // This is output by the hook
+			preboot:        []string{"file://" + absoluteTestPath + "/preboot/variables.json", absoluteTestPath + "/preboot/variables.yml"},
+			expectedOutput: "my_value my_value2 my_value3", // This is output by the hook
 		},
 		{
 			name:           "Complex project with a bootstrap that defines the Terraform source",
