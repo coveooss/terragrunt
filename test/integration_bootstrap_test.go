@@ -55,6 +55,12 @@ func TestTerragruntBootstrap(t *testing.T) {
 			expectedOutput: "test variable", // This is output by the hook
 		},
 		{
+			name:           "Test gotemplating with terragrunt functions in a template file",
+			project:        "fixture-bootstrap/terragrunt-function-in-bootstrap",
+			bootstrap:      []string{absoluteTestPath + "/_external_dir/terragrunt-function-in-bootstrap.hcl"},
+			expectedOutput: "default_env_value", // This is output by the hook
+		},
+		{
 			name:           "Complex case where a pre-bootstrap file defines variables and another creates new variables from templating",
 			project:        "fixture-bootstrap/chain-preboot-configs",
 			preboot:        []string{absoluteTestPath + "/chain-preboot-configs/preboot.hcl", absoluteTestPath + "/chain-preboot-configs/variables.json"},

@@ -103,10 +103,10 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	if !tcf.AssumeRoleHclDefinition.IsNull() {
 		if tcf.AssumeRoleHclDefinition.Type().FriendlyName() == "string" {
 			tcf.AssumeRole = []string{tcf.AssumeRoleHclDefinition.AsString()}
-		} else if tcf.AssumeRoleHclDefinition.Type().IsListType() {
+		} else if tcf.AssumeRoleHclDefinition.Type().IsTupleType() || tcf.AssumeRoleHclDefinition.Type().IsListType() {
 			tcf.AssumeRole, _ = ctySliceToStringSlice(tcf.AssumeRoleHclDefinition.AsValueSlice())
 		} else {
-			terragruntOptions.Logger.Errorf("Invalid configuration for assume_role, must be either a string or a list of strings: %[1]v (%[1]T)", tcf.AssumeRoleHclDefinition.AsString())
+			terragruntOptions.Logger.Errorf("Invalid configuration for assume_role, must be either a string or a list of strings: %[1]v (%[1]v)", tcf.AssumeRoleHclDefinition, tcf.AssumeRoleHclDefinition.Type())
 		}
 	}
 
@@ -249,7 +249,7 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 // ReadTerragruntConfig reads the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	include := IncludeConfig{Path: terragruntOptions.TerragruntConfigPath}
-	conf, err := ParseConfigFile(terragruntOptions, include)
+	_, conf, err := ParseConfigFile(terragruntOptions, include)
 	if err == nil {
 		return conf, nil
 	}
@@ -263,13 +263,14 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 	default:
 		return nil, err
 	}
+
 	// The configuration has not been initialized, we generate a default configuration
 	return parseConfigString("", terragruntOptions, include)
 }
 
 // ParseConfigFile parses the Terragrunt config file at the given path. If the include parameter is not nil, then treat
 // this as a config included in some other config file when resolving relative paths.
-func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
+func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (configString string, config *TerragruntConfig, err error) {
 	defer func() {
 		if _, hasStack := err.(*errors.Error); err != nil && !hasStack {
 			err = errors.WithStackTrace(err)
@@ -288,8 +289,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 			}
 		}
 		if cached, _ := configFiles.Load(include.Path); cached != nil {
+			cachedList := cached.([]interface{})
 			terragruntOptions.Logger.Debugf("Config already in the cache %s", include.Path)
-			return cached.(*TerragruntConfig), nil
+			return cachedList[0].(string), cachedList[1].(*TerragruntConfig), nil
 		}
 	}
 
@@ -301,7 +303,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		}
 	}
 
-	var configString, source string
+	var source string
 	if include.Source == "" {
 		configString, err = util.ReadFileAsString(include.Path)
 		source = include.Path
@@ -310,7 +312,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		source = include.Path
 	}
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 
 	terragruntOptions.Logger.Tracef("Read configuration file at %s\n%s", include.Path, configString)
@@ -367,7 +369,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	config.mergeIncludedConfig(*userConfig, terragruntOptions)
 
 	if include.isIncludedBy == nil {
-		configFiles.Store(include.Path, config)
+		configFiles.Store(include.Path, []interface{}{configString, config})
 	}
 
 	return
@@ -398,13 +400,12 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		options: terragruntOptions,
 	}
 	var terragruntConfigFile *TerragruntConfigFile
-	terragruntConfigFile, err = parseConfigStringAsTerragruntConfig(configString, includeContext)
-	if err != nil {
-		return
+	if terragruntConfigFile, err = parseConfigStringAsTerragruntConfig(configString, includeContext); err != nil {
+		return nil, fmt.Errorf("caught error while parsing the Terragrunt config: %s", err)
 	}
 
 	if config, err = terragruntConfigFile.convertToTerragruntConfig(terragruntOptions); err != nil {
-		return
+		return nil, fmt.Errorf("caught error while initializing the Terragrunt config: %s", err)
 	}
 
 	terragruntOptions.ImportVariablesMap(config.Inputs, options.ConfigVarFile)
@@ -429,7 +430,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	}
 
 	terragruntConfigFile.Include.isIncludedBy = &include
-	includedConfig, err := parseIncludedConfig(terragruntConfigFile.Include, terragruntOptions)
+	_, includedConfig, err := parseIncludedConfig(terragruntConfigFile.Include, terragruntOptions)
 	if err != nil {
 		return
 	}
@@ -490,12 +491,18 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 			include.Source = sourcePath
 			include.Path = path.Base(bootstrapFile)
 			bootstrapFile = path.Join(sourcePath, include.Path)
-			var bootConfig *TerragruntConfig
-			bootConfig, err = parseIncludedConfig(include, terragruntOptions)
-			if err != nil {
+			var (
+				bootConfig       *TerragruntConfig
+				bootConfigString string
+			)
+			if bootConfigString, bootConfig, err = parseIncludedConfig(include, terragruntOptions); err != nil {
+				if path.Ext(bootstrapFile) == ".hcl" {
+					// This is a config file, config parsing has to succeed
+					return err
+				}
 				caughtError := err
 				terragruntOptions.Logger.Debugf("Caught error while trying to load bootstrap file, trying parsing it as a variables file: %v", caughtError)
-				variables, err := terragruntOptions.LoadVariablesFromFile(bootstrapFile)
+				variables, err := util.LoadVariablesFromSource(bootConfigString, bootstrapFile, terragruntOptions.WorkingDir, false, nil)
 				terragruntOptions.ImportVariablesMap(variables, options.ConfigVarFile)
 				if err != nil {
 					err = fmt.Errorf("got error while parsing bootstrap config: %v\n then caught error while parsing it as a variables file: %v", caughtError, err)
@@ -573,9 +580,9 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 }
 
 // Parse the config of the given include, if one is specified
-func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
+func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (configString string, config *TerragruntConfig, err error) {
 	if includedConfig.Path == "" && includedConfig.Source == "" {
-		return nil, errors.WithStackTrace(IncludedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
+		return "", nil, errors.WithStackTrace(IncludedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
 	}
 
 	if !filepath.IsAbs(includedConfig.Path) && includedConfig.Source == "" {

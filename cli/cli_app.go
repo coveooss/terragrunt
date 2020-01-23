@@ -223,7 +223,6 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 // runCommand runs one or many terraform commands based on the type of
 // terragrunt command
 func runCommand(command string, terragruntOptions *options.TerragruntOptions) (finalEff error) {
-	terragruntOptions.IgnoreRemainingInterpolation = true
 	if err := setRoleEnvironmentVariables(terragruntOptions, "", nil); err != nil {
 		return err
 	}
@@ -271,7 +270,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return fmt.Errorf("folder ignored because %s is present", options.IgnoreFileNonInteractive)
 	}
 
-	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
 		return err
@@ -387,8 +385,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if existingVariables, err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
 		return
 	}
-
-	terragruntOptions.IgnoreRemainingInterpolation = false
 
 	if actualCommand.Command == "get-versions" {
 		PrintVersions(terragruntOptions, conf)
