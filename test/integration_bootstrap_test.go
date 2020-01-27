@@ -63,7 +63,7 @@ func TestTerragruntBootstrap(t *testing.T) {
 		{
 			name:           "Complex case where a pre-bootstrap file defines variables and another creates new variables from templating",
 			project:        "fixture-bootstrap/chain-preboot-configs",
-			preboot:        []string{absoluteTestPath + "/chain-preboot-configs/preboot.hcl", absoluteTestPath + "/chain-preboot-configs/variables.json"},
+			preboot:        []string{absoluteTestPath + "/chain-preboot-configs/preboot.yaml", absoluteTestPath + "/chain-preboot-configs/variables.json"},
 			expectedOutput: "value1 value2", // This is output by the hook
 		},
 	}

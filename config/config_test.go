@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -46,7 +45,7 @@ func TestParseTerragruntConfigRemoteStateMissingBackend(t *testing.T) {
 	`
 
 	_, err := parseConfigString(config, mockOptions, mockDefaultInclude)
-	assert.True(t, errors.IsError(err, remote.ErrBackendMissing), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
+	assert.EqualError(t, err, "caught error while initializing the Terragrunt config: the remote_state.backend field cannot be empty")
 }
 
 func TestParseTerragruntConfigRemoteStateFullConfig(t *testing.T) {
