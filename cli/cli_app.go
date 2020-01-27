@@ -381,8 +381,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Retrieve the default variables from the terraform files
-	var existingVariables map[string]*configs.Variable
-	if existingVariables, err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
+	if err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
 		return
 	}
 
@@ -454,7 +453,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return
 		}
 		t.SetOption(template.Overwrite, true)
-		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf")
+		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf", "*.tf.gt", "*.tf.template")
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
 		files = util.FilterList(files, func(item string) bool {
@@ -473,8 +472,15 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Save all variable files requested in the terragrunt config
-	if err = conf.SaveVariables(existingVariables, foldersWithTerraformFiles...); stopOnError(err) {
-		return
+	for _, folder := range foldersWithTerraformFiles {
+		var existingVariables map[string]*configs.Variable
+		_, existingVariables, err = util.LoadDefaultValues(folder)
+		if stopOnError(err) {
+			return err
+		}
+		if err = conf.SaveVariables(existingVariables, folder); stopOnError(err) {
+			return
+		}
 	}
 
 	if err := downloadModules(terragruntOptions); stopOnError(err) {

@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/gruntwork-io/terragrunt/util"
+	hclwrite "github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform/configs"
 	"gopkg.in/yaml.v2"
 )
@@ -59,20 +61,17 @@ func (conf *TerragruntConfig) SaveVariables(existingTerraformVariables map[strin
 }
 
 func marshalTerraformVariables(existingTerraformVariables map[string]*configs.Variable, variables map[string]interface{}) ([]byte, error) {
-	lines := []string{}
+	file := hclwrite.NewEmptyFile()
 	for key, value := range variables {
 		if _, ok := existingTerraformVariables[key]; ok {
 			continue
 		}
-		lines = append(lines, fmt.Sprintf(`variable "%s" {`, key))
-		if value != nil {
-			variableContent, err := hcl.MarshalTFVarsIndent(map[string]interface{}{"default": value}, "  ", "  ")
-			if err != nil {
-				return nil, err
-			}
-			lines = append(lines, string(variableContent))
+		block := file.Body().AppendNewBlock("variable", []string{key})
+		ctyValue, err := util.ToCtyValue(value)
+		if err != nil {
+			return nil, err
 		}
-		lines = append(lines, "}", "")
+		block.Body().SetAttributeValue("default", *ctyValue)
 	}
-	return []byte(strings.Join(lines, "\n")), nil
+	return file.Bytes(), nil
 }
