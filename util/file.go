@@ -205,7 +205,7 @@ func GetTempDownloadFolder(folders ...string) string {
 
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
-// if the content has not changed
+// if the content has not changed. When given a local path, it is directly returned
 func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 	logf := func(level logrus.Level, format string, args ...interface{}) {
 		if logger != nil {
@@ -225,6 +225,11 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		return "", err
 	}
 
+	if strings.HasPrefix(source, "file://") {
+		logf(logrus.DebugLevel, "Getting files directly (without copy) from %s", source)
+		return strings.Replace(source, "file://", "", 1), nil
+	}
+
 	logf(logrus.TraceLevel, "Fetching and locking cache for %s", source)
 	cacheDir := GetTempDownloadFolder("terragrunt-cache", EncodeBase64Sha1(source))
 	sharedMutex.Lock()
@@ -236,8 +241,6 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		logf(logrus.TraceLevel, "Confirmed that this is an S3 object. Checking status for %s", source)
 		source = s3Object.String()
 		err = awshelper.CheckS3Status(cacheDir)
-	} else if strings.HasPrefix(source, "file://") {
-		err = fmt.Errorf("local path always copied")
 	}
 
 	_, alreadyInCache := sharedContent[cacheDir]

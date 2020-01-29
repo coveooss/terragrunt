@@ -111,12 +111,10 @@ github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
-github.com/coveooss/gotemplate/v3 v3.3.7 h1:azkGQU2oCoHLj+3n/pFj5vqzQFo8YG8QKz/hWEOJdO8=
-github.com/coveooss/gotemplate/v3 v3.3.7/go.mod h1:iFqyaO3yo8MGa990rBsS2bSagIR0f5pVOHUYx0qiph4=
-github.com/coveooss/multilogger v0.4.3 h1:eQ1QIB/vevI3jUJPvZuf1e6fhjprUIjfwdMGM0GXbBs=
-github.com/coveooss/multilogger v0.4.3/go.mod h1:A2c+mJI+0nxjg7vnEMg00sQFGwHXqhHP73zYdYIbieQ=
-github.com/coveooss/multilogger v0.4.4 h1:6v5w0OIpMeWx33Lo0HCHhtpGrUvaeerDebozfqvzBuM=
-github.com/coveooss/multilogger v0.4.4/go.mod h1:A2c+mJI+0nxjg7vnEMg00sQFGwHXqhHP73zYdYIbieQ=
+github.com/coveooss/gotemplate/v3 v3.3.8 h1:kGYe+GQ4AxPysFC/zFsbsR7rS8U3uvRc3WeEN3Kze0k=
+github.com/coveooss/gotemplate/v3 v3.3.8/go.mod h1:BRrOYMAcOZnTsUs+COpo07QlYGIHdMCQSehcgn4h3eQ=
+github.com/coveooss/multilogger v0.4.5 h1:Pwhz7CGs4VjcqL5orDWNmL1y63JbE1jpIqanglXCpVE=
+github.com/coveooss/multilogger v0.4.5/go.mod h1:A2c+mJI+0nxjg7vnEMg00sQFGwHXqhHP73zYdYIbieQ=
 github.com/coveord/kingpin/v2 v2.3.1 h1:GWdfhOpRbIE+5Bt/hGgDbfWkntsCC5484xFWXaor+sg=
 github.com/coveord/kingpin/v2 v2.3.1/go.mod h1:G7snIuRD09h58XUezPxWrLPuZplFdreCh6cmJZMtNUU=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=
@@ -573,8 +571,8 @@ gopkg.in/yaml.v2 v2.0.0-20170812160011-eb3733d160e7/go.mod h1:JAlM8MvJe8wmxCU4Bl
 gopkg.in/yaml.v2 v2.2.1/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
-gopkg.in/yaml.v2 v2.2.7 h1:VUgggvou5XRW9mHwD/yXxIYSMtY0zoKQf/v226p2nyo=
-gopkg.in/yaml.v2 v2.2.7/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v2 v2.2.8 h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=
+gopkg.in/yaml.v2 v2.2.8/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190106161140-3f1c8253044a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190418001031-e561f6794a2a h1:LJwr7TCTghdatWv40WobzlKXc9c4s8oGa7QKJUtHhWA=
