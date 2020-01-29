@@ -1,5 +1,5 @@
 module "my_module" {
-  source = "my-module"
+  source = "./my-module"
 }
 
 output "example" {

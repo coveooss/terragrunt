@@ -1,10 +1,6 @@
 terragrunt = {
   terraform = {
     extra_arguments "test" {
-      arguments = [
-        "-var-file=terraform.tfvars",
-      ]
-
       commands = [
         "apply",
         "plan",

@@ -236,7 +236,7 @@ func (terragruntOptions *TerragruntOptions) SaveVariables() (err error) {
 			if err != nil {
 				return
 			}
-			if content[len(content)-1] != '\n' {
+			if len(content) > 0 && content[len(content)-1] != '\n' {
 				content = append(content, '\n')
 			}
 			err = ioutil.WriteFile(filepath.Join(terragruntOptions.WorkingDir, file), content, 0644)

@@ -1,26 +1,18 @@
 module github.com/gruntwork-io/terragrunt
 
-go 1.12
+go 1.13
 
 require (
-	github.com/agext/levenshtein v1.2.2 // indirect
-	github.com/apparentlymart/go-cidr v0.0.0-20180915144716-1755c023625e // indirect
-	github.com/armon/go-radix v1.0.0 // indirect
-	github.com/aws/aws-sdk-go v1.25.37
-	github.com/blang/semver v0.0.0-20180723201105-3c1074078d32 // indirect
+	github.com/aws/aws-sdk-go v1.25.43
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/coveooss/gotemplate/v3 v3.3.8
 	github.com/coveooss/multilogger v0.4.5
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.0.1
-	github.com/google/go-cmp v0.3.1 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
-	github.com/hashicorp/go-getter v1.4.1
+	github.com/hashicorp/go-getter v1.4.2-0.20200106182914-9813cbd4eb02
 	github.com/hashicorp/go-version v1.2.0
-	github.com/hashicorp/hcl2 v0.0.0-20191002203319-fb75b3253c80 // indirect
-	github.com/hashicorp/hil v0.0.0-20190212132231-97b3a9cdfa93 // indirect
-	github.com/hashicorp/terraform v0.11.13
+	github.com/hashicorp/terraform v0.12.19
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mattn/go-zglob v0.0.1
 	github.com/mitchellh/mapstructure v1.1.2
@@ -29,6 +21,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/ulikunitz/xz v0.5.6 // indirect
 	github.com/urfave/cli v1.22.2
+	github.com/zclconf/go-cty v1.2.1
 	golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e

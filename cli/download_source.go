@@ -14,7 +14,6 @@ import (
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
-	"github.com/hashicorp/terraform/config/module"
 	"github.com/mattn/go-zglob"
 )
 
@@ -85,7 +84,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 	}
 
 	terragruntOptions.Logger.Debugf("Downloading Terraform configurations from %s into %s", terraformSource.CanonicalSourceURL, terraformSource.DownloadDir)
-	if err := module.GetCopy(terraformSource.DownloadDir, terraformSource.CanonicalSourceURL.String()); err != nil {
+	if err := util.GetCopy(terraformSource.DownloadDir, terraformSource.CanonicalSourceURL.String()); err != nil {
 		return err
 	}
 
