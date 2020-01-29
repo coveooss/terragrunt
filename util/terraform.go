@@ -21,7 +21,7 @@ func LoadDefaultValues(folder string) (map[string]interface{}, error) {
 	parser := configs.NewParser(nil)
 	terraformConfig, err := parser.LoadConfigDir(folder)
 	if err != nil {
-		return map[string]interface{}{}, fmt.Errorf("Caught error while trying to load default variable values: %v", err)
+		return map[string]interface{}{}, fmt.Errorf("Caught error while trying to load default variable values from %s: %v", folder, err)
 	}
 	return getTerraformVariableValues(terraformConfig, false)
 }
