@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.25.43
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
-	github.com/coveooss/gotemplate/v3 v3.3.7
-	github.com/coveooss/multilogger v0.4.4
+	github.com/coveooss/gotemplate/v3 v3.3.8
+	github.com/coveooss/multilogger v0.4.5
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.0.1
 	github.com/hashicorp/go-getter v1.4.2-0.20200106182914-9813cbd4eb02
@@ -25,5 +25,5 @@ require (
 	golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
-	gopkg.in/yaml.v2 v2.2.7
+	gopkg.in/yaml.v2 v2.2.8
 )
