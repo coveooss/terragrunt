@@ -21,7 +21,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Simple match",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						env = "qa"
 					}
 				}
@@ -33,7 +33,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Simple match (map)",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"my_map.env" = "qa"
 					}
 				}
@@ -45,7 +45,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Simple no match",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"env" = "qa"
 					}
 				}
@@ -57,7 +57,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Simple no match (map)",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"my_map.env" = "qa"
 					}
 				}
@@ -69,7 +69,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Two possibilities",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"env" = ["dev", "qa"]
 					}
 				}
@@ -81,7 +81,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Two conditions (no match)",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"env" = ["dev", "qa"]
 						"region" = "us-east-1"
 					}
@@ -94,8 +94,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Ignore simple",
 			config: `
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
 						"env" = "qa"
 					}
 				}
@@ -107,8 +106,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Ignore simple (map)",
 			config: `
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
 						"my_map.env" = "qa"
 					}
 				}
@@ -120,8 +118,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Ignore simple: not ignored",
 			config: `
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
 						"env" = "qa"
 					}
 				}
@@ -133,8 +130,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Ignore two possibilities: ignored",
 			config: `
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
 						"env" = ["dev", "qa"]
 					}
 				}
@@ -146,14 +142,28 @@ func TestRunConditions(t *testing.T) {
 			name: "Run & Ignore two condition: partial match",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"env" = ["dev", "qa"]
 					}
 				}
 
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
+						"region" = "us-west-2"
+					}
+				}
+			`,
+			variables: vars{"env": "qa", "region": "us-west-2"},
+			expected:  false,
+		},
+		{
+			name: "Run & Ignore two condition: partial match (two conditions in the same run_conditions)",
+			config: `
+				run_conditions {
+					run_if = {
+						"env" = ["dev", "qa"]
+					}
+					ignore_if = {
 						"region" = "us-west-2"
 					}
 				}
@@ -165,14 +175,29 @@ func TestRunConditions(t *testing.T) {
 			name: "Run & Ignore two condition: not ignored",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"env" = ["dev", "qa"]
 					}
 				}
 
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
+						"region" = "us-west-2"
+					}
+				}
+			`,
+			variables: vars{"env": "qa", "region": "us-east-1"},
+			expected:  true,
+		},
+		{
+			name: "Run & Ignore two condition: not ignored (two conditions in the same run_conditions)",
+			config: `
+				run_conditions {
+					run_if = {
+						"env" = ["dev", "qa"]
+					}
+
+					ignore_if = {
 						"region" = "us-west-2"
 					}
 				}
@@ -184,14 +209,13 @@ func TestRunConditions(t *testing.T) {
 			name: "Run & Ignore two conditions: no match",
 			config: `
 				run_conditions {
-					condition = {
+					run_if = {
 						"env" = ["dev", "qa"]
 					}
 				}
 
 				run_conditions {
-					ignore_if_true = true
-					condition = {
+					ignore_if = {
 						"region" = "us-west-2"
 					}
 				}
@@ -203,14 +227,13 @@ func TestRunConditions(t *testing.T) {
 			name: "Key as composite variables",
 			config: `
 			run_conditions {
-				condition = {
+				run_if = {
 					"${var.env}/${var.region}" = ["qa/us-west2-2", "dev/us-east-1"]
 				}
 			}
 
 			run_conditions {
-				ignore_if_true = true
-				condition = {
+				ignore_if = {
 					"region" = "us-west-2"
 				}
 			}
@@ -222,15 +245,13 @@ func TestRunConditions(t *testing.T) {
 			name: "Deny with key as composite variables",
 			config: `
 			run_conditions {
-				ignore_if_true = true
-				condition = {
+				ignore_if = {
 					"${var.env}/${var.region}" = ["qa/us-west2-2", "dev/us-east-1"]
 				}
 			}
 
 			run_conditions {
-				ignore_if_true = true
-				condition = {
+				ignore_if = {
 					"region"                   = "us-west-2"
 				}
 			}
@@ -242,8 +263,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Invalid variable on ignore",
 			config: `
 			run_conditions {
-				ignore_if_true = true
-				condition = {
+				ignore_if = {
 					"non_existing" = "value"
 				}
 			}
@@ -255,8 +275,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Invalid variables on ignore (map)",
 			config: `
 			run_conditions {
-				ignore_if_true = true
-				condition = {
+				ignore_if = {
 					"my_map.envv" = "value"
 				}
 			}
@@ -268,7 +287,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Invalid variables on run_if",
 			config: `
 			run_conditions {
-				condition = {
+				run_if = {
 					"non_existing" = "value"
 				}
 			}
@@ -280,7 +299,7 @@ func TestRunConditions(t *testing.T) {
 			name: "Invalid variables on run_if (map)",
 			config: `
 			run_conditions {
-				condition = {
+				run_if = {
 					"my_map.envv" = "value"
 				}
 			}

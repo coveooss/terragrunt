@@ -52,7 +52,7 @@ type TerragruntConfig struct {
 
 	AssumeRoleHclDefinition    cty.Value                    `hcl:"assume_role,optional"`
 	InputsHclDefinition        cty.Value                    `hcl:"inputs,optional"`
-	RunConditionsHclDefinition []RunConditionsHclDefinition `hcl:"run_conditions,block"`
+	RunConditionsHclDefinition []runConditionsHclDefinition `hcl:"run_conditions,block"`
 
 	options *options.TerragruntOptions
 }
@@ -82,7 +82,10 @@ func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders
 
 // TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terragrunt.hcl or .terragrunt)
 type TerragruntConfigFile struct {
-	Path             string
+	Path string
+	// remain will send everything that isn't match into the labelled struct
+	// In that case, most of the config goes down to TerragruntConfig
+	// https://godoc.org/github.com/hashicorp/hcl2/gohcl
 	TerragruntConfig `hcl:",remain"`
 	Include          *IncludeConfig `hcl:"include,block"`
 }
@@ -100,7 +103,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	}
 
 	if !tcf.AssumeRoleHclDefinition.IsNull() {
-		if tcf.AssumeRoleHclDefinition.Type().FriendlyName() == "string" {
+		if tcf.AssumeRoleHclDefinition.Type() == cty.String {
 			tcf.AssumeRole = []string{tcf.AssumeRoleHclDefinition.AsString()}
 		} else if tcf.AssumeRoleHclDefinition.Type().IsListType() {
 			tcf.AssumeRole, _ = ctySliceToStringSlice(tcf.AssumeRoleHclDefinition.AsValueSlice())
@@ -132,14 +135,20 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	tcf.PostHooks.init(tcf)
 	tcf.RunConditions = RunConditions{}
 	for _, condition := range tcf.RunConditionsHclDefinition {
-		var conditionValue map[string]interface{}
-		if err := util.FromCtyValue(condition.Condition, &conditionValue); err != nil {
-			return nil, err
+		if !condition.RunIf.IsNull() {
+			var runIfCondition map[string]interface{}
+			if err := util.FromCtyValue(condition.RunIf, &runIfCondition); err != nil {
+				return nil, err
+			}
+			tcf.RunConditions.Allows = append(tcf.RunConditions.Allows, runIfCondition)
 		}
-		if condition.IgnoreIfTrue {
-			tcf.RunConditions.Denies = append(tcf.RunConditions.Denies, conditionValue)
-		} else {
-			tcf.RunConditions.Allows = append(tcf.RunConditions.Allows, conditionValue)
+
+		if !condition.IgnoreIf.IsNull() {
+			var ignoreIfCondition map[string]interface{}
+			if err := util.FromCtyValue(condition.IgnoreIf, &ignoreIfCondition); err != nil {
+				return nil, err
+			}
+			tcf.RunConditions.Denies = append(tcf.RunConditions.Denies, ignoreIfCondition)
 		}
 	}
 	err = tcf.RunConditions.init(tcf.options)
