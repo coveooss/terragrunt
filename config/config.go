@@ -155,6 +155,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 }
 
 // GetSourceFolder resolves remote source and returns the local temporary folder
+// If the source is local, it is directly returned
 func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool) (string, error) {
 	terragruntOptions := tcf.options
 
