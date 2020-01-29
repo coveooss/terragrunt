@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -39,7 +40,7 @@ func TestCountingSemaphoreConcurrency(t *testing.T) {
 		waitForAllGoRoutinesToFinish.Done()
 	}
 
-	runGoRoutine := func() {
+	runGoRoutine := func(errorChannel chan error) {
 		defer endGoRoutine()
 		semaphore.Acquire()
 
@@ -47,19 +48,28 @@ func TestCountingSemaphoreConcurrency(t *testing.T) {
 		totalGoRoutinesExecutingSimultaneously := atomic.AddUint32(&goRoutinesExecutingSimultaneously, 1)
 
 		if totalGoRoutinesExecutingSimultaneously > uint32(permits) {
-			t.Fatalf("The semaphore was only supposed to allow %d goroutines to run simultaneously, but has allowed %d", permits, totalGoRoutinesExecutingSimultaneously)
+			errorChannel <- fmt.Errorf("the semaphore was only supposed to allow %d goroutines to run simultaneously, but has allowed %d", permits, totalGoRoutinesExecutingSimultaneously)
+			return
 		}
+		errorChannel <- nil
 
 		// Sleep for a random amount of time to represent this goroutine doing work
 		randomSleepTime := rand.Intn(100)
 		time.Sleep(time.Duration(randomSleepTime) * time.Millisecond)
 	}
 
+	errors := make(chan error, goroutines)
 	// Fire up a whole bunch of goroutines that will all try to acquire the semaphore at the same time
 	for i := 0; i < goroutines; i++ {
 		waitForAllGoRoutinesToFinish.Add(1)
-		go runGoRoutine()
+		go runGoRoutine(errors)
 	}
 
 	waitForAllGoRoutinesToFinish.Wait()
+
+	for i := 0; i < goroutines; i++ {
+		if err := <-errors; err != nil {
+			t.Fatal(err)
+		}
+	}
 }

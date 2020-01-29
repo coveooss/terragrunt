@@ -19,6 +19,11 @@ jobs:
           wget https://releases.hashicorp.com/terraform/0.12.19/terraform_0.12.19_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
+      - name: Run static checks
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          make static
+
       - name: Run tests
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

@@ -118,7 +118,7 @@ func (c CommandContext) LogOutput(logLevel logrus.Level) error {
 // Run executes the command
 func (c CommandContext) Run() error {
 	if c.options == nil {
-		return errors.WithStackTrace(fmt.Errorf("Options not configured for command"))
+		return errors.WithStackTrace(fmt.Errorf("options not configured for command"))
 	}
 
 	// If the output is captured, we use a different logging level

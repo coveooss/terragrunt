@@ -1,3 +1,5 @@
+//lint:file-ignore U1000 Ignore all unused code, it's generated
+
 package config
 
 import (
@@ -187,13 +189,11 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 		hook.normalize()
 		temp, currentErr := hook.run(args...)
 		currentErr = shell.FilterPlanError(currentErr, hook.options().TerraformCliArgs[0])
-		if currentErr != nil {
-			if _, ok := currentErr.(errors.PlanWithChanges); ok {
-				errs = append(errs, currentErr)
-			} else {
-				errOccurred = true
-				errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", hook.itemType(), hook.id(), currentErr))
-			}
+		if _, ok := currentErr.(errors.PlanWithChanges); ok {
+			errs = append(errs, currentErr)
+		} else if currentErr != nil {
+			errOccurred = true
+			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", hook.itemType(), hook.id(), currentErr))
 		}
 		hook.setState(currentErr)
 		result = append(result, temp)

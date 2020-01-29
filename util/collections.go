@@ -1,7 +1,6 @@
 package util
 
 import (
-	goErrors "errors"
 	"fmt"
 	"strings"
 )
@@ -104,7 +103,7 @@ func SplitEnvVariable(str string) (key, value string, err error) {
 	if len(variableSplit) == 2 {
 		key, value, err = strings.TrimSpace(variableSplit[0]), variableSplit[1], nil
 	} else {
-		err = goErrors.New(fmt.Sprintf("Invalid variable format %v, should be name=value", str))
+		err = fmt.Errorf("invalid variable format %v, should be name=value", str)
 	}
 	return
 }

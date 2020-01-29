@@ -100,11 +100,11 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	if opts.RefreshOutputDelay, err = time.ParseDuration(flushDelay); err != nil {
-		return nil, fmt.Errorf("Refresh delay must be expressed with unit (i.e. 45s)")
+		return nil, fmt.Errorf("refresh delay must be expressed with unit (i.e. 45s)")
 	}
 
 	if opts.NbWorkers, err = strconv.Atoi(nbWorkers); err != nil {
-		return nil, fmt.Errorf("Number of workers must be expressed as integer")
+		return nil, fmt.Errorf("number of workers must be expressed as integer")
 	}
 
 	opts.Logger.SetDefaultConsoleHookLevel(loggingLevel)
@@ -123,10 +123,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	// stripped from the cli args.
 	var cmd string
 	if len(args) > 0 {
-		cmd = args[0]
-		if strings.HasSuffix(cmd, multiModuleSuffix) {
-			cmd = strings.TrimSuffix(cmd, multiModuleSuffix)
-		}
+		cmd = strings.TrimSuffix(args[0], multiModuleSuffix)
 	}
 	opts.TerraformCliArgs, err = filterVarsAndVarFiles(cmd, opts, opts.TerraformCliArgs)
 

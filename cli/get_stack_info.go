@@ -83,9 +83,7 @@ func getStackThroughExecution(terragruntOptions *options.TerragruntOptions) (mod
 		defer mutex.Unlock()
 		dependencies := make([]string, 0)
 		if stackConfig.Dependencies != nil {
-			for _, dep := range stackConfig.Dependencies.Paths {
-				dependencies = append(dependencies, dep)
-			}
+			dependencies = append(dependencies, stackConfig.Dependencies.Paths...)
 		}
 		modules = append(modules, configstack.SimpleTerraformModule{Path: stackOptions.WorkingDir, Dependencies: dependencies})
 		return

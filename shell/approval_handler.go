@@ -36,7 +36,7 @@ func RunCommandToApprove(cmd *exec.Cmd, expectedStatements []string, completedSt
 		i++
 	}
 	if i == 30 {
-		return goErrors.New("Waited 30 seconds for input prompt. Did not get it.")
+		return goErrors.New("waited 30 seconds for input prompt. Did not get it")
 	}
 
 	if isDashAllQuery(terragruntOptions.Env[options.EnvArgs]) {
@@ -62,7 +62,7 @@ func RunCommandToApprove(cmd *exec.Cmd, expectedStatements []string, completedSt
 
 	err = cmd.Wait()
 	if err != nil {
-		return goErrors.New("Terraform did not complete successfully.")
+		return goErrors.New("terraform did not complete successfully")
 	}
 
 	return nil

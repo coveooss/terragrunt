@@ -13,6 +13,10 @@ test:
 full-test:
 	go test -v ./...
 
+static:
+	go get honnef.co/go/tools/cmd/staticcheck
+	staticcheck ./...
+
 codecov:
 	@sh ./scripts/coverage.sh --codecov
 
