@@ -71,7 +71,7 @@ It is possible to set conditions that must be met in order for a project to be e
 
 ```hcl
 run_conditions {
-  condition = {
+  run_if = {
     region = ["us-east-1", "us-west-2"] # region must match one of "us-east-1" or "us-west-2"
     another_var = "value"               # another_var must be equal to "value"
     my_map.my_var = "value"             # the `my_var` item of the `my_var` map must be equal to "value"
@@ -79,8 +79,7 @@ run_conditions {
 }
 
 run_conditions {
-  ignore_if_true = true
-  condition = {
+  ignore_if = {
     env = "qa"                          # do not run if env = "qa"
   }
 }
@@ -95,7 +94,7 @@ For more complex situation, it is possible to use variable interpolation as the 
 
 ```hcl
 run_conditions {
-  condition = {
+  run_if = {
     "${var.env}/${var.region}" = ["dev/us-east-1", "qa/us-west-2"]  # env/region must match one of "dev/us-east-1" or "qa/us-west-2"
   }
 }

@@ -14,22 +14,25 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type ExportVariables struct {
+// ExportVariablesConfig represents a path and format where variables known to Terragrunt should be exported
+type ExportVariablesConfig struct {
 	Path   string `hcl:"path"`
 	Format string `hcl:"format,optional"`
 }
 
-// SaveVariables saves variables in paths defined in the export_variables blocks
-func (conf *TerragruntConfig) SaveVariables(existingTerraformVariables map[string]*configs.Variable, folders ...string) (err error) {
+// ExportVariables saves variables to paths defined in the export_variables blocks
+func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[string]*configs.Variable, folders ...string) (err error) {
 	variables := conf.options.GetContext()
 
-	for _, exportStatement := range conf.ExportVariables {
+	acceptedFormats := []string{"yml", "yaml", "tfvars", "hcl", "json", "tf"}
+
+	for _, exportStatement := range conf.ExportVariablesConfigs {
 		exportStatement.Format = strings.TrimSpace(exportStatement.Format)
 		if exportStatement.Format == "" {
 			exportStatement.Format = strings.Trim(filepath.Ext(exportStatement.Path), ". ")
 		}
 		if exportStatement.Format == "" {
-			return fmt.Errorf("an export_variables statement must either define an export format or a significant export path file extension. Given path: %s, Given format: %s", exportStatement.Path, exportStatement.Format)
+			return fmt.Errorf("an export_variables statement must either define an export format or a file extension matching one of the export formats. Given path: %s, Given format: %s, Accepted formats: %v", exportStatement.Path, exportStatement.Format, acceptedFormats)
 		}
 
 		for _, folder := range folders {
@@ -46,7 +49,7 @@ func (conf *TerragruntConfig) SaveVariables(existingTerraformVariables map[strin
 			case "tf":
 				content, err = marshalTerraformVariables(existingTerraformVariables, variables.AsMap())
 			default:
-				err = fmt.Errorf("unknown export_variables format: %s", exportStatement.Format)
+				err = fmt.Errorf("unknown export_variables format: %s, Accepted formats: %v", exportStatement.Format, acceptedFormats)
 			}
 			if err != nil {
 				return
