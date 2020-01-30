@@ -22,7 +22,7 @@ func LoadDefaultValues(folder string) (importedVariables map[string]interface{},
 	var terraformConfig *configs.Module
 	parser := configs.NewParser(nil)
 	if terraformConfig, err = parser.LoadConfigDir(folder); err != nil && err.(hcl2.Diagnostics).HasErrors() {
-		return map[string]interface{}{}, nil, fmt.Errorf("caught error while trying to load default variable values: %v", err)
+		return map[string]interface{}{}, nil, fmt.Errorf("caught error while trying to load default variable values from %s: %v", folder, err)
 	}
 	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
 	return importedVariables, terraformConfig.Variables, err

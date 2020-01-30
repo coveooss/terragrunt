@@ -9,15 +9,15 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-type RunConditionsHclDefinition struct {
-	Condition    cty.Value `hcl:"condition,attr"`
-	IgnoreIfTrue bool      `hcl:"ignore_if_true,optional"`
+type runConditionsHclDefinition struct {
+	RunIf    cty.Value `hcl:"run_if,optional"`
+	IgnoreIf cty.Value `hcl:"ignore_if,optional"`
 }
 
 // RunConditions defines the rules that are evaluated in order to determine
 type RunConditions struct {
-	Allows []Condition `hcl:"run_if,block"`
-	Denies []Condition `hcl:"ignore_if,block"`
+	Allows []Condition
+	Denies []Condition
 }
 
 func (c RunConditions) String() (result string) {
