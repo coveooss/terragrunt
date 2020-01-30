@@ -20,6 +20,7 @@ import (
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/hashicorp/terraform/configs"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -330,7 +331,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return err
 	}
 
-	useTempFolder := hasSourceURL || len(conf.ImportFiles) > 0 || conf.ImportVariables.ShouldCreateVariablesFile()
+	useTempFolder := hasSourceURL || len(conf.ImportFiles)+len(conf.ExportVariablesConfigs) > 0
 	if useTempFolder {
 		// If there are import files, we force the usage of a temp directory.
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {
@@ -338,8 +339,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	importedVariables, err := conf.ImportVariables.Import()
-	if stopOnError(err) {
+	if err = conf.ImportVariables.Import(); stopOnError(err) {
 		return
 	}
 
@@ -383,7 +383,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Retrieve the default variables from the terraform files
-	if err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
+	var existingVariables map[string]*configs.Variable
+	if existingVariables, err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
 		return
 	}
 
@@ -445,10 +446,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	if err = conf.ImportVariables.Write(importedVariables, foldersWithTerraformFiles...); stopOnError(err) {
-		return
-	}
-
 	if err := conf.ImportFiles.Run(err, foldersWithTerraformFiles...); stopOnError(err) {
 		return
 	}
@@ -479,6 +476,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
+	// Export Terragrunt variables to the paths defined in export_variables blocks
+	if err = conf.ExportVariables(existingVariables, foldersWithTerraformFiles...); stopOnError(err) {
+		return
+	}
+
 	if err := downloadModules(terragruntOptions); stopOnError(err) {
 		return
 	}
@@ -492,9 +494,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.Logger.Warning("No terraform file found, skipping folder")
 		return nil
 	}
-
-	// Save all variable files requested in the terragrunt config
-	terragruntOptions.SaveVariables()
 
 	// Set the temporary script folder as the first item of the PATH
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])

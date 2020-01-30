@@ -4,8 +4,6 @@ import_variables "test2" {
   ]
 
   nested_under = ["nested1"]
-
-  output_variables_file = "test.tf"
 }
 
 import_variables "test" {
@@ -14,6 +12,8 @@ import_variables "test" {
   ]
 
   nested_under = ["nested2"]
+}
 
-  output_variables_file = "test.tf"
+export_variables {
+  path = "test.tf"
 }

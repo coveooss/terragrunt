@@ -1,15 +1,17 @@
 import_variables "test2" {
   vars = [
-    "hello=123",
+    "not_overwritten=stay the same",
+    "value_set_in_file",
   ]
-
-  output_variables_file = "test.tf"
 }
 
+// Variables defined in files have a lower priority than those defined explicitely
 import_variables "test" {
   optional_var_files = [
     "vars.json",
   ]
+}
 
-  output_variables_file = "test.tf"
+export_variables {
+  path = "test.tf"
 }

@@ -1,3 +1,4 @@
 {
-    "hello": 456
+    "not_overwritten": "Ignored different value",
+    "value_set_in_file": "Cool value, sis"
 }

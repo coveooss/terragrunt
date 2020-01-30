@@ -6,6 +6,8 @@ import_variables "test" {
   optional_var_files = [
     "not-exist.json",
   ]
+}
 
-  output_variables_file = "test.tf"
+export_variables {
+  path = "test.tf"
 }
