@@ -331,7 +331,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return err
 	}
 
-	useTempFolder := hasSourceURL || len(conf.ImportFiles)+len(conf.ExportVariables) > 0
+	useTempFolder := hasSourceURL || len(conf.ImportFiles)+len(conf.ExportVariablesConfigs) > 0
 	if useTempFolder {
 		// If there are import files, we force the usage of a temp directory.
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); stopOnError(err) {
@@ -476,8 +476,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	// Save all variable files requested in the terragrunt config
-	if err = conf.SaveVariables(existingVariables, foldersWithTerraformFiles...); stopOnError(err) {
+	// Export Terragrunt variables to the paths defined in export_variables blocks
+	if err = conf.ExportVariables(existingVariables, foldersWithTerraformFiles...); stopOnError(err) {
 		return
 	}
 
