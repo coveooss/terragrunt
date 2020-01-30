@@ -19,17 +19,17 @@ import (
 // the current execution. Variables could be defined either by loading files (required or optional)
 // or defining vairables directly. It is also possible to define global environment variables.
 type ImportVariables struct {
-	TerragruntExtensionBase `hcl:",squash"`
+	TerragruntExtensionBase `hcl:",remain"`
 
-	Vars             []string          `hcl:"vars"`
-	RequiredVarFiles []string          `hcl:"required_var_files"`
-	OptionalVarFiles []string          `hcl:"optional_var_files"`
-	Sources          []string          `hcl:"sources"`
-	NestedObjects    []string          `hcl:"nested_under"`
-	TFVariablesFile  string            `hcl:"output_variables_file"`
+	Vars             []string          `hcl:"vars,optional"`
+	RequiredVarFiles []string          `hcl:"required_var_files,optional"`
+	OptionalVarFiles []string          `hcl:"optional_var_files,optional"`
+	Sources          []string          `hcl:"sources,optional"`
+	NestedObjects    []string          `hcl:"nested_under,optional"`
+	TFVariablesFile  string            `hcl:"output_variables_file,optional"`
 	FlattenLevels    *int              `hcl:"flatten_levels"`
-	EnvVars          map[string]string `hcl:"env_vars"`
-	OnCommands       []string          `hcl:"on_commands"`
+	EnvVars          map[string]string `hcl:"env_vars,optional"`
+	OnCommands       []string          `hcl:"on_commands,optional"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -68,9 +68,7 @@ func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables
 }
 
 func (item *ImportVariables) loadVariables(currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
-	c := item.config()
 	for _, nested := range item.NestedObjects {
-		c.substitute(&nested)
 		imported := newVariables
 		if nested != "" {
 			imported = map[string]interface{}{nested: imported}
@@ -83,13 +81,6 @@ func (item *ImportVariables) loadVariables(currentVariables map[string]interface
 		}
 	}
 	return nil, nil
-}
-
-func (item *ImportVariables) substituteVars() {
-	item.TerragruntExtensionBase.substituteVars()
-	c := item.config()
-	c.substitute(&item.TFVariablesFile)
-	c.substituteEnv(item.EnvVars)
 }
 
 // ----------------------- ImportVariablesList -----------------------
@@ -148,7 +139,6 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 		if len(item.Sources) > 0 {
 			folders = make([]string, 0, len(item.Sources))
 			for _, source := range item.Sources {
-				config.substitute(&source)
 				if source == "" {
 					source = terragruntOptions.WorkingDir
 				}
@@ -171,7 +161,6 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 		keyFunc := func(key string) string { return strings.Split(key, "=")[0] }
 		varList := util.RemoveDuplicatesFromList(item.Vars, true, keyFunc)
 		for _, varDef := range varList {
-			config.substitute(&varDef)
 			var (
 				key   string
 				value interface{}
@@ -197,8 +186,6 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 
 		// Process RequiredVarFiles
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.RequiredVarFiles) {
-			config.substitute(&pattern)
-
 			files := config.globFiles(pattern, true, folders...)
 			if len(files) == 0 {
 				return nil, fmt.Errorf("%s: No file matches %s", item.name(), pattern)
@@ -212,8 +199,6 @@ func (list ImportVariablesList) Import() (variablesFiles map[string]map[string]i
 
 		// Processes OptionalVarFiles
 		for _, pattern := range util.RemoveDuplicatesFromListKeepLast(item.OptionalVarFiles) {
-			config.substitute(&pattern)
-
 			for _, file := range config.globFiles(pattern, true, folders...) {
 				if util.FileExists(file) {
 					if variablesFiles[item.TFVariablesFile], err = item.loadVariablesFromFile(file, variablesFiles[item.TFVariablesFile]); err != nil {

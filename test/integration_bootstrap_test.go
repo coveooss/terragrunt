@@ -26,7 +26,7 @@ func TestTerragruntBootstrap(t *testing.T) {
 		{
 			name:           "Simple bootstrap (adding hooks)",
 			project:        "fixture-bootstrap/simple",
-			bootstrap:      []string{absoluteTestPath + "/simple/a.tfvars", absoluteTestPath + "/simple/b.tfvars"},
+			bootstrap:      []string{absoluteTestPath + "/simple/a.hcl", absoluteTestPath + "/simple/b.hcl"},
 			expectedOutput: "applyHook", // This is output by the hook
 		},
 		{
@@ -45,13 +45,13 @@ func TestTerragruntBootstrap(t *testing.T) {
 			name:           "Complex project with a bootstrap that defines the Terraform source",
 			project:        "fixture-bootstrap/refer-to-other-source",
 			terragruntPath: "/terragrunt_files/my_project",
-			bootstrap:      []string{absoluteTestPath + "/_external_dir/refer-to-other-source.tfvars"},
+			bootstrap:      []string{absoluteTestPath + "/_external_dir/refer-to-other-source.hcl"},
 			expectedOutput: "test output",
 		},
 		{
 			name:           "Test gotemplating in a template file",
 			project:        "fixture-bootstrap/templating-in-bootstrap",
-			bootstrap:      []string{absoluteTestPath + "/_external_dir/templating-in-bootstrap.tfvars"},
+			bootstrap:      []string{absoluteTestPath + "/_external_dir/templating-in-bootstrap.hcl"},
 			expectedOutput: "test variable", // This is output by the hook
 		},
 		{

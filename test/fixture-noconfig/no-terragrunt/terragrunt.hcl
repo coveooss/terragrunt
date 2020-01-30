@@ -1,1 +1,4 @@
-no_terragrunt = 0
+
+inputs = {
+  no_terragrunt = 0
+}

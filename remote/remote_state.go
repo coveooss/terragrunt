@@ -12,12 +12,15 @@ import (
 	"github.com/gruntwork-io/terragrunt/shell"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/sirupsen/logrus"
+	"github.com/zclconf/go-cty/cty"
 )
 
 // State is the configuration for Terraform remote state
 type State struct {
-	Backend string                 `hcl:"backend"`
-	Config  map[string]interface{} `hcl:"config"`
+	Backend string `hcl:"backend,optional"`
+	Config  map[string]interface{}
+
+	ConfigHclDefinition cty.Value `hcl:"config,optional"`
 }
 
 func (remoteState *State) String() string {
@@ -33,6 +36,12 @@ var remoteStateInitializers = map[string]remoteStateInitializer{
 
 // Validate that the remote state is configured correctly
 func (remoteState *State) Validate() error {
+	if !remoteState.ConfigHclDefinition.IsNull() {
+		if err := util.FromCtyValue(remoteState.ConfigHclDefinition, &remoteState.Config); err != nil {
+			return err
+		}
+	}
+
 	if remoteState.Backend == "" {
 		return errors.WithStackTrace(ErrBackendMissing)
 	}

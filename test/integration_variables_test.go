@@ -69,10 +69,6 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: []string{"example = 123"},
 		},
 		{
-			project:        "fixture-variables/substitute",
-			expectedOutput: []string{"example = hello-hello2-hello2 again"},
-		},
-		{
 			project:        "fixture-variables/nested",
 			expectedOutput: []string{"example = 123-456"},
 		},

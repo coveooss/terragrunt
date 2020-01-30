@@ -99,9 +99,6 @@ type TerragruntOptions struct {
 	// The list of files (should be only one) where to save files if save_variables() has been invoked by the user
 	deferredSaveList map[string]bool
 
-	// Represent the raw terragrunt config variable
-	TerragruntRawConfig collections.IDictionary
-
 	// ApplyTemplate configures whether or not go template should be applied on terraform (.tf and .tfvars) file
 	ApplyTemplate bool
 
@@ -254,32 +251,17 @@ func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (
 	return vars, err
 }
 
-// ImportVariables load variables from the content, source indicates the path from where the content has been loaded
-func (terragruntOptions *TerragruntOptions) ImportVariables(content string, source string, origin VariableSource, context ...interface{}) ([]hcl.Dictionary, interface{}, error) {
-	vars, err := util.LoadVariablesFromSource(content, source, terragruntOptions.WorkingDir, terragruntOptions.ApplyTemplate, context...)
-	if err != nil {
-		return nil, nil, err
-	}
-	results, terragrunt := terragruntOptions.ImportVariablesMap(vars, origin)
-	return results, terragrunt, nil
-}
-
 // ImportVariablesMap adds the supplied variables to the to the TerragruntOptions object
-func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (result []hcl.Dictionary, terragrunt interface{}) {
+func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (result []hcl.Dictionary) {
 	result = make([]hcl.Dictionary, SetVariableResultCount)
 	for i := range result {
 		result[i] = make(hcl.Dictionary)
 	}
 
 	for key, value := range vars {
-		if key == "terragrunt" {
-			// We do not import the terragrunt variable, but we return it
-			terragrunt = value
-			continue
-		}
 		result[terragruntOptions.SetVariable(key, value, origin)][key] = value
 	}
-	return result, terragrunt
+	return result
 }
 
 // AddDeferredSaveVariables - Add a path where to save the variable list

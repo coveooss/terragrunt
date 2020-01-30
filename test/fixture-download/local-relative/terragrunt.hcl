@@ -1,7 +1,6 @@
-name = "World"
-
-terragrunt = {
-  terraform {
-    source = "..//relative"
-  }
+terraform {
+  source = "..//relative"
+}
+inputs = {
+  name = "World"
 }

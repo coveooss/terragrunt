@@ -12,7 +12,7 @@ import (
 // ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
 // and to exit the command on a CompletedStatement
 type ApprovalConfig struct {
-	TerragruntExtensionBase `hcl:",squash"`
+	TerragruntExtensionBase `hcl:",remain"`
 
 	Commands            []string `hcl:"commands"`
 	ExpectStatements    []string `hcl:"expect_statements"`

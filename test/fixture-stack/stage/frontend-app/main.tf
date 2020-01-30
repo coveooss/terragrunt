@@ -17,28 +17,28 @@ variable "terraform_remote_state_s3_bucket" {
 
 data "terraform_remote_state" "vpc" {
   backend = "s3"
-  config {
+  config = {
     region = "us-west-2"
     bucket = "${var.terraform_remote_state_s3_bucket}"
-    key = "stage/vpc/terraform.tfstate"
+    key    = "stage/vpc/terraform.tfstate"
   }
 }
 
 data "terraform_remote_state" "backend_app" {
   backend = "s3"
-  config {
+  config = {
     region = "us-west-2"
     bucket = "${var.terraform_remote_state_s3_bucket}"
-    key = "stage/backend-app/terraform.tfstate"
+    key    = "stage/backend-app/terraform.tfstate"
   }
 }
 
 
 data "terraform_remote_state" "bastion_host" {
   backend = "s3"
-  config {
+  config = {
     region = "us-west-2"
     bucket = "${var.terraform_remote_state_s3_bucket}"
-    key = "mgmt/bastion-host/terraform.tfstate"
+    key    = "mgmt/bastion-host/terraform.tfstate"
   }
 }

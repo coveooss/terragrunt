@@ -17,19 +17,19 @@ import (
 
 // Hook is a definition of user command that should be executed as part of the terragrunt process
 type Hook struct {
-	TerragruntExtensionBase `hcl:",squash"`
+	TerragruntExtensionBase `hcl:",remain"`
 
 	Command           string            `hcl:"command"`
-	Arguments         []string          `hcl:"arguments"`
-	ExpandArgs        bool              `hcl:"expand_args"`
-	OnCommands        []string          `hcl:"on_commands"`
-	IgnoreError       bool              `hcl:"ignore_error"`
-	BeforeImports     bool              `hcl:"before_imports"`
-	AfterInitState    bool              `hcl:"after_init_state"`
-	Order             int               `hcl:"order"`
-	ShellCommand      bool              `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
-	EnvVars           map[string]string `hcl:"env_vars"`
-	PersistentEnvVars map[string]string `hcl:"persistent_env_vars"`
+	Arguments         []string          `hcl:"arguments,optional"`
+	ExpandArgs        bool              `hcl:"expand_args,optional"`
+	OnCommands        []string          `hcl:"on_commands,optional"`
+	IgnoreError       bool              `hcl:"ignore_error,optional"`
+	BeforeImports     bool              `hcl:"before_imports,optional"`
+	AfterInitState    bool              `hcl:"after_init_state,optional"`
+	Order             int               `hcl:"order,optional"`
+	ShellCommand      bool              `hcl:"shell_command,optional"` // This indicates that the command is a shell command and output should not be redirected
+	EnvVars           map[string]string `hcl:"env_vars,optional"`
+	PersistentEnvVars map[string]string `hcl:"persistent_env_vars,optional"`
 }
 
 func (hook Hook) itemType() (result string) { return HookList{}.argName() }
@@ -52,17 +52,6 @@ func (hook Hook) help() (result string) {
 	}
 	result += fmt.Sprintf("\n%s\n", strings.Join(attributes, ", "))
 	return
-}
-
-func (hook *Hook) substituteVars() {
-	hook.TerragruntExtensionBase.substituteVars()
-	c := hook.config()
-	c.substituteEnv(hook.EnvVars)
-	c.substituteEnv(hook.PersistentEnvVars)
-	c.substitute(&hook.Command)
-	for i, arg := range hook.Arguments {
-		hook.Arguments[i] = *c.substitute(&arg)
-	}
 }
 
 func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {

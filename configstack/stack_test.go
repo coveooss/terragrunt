@@ -63,7 +63,7 @@ func createTempFolder(t *testing.T) string {
 
 // Create a dummy Terragrunt config file at each of the given paths
 func writeDummyTerragruntConfigs(t *testing.T, tmpFolder string, paths []string) {
-	contents := []byte("terragrunt = {\nterraform {\nsource = \"test\"\n}\n}")
+	contents := []byte("terraform {\nsource = \"test\"\n}")
 	for _, path := range paths {
 		absPath := util.JoinPath(tmpFolder, path)
 

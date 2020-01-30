@@ -1,32 +1,30 @@
-terragrunt = {
-  terraform = {
-    extra_arguments "test" {
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh",
-      ]
-    }
+terraform {
+  extra_arguments "test" {
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh",
+    ]
+  }
 
-    extra_arguments "var-files" {
-      required_var_files = [
-        "extra.tfvars",
-      ]
+  extra_arguments "var-files" {
+    required_var_files = [
+      "extra.tfvars",
+    ]
 
-      optional_var_files = [
-        "${get_tfvars_dir()}/${get_env("TF_VAR_env", "dev")}.tfvars",
-        "${get_tfvars_dir()}/${get_env("TF_VAR_region", "us-east-1")}.tfvars",
-      ]
+    optional_var_files = [
+      "${get_tfvars_dir()}/${get_env("TF_VAR_env", "dev")}.tfvars",
+      "${get_tfvars_dir()}/${get_env("TF_VAR_region", "us-east-1")}.tfvars",
+    ]
 
-      commands = [
-        "apply",
-        "plan",
-        "import",
-        "push",
-        "refresh",
-      ]
-    }
+    commands = [
+      "apply",
+      "plan",
+      "import",
+      "push",
+      "refresh",
+    ]
   }
 }

@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/terraform/configs"
@@ -13,7 +14,6 @@ import (
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/yaml"
 	"github.com/sirupsen/logrus"
-	ctyJson "github.com/zclconf/go-cty/cty/json"
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
@@ -28,9 +28,11 @@ func LoadDefaultValues(folder string) (map[string]interface{}, error) {
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
 func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...interface{}) (map[string]interface{}, error) {
-	parser := configs.NewParser(nil)
-	if terraformConfig, err := parser.LoadConfigFile(path); err == nil {
-		return getTerraformVariableValues(terraformConfig, false)
+	if filepath.Ext(path) == ".tf" {
+		parser := configs.NewParser(nil)
+		if terraformConfig, err := parser.LoadConfigFile(path); err == nil {
+			return getTerraformVariableValues(terraformConfig, false)
+		}
 	}
 
 	bytes, err := ioutil.ReadFile(path)
@@ -118,12 +120,7 @@ func getTerraformVariableValues(terraformConfig interface{}, includeNil bool) (m
 	for _, variable := range variables {
 		if includeNil || !variable.Default.IsNull() {
 			var value interface{}
-			marshallableVariable := ctyJson.SimpleJSONValue{Value: variable.Default}
-			marshalledVariable, err := marshallableVariable.MarshalJSON()
-			if err != nil {
-				return nil, err
-			}
-			if err := json.Unmarshal(marshalledVariable, &value); err != nil {
+			if err := FromCtyValue(variable.Default, &value); err != nil {
 				return nil, err
 			}
 			variablesMap[variable.Name] = value

@@ -19,18 +19,18 @@ import (
 
 // ExtraCommand is a definition of user extra command that should be executed in place of terraform
 type ExtraCommand struct {
-	TerragruntExtensionBase `hcl:",squash"`
+	TerragruntExtensionBase `hcl:",remain"`
 
-	Commands     []string          `hcl:"commands"`
-	Aliases      []string          `hcl:"aliases"`
-	Arguments    []string          `hcl:"arguments"`
-	ExpandArgs   *bool             `hcl:"expand_args"`
-	UseState     *bool             `hcl:"use_state"`
-	ActAs        string            `hcl:"act_as"`
-	VersionArg   string            `hcl:"version"`
-	ShellCommand bool              `hcl:"shell_command"` // This indicates that the command is a shell command and output should not be redirected
-	IgnoreError  bool              `hcl:"ignore_error"`
-	EnvVars      map[string]string `hcl:"env_vars"`
+	Commands     []string          `hcl:"commands,optional"`
+	Aliases      []string          `hcl:"aliases,optional"`
+	Arguments    []string          `hcl:"arguments,optional"`
+	ExpandArgs   *bool             `hcl:"expand_args,optional"`
+	UseState     *bool             `hcl:"use_state,optional"`
+	ActAs        string            `hcl:"act_as,optional"`
+	VersionArg   string            `hcl:"version,optional"`
+	ShellCommand bool              `hcl:"shell_command,optional"` // This indicates that the command is a shell command and output should not be redirected
+	IgnoreError  bool              `hcl:"ignore_error,optional"`
+	EnvVars      map[string]string `hcl:"env_vars,optional"`
 }
 
 func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
@@ -53,23 +53,6 @@ func (item ExtraCommand) help() (result string) {
 	}
 
 	return result
-}
-
-func (item *ExtraCommand) substituteVars() {
-	item.TerragruntExtensionBase.substituteVars()
-	c := item.config()
-	c.substitute(&item.VersionArg)
-	c.substituteEnv(item.EnvVars)
-
-	for i, cmd := range item.Commands {
-		item.Commands[i] = *c.substitute(&cmd)
-	}
-	for i, alias := range item.Aliases {
-		item.Aliases[i] = *c.substitute(&alias)
-	}
-	for i, arg := range item.Arguments {
-		item.Arguments[i] = *c.substitute(&arg)
-	}
 }
 
 func (item *ExtraCommand) normalize() {

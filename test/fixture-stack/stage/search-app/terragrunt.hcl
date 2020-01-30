@@ -1,9 +1,7 @@
-terragrunt = {
-  include {
-    path = "${find_in_parent_folders()}"
-  }
+include {
+  path = "${find_in_parent_folders()}"
+}
 
-  dependencies {
-    paths = ["../vpc", "../redis"]
-  }
+dependencies {
+  paths = ["../vpc", "../redis"]
 }

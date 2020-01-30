@@ -1,9 +1,7 @@
-terragrunt = {
-  import_variables "test" {
-    vars = [
-      "my_variable=123",
-    ]
+import_variables "test" {
+  vars = [
+    "my_variable=123",
+  ]
 
-    output_variables_file = "test.tf"
-  }
+  output_variables_file = "test.tf"
 }

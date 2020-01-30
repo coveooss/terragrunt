@@ -343,8 +343,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return
 	}
 
-	conf.SubstituteAllVariables()
-
 	// Applying the extra arguments
 	if len(conf.ExtraArgs) > 0 {
 		commandLength := 1
@@ -365,16 +363,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			args = append(args, terragruntOptions.TerraformCliArgs[commandLength:]...)
 		}
 		terragruntOptions.TerraformCliArgs = args
-
-		conf.SubstituteAllVariables()
 	}
 
 	// Determinate if the project should be ignored
 	if !conf.RunConditions.ShouldRun() {
 		return nil
 	}
-
-	conf.SubstituteAllVariables()
 
 	// Executing the pre-hook commands that should be ran before the ImportFiles
 	if _, err = conf.PreHooks.Filter(config.BeforeImports).Run(err); stopOnError(err) {
@@ -394,7 +388,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	terragruntOptions.IgnoreRemainingInterpolation = false
-	conf.SubstituteAllVariables()
 
 	if actualCommand.Command == "get-versions" {
 		PrintVersions(terragruntOptions, conf)
@@ -407,12 +400,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Check if we must configure environment variables to assume a distinct role when applying external commands.
-	if roles, ok := conf.AssumeRole.([]string); ok {
+	if conf.AssumeRole != nil {
 		var roleAssumed bool
-		for i := range roles {
-			role := strings.TrimSpace(roles[i])
+		for i := range conf.AssumeRole {
+			role := strings.TrimSpace(conf.AssumeRole[i])
 			if role == "" {
-				listOfRoles := strings.Join(roles[:i], ", ")
+				listOfRoles := strings.Join(conf.AssumeRole[:i], ", ")
 				if listOfRoles != "" {
 					listOfRoles = " from " + listOfRoles
 				}
@@ -427,7 +420,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			}
 		}
 		if !roleAssumed {
-			return fmt.Errorf("unable to assume any of the roles: %s", strings.Join(roles, " "))
+			return fmt.Errorf("unable to assume any of the roles: %s", strings.Join(conf.AssumeRole, " "))
 		}
 	}
 
