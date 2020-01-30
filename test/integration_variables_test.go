@@ -106,6 +106,11 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: []string{"example = 123"},
 			args:           "--terragrunt-apply-template",
 		},
+		{
+			project:        "fixture-variables/multiple-nested",
+			expectedOutput: []string{"flatten = 123", "not-flatten = 123"},
+			args:           "--terragrunt-apply-template",
+		},
 	}
 	for _, test := range tests {
 		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
