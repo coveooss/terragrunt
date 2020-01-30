@@ -359,7 +359,7 @@ func runTerragruntRedirectOutput(t *testing.T, command string, writer io.Writer,
 		if err, captured := errwriter.(*bytes.Buffer); captured {
 			message = "\n" + err.String()
 		}
-		t.Fatalf("Failed to run Terragrunt command '%s' due to error: %v%s", command, err, message)
+		t.Errorf("Failed to run Terragrunt command '%s' due to error: %v%s", command, err, message)
 	}
 }
 

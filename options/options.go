@@ -215,7 +215,7 @@ func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (
 	return vars, err
 }
 
-// ImportVariablesMap adds the supplied variables to the to the TerragruntOptions object
+// ImportVariablesMap adds the supplied variables to the TerragruntOptions object
 func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (result []hcl.Dictionary) {
 	result = make([]hcl.Dictionary, SetVariableResultCount)
 	for i := range result {
