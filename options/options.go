@@ -264,7 +264,7 @@ func (terragruntOptions *TerragruntOptions) ImportVariables(content string, sour
 	return results, terragrunt, nil
 }
 
-// ImportVariablesMap adds the supplied variables to the to the TerragruntOptions object
+// ImportVariablesMap adds the supplied variables to the TerragruntOptions object
 func (terragruntOptions *TerragruntOptions) ImportVariablesMap(vars map[string]interface{}, origin VariableSource) (result []hcl.Dictionary, terragrunt interface{}) {
 	result = make([]hcl.Dictionary, SetVariableResultCount)
 	for i := range result {

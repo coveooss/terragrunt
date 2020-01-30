@@ -65,8 +65,9 @@ func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables
 	return item.loadVariables(currentVariables, vars, options.VarFile)
 }
 
-func (item *ImportVariables) loadVariables(currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (map[string]interface{}, error) {
+func (item *ImportVariables) loadVariables(currentVariables map[string]interface{}, newVariables map[string]interface{}, source options.VariableSource) (result map[string]interface{}, err error) {
 	c := item.config()
+	result = currentVariables
 	for _, nested := range item.NestedObjects {
 		c.substitute(&nested)
 		imported := newVariables
@@ -74,13 +75,19 @@ func (item *ImportVariables) loadVariables(currentVariables map[string]interface
 			imported = map[string]interface{}{nested: imported}
 		}
 		item.options().ImportVariablesMap(imported, source)
-		flattenedVariables := flatten(imported, "", *item.FlattenLevels)
+		level := *item.FlattenLevels
+		if level > 0 && len(nested) > 1 && nested == "" {
+			// If we have an empty nested value and it is not alone, we must reduce the flatted level by on for this case
+			// i.e. nested_under = ["main", "local", ""]
+			level--
+		}
+		flattenedVariables := flatten(imported, "", level)
 		item.options().ImportVariablesMap(flattenedVariables, source)
-		if currentVariables != nil {
-			return utils.MergeDictionaries(flattenedVariables, currentVariables)
+		if result != nil {
+			result, err = utils.MergeDictionaries(flattenedVariables, result)
 		}
 	}
-	return nil, nil
+	return
 }
 
 func (item *ImportVariables) substituteVars() {
