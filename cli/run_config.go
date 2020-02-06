@@ -4,19 +4,18 @@ import (
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
-	"github.com/hashicorp/terraform/configs"
 )
 
-func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder string) (map[string]*configs.Variable, error) {
+func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder string) error {
 	// Retrieve the default variables from the terraform files
-	importedVariables, allVariables, err := util.LoadDefaultValues(folder)
+	importedVariables, _, err := util.LoadDefaultValues(folder)
 	if err != nil {
-		return allVariables, err
+		return err
 	}
 	for key, value := range importedVariables {
 		terragruntOptions.SetVariable(key, value, options.Default)
 	}
-	return allVariables, nil
+	return nil
 }
 
 func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, roleArn string, assumeDuration *int) error {

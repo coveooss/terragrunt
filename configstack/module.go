@@ -116,7 +116,7 @@ func resolveTerraformModule(terragruntConfigPath string, terragruntOptions *opti
 	}
 
 	opts := terragruntOptions.Clone(terragruntConfigPath)
-	terragruntConfig, err := config.ParseConfigFile(opts, config.IncludeConfig{Path: terragruntConfigPath})
+	_, terragruntConfig, err := config.ParseConfigFile(opts, config.IncludeConfig{Path: terragruntConfigPath})
 	if err != nil {
 		return nil, err
 	}

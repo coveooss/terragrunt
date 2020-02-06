@@ -57,10 +57,6 @@ type resolveContext struct {
 	options *options.TerragruntOptions
 }
 
-func (context *resolveContext) ErrorOnUndefined() bool {
-	return !context.options.IgnoreRemainingInterpolation
-}
-
 type helperFunction struct {
 	function   func(parameters ...string) (interface{}, error)
 	returnType cty.Type

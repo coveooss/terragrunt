@@ -223,7 +223,6 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 // runCommand runs one or many terraform commands based on the type of
 // terragrunt command
 func runCommand(command string, terragruntOptions *options.TerragruntOptions) (finalEff error) {
-	terragruntOptions.IgnoreRemainingInterpolation = true
 	if err := setRoleEnvironmentVariables(terragruntOptions, "", nil); err != nil {
 		return err
 	}
@@ -271,7 +270,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return fmt.Errorf("folder ignored because %s is present", options.IgnoreFileNonInteractive)
 	}
 
-	terragruntOptions.IgnoreRemainingInterpolation = true
 	conf, err := config.ReadTerragruntConfig(terragruntOptions)
 	if err != nil {
 		return err
@@ -383,12 +381,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Retrieve the default variables from the terraform files
-	var existingVariables map[string]*configs.Variable
-	if existingVariables, err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
+	if err = importDefaultVariables(terragruntOptions, terragruntOptions.WorkingDir); stopOnError(err) {
 		return
 	}
-
-	terragruntOptions.IgnoreRemainingInterpolation = false
 
 	if actualCommand.Command == "get-versions" {
 		PrintVersions(terragruntOptions, conf)
@@ -458,7 +453,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return
 		}
 		t.SetOption(template.Overwrite, true)
-		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf")
+		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf", "*.tf.gt", "*.tf.template")
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
 		files = util.FilterList(files, func(item string) bool {
@@ -477,8 +472,15 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Export Terragrunt variables to the paths defined in export_variables blocks
-	if err = conf.ExportVariables(existingVariables, foldersWithTerraformFiles...); stopOnError(err) {
-		return
+	for _, folder := range foldersWithTerraformFiles {
+		var existingVariables map[string]*configs.Variable
+		_, existingVariables, err = util.LoadDefaultValues(folder)
+		if stopOnError(err) {
+			return err
+		}
+		if err = conf.ExportVariables(existingVariables, folder); stopOnError(err) {
+			return
+		}
 	}
 
 	if err := downloadModules(terragruntOptions); stopOnError(err) {

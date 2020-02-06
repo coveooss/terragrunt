@@ -83,10 +83,6 @@ type TerragruntOptions struct {
 	// in distinct folder
 	UniquenessCriteria string
 
-	// If set, this indicate that remaining interpolation are not considered as an error during the configuration
-	// resolving process. This allows further resolution of variables that are not initially defined.
-	IgnoreRemainingInterpolation bool
-
 	// Indicates the maximum wait time before flushing the output of a background job
 	RefreshOutputDelay time.Duration
 
