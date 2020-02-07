@@ -322,8 +322,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	config = &TerragruntConfig{options: terragruntOptions}
 	if include.isIncludedBy == nil && !include.isBootstrap {
 		if err = config.loadBootConfigs(terragruntOptions, &IncludeConfig{isBootstrap: true}, terragruntOptions.PreBootConfigurationPaths); err != nil {
-			terragruntOptions.Logger.Debugf("Error parsing preboot configuration files: %v", err)
-			return
+			return nil, fmt.Errorf("Error reading preboot config file: %w", err)
 		}
 	}
 
