@@ -76,7 +76,7 @@ func (item *ImportVariables) loadVariables(currentVariables map[string]interface
 		}
 		item.options().ImportVariablesMap(imported, source)
 		level := *item.FlattenLevels
-		if level > 0 && len(nested) > 1 && nested == "" {
+		if level > 0 && len(item.NestedObjects) > 1 && nested == "" {
 			// If we have an empty nested value and it is not alone, we must reduce the flatted level by on for this case
 			// i.e. nested_under = ["main", "local", ""]
 			level--
