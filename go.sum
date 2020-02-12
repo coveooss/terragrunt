@@ -134,6 +134,8 @@ github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
 github.com/coveooss/gotemplate/v3 v3.3.8 h1:kGYe+GQ4AxPysFC/zFsbsR7rS8U3uvRc3WeEN3Kze0k=
 github.com/coveooss/gotemplate/v3 v3.3.8/go.mod h1:BRrOYMAcOZnTsUs+COpo07QlYGIHdMCQSehcgn4h3eQ=
+github.com/coveooss/gotemplate/v3 v3.3.9 h1:QV/BUeJOIhi6YQl6U5KBd8mMyWM9awWxhgurSXToqG8=
+github.com/coveooss/gotemplate/v3 v3.3.9/go.mod h1:BRrOYMAcOZnTsUs+COpo07QlYGIHdMCQSehcgn4h3eQ=
 github.com/coveooss/multilogger v0.4.5 h1:Pwhz7CGs4VjcqL5orDWNmL1y63JbE1jpIqanglXCpVE=
 github.com/coveooss/multilogger v0.4.5/go.mod h1:A2c+mJI+0nxjg7vnEMg00sQFGwHXqhHP73zYdYIbieQ=
 github.com/coveord/hcl/v2 v2.3.1 h1:L7bNsDlG6F2H5MYmDIhEompHTHqPgNXuSJMjUtKjFWA=
