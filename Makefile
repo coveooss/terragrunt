@@ -16,6 +16,7 @@ full-test:
 static:
 	go get honnef.co/go/tools/cmd/staticcheck
 	staticcheck ./...
+	go mod tidy
 
 codecov:
 	@sh ./scripts/coverage.sh --codecov
