@@ -4,7 +4,7 @@ terraform {
 
 # Create an arbitrary local resource
 data "template_file" "text" {
-  template = "[I am a search-app template. Data from my dependencies: vpc = ${data.terraform_remote_state.vpc.text}, redis = ${data.terraform_remote_state.redis.text}, example_module = ${module.example_module.text}]"
+  template = "[I am a search-app template. Data from my dependencies: vpc = ${data.terraform_remote_state.vpc.outputs.text}, redis = ${data.terraform_remote_state.redis.outputs.text}, example_module = ${module.example_module.text}]"
 }
 
 module "example_module" {
