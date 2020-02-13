@@ -149,9 +149,12 @@ func (terragruntOptions TerragruntOptions) Clone(terragruntConfigPath string) *T
 	newOptions := terragruntOptions
 	newOptions.TerragruntConfigPath = terragruntConfigPath
 	newOptions.WorkingDir = filepath.Dir(terragruntConfigPath)
-	newOptions.Logger = terragruntOptions.Logger.Child(util.GetPathRelativeToWorkingDir(newOptions.WorkingDir))
 	newOptions.Env = make(map[string]string, len(terragruntOptions.Env))
 	newOptions.Variables = make(map[string]Variable, len(terragruntOptions.Variables))
+
+	if newLoggerName := util.GetPathRelativeToWorkingDir(newOptions.WorkingDir); newLoggerName != "." {
+		newOptions.Logger = terragruntOptions.Logger.Child(util.GetPathRelativeToWorkingDir(newOptions.WorkingDir))
+	}
 
 	// We create a distinct map for the environment variables
 	for key, value := range terragruntOptions.Env {
