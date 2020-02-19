@@ -28,6 +28,7 @@ type ImportVariables struct {
 	FlattenLevels    *int              `hcl:"flatten_levels"`
 	EnvVars          map[string]string `hcl:"env_vars"`
 	OnCommands       []string          `hcl:"on_commands"`
+	NoTemplating     bool              `hcl:"no_templating_in_files"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -58,7 +59,7 @@ func (item *ImportVariables) normalize() {
 
 func (item *ImportVariables) loadVariablesFromFile(file string, currentVariables map[string]interface{}) (map[string]interface{}, error) {
 	item.logger().Debug("Importing ", file)
-	vars, err := item.options().LoadVariablesFromFile(file)
+	vars, err := item.options().LoadVariablesFromTemplateFile(file, !item.NoTemplating)
 	if err != nil {
 		return nil, err
 	}
