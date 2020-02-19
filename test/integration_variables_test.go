@@ -79,6 +79,17 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: []string{"nested = 123"},
 			args:           "--terragrunt-apply-template",
 		},
+		{
+			project:        "fixture-variables/templating-in-file",
+			expectedOutput: []string{"example = 123"},
+			args:           "--terragrunt-apply-template",
+		},
+		// This is the same as `templating-in-file`, however `no_templating_in_files` is passed to the `import_variables` statement, so the template is not resolved
+		{
+			project:        "fixture-variables/no-templating-in-file",
+			expectedOutput: []string{"example = @template"},
+			args:           "--terragrunt-apply-template",
+		},
 	}
 	for _, test := range tests {
 		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
