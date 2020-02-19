@@ -207,10 +207,16 @@ func (terragruntOptions TerragruntOptions) GetContext() (result collections.IDic
 
 // LoadVariablesFromFile loads variables from the file indicated by path
 func (terragruntOptions *TerragruntOptions) LoadVariablesFromFile(path string) (map[string]interface{}, error) {
+	return terragruntOptions.LoadVariablesFromTemplateFile(path, terragruntOptions.ApplyTemplate)
+}
+
+// LoadVariablesFromTemplateFile loads variables from the template file indicated by path.
+// If template is set to true, templating will be be applied on the file before reading it
+func (terragruntOptions *TerragruntOptions) LoadVariablesFromTemplateFile(path string, template bool) (map[string]interface{}, error) {
 	if !strings.Contains(path, "/") {
 		path = util.JoinPath(terragruntOptions.WorkingDir, path)
 	}
-	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, terragruntOptions.ApplyTemplate, terragruntOptions.GetContext())
+	vars, err := util.LoadVariablesFromFile(path, terragruntOptions.WorkingDir, template, terragruntOptions.GetContext())
 	return vars, err
 }
 

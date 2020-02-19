@@ -20,6 +20,7 @@ type ImportVariables struct {
 	Vars             []string          `hcl:"vars,optional"`
 	RequiredVarFiles []string          `hcl:"required_var_files,optional"`
 	OptionalVarFiles []string          `hcl:"optional_var_files,optional"`
+	NoTemplating     bool              `hcl:"no_templating_in_files,optional"`
 	Sources          []string          `hcl:"sources,optional"`
 	NestedObjects    []string          `hcl:"nested_under,optional"`
 	EnvVars          map[string]string `hcl:"env_vars,optional"`
@@ -50,7 +51,7 @@ func (item *ImportVariables) normalize() {
 
 func (item *ImportVariables) loadVariablesFromFile(file string) error {
 	item.logger().Debug("Importing ", file)
-	vars, err := item.options().LoadVariablesFromFile(file)
+	vars, err := item.options().LoadVariablesFromTemplateFile(file, !item.NoTemplating)
 	if err != nil {
 		return err
 	}
