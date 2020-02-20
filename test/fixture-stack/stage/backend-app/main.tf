@@ -4,7 +4,7 @@ terraform {
 
 # Create an arbitrary local resource
 data "template_file" "text" {
-  template = "[I am a backend-app template. Data from my dependencies: vpc = ${data.terraform_remote_state.vpc.text}, bastion-host = ${data.terraform_remote_state.bastion_host.text}, mysql = ${data.terraform_remote_state.mysql.text}, search-app = ${data.terraform_remote_state.search_app.text}]"
+  template = "[I am a backend-app template. Data from my dependencies: vpc = ${data.terraform_remote_state.vpc.outputs.text}, bastion-host = ${data.terraform_remote_state.bastion_host.outputs.text}, mysql = ${data.terraform_remote_state.mysql.outputs.text}, search-app = ${data.terraform_remote_state.search_app.outputs.text}]"
 }
 
 output "text" {

@@ -10,3 +10,11 @@ remote_state {
     dynamodb_table = "__FILL_IN_LOCK_TABLE_NAME__"
   }
 }
+
+inputs = {
+  terraform_remote_state_s3_bucket = "__FILL_IN_BUCKET_NAME__"
+}
+
+export_variables {
+  path = "terraform.tfvars"
+}
