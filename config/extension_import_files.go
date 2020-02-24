@@ -55,7 +55,7 @@ func (item ImportFiles) help() (result string) {
 	if item.Source != "" {
 		result += fmt.Sprintf("\nFrom %s:\n", item.Source)
 	} else {
-		result += fmt.Sprint("\nFile(s):\n")
+		result += "\nFile(s):\n"
 	}
 
 	target, _ := filepath.Rel(item.options().WorkingDir, item.Target)

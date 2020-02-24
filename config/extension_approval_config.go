@@ -26,9 +26,9 @@ func (item ApprovalConfig) help() (result string) {
 		result += fmt.Sprintf("\n%s\n", item.Description)
 	}
 	result += fmt.Sprintf("\nApplies on the following command(s): %s", strings.Join(item.Commands, ", "))
-	result += fmt.Sprintf("\nRuns the command")
+	result += "\nRuns the command"
 	result += fmt.Sprintf("\nWaits for input, these statements: %s", strings.Join(item.ExpectStatements, ", "))
-	result += fmt.Sprintf("\nContinues the command execution")
+	result += "\nContinues the command execution"
 	result += fmt.Sprintf("\nThen waits for completion, these statements: %s", strings.Join(item.CompletedStatements, ", "))
 	return
 }
