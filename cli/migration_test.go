@@ -14,7 +14,6 @@ import (
 func TestMigrateConfigurationFile(t *testing.T) {
 	t.Parallel()
 
-	type list = hcl.List
 	type vars = map[string]interface{}
 	tests := []struct {
 		name     string
