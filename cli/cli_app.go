@@ -182,6 +182,10 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
 
+	if cliContext.Args().First() == "0.12upgrade" {
+		return migrate(cliContext)
+	}
+
 	terragruntRunID = fmt.Sprint(xid.New())
 
 	os.Setenv(options.EnvCacheFolder, util.GetTempDownloadFolder("terragrunt-cache"))
