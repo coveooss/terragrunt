@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -74,6 +75,7 @@ func (context *resolveContext) getHelperFunctions() map[string]helperFunction {
 		"get_parent_dir":             helperFunction{function: context.getParentDir},
 		"get_parent_tfvars_dir":      helperFunction{function: context.getParentDir},
 		"get_aws_account_id":         helperFunction{function: context.getAWSAccountID},
+		"set_global_variable":        helperFunction{function: context.setGlobalVariable},
 		"get_terraform_commands_that_need_vars": helperFunction{
 			function:   func(...string) (interface{}, error) { return TerraformCommandWithVarFile, nil },
 			returnType: cty.List(cty.String),
@@ -293,6 +295,17 @@ func (context *resolveContext) getAWSAccountID(...string) (interface{}, error) {
 	}
 
 	return *identity.Account, nil
+}
+
+func (context *resolveContext) setGlobalVariable(args ...string) (interface{}, error) {
+	if args[0] == "" {
+		for key, value := range collections.AsDictionary(args[1]).AsMap() {
+			context.options.SetVariable(key, value, options.FunctionOverwrite)
+		}
+	} else {
+		context.options.SetVariable(args[0], args[1], options.FunctionOverwrite)
+	}
+	return nil, nil
 }
 
 // Convert the slice of cty values to a slice of strings. If any of the values in the given slice is not a string,

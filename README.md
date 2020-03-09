@@ -312,6 +312,15 @@ export_variables {
 }
 ```
 
+### set_global_variable
+
+`set_global_variable(key, value)` allows users to add/modify a global variable. Example:
+
+```hcl
+# @set_global_variable("Today", now().Weekday())                     // Used as Razor function
+# {{ set_global_variable "Tomorrow" (now.AddDate 0 0 1).Weekday }}   // Used as go template function
+```
+
 ## License
 
 This code is released under the MIT License. See [LICENSE.txt](LICENSE.txt).
