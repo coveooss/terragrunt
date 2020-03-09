@@ -400,6 +400,17 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 			return IgnoredVariable
 		}
 		status := NewVariable
+		if source > target.Source && target.Source == VarParameterExplicit {
+			// The user has redefined a variable passed as argument, so we have to replace it
+			args := terragruntOptions.TerraformCliArgs
+			for i := range args {
+				if args[i] == "-var" {
+					if argKey, _ := collections.Split2(args[i+1], "="); argKey == key {
+						args[i+1] = fmt.Sprintf("%s=%v", key, value)
+					}
+				}
+			}
+		}
 		if target.Source != UndefinedSource {
 			terragruntOptions.Logger.Debugf("Overwriting value for %s with %v", key, value)
 			status = IgnoredVariable
@@ -430,6 +441,7 @@ const (
 	VarParameter
 	Environment
 	VarParameterExplicit
+	FunctionOverwrite
 )
 
 //go:generate stringer -type=VariableSource -output generated_variable_source.go

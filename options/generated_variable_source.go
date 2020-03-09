@@ -16,11 +16,12 @@ func _() {
 	_ = x[VarParameter-5]
 	_ = x[Environment-6]
 	_ = x[VarParameterExplicit-7]
+	_ = x[FunctionOverwrite-8]
 }
 
-const _VariableSource_name = "UndefinedSourceDefaultConfigVarFileVarFileVarFileExplicitVarParameterEnvironmentVarParameterExplicit"
+const _VariableSource_name = "UndefinedSourceDefaultConfigVarFileVarFileVarFileExplicitVarParameterEnvironmentVarParameterExplicitFunctionOverwrite"
 
-var _VariableSource_index = [...]uint8{0, 15, 22, 35, 42, 57, 69, 80, 100}
+var _VariableSource_index = [...]uint8{0, 15, 22, 35, 42, 57, 69, 80, 100, 117}
 
 func (i VariableSource) String() string {
 	if i >= VariableSource(len(_VariableSource_index)-1) {
