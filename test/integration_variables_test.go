@@ -122,6 +122,11 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: []string{"example = @template"},
 			args:           "--terragrunt-apply-template",
 		},
+		{
+			project:        "fixture-variables/overridden-explicit-variable",
+			expectedOutput: []string{"example = us-west-2"},
+			args:           "--terragrunt-apply-template -var region=us-east-1",
+		},
 	}
 	for _, test := range tests {
 		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
