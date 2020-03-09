@@ -158,6 +158,10 @@ func filterVarsAndVarFiles(command string, terragruntOptions *options.Terragrunt
 
 	for i := 0; i < len(args); i++ {
 		if matches, match := reutils.MultiMatch(args[i], reVarFile); match >= 0 {
+			if strings.HasPrefix(matches[""], "--") {
+				// If the user specified is argument with --var or --var-file, we uniformize it to -var/-var-file
+				args[i] = args[i][1:]
+			}
 			if matches["value"] == "" && i+1 < len(args) {
 				// The value is specified in the next argument
 				matches["value"] = args[i+1]

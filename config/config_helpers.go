@@ -147,6 +147,7 @@ func (context *resolveContext) getHelperFunctions() map[string]interface{} {
 		"get_parent_dir":                           context.getParentDir,
 		"get_parent_tfvars_dir":                    context.getParentDir,
 		"get_aws_account_id":                       context.getAWSAccountID,
+		"set_global_variable":                      context.setGlobalVariable,
 		"get_terraform_commands_that_need_vars":    func() interface{} { return collections.AsList(TerraformCommandWithVarFile) },
 		"get_terraform_commands_that_need_locking": func() interface{} { return collections.AsList(TerraformCommandWithLockTimeout) },
 		"get_terraform_commands_that_need_input":   func() interface{} { return collections.AsList(TerraformCommandWithInput) },
@@ -175,6 +176,7 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 			"get_parent_tfvars_dir":                    (*resolveContext).getParentDir,
 			"get_aws_account_id":                       (*resolveContext).getAWSAccountID,
 			"save_variables":                           (*resolveContext).saveVariables,
+			"set_global_variable":                      (*resolveContext).setGlobalVariable,
 			"get_terraform_commands_that_need_vars":    TerraformCommandWithVarFile,
 			"get_terraform_commands_that_need_locking": TerraformCommandWithLockTimeout,
 			"get_terraform_commands_that_need_input":   TerraformCommandWithInput,
@@ -573,6 +575,17 @@ func (context *resolveContext) getAWSAccountID() (interface{}, error) {
 	}
 
 	return *identity.Account, nil
+}
+
+func (context *resolveContext) setGlobalVariable(key string, value interface{}) (string, error) {
+	if key == "" {
+		for key, value := range collections.AsDictionary(value).AsMap() {
+			context.options.SetVariable(key, value, options.FunctionOverwrite)
+		}
+	} else {
+		context.options.SetVariable(key, value, options.FunctionOverwrite)
+	}
+	return "", nil
 }
 
 func (context *resolveContext) getParameters(regex *regexp.Regexp) ([]string, error) {
