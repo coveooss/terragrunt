@@ -5,6 +5,17 @@
 
 Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that provides extra tools for keeping your Terraform configurations DRY, working with multiple Terraform modules, and managing remote state.
 
+All files process by terragrunt (config files or terraform files) are pre-processed by go template.
+
+## set_global_variable
+
+`set_global_variable(key, value)` allows users to add/modify a global variable. Example:
+
+```hcl
+# @set_global_variable("Today", now().Weekday())                     // Used as Razor function
+# {{ set_global_variable "Tomorrow" (now.AddDate 0 0 1).Weekday }}   // Used as go template function
+```
+
 ## Quick start
 
 1. [Install Terraform](https://www.terraform.io/intro/getting-started/install.html).
@@ -1302,7 +1313,6 @@ Terragrunt allows you to use [Terraform interpolation syntax](https://www.terraf
 * [get_terraform_commands_that_need_input()](#get_terraform_commands_that_need_input)
 * [get_terraform_commands_that_need_locking()](#get_terraform_commands_that_need_locking)
 * [get_aws_account_id()](#get_aws_account_id)
-* [set_global_variable()](#set_global_variable)
 
 #### find_in_parent_folders
 
@@ -1666,16 +1676,6 @@ terragrunt = {
     arguments = ["-var-file=${get_aws_account_id()}.tfvars"]
   }
 }
-```
-
-#### set_global_variable
-
-`set_global_variable(key, value)` allows users to add/modify a global variable. Example:
-
-```hcl
-# @set_global_variable("Today", now().Weekday())                     // Used as Razor function
-# {{ set_global_variable "Tomorrow" (now.AddDate 0 0 1).Weekday }}   // Used as go template function
-# ${set_global_variable("Key", "Value")}                             // Used as HCL interpolation function
 ```
 
 ### CLI Options

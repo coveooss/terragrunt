@@ -176,7 +176,6 @@ func (context *resolveContext) executeTerragruntHelperFunction(functionName stri
 			"get_parent_tfvars_dir":                    (*resolveContext).getParentDir,
 			"get_aws_account_id":                       (*resolveContext).getAWSAccountID,
 			"save_variables":                           (*resolveContext).saveVariables,
-			"set_global_variable":                      (*resolveContext).setGlobalVariable,
 			"get_terraform_commands_that_need_vars":    TerraformCommandWithVarFile,
 			"get_terraform_commands_that_need_locking": TerraformCommandWithLockTimeout,
 			"get_terraform_commands_that_need_input":   TerraformCommandWithInput,
