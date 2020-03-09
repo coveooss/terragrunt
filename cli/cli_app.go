@@ -339,7 +339,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); err != nil {
 			absSourceURL, _ := filepath.Abs(sourceURL)
 			pathMsg := color.WhiteString("\nVerify that the following path exists:\n  Given:    %s\n  Absolute: %s", sourceURL, absSourceURL)
-			return fmt.Errorf("Could not copy your source folder to a temporary location.\n%w\n%s", err, pathMsg)
+			return fmt.Errorf("could not copy your source folder to a temporary location.\n%w\n%s", err, pathMsg)
 		}
 	}
 
