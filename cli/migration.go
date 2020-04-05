@@ -238,6 +238,9 @@ func migrateConfigurationFile(fullPath, relativePath string) error {
 	if err := ioutil.WriteFile(newPath, []byte(newContent), 0777); err != nil {
 		return err
 	}
+	if err := os.Chmod(newPath, 0777); err != nil {
+		return err
+	}
 
 	return os.Remove(fullPath)
 }
