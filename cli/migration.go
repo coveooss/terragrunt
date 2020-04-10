@@ -91,7 +91,16 @@ func migrate(cliContext *cli.Context) (err error) {
 		}
 		for _, fileInDir := range filesInDir {
 			if strings.HasSuffix(fileInDir.Name(), ".tf") {
-				command := exec.Command("terraform", "0.12upgrade", "-yes")
+				command := exec.Command("terraform", "init")
+				command.Dir = path
+				if output, err := command.CombinedOutput(); err != nil {
+					fmt.Println(string(output))
+					return fmt.Errorf("Error in path %s: %v", path, err)
+				}
+
+				defer os.RemoveAll(filepath.Join(path, ".terraform"))
+
+				command = exec.Command("terraform", "0.12upgrade", "-yes")
 				command.Dir = path
 				command.Env = []string{"TF_LOG=DEBUG"}
 				if output, err := command.CombinedOutput(); err != nil {
