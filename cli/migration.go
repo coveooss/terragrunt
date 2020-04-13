@@ -93,11 +93,8 @@ func migrate(cliContext *cli.Context) (err error) {
 			if strings.HasSuffix(fileInDir.Name(), ".tf") {
 				command := exec.Command("terraform", "init")
 				command.Dir = path
-				if output, err := command.CombinedOutput(); err != nil {
-					fmt.Println(string(output))
-					return fmt.Errorf("Error in path %s: %v", path, err)
-				}
-
+				// If the command fails, the reasons are too many to try to resolve the situation, let's just try without the init
+				command.Run()
 				defer os.RemoveAll(filepath.Join(path, ".terraform"))
 
 				command = exec.Command("terraform", "0.12upgrade", "-yes")
@@ -105,7 +102,7 @@ func migrate(cliContext *cli.Context) (err error) {
 				command.Env = []string{"TF_LOG=DEBUG"}
 				if output, err := command.CombinedOutput(); err != nil {
 					fmt.Println(string(output))
-					return fmt.Errorf("Error in path %s: %v", path, err)
+					return fmt.Errorf("terraform upgrade error in path %s: %v", path, err)
 				}
 				break
 			}
@@ -157,6 +154,8 @@ func migrate(cliContext *cli.Context) (err error) {
 		}
 		var content string = originalContent
 		for toReplace, replacement := range flattenedVariablesReplacements {
+			content = strings.ReplaceAll(content, "local_"+toReplace, "local."+replacement)
+			content = strings.ReplaceAll(content, "main_"+toReplace, "main."+replacement)
 			content = strings.ReplaceAll(content, toReplace, replacement)
 		}
 		if content != originalContent {
@@ -330,6 +329,8 @@ func getAllFlattenedReplacementsFromImportedProjects(importedProjects []string) 
 					objProject := splitKey[2]
 					objSubproject := strings.Split(splitKey[3], ".")[0]
 					if objProject == project && (subproject == "" || subproject == objSubproject) {
+						objProject = strings.Replace(objProject, "-", "_", -1)
+						objSubproject = strings.Replace(objSubproject, "-", "_", -1)
 						replacements[objProject+"_"+objSubproject+"_"] = objProject + "." + objSubproject + "."
 					}
 				}
