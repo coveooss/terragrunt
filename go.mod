@@ -9,7 +9,7 @@ require (
 	github.com/coveooss/gotemplate/v3 v3.3.10
 	github.com/coveooss/multilogger v0.4.6
 	github.com/fatih/color v1.9.0
-	github.com/go-errors/errors v1.0.1
+	github.com/go-errors/errors v1.0.2
 	github.com/hashicorp/go-getter v1.4.2-0.20200106182914-9813cbd4eb02
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.3.0
