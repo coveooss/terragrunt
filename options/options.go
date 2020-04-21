@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"time"
@@ -295,6 +296,16 @@ func getVariableValue(variables interface{}, keys []string) (value interface{}, 
 	return
 }
 
+func gotemplateDictToMap(value interface{}) (map[string]interface{}, bool) {
+	if result, ok := value.(map[string]interface{}); ok {
+		return result, true
+	}
+	if valueAsCollection, ok := value.(collections.IDictionary); ok {
+		return valueAsCollection.AsMap(), true
+	}
+	return nil, false
+}
+
 // SetVariable overwrites the value in the variables map only if the source is more significant than the original value
 func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interface{}, source VariableSource) SetVariableResult {
 	if value == nil {
@@ -306,8 +317,8 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 		value = util.ConvertToMap(value, keys[1:]...)
 	}
 	target := terragruntOptions.Variables[key]
-	oldMap, oldIsMap := target.Value.(map[string]interface{})
-	newMap, newIsMap := value.(map[string]interface{})
+	oldMap, oldIsMap := gotemplateDictToMap(target.Value)
+	newMap, newIsMap := gotemplateDictToMap(value)
 
 	if oldIsMap && newIsMap {
 		// Map variables have a special treatment since we merge them instead of simply overwriting them
@@ -324,7 +335,10 @@ func (terragruntOptions *TerragruntOptions) SetVariable(key string, value interf
 			return NewVariable
 		}
 	} else if target.Value != nil && (oldIsMap || newIsMap) {
-		terragruntOptions.Logger.Warningf("Different types for %s: %v vs %v", key, target.Value, value)
+		terragruntOptions.Logger.Warningf("Different types for %s: %v (Type: %v, IsMap: %t) vs %v (Type: %v, IsMap: %t)", key,
+			target.Value, reflect.TypeOf(target.Value).String(), oldIsMap,
+			value, reflect.TypeOf(value).String(), newIsMap,
+		)
 	}
 
 	if target.Source <= source {
