@@ -78,7 +78,7 @@ func migrate(cliContext *cli.Context) (err error) {
 		content = variableRegex.ReplaceAllString(content, "GOVAR_${1}_ENDVAR")
 		content = variableInNameRegex.ReplaceAllString(content, "${1}GOVAR_${2}_ENDVAR${3}")
 		content = variableRazorInNameRegex.ReplaceAllString(content, "${1}GOVAR_${2}_ENDVAR${3}")
-		return ioutil.WriteFile(fullPath, []byte(content), 0777)
+		return ioutil.WriteFile(fullPath, []byte(content), 0666)
 	}); err != nil {
 		return err
 	}
@@ -243,10 +243,10 @@ func migrateConfigurationFile(fullPath, relativePath string) error {
 	newContent = ignoreIfRegex.ReplaceAllString(newContent, "ignore_if = {")
 
 	newPath := filepath.Join(filepath.Dir(fullPath), "terragrunt.hcl")
-	if err := ioutil.WriteFile(newPath, []byte(newContent), 0777); err != nil {
+	if err := ioutil.WriteFile(newPath, []byte(newContent), 0666); err != nil {
 		return err
 	}
-	if err := os.Chmod(newPath, 0777); err != nil {
+	if err := os.Chmod(newPath, 0666); err != nil {
 		return err
 	}
 
