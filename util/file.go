@@ -220,10 +220,10 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		if err != nil {
 			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 2 seconds. Err: %v", source, err)
 			time.Sleep(2 * time.Second)
+			delete(sharedContent, result)
 			if result != "" && FileExists(result) {
 				// Download failed but the dir exists, let's delete it
 				logf(logrus.WarnLevel, "Deleting cache dir for %s: %s", source, result)
-				delete(sharedContent, result)
 				if removeErr := os.RemoveAll(result); removeErr != nil {
 					logf(logrus.WarnLevel, "Failed to delete cache dir %s: %v", result, removeErr)
 				}
