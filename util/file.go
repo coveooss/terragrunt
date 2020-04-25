@@ -214,6 +214,31 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		}
 	}
 
+	var result string
+	if finalErr := try.Do(func(attempt int) (bool, error) {
+		var err error
+		result, err = getSource(source, pwd, logf)
+		if err != nil {
+			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 2 seconds. Err: %v", source, err)
+			time.Sleep(2 * time.Second)
+			delete(sharedContent, result)
+			if result != "" && FileExists(result) {
+				// Download failed but the dir exists, let's delete it
+				logf(logrus.WarnLevel, "Deleting cache dir for %s: %s", source, result)
+				if removeErr := os.RemoveAll(result); removeErr != nil {
+					logf(logrus.WarnLevel, "Failed to delete cache dir %s: %v", result, removeErr)
+				}
+			}
+
+		}
+		return attempt <= 3, err
+	}); finalErr != nil {
+		return "", fmt.Errorf("%v while copying source from %s", finalErr, source)
+	}
+	return result, nil
+}
+
+func getSource(source, pwd string, logf func(level logrus.Level, format string, args ...interface{})) (string, error) {
 	logf(logrus.TraceLevel, "Converting S3 path to be compatible with getter for %s", source)
 	source, err := awshelper.ConvertS3Path(source)
 	if err != nil {
@@ -260,13 +285,8 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 				}
 			}
 
-			err = try.Do(func(attempt int) (bool, error) {
-				err := module.GetCopy(cacheDir, source)
-				logf(logrus.TraceLevel, "Tried to fetch %s, attempt %d, err: %v", source, attempt, err)
-				return attempt < 3, err
-			})
-			if err != nil {
-				return "", fmt.Errorf("%v while copying source from %s", err, source)
+			if err := module.GetCopy(cacheDir, source); err != nil {
+				return "", fmt.Errorf("caught error while fetching files from %s: %v", source, err)
 			}
 
 			if s3Object != nil {
@@ -275,7 +295,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 				err = awshelper.SaveS3Status(s3Object, cacheDir)
 			}
 			if err != nil {
-				logf(logrus.WarnLevel, "%v while saving status for %s. The cache will be reset on the next fetch, even if the files haven't changed", err, source)
+				return "", fmt.Errorf("caught %v while saving status for %s", err, source)
 			}
 			logf(logrus.DebugLevel, "Files from %s successfully added to the cache at %s", source, cacheDir)
 		}
