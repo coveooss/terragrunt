@@ -179,7 +179,8 @@ func getS3Status(info BucketInfo) (*bucketStatus, error) {
 		Key:    aws.String(info.Key),
 	})
 	if err != nil {
-		return nil, err
+		clearSessionCache()
+		return nil, fmt.Errorf("caught error while calling HeadObject on key %s of bucket %s: %v", info.Key, info.BucketName, err)
 	}
 
 	return &bucketStatus{

@@ -16,6 +16,13 @@ import (
 
 var sessionCache sync.Map
 
+func clearSessionCache() {
+	sessionCache.Range(func(key interface{}, value interface{}) bool {
+		sessionCache.Delete(key)
+		return true
+	})
+}
+
 // CreateAwsSession returns an AWS session object for the given region, ensuring that the credentials are available
 func CreateAwsSession(awsRegion, awsProfile string) (*session.Session, error) {
 	awsSessionKey := awsRegion + "/" + awsProfile
