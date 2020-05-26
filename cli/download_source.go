@@ -50,7 +50,12 @@ func downloadTerraformSource(source *TerraformSource, terragruntOptions *options
 	}
 
 	terragruntOptions.Logger.Debugf("Copying files from %s into %s", terragruntOptions.WorkingDir, source.WorkingDir)
-	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, source.WorkingDir); err != nil {
+	excluded := []string{}
+	if source.CanonicalSourceURL.Scheme == "file" {
+		// We exclude the local source path from the copy to avoid copying source directory twice in the temporary folder.
+		excluded = append(excluded, source.CanonicalSourceURL.Path)
+	}
+	if err := util.CopyFolderContents(terragruntOptions.WorkingDir, source.WorkingDir, excluded...); err != nil {
 		return err
 	}
 
