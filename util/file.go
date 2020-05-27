@@ -311,7 +311,7 @@ var sharedContent = map[string]bool{}
 
 // CopyFolderContents copies the files and folders within the source folder into the destination folder. Note that hidden files and folders
 // (those starting with a dot) will be skipped.
-func CopyFolderContents(source string, destination string) error {
+func CopyFolderContents(source, destination string, excluded ...string) error {
 	files, err := ioutil.ReadDir(source)
 	if err != nil {
 		return errors.WithStackTrace(err)
@@ -320,7 +320,9 @@ func CopyFolderContents(source string, destination string) error {
 	for _, file := range files {
 		src := filepath.Join(source, file.Name())
 		dest := filepath.Join(destination, file.Name())
-
+		if ListContainsElement(excluded, src) {
+			continue
+		}
 		if PathContainsHiddenFileOrFolder(src) {
 			continue
 		} else if file.IsDir() {
