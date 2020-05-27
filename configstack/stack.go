@@ -105,8 +105,21 @@ func FindStackInSubfolders(terragruntOptions *options.TerragruntOptions) (*Stack
 	if err != nil {
 		return nil, err
 	}
+	if len(terragruntConfigFiles) == 0 {
+		terragruntOptions.Logger.Warning("Could not find any subfolders with Terragrunt configuration files")
+	}
 
-	return createStackForTerragruntConfigPaths(terragruntOptions.WorkingDir, terragruntConfigFiles, terragruntOptions)
+	modules, err := ResolveTerraformModules(terragruntConfigFiles, terragruntOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	stack := &Stack{Path: terragruntOptions.WorkingDir, Modules: modules}
+	if err := stack.checkForCycles(); err != nil {
+		return nil, err
+	}
+
+	return stack, nil
 }
 
 // Set the command in the TerragruntOptions object of each module in this stack to the given command.
@@ -119,28 +132,7 @@ func (stack *Stack) setTerraformCommand(command []string) {
 	}
 }
 
-// Find all the Terraform modules in the folders that contain the given Terragrunt config files and assemble those
-// modules into a Stack object that can be applied or destroyed in a single command
-func createStackForTerragruntConfigPaths(path string, terragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions) (*Stack, error) {
-	if len(terragruntConfigPaths) == 0 {
-		terragruntOptions.Logger.Warning("Could not find any subfolders with Terragrunt configuration files")
-	}
-
-	modules, err := ResolveTerraformModules(terragruntConfigPaths, terragruntOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	stack := &Stack{Path: path, Modules: modules}
-	if err := stack.checkForCycles(); err != nil {
-		return nil, err
-	}
-
-	return stack, nil
-}
-
 // Custom error types
-
 type errDependencyCycle []string
 
 func (err errDependencyCycle) Error() string {

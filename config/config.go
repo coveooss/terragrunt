@@ -244,7 +244,7 @@ func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]stri
 				// the folder
 				return nil
 			}
-			configPath := util.JoinPath(path, DefaultTerragruntConfigPath)
+			configPath := terragruntOptions.ConfigPath(path)
 			if _, err := os.Stat(configPath); err == nil {
 				configFiles = append(configFiles, configPath)
 			}
@@ -288,7 +288,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}()
 
 	if include.Path == "" {
-		include.Path = DefaultTerragruntConfigPath
+		include.Path = filepath.Base(terragruntOptions.TerragruntConfigPath)
 	}
 
 	if include.isIncludedBy == nil && !include.isBootstrap {

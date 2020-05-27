@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
@@ -75,10 +76,21 @@ func ResolveTerraformModules(terragruntConfigPaths []string, terragruntOptions *
 		return []*TerraformModule{}, err
 	}
 
-	modules, err := resolveModules(canonicalTerragruntConfigPaths, terragruntOptions)
+	modules, err := resolveModules(canonicalTerragruntConfigPaths, terragruntOptions, false)
 	if err != nil {
 		return []*TerraformModule{}, err
 	}
+
+	// We remove any path that are not in the resolved module
+	canonicalTerragruntConfigPaths = func() []string {
+		filtered := make([]string, 0, len(canonicalTerragruntConfigPaths))
+		for _, path := range canonicalTerragruntConfigPaths {
+			if modules[path] != nil {
+				filtered = append(filtered, path)
+			}
+		}
+		return filtered
+	}()
 
 	externalDependencies, err := resolveExternalDependenciesForModules(canonicalTerragruntConfigPaths, modules, terragruntOptions)
 	if err != nil {
@@ -90,16 +102,16 @@ func ResolveTerraformModules(terragruntConfigPaths []string, terragruntOptions *
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents
 // into a TerraformModule struct. Note that this method will NOT fill in the Dependencies field of the TerraformModule
 // struct (see the crosslinkDependencies method for that). Return a map from module path to TerraformModule struct.
-func resolveModules(canonicalTerragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions) (map[string]*TerraformModule, error) {
+func resolveModules(canonicalTerragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions, resolveExternal bool) (map[string]*TerraformModule, error) {
 	moduleMap := map[string]*TerraformModule{}
 
 	for _, terragruntConfigPath := range canonicalTerragruntConfigPaths {
-		module, err := resolveTerraformModule(terragruntConfigPath, terragruntOptions)
-		if err != nil {
+		if module, tfFiles, err := resolveTerraformModule(terragruntConfigPath, terragruntOptions); err == nil {
+			if resolveExternal && module != nil || tfFiles {
+				moduleMap[module.Path] = module
+			}
+		} else {
 			return moduleMap, err
-		}
-		if module != nil {
-			moduleMap[module.Path] = module
 		}
 	}
 
@@ -109,29 +121,38 @@ func resolveModules(canonicalTerragruntConfigPaths []string, terragruntOptions *
 // Create a TerraformModule struct for the Terraform module specified by the given Terragrunt configuration file path.
 // Note that this method will NOT fill in the Dependencies field of the TerraformModule struct (see the
 // crosslinkDependencies method for that).
-func resolveTerraformModule(terragruntConfigPath string, terragruntOptions *options.TerragruntOptions) (*TerraformModule, error) {
+func resolveTerraformModule(terragruntConfigPath string, terragruntOptions *options.TerragruntOptions) (module *TerraformModule, tfFiles bool, err error) {
 	modulePath, err := util.CanonicalPath(filepath.Dir(terragruntConfigPath), ".")
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	opts := terragruntOptions.Clone(terragruntConfigPath)
 	_, terragruntConfig, err := config.ParseConfigFile(opts, config.IncludeConfig{Path: terragruntConfigPath})
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	// Fix for https://github.com/gruntwork-io/terragrunt/issues/208
-	matches, err := filepath.Glob(filepath.Join(filepath.Dir(terragruntConfigPath), "*.tf"))
+	matches, err := utils.FindFiles(filepath.Dir(terragruntConfigPath), false, false, "*.tf", "*.tf.json", "*.tf.gt")
 	if err != nil {
-		return nil, err
+		return
 	}
-	if (terragruntConfig.Terraform == nil || terragruntConfig.Terraform.Source == "") && matches == nil {
-		terragruntOptions.Logger.Debugf("Module %s does not have an associated terraform configuration and will be skipped.", filepath.Dir(terragruntConfigPath))
-		return nil, nil
+	if matches == nil {
+		if terragruntConfig.Terraform == nil || terragruntConfig.Terraform.Source == "" {
+			terragruntOptions.Logger.Debugf("Module %s does not have an associated terraform configuration and will be skipped.", filepath.Dir(terragruntConfigPath))
+			return
+		}
+		sourcePath := terragruntConfig.Terraform.Source
+		if !filepath.IsAbs(sourcePath) {
+			sourcePath, _ = util.CanonicalPath(sourcePath, filepath.Dir(terragruntConfigPath))
+		}
+		matches, err = utils.FindFiles(sourcePath, false, false, "*.tf", "*.tf.json", "*.tf.gt")
 	}
 
-	return &TerraformModule{Path: modulePath, Config: *terragruntConfig, TerragruntOptions: opts}, nil
+	tfFiles = len(matches) > 0
+	module = &TerraformModule{Path: modulePath, Config: *terragruntConfig, TerragruntOptions: opts}
+	return
 }
 
 // Look through the dependencies of the modules in the given map and resolve the "external" dependency paths listed in
@@ -202,12 +223,12 @@ func resolveExternalDependenciesForModule(module *TerraformModule, canonicalTerr
 			return map[string]*TerraformModule{}, err
 		}
 
-		terragruntConfigPath := util.JoinPath(dependencyPath, config.DefaultTerragruntConfigPath)
+		terragruntConfigPath := terragruntOptions.ConfigPath(dependencyPath)
 		if !util.ListContainsElement(canonicalTerragruntConfigPaths, terragruntConfigPath) {
 			externalTerragruntConfigPaths = append(externalTerragruntConfigPaths, terragruntConfigPath)
 		}
 	}
-	return resolveModules(externalTerragruntConfigPaths, terragruntOptions)
+	return resolveModules(externalTerragruntConfigPaths, terragruntOptions, true)
 }
 
 // Confirm with the user whether they want Terragrunt to assume the given dependency of the given module is already

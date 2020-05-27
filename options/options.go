@@ -144,6 +144,11 @@ func NewTerragruntOptionsForTest(terragruntConfigPath string) *TerragruntOptions
 	return opts
 }
 
+// ConfigPath builds a path to the config file into the provided folder.
+func (terragruntOptions TerragruntOptions) ConfigPath(folder string) string {
+	return util.JoinPath(folder, filepath.Base(terragruntOptions.TerragruntConfigPath))
+}
+
 // Clone creates a copy of this TerragruntOptions, but with different values for the given variables. This is useful for
 // creating a TerragruntOptions that behaves the same way, but is used for a Terraform module in a different folder.
 func (terragruntOptions TerragruntOptions) Clone(terragruntConfigPath string) *TerragruntOptions {

@@ -70,10 +70,10 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	workingDir := parse(optWorkingDir, currentDir)
-	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), util.JoinPath(workingDir, config.DefaultTerragruntConfigPath))
+	terragruntConfigPath := filepath.ToSlash(util.JoinPath(workingDir, parse(optTerragruntConfig, os.Getenv(options.EnvConfig), config.DefaultTerragruntConfigPath)))
 	terraformPath := parse(optTerragruntTFPath, os.Getenv(options.EnvTFPath), "terraform")
 
-	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
+	opts := options.NewTerragruntOptions(terragruntConfigPath)
 	opts.TerraformPath = filepath.ToSlash(terraformPath)
 	opts.NonInteractive = parseBooleanArg(args, optNonInteractive, "", false)
 	opts.TerraformCliArgs = filterTerragruntArgs(args)

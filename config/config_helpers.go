@@ -65,26 +65,26 @@ type helperFunction struct {
 
 func (context *resolveContext) getHelperFunctions() map[string]helperFunction {
 	return map[string]helperFunction{
-		"find_in_parent_folders":     helperFunction{function: context.findInParentFolders},
-		"path_relative_to_include":   helperFunction{function: context.pathRelativeToInclude},
-		"path_relative_from_include": helperFunction{function: context.pathRelativeFromInclude},
-		"get_env":                    helperFunction{function: context.getEnvironmentVariable},
-		"get_current_dir":            helperFunction{function: context.getCurrentDir},
-		"get_leaf_dir":               helperFunction{function: context.getLeafDir},
-		"get_tfvars_dir":             helperFunction{function: context.getLeafDir},
-		"get_parent_dir":             helperFunction{function: context.getParentDir},
-		"get_parent_tfvars_dir":      helperFunction{function: context.getParentDir},
-		"get_aws_account_id":         helperFunction{function: context.getAWSAccountID},
-		"set_global_variable":        helperFunction{function: context.setGlobalVariable},
-		"get_terraform_commands_that_need_vars": helperFunction{
+		"find_in_parent_folders":     {function: context.findInParentFolders},
+		"path_relative_to_include":   {function: context.pathRelativeToInclude},
+		"path_relative_from_include": {function: context.pathRelativeFromInclude},
+		"get_env":                    {function: context.getEnvironmentVariable},
+		"get_current_dir":            {function: context.getCurrentDir},
+		"get_leaf_dir":               {function: context.getLeafDir},
+		"get_tfvars_dir":             {function: context.getLeafDir},
+		"get_parent_dir":             {function: context.getParentDir},
+		"get_parent_tfvars_dir":      {function: context.getParentDir},
+		"get_aws_account_id":         {function: context.getAWSAccountID},
+		"set_global_variable":        {function: context.setGlobalVariable},
+		"get_terraform_commands_that_need_vars": {
 			function:   func(...string) (interface{}, error) { return TerraformCommandWithVarFile, nil },
 			returnType: cty.List(cty.String),
 		},
-		"get_terraform_commands_that_need_locking": helperFunction{
+		"get_terraform_commands_that_need_locking": {
 			function:   func(...string) (interface{}, error) { return TerraformCommandWithLockTimeout, nil },
 			returnType: cty.List(cty.String),
 		},
-		"get_terraform_commands_that_need_input": helperFunction{
+		"get_terraform_commands_that_need_input": {
 			function:   func(...string) (interface{}, error) { return TerraformCommandWithInput, nil },
 			returnType: cty.List(cty.String),
 		},
@@ -231,7 +231,7 @@ func (context *resolveContext) findInParentFolders(...string) (interface{}, erro
 			return "", parentTerragruntConfigNotFound(context.options.TerragruntConfigPath)
 		}
 
-		configPath := util.JoinPath(currentDir, DefaultTerragruntConfigPath)
+		configPath := context.options.ConfigPath(currentDir)
 		if util.FileExists(configPath) {
 			return util.GetPathRelativeTo(configPath, filepath.Dir(context.options.TerragruntConfigPath))
 		}
