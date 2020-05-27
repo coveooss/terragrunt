@@ -3,7 +3,7 @@ module github.com/gruntwork-io/terragrunt
 go 1.13
 
 require (
-	github.com/aws/aws-sdk-go v1.25.43
+	github.com/aws/aws-sdk-go v1.30.12
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/coveooss/gotemplate/v3 v3.3.10
@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/go-getter v1.4.2-0.20200106182914-9813cbd4eb02
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.5.1
-	github.com/hashicorp/terraform v0.12.23
+	github.com/hashicorp/terraform v0.12.25
 	github.com/lithammer/dedent v1.1.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mattn/go-zglob v0.0.1
