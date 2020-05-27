@@ -23,6 +23,7 @@ import (
 // from disk, otherwise we download first and then load.
 type GetMode byte
 
+// GetMode values
 const (
 	GetModeNone GetMode = iota
 	GetModeGet
@@ -79,9 +80,8 @@ func copyDir(dst, src string) error {
 			// Skip any dot files
 			if info.IsDir() {
 				return filepath.SkipDir
-			} else {
-				return nil
 			}
+			return nil
 		}
 
 		// The "path" has the src prefixed to it. We need to join our

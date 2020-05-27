@@ -104,10 +104,10 @@ func (context *resolveContext) getHelperFunctionsInterfaces() map[string]interfa
 func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext, error) {
 	functions := map[string]function.Function{}
 
-	tfscope := tflang.Scope{
+	tfScope := tflang.Scope{
 		BaseDir: filepath.Dir(context.include.Path),
 	}
-	for k, v := range tfscope.Functions() {
+	for k, v := range tfScope.Functions() {
 		functions[k] = v
 	}
 
@@ -321,6 +321,7 @@ func ctySliceToStringSlice(args []cty.Value) ([]string, error) {
 	return out, nil
 }
 
+// InvalidParameterType is used to return details about what is expected vs the actual value.
 type InvalidParameterType struct {
 	Expected string
 	Actual   string
