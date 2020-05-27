@@ -27,7 +27,7 @@ require (
 	github.com/zclconf/go-cty v1.4.1
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 )
 
 replace github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.3.1
