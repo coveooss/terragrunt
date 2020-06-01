@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -59,33 +60,33 @@ type resolveContext struct {
 }
 
 type helperFunction struct {
-	function   func(parameters ...string) (interface{}, error)
+	function   interface{}
 	returnType cty.Type
 }
 
 func (context *resolveContext) getHelperFunctions() map[string]helperFunction {
 	return map[string]helperFunction{
-		"find_in_parent_folders":     helperFunction{function: context.findInParentFolders},
-		"path_relative_to_include":   helperFunction{function: context.pathRelativeToInclude},
-		"path_relative_from_include": helperFunction{function: context.pathRelativeFromInclude},
-		"get_env":                    helperFunction{function: context.getEnvironmentVariable},
-		"get_current_dir":            helperFunction{function: context.getCurrentDir},
-		"get_leaf_dir":               helperFunction{function: context.getLeafDir},
-		"get_tfvars_dir":             helperFunction{function: context.getLeafDir},
-		"get_parent_dir":             helperFunction{function: context.getParentDir},
-		"get_parent_tfvars_dir":      helperFunction{function: context.getParentDir},
-		"get_aws_account_id":         helperFunction{function: context.getAWSAccountID},
-		"set_global_variable":        helperFunction{function: context.setGlobalVariable},
-		"get_terraform_commands_that_need_vars": helperFunction{
-			function:   func(...string) (interface{}, error) { return TerraformCommandWithVarFile, nil },
+		"find_in_parent_folders":     {function: context.findInParentFolders},
+		"path_relative_to_include":   {function: context.pathRelativeToInclude},
+		"path_relative_from_include": {function: context.pathRelativeFromInclude},
+		"get_env":                    {function: context.getEnvironmentVariable},
+		"get_current_dir":            {function: context.getCurrentDir},
+		"get_leaf_dir":               {function: context.getLeafDir},
+		"get_tfvars_dir":             {function: context.getLeafDir},
+		"get_parent_dir":             {function: context.getParentDir},
+		"get_parent_tfvars_dir":      {function: context.getParentDir},
+		"get_aws_account_id":         {function: context.getAWSAccountID},
+		"set_global_variable":        {function: context.setGlobalVariable},
+		"get_terraform_commands_that_need_vars": {
+			function:   func() (interface{}, error) { return TerraformCommandWithVarFile, nil },
 			returnType: cty.List(cty.String),
 		},
-		"get_terraform_commands_that_need_locking": helperFunction{
-			function:   func(...string) (interface{}, error) { return TerraformCommandWithLockTimeout, nil },
+		"get_terraform_commands_that_need_locking": {
+			function:   func() (interface{}, error) { return TerraformCommandWithLockTimeout, nil },
 			returnType: cty.List(cty.String),
 		},
-		"get_terraform_commands_that_need_input": helperFunction{
-			function:   func(...string) (interface{}, error) { return TerraformCommandWithInput, nil },
+		"get_terraform_commands_that_need_input": {
+			function:   func() (interface{}, error) { return TerraformCommandWithInput, nil },
 			returnType: cty.List(cty.String),
 		},
 	}
@@ -104,19 +105,36 @@ func (context *resolveContext) getHelperFunctionsInterfaces() map[string]interfa
 func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext, error) {
 	functions := map[string]function.Function{}
 
-	tfscope := tflang.Scope{
+	tfScope := tflang.Scope{
 		BaseDir: filepath.Dir(context.include.Path),
 	}
-	for k, v := range tfscope.Functions() {
+	for k, v := range tfScope.Functions() {
 		functions[k] = v
 	}
 
 	for key, helperFunction := range context.getHelperFunctions() {
-		helperFunction := helperFunction
+		key, helperFunction := key, helperFunction
 		returnType := cty.String
 		if helperFunction.returnType != cty.NilType {
 			returnType = helperFunction.returnType
 		}
+
+		switch helperFunction.function.(type) {
+		case func(string, interface{}) string:
+			continue // Function receiving interface{} as argument are simply ignored
+		case func() interface{}:
+		case func() (interface{}, error):
+		case func(string, string) interface{}:
+		default:
+			return nil, fmt.Errorf("unsupported function type %v for %s", reflect.TypeOf(helperFunction.function), key)
+		}
+
+		assert := func(test bool, format interface{}, args ...interface{}) {
+			if !test {
+				panic(fmt.Errorf(fmt.Sprint(format), args))
+			}
+		}
+
 		functions[key] = function.New(&function.Spec{
 			Type: function.StaticReturnType(returnType),
 			VarParam: &function.Parameter{
@@ -126,15 +144,28 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 				AllowDynamicType: true,
 				AllowNull:        true,
 			},
-			Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-				argStrings, err := ctySliceToStringSlice(args)
-				if err != nil {
-					return cty.NullVal(helperFunction.returnType), err
+			Impl: func(args []cty.Value, retType cty.Type) (result cty.Value, err error) {
+				defer func() {
+					if catched := recover(); catched != nil {
+						err = catched.(error)
+					}
+				}()
+
+				result = cty.NullVal(helperFunction.returnType)
+				var out interface{}
+				switch f := helperFunction.function.(type) {
+				case func() interface{}:
+					assert(len(args) == 0, "call to function %s should not have arguments", key)
+					out = f()
+				case func() (interface{}, error):
+					assert(len(args) == 0, "call to function %s should not have arguments", key)
+					out, err = f()
+				case func(string, string) interface{}:
+					assert(len(args) == 2, "call to function %s must have two arguments", key)
+					out = f(args[0].AsString(), args[1].AsString())
 				}
-				out, err := helperFunction.function(argStrings...)
-				if err != nil {
-					return cty.NullVal(helperFunction.returnType), err
-				}
+
+				assert(err == nil, err)
 				if returnType == cty.String {
 					return cty.StringVal(out.(string)), nil
 				} else if returnType == cty.List(cty.String) {
@@ -144,7 +175,7 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 					}
 					return cty.ListVal(outVals), nil
 				}
-				return cty.NullVal(helperFunction.returnType), fmt.Errorf("unsupported return type to %s. Type: %s", key, returnType)
+				panic(fmt.Errorf("unsupported return type to %s. Type: %s", key, returnType))
 			},
 		})
 	}
@@ -161,12 +192,12 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 }
 
 // Return the directory of the current include file that is processed
-func (context *resolveContext) getCurrentDir(...string) (interface{}, error) {
-	return filepath.ToSlash(filepath.Dir(context.include.Path)), nil
+func (context *resolveContext) getCurrentDir() interface{} {
+	return filepath.ToSlash(filepath.Dir(context.include.Path))
 }
 
 // Return the directory where the Terragrunt configuration file lives
-func (context *resolveContext) getLeafDir(...string) (interface{}, error) {
+func (context *resolveContext) getLeafDir() (interface{}, error) {
 	terragruntConfigFileAbsPath, err := filepath.Abs(context.options.TerragruntConfigPath)
 	if err != nil {
 		return "", err
@@ -176,7 +207,7 @@ func (context *resolveContext) getLeafDir(...string) (interface{}, error) {
 }
 
 // Return the parent directory where the Terragrunt configuration file lives
-func (context *resolveContext) getParentDir(...string) (interface{}, error) {
+func (context *resolveContext) getParentDir() (interface{}, error) {
 	parentPath, err := context.pathRelativeFromInclude()
 	if err != nil {
 		return "", err
@@ -193,14 +224,7 @@ func (context *resolveContext) getParentDir(...string) (interface{}, error) {
 
 // Returns the named environment variable or default value if it does not exist
 //     get_env(variable_name, default_value)
-func (context *resolveContext) getEnvironmentVariable(parameters ...string) (interface{}, error) {
-	if parameters[0] == "" {
-		return "", invalidGetEnvParameters(parameters)
-	}
-	return context.getEnvironmentVariableInternal(parameters[0], parameters[1]), nil
-}
-
-func (context *resolveContext) getEnvironmentVariableInternal(env, defValue string) interface{} {
+func (context *resolveContext) getEnvironmentVariable(env, defValue string) interface{} {
 	if value, exists := context.options.Env[env]; exists {
 		return value
 	}
@@ -215,7 +239,7 @@ func (err invalidGetEnvParameters) Error() string {
 
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file
 // and return its path
-func (context *resolveContext) findInParentFolders(...string) (interface{}, error) {
+func (context *resolveContext) findInParentFolders() (interface{}, error) {
 	previousDir, err := filepath.Abs(filepath.Dir(context.options.TerragruntConfigPath))
 	previousDir = filepath.ToSlash(previousDir)
 
@@ -256,14 +280,14 @@ func (err checkedTooManyParentFolders) Error() string {
 
 // Return the relative path between the included Terragrunt configuration file and the current Terragrunt configuration
 // file
-func (context *resolveContext) pathRelativeToInclude(...string) (interface{}, error) {
+func (context *resolveContext) pathRelativeToInclude() (interface{}, error) {
 	parent := context.getParentLocalConfigFilesLocation()
 	child := filepath.Dir(context.options.TerragruntConfigPath)
 	return util.GetPathRelativeTo(child, parent)
 }
 
 // Return the relative path from the current Terragrunt configuration to the included Terragrunt configuration file
-func (context *resolveContext) pathRelativeFromInclude(...string) (interface{}, error) {
+func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
 	parent := context.getParentLocalConfigFilesLocation()
 	child := filepath.Dir(context.options.TerragruntConfigPath)
 	return util.GetPathRelativeTo(parent, child)
@@ -283,7 +307,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 }
 
 // Return the AWS account id associated to the current set of credentials
-func (context *resolveContext) getAWSAccountID(...string) (interface{}, error) {
+func (context *resolveContext) getAWSAccountID() (interface{}, error) {
 	session, err := awshelper.CreateAwsSession("", "")
 	if err != nil {
 		return "", err
@@ -297,15 +321,15 @@ func (context *resolveContext) getAWSAccountID(...string) (interface{}, error) {
 	return *identity.Account, nil
 }
 
-func (context *resolveContext) setGlobalVariable(args ...string) (interface{}, error) {
-	if args[0] == "" {
-		for key, value := range collections.AsDictionary(args[1]).AsMap() {
+func (context *resolveContext) setGlobalVariable(key string, value interface{}) string {
+	if key == "" {
+		for key, value := range collections.AsDictionary(value).AsMap() {
 			context.options.SetVariable(key, value, options.FunctionOverwrite)
 		}
 	} else {
-		context.options.SetVariable(args[0], args[1], options.FunctionOverwrite)
+		context.options.SetVariable(key, value, options.FunctionOverwrite)
 	}
-	return nil, nil
+	return ""
 }
 
 // Convert the slice of cty values to a slice of strings. If any of the values in the given slice is not a string,
