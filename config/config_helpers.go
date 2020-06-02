@@ -164,7 +164,7 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 					}
 					return cty.ListVal(outVals), nil
 				}
-				panic(fmt.Errorf("unsupported return type to %s. Type: %s", key, returnType))
+				return result, fmt.Errorf("unsupported return type to %s. Type: %s", key, returnType)
 			},
 		})
 	}
