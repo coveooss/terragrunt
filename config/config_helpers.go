@@ -5,7 +5,6 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"strings"
 
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/coveooss/gotemplate/v3/collections"
@@ -129,12 +128,6 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 			return nil, fmt.Errorf("unsupported function type %v for %s", reflect.TypeOf(helperFunction.function), key)
 		}
 
-		assert := func(test bool, format interface{}, args ...interface{}) {
-			if !test {
-				panic(fmt.Errorf(fmt.Sprint(format), args))
-			}
-		}
-
 		functions[key] = function.New(&function.Spec{
 			Type: function.StaticReturnType(returnType),
 			VarParam: &function.Parameter{
@@ -145,27 +138,23 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 				AllowNull:        true,
 			},
 			Impl: func(args []cty.Value, retType cty.Type) (result cty.Value, err error) {
-				defer func() {
-					if catched := recover(); catched != nil {
-						err = catched.(error)
-					}
-				}()
+				defer errors.Recover(func(cause error) { err = cause })
 
 				result = cty.NullVal(helperFunction.returnType)
 				var out interface{}
 				switch f := helperFunction.function.(type) {
 				case func() interface{}:
-					assert(len(args) == 0, "call to function %s should not have arguments", key)
+					errors.Assert(len(args) == 0, "call to function %s should not have arguments", key)
 					out = f()
 				case func() (interface{}, error):
-					assert(len(args) == 0, "call to function %s should not have arguments", key)
+					errors.Assert(len(args) == 0, "call to function %s should not have arguments", key)
 					out, err = f()
 				case func(string, string) interface{}:
-					assert(len(args) == 2, "call to function %s must have two arguments", key)
+					errors.Assert(len(args) == 2, "call to function %s must have two arguments", key)
 					out = f(args[0].AsString(), args[1].AsString())
 				}
+				errors.Assert(err == nil, err)
 
-				assert(err == nil, err)
 				if returnType == cty.String {
 					return cty.StringVal(out.(string)), nil
 				} else if returnType == cty.List(cty.String) {
@@ -229,12 +218,6 @@ func (context *resolveContext) getEnvironmentVariable(env, defValue string) inte
 		return value
 	}
 	return defValue
-}
-
-type invalidGetEnvParameters []string
-
-func (err invalidGetEnvParameters) Error() string {
-	return fmt.Sprintf("Invalid parameters. Expected get_env(variable_name, default_value) but got '%s'", strings.Join(err, ", "))
 }
 
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file
@@ -338,18 +321,18 @@ func ctySliceToStringSlice(args []cty.Value) ([]string, error) {
 	var out []string
 	for _, arg := range args {
 		if arg.Type() != cty.String {
-			return nil, errors.WithStackTrace(InvalidParameterType{Expected: "string", Actual: arg.Type().FriendlyName()})
+			return nil, errors.WithStackTrace(invalidParameterType{Expected: "string", Actual: arg.Type().FriendlyName()})
 		}
 		out = append(out, arg.AsString())
 	}
 	return out, nil
 }
 
-type InvalidParameterType struct {
+type invalidParameterType struct {
 	Expected string
 	Actual   string
 }
 
-func (err InvalidParameterType) Error() string {
+func (err invalidParameterType) Error() string {
 	return fmt.Sprintf("Expected param of type %s but got %s", err.Expected, err.Actual)
 }

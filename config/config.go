@@ -467,7 +467,7 @@ func parseHcl(hcl string, filename string, out interface{}, resolveContext *reso
 	// those panics here and convert them to normal errors
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			err = errors.WithStackTrace(PanicWhileParsingConfig{RecoveredValue: recovered, ConfigFile: filename})
+			err = errors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: recovered, ConfigFile: filename})
 		}
 	}()
 
@@ -614,29 +614,11 @@ func (err IncludedConfigMissingPath) Error() string {
 	return fmt.Sprintf("The include configuration in %s must specify a 'path' and/or 'source' parameter", string(err))
 }
 
-type ErrorParsingTerragruntConfig struct {
-	ConfigPath string
-	Underlying error
-}
-
-func (err ErrorParsingTerragruntConfig) Error() string {
-	return fmt.Sprintf("Error parsing Terragrunt config at %s: %v", err.ConfigPath, err.Underlying)
-}
-
-type PanicWhileParsingConfig struct {
+type panicWhileParsingConfig struct {
 	ConfigFile     string
 	RecoveredValue interface{}
 }
 
-func (err PanicWhileParsingConfig) Error() string {
+func (err panicWhileParsingConfig) Error() string {
 	return fmt.Sprintf("Recovering panic while parsing '%s'. Got error of type '%v': %v", err.ConfigFile, reflect.TypeOf(err.RecoveredValue), err.RecoveredValue)
-}
-
-type InvalidBackendConfigType struct {
-	ExpectedType string
-	ActualType   string
-}
-
-func (err InvalidBackendConfigType) Error() string {
-	return fmt.Sprintf("Expected backend config to be of type '%s' but got '%s'.", err.ExpectedType, err.ActualType)
 }

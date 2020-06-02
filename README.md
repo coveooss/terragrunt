@@ -16,7 +16,6 @@ Please see the following for more info, including install instructions and compl
 * [Terragrunt Documentation](https://terragrunt.gruntwork.io/docs)
 * [Contributing to Terragrunt](http://terragrunt.gruntwork.io/docs/community/contributing)
 
-
 ## Additional features in this fork
 
 ### Assume AWS IAM role
@@ -302,7 +301,7 @@ uniqueness_criteria = "${var.env}${var.region}/${var.project}"
 
 ### Export variables to a file
 
-There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are not accesible by Terraform directly  
+There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are not accessible by Terraform directly  
 To write your imported variables to a file, use the `export_variables` block. Example:  
 
 ```hcl
