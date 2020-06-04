@@ -613,15 +613,6 @@ func (err includedConfigMissingPath) Error() string {
 	return fmt.Sprintf("the include configuration in %s must specify a 'path' and/or 'source' parameter", string(err))
 }
 
-type errorParsingTerragruntConfig struct {
-	ConfigPath string
-	Underlying error
-}
-
-func (err errorParsingTerragruntConfig) Error() string {
-	return fmt.Sprintf("error parsing Terragrunt config at %s: %v", err.ConfigPath, err.Underlying)
-}
-
 type panicWhileParsingConfig struct {
 	ConfigFile     string
 	RecoveredValue interface{}
@@ -629,13 +620,4 @@ type panicWhileParsingConfig struct {
 
 func (err panicWhileParsingConfig) Error() string {
 	return fmt.Sprintf("recovering panic while parsing '%s'. Got error of type '%v': %v", err.ConfigFile, reflect.TypeOf(err.RecoveredValue), err.RecoveredValue)
-}
-
-type invalidBackendConfigType struct {
-	ExpectedType string
-	ActualType   string
-}
-
-func (err invalidBackendConfigType) Error() string {
-	return fmt.Sprintf("expected backend config to be of type '%s' but got '%s'.", err.ExpectedType, err.ActualType)
 }

@@ -65,7 +65,7 @@ func TestPathRelativeToInclude(t *testing.T) {
 		context := resolveContext{include: testCase.include, options: testCase.terragruntOptions}
 		if context.include.Path == "${find_in_parent_folders()}" {
 			path, _ := context.findInParentFolders()
-			context.include.Path = path.(string)
+			context.include.Path = path
 		}
 		actualPath, actualErr := context.pathRelativeToInclude()
 		assert.Nil(t, actualErr, "For include %v and options %v, unexpected error: %v", testCase.include, testCase.terragruntOptions, actualErr)
@@ -127,7 +127,7 @@ func TestPathRelativeFromInclude(t *testing.T) {
 		context := resolveContext{include: testCase.include, options: testCase.terragruntOptions}
 		if context.include.Path == "${find_in_parent_folders()}" {
 			path, _ := context.findInParentFolders()
-			context.include.Path = path.(string)
+			context.include.Path = path
 		}
 		actualPath, actualErr := context.pathRelativeFromInclude()
 		assert.Nil(t, actualErr, "For include %v and options %v, unexpected error: %v", testCase.include, testCase.terragruntOptions, actualErr)
