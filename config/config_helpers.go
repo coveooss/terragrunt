@@ -77,15 +77,15 @@ func (context *resolveContext) getHelperFunctions() map[string]helperFunction {
 		"get_aws_account_id":         {function: context.getAWSAccountID},
 		"set_global_variable":        {function: context.setGlobalVariable},
 		"get_terraform_commands_that_need_vars": {
-			function:   func() (interface{}, error) { return TerraformCommandWithVarFile, nil },
+			function:   func() ([]string, error) { return TerraformCommandWithVarFile, nil },
 			returnType: cty.List(cty.String),
 		},
 		"get_terraform_commands_that_need_locking": {
-			function:   func() (interface{}, error) { return TerraformCommandWithLockTimeout, nil },
+			function:   func() ([]string, error) { return TerraformCommandWithLockTimeout, nil },
 			returnType: cty.List(cty.String),
 		},
 		"get_terraform_commands_that_need_input": {
-			function:   func() (interface{}, error) { return TerraformCommandWithInput, nil },
+			function:   func() ([]string, error) { return TerraformCommandWithInput, nil },
 			returnType: cty.List(cty.String),
 		},
 	}
@@ -121,9 +121,10 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 		switch helperFunction.function.(type) {
 		case func(string, interface{}) string:
 			continue // Function receiving interface{} as argument are simply ignored
-		case func() interface{}:
-		case func() (interface{}, error):
-		case func(string, string) interface{}:
+		case func() string:
+		case func() (string, error):
+		case func() ([]string, error):
+		case func(string, string) string:
 		default:
 			return nil, fmt.Errorf("unsupported function type %v for %s", reflect.TypeOf(helperFunction.function), key)
 		}
@@ -143,13 +144,16 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 				result = cty.NullVal(helperFunction.returnType)
 				var out interface{}
 				switch f := helperFunction.function.(type) {
-				case func() interface{}:
+				case func() string:
 					errors.Assert(len(args) == 0, "call to function %s should not have arguments", key)
 					out = f()
-				case func() (interface{}, error):
+				case func() (string, error):
 					errors.Assert(len(args) == 0, "call to function %s should not have arguments", key)
 					out, err = f()
-				case func(string, string) interface{}:
+				case func() ([]string, error):
+					errors.Assert(len(args) == 0, "call to function %s should not have arguments", key)
+					out, err = f()
+				case func(string, string) string:
 					errors.Assert(len(args) == 2, "call to function %s must have two arguments", key)
 					out = f(args[0].AsString(), args[1].AsString())
 				}
@@ -181,12 +185,12 @@ func (context *resolveContext) getHelperFunctionsHCLContext() (*hcl.EvalContext,
 }
 
 // Return the directory of the current include file that is processed
-func (context *resolveContext) getCurrentDir() interface{} {
+func (context *resolveContext) getCurrentDir() string {
 	return filepath.ToSlash(filepath.Dir(context.include.Path))
 }
 
 // Return the directory where the Terragrunt configuration file lives
-func (context *resolveContext) getLeafDir() (interface{}, error) {
+func (context *resolveContext) getLeafDir() (string, error) {
 	terragruntConfigFileAbsPath, err := filepath.Abs(context.options.TerragruntConfigPath)
 	if err != nil {
 		return "", err
@@ -196,24 +200,24 @@ func (context *resolveContext) getLeafDir() (interface{}, error) {
 }
 
 // Return the parent directory where the Terragrunt configuration file lives
-func (context *resolveContext) getParentDir() (interface{}, error) {
+func (context *resolveContext) getParentDir() (string, error) {
 	parentPath, err := context.pathRelativeFromInclude()
 	if err != nil {
 		return "", err
 	}
 
 	currentPath := filepath.Dir(context.options.TerragruntConfigPath)
-	parentPath, err = filepath.Abs(filepath.Join(currentPath, parentPath.(string)))
+	parentPath, err = filepath.Abs(filepath.Join(currentPath, parentPath))
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.ToSlash(parentPath.(string)), nil
+	return filepath.ToSlash(parentPath), nil
 }
 
 // Returns the named environment variable or default value if it does not exist
 //     get_env(variable_name, default_value)
-func (context *resolveContext) getEnvironmentVariable(env, defValue string) interface{} {
+func (context *resolveContext) getEnvironmentVariable(env, defValue string) string {
 	if value, exists := context.options.Env[env]; exists {
 		return value
 	}
@@ -222,7 +226,7 @@ func (context *resolveContext) getEnvironmentVariable(env, defValue string) inte
 
 // Find a parent Terragrunt configuration file in the parent folders above the current Terragrunt configuration file
 // and return its path
-func (context *resolveContext) findInParentFolders() (interface{}, error) {
+func (context *resolveContext) findInParentFolders() (string, error) {
 	previousDir, err := filepath.Abs(filepath.Dir(context.options.TerragruntConfigPath))
 	previousDir = filepath.ToSlash(previousDir)
 
@@ -263,14 +267,14 @@ func (err checkedTooManyParentFolders) Error() string {
 
 // Return the relative path between the included Terragrunt configuration file and the current Terragrunt configuration
 // file
-func (context *resolveContext) pathRelativeToInclude() (interface{}, error) {
+func (context *resolveContext) pathRelativeToInclude() (string, error) {
 	parent := context.getParentLocalConfigFilesLocation()
 	child := filepath.Dir(context.options.TerragruntConfigPath)
 	return util.GetPathRelativeTo(child, parent)
 }
 
 // Return the relative path from the current Terragrunt configuration to the included Terragrunt configuration file
-func (context *resolveContext) pathRelativeFromInclude() (interface{}, error) {
+func (context *resolveContext) pathRelativeFromInclude() (string, error) {
 	parent := context.getParentLocalConfigFilesLocation()
 	child := filepath.Dir(context.options.TerragruntConfigPath)
 	return util.GetPathRelativeTo(parent, child)
@@ -290,7 +294,7 @@ func (context *resolveContext) getParentLocalConfigFilesLocation() string {
 }
 
 // Return the AWS account id associated to the current set of credentials
-func (context *resolveContext) getAWSAccountID() (interface{}, error) {
+func (context *resolveContext) getAWSAccountID() (string, error) {
 	session, err := awshelper.CreateAwsSession("", "")
 	if err != nil {
 		return "", err
