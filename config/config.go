@@ -10,22 +10,25 @@ import (
 	"sync"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/coveooss/gotemplate/v3/hcl"
+	gotemplateHcl "github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/json"
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/yaml"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/zclconf/go-cty/cty"
 )
 
 const (
-	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
-	DefaultTerragruntConfigPath = "terragrunt.hcl"
+	// DefaultConfigName is the name of the default file name where to store terragrunt definitions
+	DefaultConfigName = options.DefaultConfigName
 
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
@@ -81,12 +84,12 @@ func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders
 	return
 }
 
-// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terragrunt.hcl or .terragrunt)
+// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terragrunt.hcl)
 type TerragruntConfigFile struct {
 	Path string
 	// remain will send everything that isn't match into the labelled struct
 	// In that case, most of the config goes down to TerragruntConfig
-	// https://godoc.org/github.com/hashicorp/hcl2/gohcl
+	// https://godoc.org/github.com/hashicorp/hcl/v2/gohcl
 	TerragruntConfig `hcl:",remain"`
 	Include          *IncludeConfig `hcl:"include,block"`
 }
@@ -220,42 +223,6 @@ func (conf TerraformConfig) String() string {
 	return collections.PrettyPrintStruct(conf)
 }
 
-// FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.
-// A file is a Terragrunt config file if it its name matches the DefaultTerragruntConfigPath constant and contains Terragrunt
-// config contents as returned by the IsTerragruntConfig method.
-func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]string, error) {
-	rootPath := terragruntOptions.WorkingDir
-	configFiles := []string{}
-
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			if util.FileExists(filepath.Join(path, options.IgnoreFile)) {
-				// If we wish to exclude a directory from the *-all commands, we just
-				// have to put an empty file name terragrunt.ignore in the folder
-				return nil
-			}
-			if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(path, options.IgnoreFileNonInteractive)) {
-				// If we wish to exclude a directory from the *-all commands, we just
-				// have to put an empty file name terragrunt-non-interactive.ignore in
-				// the folder
-				return nil
-			}
-			configPath := terragruntOptions.ConfigPath(path)
-			if _, err := os.Stat(configPath); err == nil {
-				configFiles = append(configFiles, configPath)
-			}
-		}
-
-		return nil
-	})
-
-	return configFiles, err
-}
-
 // ReadTerragruntConfig reads the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	include := IncludeConfig{Path: terragruntOptions.TerragruntConfigPath}
@@ -327,8 +294,8 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 	terragruntOptions.Logger.Tracef("Read configuration file at %s\n%s", include.Path, configString)
 	if terragruntOptions.ApplyTemplate {
-		collections.SetListHelper(hcl.GenericListHelper)
-		collections.SetDictionaryHelper(hcl.DictionaryHelper)
+		collections.SetListHelper(gotemplateHcl.GenericListHelper)
+		collections.SetDictionaryHelper(gotemplateHcl.DictionaryHelper)
 
 		var t *template.Template
 		options := template.DefaultOptions()
@@ -462,7 +429,8 @@ func parseConfigStringAsTerragruntConfig(configString string, resolveContext *re
 }
 
 // parseHcl uses the HCL2 parser to parse the given string into the struct specified by out.
-func parseHcl(hcl string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
+// If the supplied data is in another format, it converts it to json to use HCL2 ParseJSON instea
+func parseHcl(content string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
 	// The HCL2 parser and especially cty conversions will panic in many types of errors, so we have to recover from
 	// those panics here and convert them to normal errors
 	defer func() {
@@ -472,8 +440,40 @@ func parseHcl(hcl string, filename string, out interface{}, resolveContext *reso
 	}()
 
 	parser := hclparse.NewParser()
+	var file *hcl.File
+	var parseDiagnostics hcl.Diagnostics
 
-	file, parseDiagnostics := parser.ParseHCL([]byte(hcl), filename)
+	switch filepath.Ext(filename) {
+	case ".yml", "*.yaml":
+		var data interface{}
+		if err := yaml.Unmarshal([]byte(content), &data); err == nil {
+			content, err := json.Marshal(data)
+			if err != nil {
+				return err
+			}
+			file, parseDiagnostics = parser.ParseJSON(content, filename)
+		} else {
+			return err
+		}
+	case ".json":
+		file, parseDiagnostics = parser.ParseJSON([]byte(content), filename)
+	case ".hcl", ".tfvars":
+		file, parseDiagnostics = parser.ParseHCL([]byte(content), filename)
+	default:
+		var data interface{}
+		if err := collections.ConvertData(content, &data); err == nil {
+			content, err := json.Marshal(data)
+			if err != nil {
+				return err
+			}
+			file, parseDiagnostics = parser.ParseJSON(content, filename)
+		} else {
+			if file, parseDiagnostics = parser.ParseHCL([]byte(content), filename); parseDiagnostics != nil {
+				return err
+			}
+		}
+	}
+
 	if parseDiagnostics != nil && parseDiagnostics.HasErrors() {
 		return parseDiagnostics
 	}

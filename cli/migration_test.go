@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 )
@@ -151,7 +152,7 @@ func TestMigrateConfigurationFile(t *testing.T) {
 			t.Parallel()
 			configDir, _ := ioutil.TempDir("", "TerragruntTestMigrateConfigurationFile")
 			configFile := path.Join(configDir, "terraform.tfvars")
-			resultFile := path.Join(configDir, "terragrunt.hcl")
+			resultFile := path.Join(configDir, config.DefaultConfigName)
 			defer os.RemoveAll(configDir)
 
 			// Initial config

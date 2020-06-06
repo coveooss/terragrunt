@@ -8,13 +8,13 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
-	"github.com/mattn/go-zglob"
 )
 
 // TerraformSource represents information about Terraform source code that needs to be downloaded
@@ -303,7 +303,7 @@ func isLocalSource(sourceURL *url.URL) bool {
 	return sourceURL.Scheme == "file"
 }
 
-// If this temp folder already exists, simply delete all the Terraform configurations (*.tf) within it
+// If this temp folder already exists, simply delete all the Terraform files within it
 // (the terraform init command will redownload the latest ones), but leave all the other files, such
 // as the .terraform folder with the downloaded modules and remote state settings.
 func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOptions) error {
@@ -311,9 +311,9 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 		return nil
 	}
 
-	terragruntOptions.Logger.Debug("Cleaning up existing *.tf files in", path)
+	terragruntOptions.Logger.Debug("Cleaning up existing terraform files in", path)
 
-	files, err := zglob.Glob(util.JoinPath(path, "**/*.tf"))
+	files, err := utils.FindFiles(path, true, false, options.TerraformFilesTemplates...)
 	if err != nil {
 		return errors.WithStackTrace(err)
 	}

@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/options"
 )
 
@@ -101,7 +100,7 @@ func (stack *Stack) checkForCycles() error {
 // FindStackInSubfolders finds all the Terraform modules in the subfolders of the working directory of the given TerragruntOptions and
 // assemble them into a Stack object that can be applied or destroyed in a single command
 func FindStackInSubfolders(terragruntOptions *options.TerragruntOptions) (*Stack, error) {
-	terragruntConfigFiles, err := config.FindConfigFilesInPath(terragruntOptions)
+	terragruntConfigFiles, err := terragruntOptions.FindConfigFilesInPath("")
 	if err != nil {
 		return nil, err
 	}

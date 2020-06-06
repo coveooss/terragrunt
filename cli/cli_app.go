@@ -46,9 +46,10 @@ const (
 	optTemplatePatterns                 = "terragrunt-template-patterns"
 	optBootConfigs                      = "terragrunt-boot-configs"
 	optPreBootConfigs                   = "terragrunt-pre-boot-configs"
+	optIncludeEmptyFolders              = "terragrunt-include-empty-folders"
 )
 
-var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, optTerragruntIgnoreDependencyErrors, optApplyTemplate}
+var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, optTerragruntIgnoreDependencyErrors, optApplyTemplate, optIncludeEmptyFolders}
 var allTerragruntStringOpts = []string{optTerragruntConfig, optTerragruntTFPath, optWorkingDir, optTerragruntSource, optLoggingLevel, optAWSProfile, optApprovalHandler, optFlushDelay, optNbWorkers, optTemplatePatterns, optBootConfigs, optPreBootConfigs, optLoggingFileDir, optLoggingFileLevel}
 
 const multiModuleSuffix = "-all"
@@ -117,16 +118,21 @@ GLOBAL OPTIONS:
    terragrunt-source-update             Delete the contents of the temporary folder to clear out any old, cached source code before downloading new source code into it.
    terragrunt-ignore-dependency-errors  *-all commands continue processing components even if a dependency fails.
    terragrunt-logging-level             PANIC(0), FATAL (1), ERROR (2), WARNING (3), INFO (4), DEBUG (5), TRACE (6).
-   terragrunt-logging-file-dir          Used to configure the directory where (verbose) file logs will be saved
-   terragrunt-logging-file-level        Used to configure the logging level in files
-   terragrunt-approval                  Program to use for approval. {val} will be replaced by the current terragrunt output. Ex: approval.py --value {val}
+   terragrunt-logging-file-dir          Used to configure the directory where (verbose) file logs will be saved.
+   terragrunt-logging-file-level        Used to configure the logging level in files.
+   terragrunt-approval                  Program to use for approval. {val} will be replaced by the current terragrunt output. Ex: approval.py --value {val}.
    terragrunt-flush-delay               Maximum delay on -all commands before printing out traces (INFO) indicating that the process is still alive (default 60s).
    terragrunt-workers                   Number of concurrent workers (default 10).
+   terragrunt-include-empty-folders     Do not check if source folders contains terraform files to consider them as part of the stack.
    profile                              Specify an AWS profile to use.
 
 ENVIRONMENT VARIABLES:
    The following environment variables could be set to avoid specifying parameters on command line:
-	  TERRAGRUNT_CONFIG, TERRAGRUNT_TFPATH, TERRAGRUNT_SOURCE, TERRAGRUNT_LOGGING_LEVEL, TERRAGRUNT_FLUSH_DELAY, TERRAGRUNT_WORKERS, TERRAGRUNT_LOGGING_FILE_DIR, TERRAGRUNT_LOGGING_FILE_LEVEL
+	  TERRAGRUNT_CONFIG, TERRAGRUNT_TFPATH, TERRAGRUNT_SOURCE, TERRAGRUNT_SOURCE_UPDATE,
+	  TERRAGRUNT_INCLUDE_EMPTY_FOLDERS, TERRAGRUNT_BOOT_CONFIGS, TERRAGRUNT_PREBOOT_CONFIGS,
+	  TERRAGRUNT_LOGGING_LEVEL, TERRAGRUNT_LOGGING_FILE_DIR, TERRAGRUNT_LOGGING_FILE_LEVEL,
+	  TERRAGRUNT_TEMPLATE, TERRAGRUNT_TEMPLATE_PATTERNS, TERRAGRUNT_CACHE_FOLDER,
+	  TERRAGRUNT_FLUSH_DELAY, TERRAGRUNT_WORKERS
 	  
    TERRAGRUNT_DEBUG  If set, this enable detailed stack trace in case of application crash
    TERRAGRUNT_CACHE  If set, it defines the root folder used to store temporary files
@@ -145,9 +151,7 @@ AUTHOR(S):
 var moduleRegex = regexp.MustCompile(`module[[:blank:]]+".+"`)
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
-const defaultTerraformVersionConstaint = ">= v0.9.3"
-
-const terraformExtensionGlob = "*.tf"
+const defaultTerraformVersionConstaint = ">= v0.12.0"
 
 var terragruntVersion string
 var terragruntRunID string
@@ -438,7 +442,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		terragruntOptions.TerraformCliArgs[0] = actualCommand.BehaveAs
 	}
 
-	terraformFiles := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, "*.tf")
+	terraformFiles := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, options.TerraformFilesTemplates...)
 	foldersWithTerraformFiles := []string{}
 	for _, file := range terraformFiles {
 		// All folders except `.terraform`
@@ -459,7 +463,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return
 		}
 		t.SetOption(template.Overwrite, true)
-		patterns := append(terragruntOptions.TemplateAdditionalPatterns, "*.tf", "*.tf.gt", "*.tf.template")
+		patterns := append(terragruntOptions.TemplateAdditionalPatterns, options.TerraformFilesTemplates...)
 		files := utils.MustFindFiles(terragruntOptions.WorkingDir, true, false, patterns...)
 		filterPath := func(s string) string { return strings.Replace(s, terragruntOptions.WorkingDir+"/", "", -1) }
 		files = util.FilterList(files, func(item string) bool {
@@ -494,7 +498,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// If there is no terraform file in the folder, we skip the command
-	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, "*.tf", "*.tf.json")
+	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, options.TerraformFilesPatterns...)
 	if stopOnError(err) {
 		return
 	}
@@ -642,7 +646,7 @@ func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, 
 		return false, nil
 	}
 
-	return util.Grep(moduleRegex, fmt.Sprintf("%s/%s", terragruntOptions.WorkingDir, terraformExtensionGlob))
+	return util.Grep(moduleRegex, terragruntOptions.WorkingDir, options.TerraformFilesTemplates...)
 }
 
 // If the user entered a Terraform command that uses state (e.g. plan, apply), make sure remote state is configured
