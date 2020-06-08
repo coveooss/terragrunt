@@ -16,7 +16,7 @@ require (
 	github.com/hashicorp/terraform v0.12.26
 	github.com/lithammer/dedent v1.1.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
-	github.com/mattn/go-zglob v0.0.1
+	github.com/mattn/go-zglob v0.0.2
 	github.com/mitchellh/mapstructure v1.3.2
 	github.com/rs/xid v1.2.1
 	github.com/sergi/go-diff v1.1.0
