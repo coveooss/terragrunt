@@ -23,15 +23,15 @@ Please see the following for more info, including install instructions and compl
 Terragrunt supports defining configuration file as `terragrunt.hcl` for pure hcl configuration or `terragrunt.hcl.json` if you want to express your
 configuration as json.
 
-It is also possible to name your file with different name (letting you organizing your folder as you want and not mix the terragrunt configuration file
+It is also possible to name your file with different name (letting you organize your folder as you want and not mix the terragrunt configuration file
 with your regular terraform files).
 
 Supported names are:
 
-* `.terragrunt`, `terragrunt`, `.terragrunt.config`, `terragrunt.config` (could be defined as hcl, json or yaml)
-* `.terragrunt.hcl` or `terragrunt.hcl` (must be defined as hcl)
-* `.terragrunt.json`, `terragrunt.json`, `.terragrunt.hcl.json` or `terragrunt.hcl.json` (must be defined as json)
-* `.terragrunt.yaml`, `terragrunt.yaml`, `.terragrunt.yml` or `terragrunt.yml` (must be defined as yaml)
+* `.terragrunt`, `terragrunt`, `.terragrunt.config`, `terragrunt.config` (can use hcl, json or yaml syntax)
+* `.terragrunt.hcl` or `terragrunt.hcl` (must use hcl syntax)
+* `.terragrunt.json`, `terragrunt.json`, `.terragrunt.hcl.json` or `terragrunt.hcl.json` (must use json syntax)
+* `.terragrunt.yaml`, `terragrunt.yaml`, `.terragrunt.yml` or `terragrunt.yml` (must use yaml syntax)
 
 It is also possible to add your own terragrunt config file name by specifying the `--terragrunt-config` argument or by defining the environment
 variable `TERRAGRUNT_CONFIG`.
