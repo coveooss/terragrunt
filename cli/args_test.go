@@ -31,74 +31,74 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 	}{
 		{
 			[]string{},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{}, false, "", false),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{}, false, "", false),
 			nil,
 		},
 
 		{
 			[]string{"foo", "bar"},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{"foo", "bar"}, false, "", false),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"foo", "bar"}, false, "", false),
 			nil,
 		},
 
 		{
 			[]string{"--foo", "--bar"},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{"--foo", "--bar"}, false, "", false),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo", "--bar"}, false, "", false),
 			nil,
 		},
 
 		{
 			[]string{"--foo", "apply", "--bar"},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{"--foo", "apply", "--bar"}, false, "", false),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo", "apply", "--bar"}, false, "", false),
 			nil,
 		},
 
 		{
 			[]string{"--terragrunt-non-interactive"},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{}, true, "", false),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{}, true, "", false),
 			nil,
 		},
 
 		{
-			[]string{"--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultConfigName)},
-			mockOptions(fmt.Sprintf("/some/path/%s", config.DefaultConfigName), workingDir, []string{}, false, "", false),
+			[]string{"--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath)},
+			mockOptions(fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath), workingDir, []string{}, false, "", false),
 			nil,
 		},
 
 		{
 			[]string{"--terragrunt-working-dir", "/some/path"},
-			mockOptions(util.JoinPath("/some/path", config.DefaultConfigName), "/some/path", []string{}, false, "", false),
+			mockOptions(util.JoinPath("/some/path", config.DefaultTerragruntConfigPath), "/some/path", []string{}, false, "", false),
 			nil,
 		},
 
 		{
 			[]string{"--terragrunt-source", "/some/path"},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{}, false, "/some/path", false),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{}, false, "/some/path", false),
 			nil,
 		},
 
 		{
 			[]string{"--terragrunt-ignore-dependency-errors"},
-			mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{}, false, "", true),
+			mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{}, false, "", true),
 			nil,
 		},
 
 		{
-			[]string{"--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultConfigName), "--terragrunt-non-interactive"},
-			mockOptions(fmt.Sprintf("/some/path/%s", config.DefaultConfigName), workingDir, []string{}, true, "", false),
+			[]string{"--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath), "--terragrunt-non-interactive"},
+			mockOptions(fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath), workingDir, []string{}, true, "", false),
 			nil,
 		},
 
 		{
-			[]string{"--foo", "--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultConfigName), "bar", "--terragrunt-non-interactive", "--baz", "--terragrunt-working-dir", "/some/path", "--terragrunt-source", "github.com/foo/bar//baz?ref=1.0.3"},
-			mockOptions(fmt.Sprintf("/some/path/%s", config.DefaultConfigName), "/some/path", []string{"--foo", "bar", "--baz"}, true, "github.com/foo/bar//baz?ref=1.0.3", false),
+			[]string{"--foo", "--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath), "bar", "--terragrunt-non-interactive", "--baz", "--terragrunt-working-dir", "/some/path", "--terragrunt-source", "github.com/foo/bar//baz?ref=1.0.3"},
+			mockOptions(fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath), "/some/path", []string{"--foo", "bar", "--baz"}, true, "github.com/foo/bar//baz?ref=1.0.3", false),
 			nil,
 		},
 
 		{
 			[]string{"--foo", "--terragrunt-apply-template", "--terragrunt-template-patterns", "test,123"},
 			func() *options.TerragruntOptions {
-				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{"--foo"}, false, "", false)
+				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo"}, false, "", false)
 				terragruntOptions.ApplyTemplate = true
 				terragruntOptions.TemplateAdditionalPatterns = []string{"test", "123"}
 				return terragruntOptions
@@ -109,7 +109,7 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 		{
 			[]string{"--foo", "--terragrunt-apply-template", "--terragrunt-boot-configs", "file://test,test123.txt"},
 			func() *options.TerragruntOptions {
-				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultConfigName), workingDir, []string{"--foo"}, false, "", false)
+				terragruntOptions := mockOptions(util.JoinPath(workingDir, config.DefaultTerragruntConfigPath), workingDir, []string{"--foo"}, false, "", false)
 				terragruntOptions.ApplyTemplate = true
 				terragruntOptions.BootConfigurationPaths = []string{"file://test", "test123.txt"}
 				return terragruntOptions
@@ -261,9 +261,9 @@ func TestFilterTerragruntArgs(t *testing.T) {
 	}{
 		{[]string{}, []string{}},
 		{[]string{"foo", "--bar"}, []string{"foo", "--bar"}},
-		{[]string{"foo", "--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultConfigName)}, []string{"foo"}},
+		{[]string{"foo", "--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath)}, []string{"foo"}},
 		{[]string{"foo", "--terragrunt-non-interactive"}, []string{"foo"}},
-		{[]string{"foo", "--terragrunt-non-interactive", "--bar", "--terragrunt-working-dir", "/some/path", "--baz", "--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultConfigName)}, []string{"foo", "--bar", "--baz"}},
+		{[]string{"foo", "--terragrunt-non-interactive", "--bar", "--terragrunt-working-dir", "/some/path", "--baz", "--terragrunt-config", fmt.Sprintf("/some/path/%s", config.DefaultTerragruntConfigPath)}, []string{"foo", "--bar", "--baz"}},
 		{[]string{"apply-all", "foo", "bar"}, []string{"foo", "bar"}},
 		{[]string{"foo", "destroy-all", "--foo", "--bar"}, []string{"foo", "--foo", "--bar"}},
 	}

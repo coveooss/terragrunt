@@ -46,7 +46,7 @@ func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueID()))
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfig(t, testFixturePath, s3BucketName, lockTableName, config.DefaultConfigName)
+	tmpTerragruntConfigPath := createTmpTerragruntConfig(t, testFixturePath, s3BucketName, lockTableName, config.DefaultTerragruntConfigPath)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
@@ -69,7 +69,7 @@ func TestTerragruntWorksWithIncludes(t *testing.T) {
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, relative, s3BucketName, config.DefaultConfigName, config.DefaultConfigName)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, relative, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
@@ -90,7 +90,7 @@ func TestTerragruntOutputAllCommand(t *testing.T) {
 
 	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultConfigName)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, "not-used")
 
 	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
@@ -125,7 +125,7 @@ func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *tes
 
 	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultConfigName)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, "not-used")
 
 	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
@@ -157,7 +157,7 @@ func TestTerragruntStackCommands(t *testing.T) {
 
 	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, "fixture-stack", config.DefaultConfigName)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, "fixture-stack", config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
 	mgmtEnvironmentPath := fmt.Sprintf("%s/fixture-stack/mgmt", tmpEnvPath)
@@ -347,7 +347,7 @@ func TestLocalWithBackend(t *testing.T) {
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueID()))
 	tmpEnvPath := copyEnvironment(t, "fixture-download")
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
-	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultConfigName)
+	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
@@ -372,7 +372,7 @@ func TestRemoteWithBackend(t *testing.T) {
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultConfigName)
+	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultTerragruntConfigPath)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)

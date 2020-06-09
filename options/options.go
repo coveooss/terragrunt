@@ -109,7 +109,11 @@ type TerragruntOptions struct {
 // NewTerragruntOptions creates a new TerragruntOptions object with reasonable defaults for real usage
 func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 	if info, _ := os.Stat(terragruntConfigPath); !util.ListContainsElement(configNames, filepath.Base(terragruntConfigPath)) && (info == nil || info.IsDir()) {
-		terragruntConfigPath = filepath.Join(terragruntConfigPath, DefaultConfigName)
+		if matches, _ := utils.FindFiles(terragruntConfigPath, false, false, configNames...); len(matches) > 0 {
+			terragruntConfigPath = matches[0]
+		} else {
+			terragruntConfigPath = filepath.Join(terragruntConfigPath, DefaultTerragruntConfigPath)
+		}
 	}
 	workingDir := filepath.Dir(terragruntConfigPath)
 
@@ -166,11 +170,11 @@ func (terragruntOptions *TerragruntOptions) ConfigPath(folder string) (string, b
 			}
 		}
 	}
-	return util.JoinPath(folder, DefaultConfigName), false
+	return util.JoinPath(folder, DefaultTerragruntConfigPath), false
 }
 
 // FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.
-// A file is a Terragrunt config file if it its name matches the DefaultTerragruntConfigPath constant and contains Terragrunt
+// A file is a Terragrunt config file if it its name matches the DefaultConfigName constant and contains Terragrunt
 // config contents as returned by the IsTerragruntConfig method.
 func (terragruntOptions *TerragruntOptions) FindConfigFilesInPath(rootPath string) ([]string, error) {
 	if rootPath == "" {

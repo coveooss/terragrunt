@@ -79,7 +79,7 @@ func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 	t.Logf("bucketName: %s", s3BucketName)
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, testFixtureIncludeChildRelativePath, s3BucketName, config.DefaultConfigName, config.DefaultConfigName)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, testFixtureIncludeChildRelativePath, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 

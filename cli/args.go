@@ -70,7 +70,8 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	}
 
 	workingDir := filepath.ToSlash(parse(optWorkingDir, currentDir))
-	terragruntConfigPath := filepath.ToSlash(parse(optTerragruntConfig, os.Getenv(options.EnvConfig), config.DefaultConfigName))
+	terragruntConfigPath := filepath.ToSlash(parse(optTerragruntConfig, os.Getenv(options.EnvConfig)))
+
 	if !strings.Contains(terragruntConfigPath, "/") {
 		terragruntConfigPath = filepath.ToSlash(util.JoinPath(workingDir, terragruntConfigPath))
 	}

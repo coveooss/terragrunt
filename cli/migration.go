@@ -121,7 +121,7 @@ func migrate(cliContext *cli.Context) (err error) {
 	// 4. Remove flattened variables
 	allProjects := []string{"infra/*"}
 	if err := forEachFile(*targetDirectory, func(fullPath, relativePath string) error {
-		if strings.HasSuffix(fullPath, config.DefaultConfigName) {
+		if strings.HasSuffix(fullPath, config.DefaultTerragruntConfigPath) {
 			var configFileMap map[string]interface{}
 			configFile, err := ioutil.ReadFile(fullPath)
 			if err != nil {
@@ -171,7 +171,7 @@ func migrate(cliContext *cli.Context) (err error) {
 	// Also delete "versions.tf" files written by the previous step
 	if err := forEachFile(*targetDirectory, func(fullPath, relativePath string) error {
 		originPath := relativePath
-		if strings.HasSuffix(fullPath, config.DefaultConfigName) {
+		if strings.HasSuffix(fullPath, config.DefaultTerragruntConfigPath) {
 			originPath = filepath.Join(filepath.Dir(relativePath), "terraform.tfvars")
 		}
 		originContent, err := util.ReadFileAsString(filepath.Join(copyOfOriginalsDir, originPath))
@@ -243,7 +243,7 @@ func migrateConfigurationFile(fullPath, relativePath string) error {
 	newContent = runIfRegex.ReplaceAllString(newContent, "run_if = {")
 	newContent = ignoreIfRegex.ReplaceAllString(newContent, "ignore_if = {")
 
-	newPath := filepath.Join(filepath.Dir(fullPath), config.DefaultConfigName)
+	newPath := filepath.Join(filepath.Dir(fullPath), config.DefaultTerragruntConfigPath)
 	if err := ioutil.WriteFile(newPath, []byte(newContent), 0666); err != nil {
 		return err
 	}

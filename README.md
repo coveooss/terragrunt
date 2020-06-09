@@ -20,10 +20,11 @@ Please see the following for more info, including install instructions and compl
 
 ### Configuration file
 
-Terragrunt supports defining configuration file as `terragrunt.hcl` for pure hcl configuration or `terragrunt.hcl.json` if you want to express your configuration as json.
+Terragrunt supports defining configuration file as `terragrunt.hcl` for pure hcl configuration or `terragrunt.hcl.json` if you want to express your
+configuration as json.
 
-It is also possible to name your file with different name (letting you organizing your folder as you want and not mix the terragrunt configuration file with your regular
-terraform files).
+It is also possible to name your file with different name (letting you organizing your folder as you want and not mix the terragrunt configuration file
+with your regular terraform files).
 
 Supported names are:
 
@@ -32,8 +33,8 @@ Supported names are:
 * `.terragrunt.json`, `terragrunt.json`, `.terragrunt.hcl.json` or `terragrunt.hcl.json` (must be defined as json)
 * `.terragrunt.yaml`, `terragrunt.yaml`, `.terragrunt.yml` or `terragrunt.yml` (must be defined as yaml)
 
-It is also possible to add your own terragrunt config file name by specifying the `--terragrunt-config` argument or by defining the
-environment variable `TERRAGRUNT_CONFIG`.
+It is also possible to add your own terragrunt config file name by specifying the `--terragrunt-config` argument or by defining the environment
+variable `TERRAGRUNT_CONFIG`.
 
 ```bash
 terragrunt --terragrunt-config my-custom-config
@@ -322,8 +323,9 @@ import_files "name" {
 
 ### Uniqueness criteria
 
-When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file. It is also possible to import files from external sources that should be used by terraform to evaluate your project.
-One typical usage of this feature is to import global variables that are common to all your terraform projects.
+When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file. It is
+also possible to import files from external sources that should be used by terraform to evaluate your project. One typical usage of this
+feature is to import global variables that are common to all your terraform projects.
 
 #### Configure uniqueness criteria
 

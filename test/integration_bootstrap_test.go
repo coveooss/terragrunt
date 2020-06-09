@@ -75,11 +75,6 @@ func TestTerragruntBootstrap(t *testing.T) {
 			defer os.RemoveAll(tmpEnvPath)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
-			var (
-				stdout bytes.Buffer
-				stderr bytes.Buffer
-			)
-
 			args := ""
 			if len(tt.bootstrap) > 0 {
 				args += " --terragrunt-boot-configs " + strings.Join(tt.bootstrap, ",")
@@ -88,10 +83,10 @@ func TestTerragruntBootstrap(t *testing.T) {
 				args += " --terragrunt-pre-boot-configs " + strings.Join(tt.preboot, ",")
 			}
 
-			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-apply-template --terragrunt-non-interactive --terragrunt-working-dir %s%s %s", rootPath, tt.terragruntPath, args), &stdout, &stderr)
-			output := stdout.String()
-			assert.Contains(t, output, tt.expectedOutput)
-
+			var stdout, stderr bytes.Buffer
+			command := fmt.Sprintf("terragrunt apply --terragrunt-apply-template --terragrunt-non-interactive --terragrunt-working-dir %s%s %s", rootPath, tt.terragruntPath, args)
+			runTerragruntRedirectOutput(t, command, &stdout, &stderr)
+			assert.Contains(t, stdout.String(), tt.expectedOutput, "Received %s", stdout.String())
 		})
 	}
 }

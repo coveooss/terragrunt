@@ -152,7 +152,7 @@ func TestMigrateConfigurationFile(t *testing.T) {
 			t.Parallel()
 			configDir, _ := ioutil.TempDir("", "TerragruntTestMigrateConfigurationFile")
 			configFile := path.Join(configDir, "terraform.tfvars")
-			resultFile := path.Join(configDir, config.DefaultConfigName)
+			resultFile := path.Join(configDir, config.DefaultTerragruntConfigPath)
 			defer os.RemoveAll(configDir)
 
 			// Initial config

@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	// DefaultConfigName is the name of the default file name where to store terragrunt definitions
-	DefaultConfigName = options.DefaultConfigName
+	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
+	DefaultTerragruntConfigPath = options.DefaultTerragruntConfigPath
 
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
@@ -433,44 +433,41 @@ func parseConfigStringAsTerragruntConfig(configString string, resolveContext *re
 func parseHcl(content string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
 	// The HCL2 parser and especially cty conversions will panic in many types of errors, so we have to recover from
 	// those panics here and convert them to normal errors
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			err = errors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: recovered, ConfigFile: filename})
-		}
-	}()
+	defer errors.Recover(func(cause error) {
+		err = errors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: cause, ConfigFile: filename})
+	})
 
 	parser := hclparse.NewParser()
 	var file *hcl.File
 	var parseDiagnostics hcl.Diagnostics
 
-	switch filepath.Ext(filename) {
-	case ".yml", "*.yaml":
-		var data interface{}
-		if err := yaml.Unmarshal([]byte(content), &data); err == nil {
-			content, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			file, parseDiagnostics = parser.ParseJSON(content, filename)
-		} else {
+	convert := func(convert func([]byte, interface{}) error) error {
+		var data map[string]interface{}
+		if err := convert([]byte(content), &data); err != nil {
 			return err
 		}
+		content, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		// It is important to add an extension to the filename since hcl parsers maintain a cache of already seen files
+		file, parseDiagnostics = parser.ParseJSON(content, filename+"retry")
+		return nil
+	}
+
+	switch filepath.Ext(filename) {
 	case ".json":
 		file, parseDiagnostics = parser.ParseJSON([]byte(content), filename)
 	case ".hcl", ".tfvars":
 		file, parseDiagnostics = parser.ParseHCL([]byte(content), filename)
+	case ".yml", ".yaml":
+		if err := convert(yaml.Unmarshal); err != nil {
+			return err
+		}
 	default:
-		var data interface{}
-		if err := collections.ConvertData(content, &data); err == nil {
-			content, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			file, parseDiagnostics = parser.ParseJSON(content, filename)
-		} else {
-			if file, parseDiagnostics = parser.ParseHCL([]byte(content), filename); parseDiagnostics != nil {
-				return err
-			}
+		if file, parseDiagnostics = parser.ParseHCL([]byte(content), filename); parseDiagnostics != nil {
+			// If the conversion did not succeed, we simply consider the error on ParseHCL as the final diagnostic
+			convert(func(data []byte, out interface{}) error { return collections.ConvertData(string(data), out) })
 		}
 	}
 
