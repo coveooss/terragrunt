@@ -1,10 +1,8 @@
 package util
 
 import (
-	"reflect"
 	"testing"
 
-	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,10 +15,10 @@ func TestLoadDefaultValues(t *testing.T) {
 		folder string
 	}
 	testCases := []struct {
-		name       string
-		args       args
-		wantResult map[string]interface{}
-		wantErr    bool
+		name          string
+		args          args
+		wantResult    map[string]interface{}
+		errorContains string
 	}{
 		{"All Types",
 			args{testFixtureDefaultValues},
@@ -37,26 +35,24 @@ func TestLoadDefaultValues(t *testing.T) {
 				"bj_overridden_1": "BJ (b_override.tf.json)",
 				"bj_overridden_2": "BJ (override.tf.json)",
 			},
-			false,
+			"",
 		},
 		{
 			"Invalid Folder",
 			args{"Invalid"},
-			map[string]interface{}{},
-			true,
+			nil,
+			"Module directory Invalid does not exist or cannot be read",
 		},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			gotResult, _, err := LoadDefaultValues(tt.args.folder)
-			if tt.wantErr {
-				assert.Error(t, err)
+			if tt.errorContains != "" {
+				assert.Contains(t, err.Error(), tt.errorContains)
 			} else {
 				assert.Nil(t, err)
 			}
-			if !reflect.DeepEqual(gotResult, tt.wantResult) {
-				t.Errorf("LoadDefaultValues():\ngot : %v\nwant: %v", collections.AsDictionary(gotResult), collections.AsDictionary(tt.wantResult))
-			}
+			assert.Equal(t, tt.wantResult, gotResult)
 		})
 	}
 }

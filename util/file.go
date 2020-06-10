@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/errors"
@@ -84,8 +85,8 @@ func DeleteFiles(files []string) error {
 }
 
 // Grep returns true if the given regex can be found in any of the files matched by the given glob
-func Grep(regex *regexp.Regexp, glob string) (bool, error) {
-	matches, err := filepath.Glob(glob)
+func Grep(regex *regexp.Regexp, folder string, patterns ...string) (bool, error) {
+	matches, err := utils.FindFiles(folder, false, false, patterns...)
 	if err != nil {
 		return false, errors.WithStackTrace(err)
 	}

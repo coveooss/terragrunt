@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/gruntwork-io/terragrunt/awshelper"
 	"github.com/gruntwork-io/terragrunt/cli"
 	"github.com/gruntwork-io/terragrunt/config"
@@ -30,6 +31,8 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+func trim(s string) string { return fmt.Sprintln(strings.TrimSpace(collections.UnIndent(s))) }
+
 func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 	t.Parallel()
 
@@ -43,7 +46,7 @@ func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 	lockTableName := fmt.Sprintf("terragrunt-test-locks-%s", strings.ToLower(uniqueID()))
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfig(t, testFixturePath, s3BucketName, lockTableName, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfig(t, testFixturePath, s3BucketName, lockTableName, config.DefaultConfigName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
@@ -66,7 +69,7 @@ func TestTerragruntWorksWithIncludes(t *testing.T) {
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 
-	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, relative, s3BucketName, config.DefaultTerragruntConfigPath, config.DefaultTerragruntConfigPath)
+	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, relative, s3BucketName, config.DefaultConfigName, config.DefaultConfigName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 
@@ -87,7 +90,7 @@ func TestTerragruntOutputAllCommand(t *testing.T) {
 
 	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultConfigName)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, "not-used")
 
 	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
@@ -122,7 +125,7 @@ func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *tes
 
 	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, testPath, config.DefaultConfigName)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, "not-used")
 
 	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
@@ -154,7 +157,7 @@ func TestTerragruntStackCommands(t *testing.T) {
 
 	tmpEnvPath := copyEnvironment(t, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, "fixture-stack", config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(tmpEnvPath, "fixture-stack", config.DefaultConfigName)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
 	mgmtEnvironmentPath := fmt.Sprintf("%s/fixture-stack/mgmt", tmpEnvPath)
@@ -171,6 +174,112 @@ func TestTerragruntStackCommands(t *testing.T) {
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt destroy-all --terragrunt-non-interactive --terragrunt-working-dir %s", stageEnvironmentPath))
 	runTerragrunt(t, fmt.Sprintf("terragrunt destroy-all --terragrunt-non-interactive --terragrunt-working-dir %s", mgmtEnvironmentPath))
+}
+
+func TestTerragruntCustomConfig(t *testing.T) {
+	t.Parallel()
+	const testPath = "fixture-custom-config/"
+	command := fmt.Sprintf("terragrunt get-stack --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-config custom-config.hcl", testPath)
+	{
+		var out, err bytes.Buffer
+		runTerragruntRedirectOutput(t, command, &out, &err)
+		assert.Equal(t, trim(`
+			fixture-custom-config/sub-project-1
+			fixture-custom-config/sub-project-2/sub-project-2-1
+			fixture-custom-config/sub-project-2/sub-project-2-2
+			fixture-custom-config/sub-project-3
+		`), out.String())
+		assert.Equal(t, "", err.String())
+	}
+	{ // Outpout yaml
+		command := command + " -oy"
+		var out, err bytes.Buffer
+		runTerragruntRedirectOutput(t, command, &out, &err)
+		assert.Equal(t, trim(`
+			- path: fixture-custom-config/sub-project-1
+			- path: fixture-custom-config/sub-project-2/sub-project-2-1
+			  dependencies:
+			  - fixture-custom-config/sub-project-1
+			- path: fixture-custom-config/sub-project-2/sub-project-2-2
+			  dependencies:
+			  - fixture-custom-config/sub-project-2/sub-project-2-1
+			  - fixture-custom-config/sub-project-1
+			- path: fixture-custom-config/sub-project-3
+			  dependencies:
+			  - fixture-custom-config/sub-project-2/sub-project-2-1
+			  - fixture-custom-config/sub-project-2/sub-project-2-2
+			  - fixture-custom-config/sub-project-1
+		`)+"\n", out.String())
+		assert.Equal(t, "", err.String())
+	}
+	{ // Outpout json
+		command := command + " -oj"
+		var out, err bytes.Buffer
+		runTerragruntRedirectOutput(t, command, &out, &err)
+		assert.Equal(t, trim(`
+			[
+			  {
+			    "path": "fixture-custom-config/sub-project-1"
+			  },
+			  {
+			    "path": "fixture-custom-config/sub-project-2/sub-project-2-1",
+			    "dependencies": [
+			      "fixture-custom-config/sub-project-1"
+			    ]
+			  },
+			  {
+			    "path": "fixture-custom-config/sub-project-2/sub-project-2-2",
+			    "dependencies": [
+			      "fixture-custom-config/sub-project-2/sub-project-2-1",
+			      "fixture-custom-config/sub-project-1"
+			    ]
+			  },
+			  {
+			    "path": "fixture-custom-config/sub-project-3",
+			    "dependencies": [
+			      "fixture-custom-config/sub-project-2/sub-project-2-1",
+			      "fixture-custom-config/sub-project-2/sub-project-2-2",
+			      "fixture-custom-config/sub-project-1"
+			    ]
+			  }
+			]		
+		`), out.String())
+		assert.Equal(t, "", err.String())
+	}
+	{ // Outpout hcl
+		command := command + " -oh"
+		var out, err bytes.Buffer
+		runTerragruntRedirectOutput(t, command, &out, &err)
+		assert.Equal(t, trim(`
+			[
+			  {
+			    path = "fixture-custom-config/sub-project-1"
+			  },
+			  {
+			    dependencies = ["fixture-custom-config/sub-project-1"]
+			    path         = "fixture-custom-config/sub-project-2/sub-project-2-1"
+			  },
+			  {
+			    path = "fixture-custom-config/sub-project-2/sub-project-2-2"
+			    
+			    dependencies = [
+			      "fixture-custom-config/sub-project-2/sub-project-2-1",
+			      "fixture-custom-config/sub-project-1",
+			    ]
+			  },
+			  {
+			    path = "fixture-custom-config/sub-project-3"
+			    
+			    dependencies = [
+			      "fixture-custom-config/sub-project-2/sub-project-2-1",
+			      "fixture-custom-config/sub-project-2/sub-project-2-2",
+			      "fixture-custom-config/sub-project-1",
+			    ]
+			  },
+			]
+		`), out.String())
+		assert.Equal(t, "", err.String())
+	}
 }
 
 func TestLocalDownload(t *testing.T) {
@@ -238,7 +347,7 @@ func TestLocalWithBackend(t *testing.T) {
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueID()))
 	tmpEnvPath := copyEnvironment(t, "fixture-download")
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
-	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultConfigName)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
@@ -263,7 +372,7 @@ func TestRemoteWithBackend(t *testing.T) {
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
-	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultTerragruntConfigPath)
+	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultConfigName)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)

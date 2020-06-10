@@ -66,6 +66,9 @@ type TerragruntOptions struct {
 	// If set to true, continue running *-all commands even if a dependency has errors. This is mostly useful for 'output-all <some_variable>'. See https://github.com/gruntwork-io/terragrunt/issues/193
 	IgnoreDependencyErrors bool
 
+	// If set to true, check if the source folder contains terraform files to determine if the folder should be excluded from the stack
+	CheckSourceFolders bool
+
 	// If you want stdout to go somewhere other than os.stdout
 	Writer io.WriteCloser
 
@@ -105,6 +108,13 @@ type TerragruntOptions struct {
 
 // NewTerragruntOptions creates a new TerragruntOptions object with reasonable defaults for real usage
 func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
+	if info, _ := os.Stat(terragruntConfigPath); !util.ListContainsElement(configNames, filepath.Base(terragruntConfigPath)) && (info == nil || info.IsDir()) {
+		if matches, _ := utils.FindFiles(terragruntConfigPath, false, false, configNames...); len(matches) > 0 {
+			terragruntConfigPath = matches[0]
+		} else {
+			terragruntConfigPath = filepath.Join(terragruntConfigPath, DefaultConfigName)
+		}
+	}
 	workingDir := filepath.Dir(terragruntConfigPath)
 
 	downloadDir := util.GetTempDownloadFolder("terragrunt")
@@ -142,6 +152,62 @@ func NewTerragruntOptionsForTest(terragruntConfigPath string) *TerragruntOptions
 	opts := NewTerragruntOptions(terragruntConfigPath)
 	opts.NonInteractive = true
 	return opts
+}
+
+// ConfigPath builds a path to the config file into the provided folder.
+func (terragruntOptions *TerragruntOptions) ConfigPath(folder string) (string, bool) {
+	info, _ := os.Stat(terragruntOptions.TerragruntConfigPath)
+	if info != nil && !info.IsDir() {
+		if base := filepath.Base(terragruntOptions.TerragruntConfigPath); !util.ListContainsElement(configNames, base) {
+			// The basename is not a standard one, so we add it to the list of possible configuration filenames.
+			configNames = append([]string{base}, configNames...)
+		}
+	}
+	if matches, _ := utils.FindFiles(folder, false, false, configNames...); len(matches) > 0 {
+		for i := range matches {
+			if stat, _ := os.Stat(matches[i]); stat != nil && !stat.IsDir() {
+				return matches[i], true
+			}
+		}
+	}
+	return util.JoinPath(folder, DefaultConfigName), false
+}
+
+// FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.
+// A file is a Terragrunt config file if it its name matches the DefaultConfigName constant and contains Terragrunt
+// config contents as returned by the IsTerragruntConfig method.
+func (terragruntOptions *TerragruntOptions) FindConfigFilesInPath(rootPath string) ([]string, error) {
+	if rootPath == "" {
+		rootPath = terragruntOptions.WorkingDir
+	}
+	configFiles := []string{}
+
+	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			if util.FileExists(filepath.Join(path, IgnoreFile)) {
+				// If we wish to exclude a directory from the *-all commands, we just
+				// have to put an empty file name terragrunt.ignore in the folder
+				return nil
+			}
+			if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(path, IgnoreFileNonInteractive)) {
+				// If we wish to exclude a directory from the *-all commands, we just
+				// have to put an empty file name terragrunt-non-interactive.ignore in
+				// the folder
+				return nil
+			}
+			if configPath, exists := terragruntOptions.ConfigPath(path); exists {
+				configFiles = append(configFiles, configPath)
+			}
+		}
+
+		return nil
+	})
+
+	return configFiles, err
 }
 
 // Clone creates a copy of this TerragruntOptions, but with different values for the given variables. This is useful for

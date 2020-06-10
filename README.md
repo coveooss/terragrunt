@@ -18,16 +18,44 @@ Please see the following for more info, including install instructions and compl
 
 ## Additional features in this fork
 
+### Configuration file
+
+Terragrunt supports defining configuration file as `terragrunt.hcl` for pure hcl configuration or `terragrunt.hcl.json` if you want to express your
+configuration as json.
+
+It is also possible to name your file with different name (letting you organize your folder as you want and not mix the terragrunt configuration file
+with your regular terraform files).
+
+Supported names are:
+
+* `.terragrunt`, `terragrunt`, `.terragrunt.config`, `terragrunt.config` (can use hcl, json or yaml syntax)
+* `.terragrunt.hcl` or `terragrunt.hcl` (must use hcl syntax)
+* `.terragrunt.json`, `terragrunt.json`, `.terragrunt.hcl.json` or `terragrunt.hcl.json` (must use json syntax)
+* `.terragrunt.yaml`, `terragrunt.yaml`, `.terragrunt.yml` or `terragrunt.yml` (must use yaml syntax)
+
+It is also possible to add your own terragrunt config file name by specifying the `--terragrunt-config` argument or by defining the environment
+variable `TERRAGRUNT_CONFIG`. If this argument point on a specific path, the working directory will be set to the containing folder. If it
+is just a filename (without folder), then, it will be joined to the specified working directory (current folder being the default). Only one
+file can be specified.
+
+```bash
+terragrunt --terragrunt-config my-custom-config
+```
+
+Then, the filename `my-custom-config` will also be accepted as a valid terragrunt configuration name.
+
 ### Assume AWS IAM role
 
-Terraform already provides the functionality to configure AWS provider that assume a different IAM Role when retrieving and creating AWS resources.
-But when we use terragrunt to configure S3 backend to store our remote states, terraform uses the current user rights to access and configure the remote state file and to manage locking operation in the DynamoDB database.
+Terraform already provides the functionality to configure AWS provider that assume a different IAM Role when retrieving and creating AWS
+resources. But when we use terragrunt to configure S3 backend to store our remote states, terraform uses the current user rights to
+access and configure the remote state file and to manage locking operation in the DynamoDB database.
 
-Since the state files may contain secrets, it is often required to restrict access to these files. But event if the AWS provider is configured to allow access to the state file
-by assuming a role, the call will fail if the current user does not have a direct access to theses files.
+Since the state files may contain secrets, it is often required to restrict access to these files. But event if the AWS provider is
+configured to allow access to the state file by assuming a role, the call will fail if the current user does not have a direct access to
+theses files.
 
-Moreover, if the user has configured its AWS profile (in .aws/config) to assume a role instead of directly using credentials, terraform would not be
-able to recognize that configuration and will complain that there is `No valid credential sources found for AWS Provider`
+Moreover, if the user has configured its AWS profile (in .aws/config) to assume a role instead of directly using credentials, terraform
+would not be able to recognize that configuration and will complain that there is `No valid credential sources found for AWS Provider`
 
 ```text
 [profile deploy]
@@ -54,14 +82,15 @@ assume_role = [
 ]
 ```
 
-Then, terragrunt will try to assume the roles until it succeeded. Note that the last role could be optionally set to an empty string to ensure that at least one role
-is satisfied. Empty strings means to continue with the user current role.
+Then, terragrunt will try to assume the roles until it succeeded. Note that the last role could be optionally set to an empty string to
+ensure that at least one role is satisfied. Empty strings means to continue with the user current role.
 
-The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf configuration will prevail.
+The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf
+configuration will prevail.
 
 ### Conditional execution of a project
 
-It is possible to set conditions that must be met in order for a project to be executed. To do so, the following block must be defined in the terragrunt.hcl:  
+It is possible to set conditions that must be met in order for a project to be executed. To do so, the following block must be defined in the terragrunt configuration file:
 
 * All conditions within a `condition` attribute must be true to apply the rule (logical and between elements).  
 * If any block marked `ignore_if_true` is true, the code is not executed (logical or between elements).  
@@ -148,11 +177,15 @@ List the content of the temporary folder
 > terragrunt ls -al
 ```
 
-The name `shell` used to name the extra_command group could also be used as a command. It acts as an alias for the first command in `commands` list.
+The name `shell` used to name the extra_command group could also be used as a command. It acts as an alias for the first command in
+`commands` list.
 
 ### Define hooks
 
-It may be useful to define some additional commands that should be ran before and after executing the actual terraform command. You can define hooks in any terragrunt configuration blocks. By default, pre hooks are executed the declaration order starting with hooks defined in the uppermost terragrunt configuration block (parents) and finishing with those defined in the leaf configuration block. You can alter the execution order by specifying a different order (non specified order are set to 0 by default).
+It may be useful to define some additional commands that should be ran before and after executing the actual terraform command. You can
+define hooks in any terragrunt configuration blocks. By default, pre hooks are executed the declaration order starting with hooks defined
+in the uppermost terragrunt configuration block (parents) and finishing with those defined in the leaf configuration block. You can alter
+the execution order by specifying a different order (non specified order are set to 0 by default).
 
 It is possible to override hooks defined in a parent configuration by specifying the exact same name.
 
@@ -206,8 +239,9 @@ pre_hook|post_hook "name" {
 
 ### Import variables
 
-It is possible to import variables from external files (local or remote) or defined variables directly in a `import_variables` configuration block. It is also possible to define environment variables that will be defined
-during the whole terragrunt command execution.
+It is possible to import variables from external files (local or remote) or defined variables directly in a `import_variables`
+configuration block. It is also possible to define environment variables that will be defined during the whole terragrunt command
+execution.
 
 #### Configure import variables
 
@@ -246,7 +280,9 @@ import_variables "name" {
 
 ### Import files
 
-When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file `terragrunt.hcl`. It is also possible to import files from external sources that should be used by terraform to evaluate your project. One typical usage of this feature is to import global variables that are common to all your terraform projects.
+When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file.
+It is also possible to import files from external sources that should be used by terraform to evaluate your project.
+One typical usage of this feature is to import global variables that are common to all your terraform projects.
 
 #### Configure import files
 
@@ -289,11 +325,17 @@ import_files "name" {
 
 ### Uniqueness criteria
 
-When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file `terragrunt.hcl`. It is also possible to import files from external sources that should be used by terraform to evaluate your project. One typical usage of this feature is to import global variables that are common to all your terraform projects.
+When terragrunt execute, it creates a temporary folder containing the source of your terraform project and the configuration file. It is
+also possible to import files from external sources that should be used by terraform to evaluate your project. One typical usage of this
+feature is to import global variables that are common to all your terraform projects.
 
 #### Configure uniqueness criteria
 
-Terragrunt create may temporary folders for each of your terraform project based on the path where your terraform source are located. But if you change variables such as your environment, your deployment region or your project name. You may face get conflicts between your current cached temporary folder and your execution context. To ensure that all your different environments get a distinct temporary folder, you may define a `uniqueness_criteria`. That criteria will be added to the source folder to generate a unique and distinct temporary folder name.
+Terragrunt create may temporary folders for each of your terraform project based on the path where your terraform source are located. But
+if you change variables such as your environment, your deployment region or your project name. You may face get conflicts between your
+current cached temporary folder and your execution context. To ensure that all your different environments get a distinct temporary
+folder, you may define a `uniqueness_criteria`. That criteria will be added to the source folder to generate a unique and distinct
+temporary folder name.
 
 ```hcl
 uniqueness_criteria = "${var.env}${var.region}/${var.project}"
@@ -301,7 +343,9 @@ uniqueness_criteria = "${var.env}${var.region}/${var.project}"
 
 ### Export variables to a file
 
-There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are not accessible by Terraform directly  
+There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are
+not accessible by Terraform directly
+
 To write your imported variables to a file, use the `export_variables` block. Example:  
 
 ```hcl

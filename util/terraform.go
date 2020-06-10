@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	hcl2 "github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/terraform/configs"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/coveooss/gotemplate/v3/hcl"
+	gotemplateHcl "github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/gotemplate/v3/json"
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/yaml"
@@ -21,15 +21,17 @@ import (
 func LoadDefaultValues(folder string) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
 	var terraformConfig *configs.Module
 	parser := configs.NewParser(nil)
-	if terraformConfig, err = parser.LoadConfigDir(folder); err != nil && err.(hcl2.Diagnostics).HasErrors() {
+	if terraformConfig, err = parser.LoadConfigDir(folder); err != nil && err.(hcl.Diagnostics).HasErrors() {
 		errors := []string{}
-		for _, err := range err.(hcl2.Diagnostics).Errs() {
+		for _, err := range err.(hcl.Diagnostics).Errs() {
 			errors = append(errors, " - "+err.Error())
 		}
-		return map[string]interface{}{}, nil, fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, strings.Join(errors, "\n"))
+		err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, strings.Join(errors, "\n"))
+		return
 	}
 	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
-	return importedVariables, terraformConfig.Variables, err
+	allVariables = terraformConfig.Variables
+	return
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
@@ -98,7 +100,7 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 	}
 
 	// We first try to read using hcl parser
-	if err = hcl.Unmarshal([]byte(content), &result); err != nil {
+	if err = gotemplateHcl.Unmarshal([]byte(content), &result); err != nil {
 		// If there is an error with try with a multi language parser
 		result = make(map[string]interface{})
 		if err2 := collections.ConvertData(content, &result); err2 == nil {

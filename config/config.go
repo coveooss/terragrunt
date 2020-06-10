@@ -10,22 +10,25 @@ import (
 	"sync"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/coveooss/gotemplate/v3/hcl"
+	gotemplateHcl "github.com/coveooss/gotemplate/v3/hcl"
+	"github.com/coveooss/gotemplate/v3/json"
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/gotemplate/v3/yaml"
 	"github.com/fatih/color"
 	"github.com/gruntwork-io/terragrunt/errors"
 	"github.com/gruntwork-io/terragrunt/options"
 	"github.com/gruntwork-io/terragrunt/remote"
 	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/zclconf/go-cty/cty"
 )
 
 const (
-	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
-	DefaultTerragruntConfigPath = "terragrunt.hcl"
+	// DefaultConfigName is the name of the default file name where to store terragrunt definitions
+	DefaultConfigName = options.DefaultConfigName
 
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
@@ -81,12 +84,12 @@ func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders
 	return
 }
 
-// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terragrunt.hcl or .terragrunt)
+// TerragruntConfigFile represents the configuration supported in a Terragrunt configuration file (i.e. terragrunt.hcl)
 type TerragruntConfigFile struct {
 	Path string
 	// remain will send everything that isn't match into the labelled struct
 	// In that case, most of the config goes down to TerragruntConfig
-	// https://godoc.org/github.com/hashicorp/hcl2/gohcl
+	// https://godoc.org/github.com/hashicorp/hcl/v2/gohcl
 	TerragruntConfig `hcl:",remain"`
 	Include          *IncludeConfig `hcl:"include,block"`
 }
@@ -220,42 +223,6 @@ func (conf TerraformConfig) String() string {
 	return collections.PrettyPrintStruct(conf)
 }
 
-// FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.
-// A file is a Terragrunt config file if it its name matches the DefaultTerragruntConfigPath constant and contains Terragrunt
-// config contents as returned by the IsTerragruntConfig method.
-func FindConfigFilesInPath(terragruntOptions *options.TerragruntOptions) ([]string, error) {
-	rootPath := terragruntOptions.WorkingDir
-	configFiles := []string{}
-
-	err := filepath.Walk(rootPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			if util.FileExists(filepath.Join(path, options.IgnoreFile)) {
-				// If we wish to exclude a directory from the *-all commands, we just
-				// have to put an empty file name terragrunt.ignore in the folder
-				return nil
-			}
-			if terragruntOptions.NonInteractive && util.FileExists(filepath.Join(path, options.IgnoreFileNonInteractive)) {
-				// If we wish to exclude a directory from the *-all commands, we just
-				// have to put an empty file name terragrunt-non-interactive.ignore in
-				// the folder
-				return nil
-			}
-			configPath := util.JoinPath(path, DefaultTerragruntConfigPath)
-			if _, err := os.Stat(configPath); err == nil {
-				configFiles = append(configFiles, configPath)
-			}
-		}
-
-		return nil
-	})
-
-	return configFiles, err
-}
-
 // ReadTerragruntConfig reads the Terragrunt config file from its default location
 func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*TerragruntConfig, error) {
 	include := IncludeConfig{Path: terragruntOptions.TerragruntConfigPath}
@@ -288,7 +255,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	}()
 
 	if include.Path == "" {
-		include.Path = DefaultTerragruntConfigPath
+		include.Path = filepath.Base(terragruntOptions.TerragruntConfigPath)
 	}
 
 	if include.isIncludedBy == nil && !include.isBootstrap {
@@ -327,8 +294,8 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 	terragruntOptions.Logger.Tracef("Read configuration file at %s\n%s", include.Path, configString)
 	if terragruntOptions.ApplyTemplate {
-		collections.SetListHelper(hcl.GenericListHelper)
-		collections.SetDictionaryHelper(hcl.DictionaryHelper)
+		collections.SetListHelper(gotemplateHcl.GenericListHelper)
+		collections.SetDictionaryHelper(gotemplateHcl.DictionaryHelper)
 
 		var t *template.Template
 		options := template.DefaultOptions()
@@ -462,18 +429,48 @@ func parseConfigStringAsTerragruntConfig(configString string, resolveContext *re
 }
 
 // parseHcl uses the HCL2 parser to parse the given string into the struct specified by out.
-func parseHcl(hcl string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
+// If the supplied data is in another format, it converts it to json to use HCL2 ParseJSON instea
+func parseHcl(content string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
 	// The HCL2 parser and especially cty conversions will panic in many types of errors, so we have to recover from
 	// those panics here and convert them to normal errors
-	defer func() {
-		if recovered := recover(); recovered != nil {
-			err = errors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: recovered, ConfigFile: filename})
-		}
-	}()
+	defer errors.Recover(func(cause error) {
+		err = errors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: cause, ConfigFile: filename})
+	})
 
 	parser := hclparse.NewParser()
+	var file *hcl.File
+	var parseDiagnostics hcl.Diagnostics
 
-	file, parseDiagnostics := parser.ParseHCL([]byte(hcl), filename)
+	convert := func(convert func([]byte, interface{}) error) error {
+		var data map[string]interface{}
+		if err := convert([]byte(content), &data); err != nil {
+			return err
+		}
+		content, err := json.Marshal(data)
+		if err != nil {
+			panic(err)
+		}
+		// It is important to add an extension to the filename since hcl parsers maintain a cache of already seen files
+		file, parseDiagnostics = parser.ParseJSON(content, filename+"retry")
+		return nil
+	}
+
+	switch filepath.Ext(filename) {
+	case ".json":
+		file, parseDiagnostics = parser.ParseJSON([]byte(content), filename)
+	case ".hcl", ".tfvars":
+		file, parseDiagnostics = parser.ParseHCL([]byte(content), filename)
+	case ".yml", ".yaml":
+		if err := convert(yaml.Unmarshal); err != nil {
+			return err
+		}
+	default:
+		if file, parseDiagnostics = parser.ParseHCL([]byte(content), filename); parseDiagnostics != nil && parseDiagnostics.HasErrors() {
+			// If the conversion did not succeed, we simply consider the error on ParseHCL as the final diagnostic
+			convert(func(data []byte, out interface{}) error { return collections.ConvertData(string(data), out) })
+		}
+	}
+
 	if parseDiagnostics != nil && parseDiagnostics.HasErrors() {
 		return parseDiagnostics
 	}
@@ -597,7 +594,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 // Parse the config of the given include, if one is specified
 func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (configString string, config *TerragruntConfig, err error) {
 	if includedConfig.Path == "" && includedConfig.Source == "" {
-		return "", nil, errors.WithStackTrace(IncludedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
+		return "", nil, errors.WithStackTrace(includedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
 	}
 
 	if !filepath.IsAbs(includedConfig.Path) && includedConfig.Source == "" {
@@ -607,11 +604,10 @@ func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *optio
 	return ParseConfigFile(terragruntOptions, *includedConfig)
 }
 
-// IncludedConfigMissingPath is the error returned when there is no path defined in the include directive
-type IncludedConfigMissingPath string
+type includedConfigMissingPath string
 
-func (err IncludedConfigMissingPath) Error() string {
-	return fmt.Sprintf("The include configuration in %s must specify a 'path' and/or 'source' parameter", string(err))
+func (err includedConfigMissingPath) Error() string {
+	return fmt.Sprintf("the include configuration in %s must specify a 'path' and/or 'source' parameter", string(err))
 }
 
 type panicWhileParsingConfig struct {
@@ -620,5 +616,5 @@ type panicWhileParsingConfig struct {
 }
 
 func (err panicWhileParsingConfig) Error() string {
-	return fmt.Sprintf("Recovering panic while parsing '%s'. Got error of type '%v': %v", err.ConfigFile, reflect.TypeOf(err.RecoveredValue), err.RecoveredValue)
+	return fmt.Sprintf("recovering panic while parsing '%s'. Got error of type '%v': %v", err.ConfigFile, reflect.TypeOf(err.RecoveredValue), err.RecoveredValue)
 }

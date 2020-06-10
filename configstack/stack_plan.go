@@ -26,7 +26,7 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 	// We override the multi errors creator to use a specialized error type for plan
 	// because error severity in plan is not standard (i.e. exit code 2 is less significant that exit code 1).
 	CreateMultiErrors = func(errs []error) error {
-		return PlanMultiError{errMulti{errs}}
+		return planMultiError{errMulti{errs}}
 	}
 
 	detailedExitCode := util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-detailed-exitcode")
@@ -145,14 +145,14 @@ func extractSummaryResultFromPlan(output string) (string, int) {
 	return "No effective change", 0
 }
 
-// PlanMultiError is a specialized version of errMulti type
+// planMultiError is a specialized version of errMulti type
 // It handles the exit code differently from the base implementation
-type PlanMultiError struct {
+type planMultiError struct {
 	errMulti
 }
 
 // ExitStatus returns the numeric status corresponding with the list of errors.
-func (e PlanMultiError) ExitStatus() (int, error) {
+func (e planMultiError) ExitStatus() (int, error) {
 	exitCode := normalExitCode
 	for i := range e.Errors {
 		if code, err := shell.GetExitCode(e.Errors[i]); err != nil {

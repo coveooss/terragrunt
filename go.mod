@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.31.12
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
-	github.com/coveooss/gotemplate/v3 v3.3.10
+	github.com/coveooss/gotemplate/v3 v3.4.0
 	github.com/coveooss/multilogger v0.4.6
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.1.1
@@ -16,14 +16,13 @@ require (
 	github.com/hashicorp/terraform v0.12.26
 	github.com/lithammer/dedent v1.1.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
-	github.com/mattn/go-zglob v0.0.2
 	github.com/mitchellh/mapstructure v1.3.2
 	github.com/rs/xid v1.2.1
 	github.com/sergi/go-diff v1.1.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.6.1
-	github.com/ulikunitz/xz v0.5.6 // indirect
-	github.com/urfave/cli v1.22.2
+	github.com/ulikunitz/xz v0.5.7 // indirect
+	github.com/urfave/cli v1.22.4
 	github.com/zclconf/go-cty v1.4.2
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e

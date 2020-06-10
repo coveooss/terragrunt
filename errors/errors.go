@@ -81,7 +81,7 @@ func Recover(onPanic func(error)) {
 // Assert raises a panic with the formatted messsage if the test is not true.
 func Assert(test bool, format interface{}, args ...interface{}) {
 	if !test {
-		panic(fmt.Errorf(fmt.Sprint(format), args))
+		panic(fmt.Errorf(fmt.Sprint(format), args...))
 	}
 }
 

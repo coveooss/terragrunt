@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	gotemplateHcl "github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/fatih/color"
+	"github.com/gruntwork-io/terragrunt/config"
 	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/lithammer/dedent"
 	"github.com/sergi/go-diff/diffmatchpatch"
@@ -44,7 +45,7 @@ func migrate(cliContext *cli.Context) (err error) {
 		}
 	}()
 
-	app := kingpin.New("terragrunt 0.12upgrade", "Upgrade your Terraform files from the format used in Teraform 0.11 to the one used in 0.12")
+	app := kingpin.New("terragrunt 0.12upgrade", "Upgrade your Terraform files from the format used in Terraform 0.11 to the one used in 0.12")
 	workingDirectory, _ := os.Getwd()
 	targetDirectory := app.Flag("target-directory", "Where your Terraform files are located").Short('t').Default(workingDirectory).String()
 	write := app.Flag("write", "Write the changes to your files. Otherwise, display a diff").Short('w').Bool()
@@ -120,7 +121,7 @@ func migrate(cliContext *cli.Context) (err error) {
 	// 4. Remove flattened variables
 	allProjects := []string{"infra/*"}
 	if err := forEachFile(*targetDirectory, func(fullPath, relativePath string) error {
-		if strings.HasSuffix(fullPath, "terragrunt.hcl") {
+		if strings.HasSuffix(fullPath, config.DefaultConfigName) {
 			var configFileMap map[string]interface{}
 			configFile, err := ioutil.ReadFile(fullPath)
 			if err != nil {
@@ -170,7 +171,7 @@ func migrate(cliContext *cli.Context) (err error) {
 	// Also delete "versions.tf" files written by the previous step
 	if err := forEachFile(*targetDirectory, func(fullPath, relativePath string) error {
 		originPath := relativePath
-		if strings.HasSuffix(fullPath, "terragrunt.hcl") {
+		if strings.HasSuffix(fullPath, config.DefaultConfigName) {
 			originPath = filepath.Join(filepath.Dir(relativePath), "terraform.tfvars")
 		}
 		originContent, err := util.ReadFileAsString(filepath.Join(copyOfOriginalsDir, originPath))
@@ -242,7 +243,7 @@ func migrateConfigurationFile(fullPath, relativePath string) error {
 	newContent = runIfRegex.ReplaceAllString(newContent, "run_if = {")
 	newContent = ignoreIfRegex.ReplaceAllString(newContent, "ignore_if = {")
 
-	newPath := filepath.Join(filepath.Dir(fullPath), "terragrunt.hcl")
+	newPath := filepath.Join(filepath.Dir(fullPath), config.DefaultConfigName)
 	if err := ioutil.WriteFile(newPath, []byte(newContent), 0666); err != nil {
 		return err
 	}
@@ -306,8 +307,8 @@ func copyToTemporaryDirectory(name string, source string) (string, error) {
 
 func getAllFlattenedReplacementsFromImportedProjects(importedProjects []string) map[string]string {
 	replacements := map[string]string{}
-	sess := session.Must(session.NewSession())
-	svc := s3.New(sess)
+	session := session.Must(session.NewSession())
+	svc := s3.New(session)
 	if err := svc.ListObjectsPages(&s3.ListObjectsInput{
 		Bucket: aws.String("coveo-terraform-outputs-us-east-1"),
 	}, func(p *s3.ListObjectsOutput, last bool) (shouldContinue bool) {

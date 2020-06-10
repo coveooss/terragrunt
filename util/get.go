@@ -23,7 +23,7 @@ import (
 // from disk, otherwise we download first and then load.
 type GetMode byte
 
-// GetMode value
+// GetMode values
 const (
 	GetModeNone GetMode = iota
 	GetModeGet

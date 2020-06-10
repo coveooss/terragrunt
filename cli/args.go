@@ -69,11 +69,15 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 		return util.RemoveElementFromList(strings.Split(result, string(",")), "")
 	}
 
-	workingDir := parse(optWorkingDir, currentDir)
-	terragruntConfigPath := parse(optTerragruntConfig, os.Getenv(options.EnvConfig), util.JoinPath(workingDir, config.DefaultTerragruntConfigPath))
+	workingDir := filepath.ToSlash(parse(optWorkingDir, currentDir))
+	terragruntConfigPath := filepath.ToSlash(parse(optTerragruntConfig, os.Getenv(options.EnvConfig)))
+
+	if !strings.Contains(terragruntConfigPath, "/") {
+		terragruntConfigPath = filepath.ToSlash(util.JoinPath(workingDir, terragruntConfigPath))
+	}
 	terraformPath := parse(optTerragruntTFPath, os.Getenv(options.EnvTFPath), "terraform")
 
-	opts := options.NewTerragruntOptions(filepath.ToSlash(terragruntConfigPath))
+	opts := options.NewTerragruntOptions(terragruntConfigPath)
 	opts.TerraformPath = filepath.ToSlash(terraformPath)
 	opts.NonInteractive = parseBooleanArg(args, optNonInteractive, "", false)
 	opts.TerraformCliArgs = filterTerragruntArgs(args)
@@ -88,6 +92,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.TemplateAdditionalPatterns = parseList(optTemplatePatterns, os.Getenv(options.EnvTemplatePatterns))
 	opts.BootConfigurationPaths = parseList(optBootConfigs, os.Getenv(options.EnvBootConfigs))
 	opts.PreBootConfigurationPaths = parseList(optPreBootConfigs, os.Getenv(options.EnvPreBootConfigs))
+	opts.CheckSourceFolders = !parseBooleanArg(args, optIncludeEmptyFolders, options.EnvIncludeEmptyFolders, false)
 
 	flushDelay := parse(optFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
 	nbWorkers := parse(optNbWorkers, os.Getenv(options.EnvWorkers), "10")
