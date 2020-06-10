@@ -26,10 +26,12 @@ func LoadDefaultValues(folder string) (importedVariables map[string]interface{},
 		for _, err := range err.(hcl.Diagnostics).Errs() {
 			errors = append(errors, " - "+err.Error())
 		}
-		return map[string]interface{}{}, nil, fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, strings.Join(errors, "\n"))
+		err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, strings.Join(errors, "\n"))
+		return
 	}
 	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
-	return importedVariables, terraformConfig.Variables, err
+	allVariables = terraformConfig.Variables
+	return
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file

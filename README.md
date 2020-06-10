@@ -34,7 +34,9 @@ Supported names are:
 * `.terragrunt.yaml`, `terragrunt.yaml`, `.terragrunt.yml` or `terragrunt.yml` (must use yaml syntax)
 
 It is also possible to add your own terragrunt config file name by specifying the `--terragrunt-config` argument or by defining the environment
-variable `TERRAGRUNT_CONFIG`.
+variable `TERRAGRUNT_CONFIG`. If this argument point on a specific path, the working directory will be set to the containing folder. If it
+is just a filename (without folder), then, it will be joined to the specified working directory (current folder being the default). Only one
+file can be specified.
 
 ```bash
 terragrunt --terragrunt-config my-custom-config

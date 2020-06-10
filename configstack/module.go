@@ -105,6 +105,9 @@ func ResolveTerraformModules(terragruntConfigPaths []string, terragruntOptions *
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents
 // into a TerraformModule struct. Note that this method will NOT fill in the Dependencies field of the TerraformModule
 // struct (see the crosslinkDependencies method for that). Return a map from module path to TerraformModule struct.
+//
+// resolveExternal is used to exclude modules that don't contain terraform files. This is used to avoid requirements of
+// adding terragrunt.ignore when a parent folder doesn't have terraform files to deploy by itself.
 func resolveModules(canonicalTerragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions, resolveExternal bool) (map[string]*TerraformModule, error) {
 	moduleMap := map[string]*TerraformModule{}
 
