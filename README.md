@@ -344,7 +344,9 @@ uniqueness_criteria = "${var.env}${var.region}/${var.project}"
 ### Export variables to a file
 
 There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are
-not accessible by Terraform directly to write your imported variables to a file, use the `export_variables` block. Example:  
+not accessible by Terraform directly
+
+To write your imported variables to a file, use the `export_variables` block. Example:  
 
 ```hcl
 export_variables {

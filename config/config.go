@@ -465,7 +465,7 @@ func parseHcl(content string, filename string, out interface{}, resolveContext *
 			return err
 		}
 	default:
-		if file, parseDiagnostics = parser.ParseHCL([]byte(content), filename); parseDiagnostics != nil {
+		if file, parseDiagnostics = parser.ParseHCL([]byte(content), filename); parseDiagnostics != nil && parseDiagnostics.HasErrors() {
 			// If the conversion did not succeed, we simply consider the error on ParseHCL as the final diagnostic
 			convert(func(data []byte, out interface{}) error { return collections.ConvertData(string(data), out) })
 		}
