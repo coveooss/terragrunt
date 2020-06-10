@@ -112,7 +112,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		if matches, _ := utils.FindFiles(terragruntConfigPath, false, false, configNames...); len(matches) > 0 {
 			terragruntConfigPath = matches[0]
 		} else {
-			terragruntConfigPath = filepath.Join(terragruntConfigPath, DefaultTerragruntConfigPath)
+			terragruntConfigPath = filepath.Join(terragruntConfigPath, DefaultConfigName)
 		}
 	}
 	workingDir := filepath.Dir(terragruntConfigPath)
@@ -170,7 +170,7 @@ func (terragruntOptions *TerragruntOptions) ConfigPath(folder string) (string, b
 			}
 		}
 	}
-	return util.JoinPath(folder, DefaultTerragruntConfigPath), false
+	return util.JoinPath(folder, DefaultConfigName), false
 }
 
 // FindConfigFilesInPath returns a list of all Terragrunt config files in the given path or any subfolder of the path.

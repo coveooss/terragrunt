@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var mockDefaultInclude = IncludeConfig{Path: DefaultTerragruntConfigPath}
+var mockDefaultInclude = IncludeConfig{Path: DefaultConfigName}
 
 func TestPathRelativeToInclude(t *testing.T) {
 	t.Parallel()
@@ -24,32 +24,32 @@ func TestPathRelativeToInclude(t *testing.T) {
 			".",
 		},
 		{
-			IncludeConfig{Path: "../" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/.terragrunt"),
 			"child",
 		},
 		{
-			IncludeConfig{Path: helpers.RootFolder + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: helpers.RootFolder + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child"),
 			"child",
 		},
 		{
-			IncludeConfig{Path: "../../../" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../../../" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/sub-child/sub-sub-child"),
 			"child/sub-child/sub-sub-child",
 		},
 		{
-			IncludeConfig{Path: helpers.RootFolder + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: helpers.RootFolder + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/sub-child/sub-sub-child"),
 			"child/sub-child/sub-sub-child",
 		},
 		{
-			IncludeConfig{Path: "../../other-child/" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../../other-child/" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/sub-child"),
 			"../child/sub-child",
 		},
 		{
-			IncludeConfig{Path: "../../" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../../" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest("../child/sub-child"),
 			"child/sub-child",
 		},
@@ -86,32 +86,32 @@ func TestPathRelativeFromInclude(t *testing.T) {
 			".",
 		},
 		{
-			IncludeConfig{Path: "../" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child"),
 			"..",
 		},
 		{
-			IncludeConfig{Path: helpers.RootFolder + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: helpers.RootFolder + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child"),
 			"..",
 		},
 		{
-			IncludeConfig{Path: "../../../" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../../../" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/sub-child/sub-sub-child"),
 			"../../..",
 		},
 		{
-			IncludeConfig{Path: helpers.RootFolder + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: helpers.RootFolder + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/sub-child/sub-sub-child"),
 			"../../..",
 		},
 		{
-			IncludeConfig{Path: "../../other-child/" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../../other-child/" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest(helpers.RootFolder + "child/sub-child"),
 			"../../other-child",
 		},
 		{
-			IncludeConfig{Path: "../../" + DefaultTerragruntConfigPath},
+			IncludeConfig{Path: "../../" + DefaultConfigName},
 			options.NewTerragruntOptionsForTest("../child/sub-child"),
 			"../..",
 		},
@@ -144,43 +144,43 @@ func TestFindInParentFolders(t *testing.T) {
 	}{
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child"),
-			"../" + DefaultTerragruntConfigPath,
+			"../" + DefaultConfigName,
 			nil,
 		},
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/terragrunt-in-root/child/sub-child/sub-sub-child"),
-			"../../../" + DefaultTerragruntConfigPath,
+			"../../../" + DefaultConfigName,
 			nil,
 		},
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child"),
 			"",
-			parentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultTerragruntConfigPath),
+			parentTerragruntConfigNotFound("../test/fixture-parent-folders/no-terragrunt-in-root/child/sub-child/" + DefaultConfigName),
 		},
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/multiple-terragrunt-in-parents/child"),
-			"../" + DefaultTerragruntConfigPath,
+			"../" + DefaultConfigName,
 			nil,
 		},
 		{
 			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/multiple-terragrunt-in-parents/child/sub-child"),
-			"../" + DefaultTerragruntConfigPath,
+			"../" + DefaultConfigName,
 			nil,
 		},
 		{
-			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/multiple-terragrunt-in-parents/child/sub-child/sub-sub-child" + DefaultTerragruntConfigPath),
-			"../" + DefaultTerragruntConfigPath,
+			options.NewTerragruntOptionsForTest("../test/fixture-parent-folders/multiple-terragrunt-in-parents/child/sub-child/sub-sub-child" + DefaultConfigName),
+			"../" + DefaultConfigName,
 			nil,
 		},
 		{
 			options.NewTerragruntOptionsForTest("/"),
 			"",
-			parentTerragruntConfigNotFound("/" + DefaultTerragruntConfigPath),
+			parentTerragruntConfigNotFound("/" + DefaultConfigName),
 		},
 		{
 			options.NewTerragruntOptionsForTest("/fake/path"),
 			"",
-			parentTerragruntConfigNotFound("/fake/path/" + DefaultTerragruntConfigPath),
+			parentTerragruntConfigNotFound("/fake/path/" + DefaultConfigName),
 		},
 	}
 

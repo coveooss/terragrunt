@@ -2,9 +2,9 @@ package options
 
 // Global constants
 const (
-	IgnoreFile                  = "terragrunt.ignore"
-	IgnoreFileNonInteractive    = "terragrunt-non-interactive.ignore"
-	DefaultTerragruntConfigPath = "terragrunt.hcl"
+	IgnoreFile               = "terragrunt.ignore"
+	IgnoreFileNonInteractive = "terragrunt-non-interactive.ignore"
+	DefaultConfigName        = "terragrunt.hcl"
 )
 
 var (

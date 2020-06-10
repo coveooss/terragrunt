@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	// DefaultTerragruntConfigPath is the name of the default file name where to store terragrunt definitions
-	DefaultTerragruntConfigPath = options.DefaultTerragruntConfigPath
+	// DefaultConfigName is the name of the default file name where to store terragrunt definitions
+	DefaultConfigName = options.DefaultConfigName
 
 	// TerragruntScriptFolder is the name of the scripts folder generated under the temporary terragrunt folder
 	TerragruntScriptFolder = ".terragrunt-scripts"
