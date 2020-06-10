@@ -17,5 +17,5 @@ post_hook "post_hook_1" {
 }
 
 include {
-  path = "${find_in_parent_folders()}"
+  path = find_in_parent_folders()
 }

@@ -1,5 +1,5 @@
 variable "region" {}
 
 output "example" {
-  value = "${var.region}"
+  value = var.region
 }

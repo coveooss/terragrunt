@@ -1,5 +1,5 @@
 variable "my_variable" {}
 
 output "example" {
-  value = "${var.my_variable}"
+  value = var.my_variable
 }

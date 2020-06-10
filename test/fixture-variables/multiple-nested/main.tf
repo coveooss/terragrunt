@@ -3,6 +3,6 @@ data "template_file" "nested" {
 }
 
 output "nested" {
-  value = "${data.template_file.nested.rendered}"
+  value = data.template_file.nested.rendered
 }
 
