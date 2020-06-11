@@ -1,7 +1,7 @@
 data "template_file" "example" {
-  template = "${var.var}"
+  template = var.var
 }
 
 output "example" {
-  value = "${data.template_file.example.rendered}"
+  value = data.template_file.example.rendered
 }

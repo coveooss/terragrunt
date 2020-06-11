@@ -1,5 +1,5 @@
 terraform {
-  source = "${get_current_dir()}"
+  source = get_current_dir()
 }
 
 import_variables "test1" {

@@ -3,5 +3,5 @@ module "my_module" {
 }
 
 output "example" {
-  value = "${module.my_module.example}"
+  value = module.my_module.example
 }
