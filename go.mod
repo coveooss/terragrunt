@@ -11,7 +11,7 @@ require (
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.1.1
 	github.com/hashicorp/go-getter v1.4.2-0.20200106182914-9813cbd4eb02
-	github.com/hashicorp/go-version v1.2.0
+	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.6.0
 	github.com/hashicorp/terraform v0.12.26
 	github.com/lithammer/dedent v1.1.0
