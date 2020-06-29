@@ -11,15 +11,15 @@ import (
 
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
+	"github.com/coveooss/terragrunt/v2/awshelper"
+	"github.com/coveooss/terragrunt/v2/config"
+	"github.com/coveooss/terragrunt/v2/configstack"
+	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/remote"
+	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
-	"github.com/gruntwork-io/terragrunt/awshelper"
-	"github.com/gruntwork-io/terragrunt/config"
-	"github.com/gruntwork-io/terragrunt/configstack"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/remote"
-	"github.com/gruntwork-io/terragrunt/shell"
-	"github.com/gruntwork-io/terragrunt/util"
 	"github.com/hashicorp/terraform/configs"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
@@ -176,7 +176,7 @@ func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) 
 	app.Writer = writer
 	app.ErrWriter = errwriter
 	app.UsageText = `Terragrunt is a thin wrapper for Terraform that provides extra tools for working with multiple
-   Terraform modules, remote state, and locking. For documentation, see https://github.com/gruntwork-io/terragrunt/.`
+   Terraform modules, remote state, and locking. For documentation, see https://github.com/coveooss/terragrunt.`
 
 	terragruntVersion = version
 	return app

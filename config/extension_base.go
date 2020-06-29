@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/coveooss/multilogger"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
 )
 
 // TerragruntExtensioner defines the interface that must be implemented by Terragrunt Extension objects

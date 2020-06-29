@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/stretchr/testify/assert"
 )
 

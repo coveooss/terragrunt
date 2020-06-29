@@ -1,4 +1,4 @@
-module github.com/gruntwork-io/terragrunt
+module github.com/coveooss/terragrunt/v2
 
 go 1.13
 

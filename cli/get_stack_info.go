@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/coveooss/gotemplate/v3/hcl"
-	"github.com/gruntwork-io/terragrunt/config"
-	"github.com/gruntwork-io/terragrunt/configstack"
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/coveooss/terragrunt/v2/config"
+	"github.com/coveooss/terragrunt/v2/configstack"
+	"github.com/coveooss/terragrunt/v2/options"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	yaml "gopkg.in/yaml.v2"
 )

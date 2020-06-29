@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/stretchr/testify/assert"
 )
 

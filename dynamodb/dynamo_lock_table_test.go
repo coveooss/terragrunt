@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/stretchr/testify/assert"
 )
 

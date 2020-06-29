@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/coveooss/multilogger/errors"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/util"
 )
 
 // ImportVariables is a configuration that allows defintion of variables that will be added to

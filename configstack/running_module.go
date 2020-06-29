@@ -8,10 +8,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/shell"
-	"github.com/gruntwork-io/terragrunt/util"
 )
 
 // ModuleStatus represents the status of a module that we are trying to apply as part of the apply-all or destroy-all command

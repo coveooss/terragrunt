@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/utils"
-	"github.com/gruntwork-io/terragrunt/config"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/config"
+	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
 )

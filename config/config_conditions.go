@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/zclconf/go-cty/cty"
 )
 

@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/test/helpers"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/test/helpers"
 	"github.com/stretchr/testify/assert"
 )
 

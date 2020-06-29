@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/util"
 )
 
 // ImportFiles is a configuration of files that must be imported from another directory to the terraform directory
