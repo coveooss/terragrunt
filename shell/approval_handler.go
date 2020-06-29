@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/coveooss/terragrunt/v2/options"
 )
 
 var sharedMutex = sync.Mutex{}

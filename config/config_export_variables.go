@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/hcl"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/util"
 	hclwrite "github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform/configs"
 	"gopkg.in/yaml.v2"

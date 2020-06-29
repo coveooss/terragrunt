@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gruntwork-io/terragrunt/config"
-	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/coveooss/terragrunt/v2/config"
+	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/stretchr/testify/assert"
 )
 

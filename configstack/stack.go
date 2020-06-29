@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gruntwork-io/terragrunt/options"
+	"github.com/coveooss/terragrunt/v2/options"
 )
 
 // Stack represents a stack of Terraform modules (i.e. folders with Terraform templates) that you can "spin up" or

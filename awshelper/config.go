@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/coveooss/multilogger"
-	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/coveooss/terragrunt/v2/errors"
 )
 
 var sessionCache sync.Map

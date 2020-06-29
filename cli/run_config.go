@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"github.com/gruntwork-io/terragrunt/awshelper"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/awshelper"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/util"
 )
 
 func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder string) error {

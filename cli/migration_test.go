@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/coveooss/gotemplate/v3/hcl"
-	"github.com/gruntwork-io/terragrunt/config"
+	"github.com/coveooss/terragrunt/v2/config"
 	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/assert"
 )

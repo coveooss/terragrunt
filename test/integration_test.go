@@ -16,12 +16,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/coveooss/gotemplate/v3/collections"
-	"github.com/gruntwork-io/terragrunt/awshelper"
-	"github.com/gruntwork-io/terragrunt/cli"
-	"github.com/gruntwork-io/terragrunt/config"
-	terragruntDynamoDb "github.com/gruntwork-io/terragrunt/dynamodb"
-	"github.com/gruntwork-io/terragrunt/remote"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/awshelper"
+	"github.com/coveooss/terragrunt/v2/cli"
+	"github.com/coveooss/terragrunt/v2/config"
+	terragruntDynamoDb "github.com/coveooss/terragrunt/v2/dynamodb"
+	"github.com/coveooss/terragrunt/v2/remote"
+	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/stretchr/testify/assert"
 )
 

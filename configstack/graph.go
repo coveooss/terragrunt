@@ -1,8 +1,8 @@
 package configstack
 
 import (
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/util"
 )
 
 // checkForCycles checks for dependency cycles in the given list of modules and return an error if one is found

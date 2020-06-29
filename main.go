@@ -4,10 +4,10 @@ import (
 	"os"
 
 	"github.com/coveooss/multilogger"
-	"github.com/gruntwork-io/terragrunt/cli"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/options"
-	"github.com/gruntwork-io/terragrunt/shell"
+	"github.com/coveooss/terragrunt/v2/cli"
+	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/shell"
 )
 
 // VERSION is set at build time using -ldflags parameters. For more info, see http://stackoverflow.com/a/11355611/483528

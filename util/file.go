@@ -12,8 +12,8 @@ import (
 
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
-	"github.com/gruntwork-io/terragrunt/awshelper"
-	"github.com/gruntwork-io/terragrunt/errors"
+	"github.com/coveooss/terragrunt/v2/awshelper"
+	"github.com/coveooss/terragrunt/v2/errors"
 	getter "github.com/hashicorp/go-getter"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/matryer/try.v1"

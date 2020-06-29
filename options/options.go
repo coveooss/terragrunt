@@ -14,8 +14,8 @@ import (
 	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
-	"github.com/gruntwork-io/terragrunt/errors"
-	"github.com/gruntwork-io/terragrunt/util"
+	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/util"
 )
 
 // TerragruntOptions represents options that configure the behavior of the Terragrunt program
