@@ -7,7 +7,7 @@ require (
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/coveooss/gotemplate/v3 v3.4.1
-	github.com/coveooss/multilogger v0.4.7
+	github.com/coveooss/multilogger v0.4.8
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.1.1
 	github.com/hashicorp/go-getter v1.4.2-0.20200106182914-9813cbd4eb02
