@@ -62,33 +62,6 @@ func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}
 	return result, nil
 }
 
-// LoadVariablesFromHclBlock parses HCL content from a block
-func LoadVariablesFromHclBlock(filename string, content []byte) (map[string]interface{}, error) {
-	hclFile, diag := hclparse.NewParser().ParseHCL([]byte(content), filename)
-	if diag != nil && diag.HasErrors() {
-		return nil, fmt.Errorf("caught an error while parsing HCL from %s: %s", filename, diag.Error())
-	}
-
-	attributes, diag := hclFile.Body.JustAttributes()
-	if diag != nil && diag.HasErrors() {
-		return nil, fmt.Errorf("caught an error while getting attributes from %s: %s", filename, diag.Error())
-	}
-
-	result := make(map[string]interface{})
-	for key, attribute := range attributes {
-		ctyValue, diag := attribute.Expr.Value(nil)
-		if diag != nil && diag.HasErrors() {
-			return nil, fmt.Errorf("caught an error while reading attribute %s from %s: %s", key, filename, diag.Error())
-		}
-		var value interface{}
-		if err := FromCtyValue(ctyValue, &value); err != nil {
-			return nil, err
-		}
-		result[key] = value
-	}
-	return result, nil
-}
-
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
 func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...interface{}) (map[string]interface{}, error) {
 	if filepath.Ext(path) == ".tf" {
