@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
+	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/terraform/configs"
 
 	"github.com/coveooss/gotemplate/v3/collections"
-	gotemplateHcl "github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/gotemplate/v3/json"
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/yaml"
@@ -32,6 +32,61 @@ func LoadDefaultValues(folder string) (importedVariables map[string]interface{},
 	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
 	allVariables = terraformConfig.Variables
 	return
+}
+
+// LoadVariablesFromHcl parses HCL content to get a map of the attributes
+func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}, error) {
+	hclFile, diag := hclparse.NewParser().ParseHCL([]byte(bytes), filename)
+	if diag != nil && diag.HasErrors() {
+		return nil, fmt.Errorf("caught an error while parsing HCL from %s: %s", filename, diag.Error())
+	}
+
+	attributes, diag := hclFile.Body.JustAttributes()
+	if diag != nil && diag.HasErrors() {
+		return nil, fmt.Errorf("caught an error while getting content from %s: %s", filename, diag.Error())
+	}
+
+	result := make(map[string]interface{})
+
+	for key, attribute := range attributes {
+		ctyValue, diag := attribute.Expr.Value(nil)
+		if diag != nil && diag.HasErrors() {
+			return nil, fmt.Errorf("caught an error while reading attribute %s from %s: %s", key, filename, diag.Error())
+		}
+		var value interface{}
+		if err := FromCtyValue(ctyValue, &value); err != nil {
+			return nil, err
+		}
+		result[key] = value
+	}
+	return result, nil
+}
+
+// LoadVariablesFromHclBlock parses HCL content from a block
+func LoadVariablesFromHclBlock(filename string, content []byte) (map[string]interface{}, error) {
+	hclFile, diag := hclparse.NewParser().ParseHCL([]byte(content), filename)
+	if diag != nil && diag.HasErrors() {
+		return nil, fmt.Errorf("caught an error while parsing HCL from %s: %s", filename, diag.Error())
+	}
+
+	attributes, diag := hclFile.Body.JustAttributes()
+	if diag != nil && diag.HasErrors() {
+		return nil, fmt.Errorf("caught an error while getting attributes from %s: %s", filename, diag.Error())
+	}
+
+	result := make(map[string]interface{})
+	for key, attribute := range attributes {
+		ctyValue, diag := attribute.Expr.Value(nil)
+		if diag != nil && diag.HasErrors() {
+			return nil, fmt.Errorf("caught an error while reading attribute %s from %s: %s", key, filename, diag.Error())
+		}
+		var value interface{}
+		if err := FromCtyValue(ctyValue, &value); err != nil {
+			return nil, err
+		}
+		result[key] = value
+	}
+	return result, nil
 }
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
@@ -100,7 +155,8 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 	}
 
 	// We first try to read using hcl parser
-	if err = gotemplateHcl.Unmarshal([]byte(content), &result); err != nil {
+	result, err = LoadVariablesFromHcl(fileName, []byte(content))
+	if err != nil {
 		// If there is an error with try with a multi language parser
 		result = make(map[string]interface{})
 		if err2 := collections.ConvertData(content, &result); err2 == nil {

@@ -95,6 +95,26 @@ func TestTerragruntImportVariables(t *testing.T) {
 			expectedOutput: []string{"example = us-west-2"},
 			args:           "--terragrunt-apply-template -var region=us-east-1",
 		},
+		// This tests that values loaded from tfvars files support nested arbitrary blocks (this will use gotemplate/HCL1 since HCL2 doesn't support that)
+		{
+			project:        "fixture-variables/load_block_from_tfvars",
+			expectedOutput: []string{`example = test`},
+		},
+		// This tests that values exported to the `terraform.tfvars` file support lists of a single element (issue in HCL1)
+		{
+			project:        "fixture-variables/list",
+			expectedOutput: []string{`example = [{"var1":"value1","var2":"value2"}]`},
+		},
+		// This tests that values loaded from tfvars files support lists of a single element (issue in HCL1)
+		{
+			project:        "fixture-variables/list_from_tfvars",
+			expectedOutput: []string{`example = [{"var1":"value3","var2":"value4"}]`},
+		},
+		// This tests that values loaded from inputs support lists of a single element (issue in HCL1)
+		{
+			project:        "fixture-variables/list_from_inputs",
+			expectedOutput: []string{`example = [{"var1":"value5","var2":"value6"}]`},
+		},
 	}
 	for _, test := range tests {
 		tt := test // tt must be unique see https://github.com/golang/go/issues/16586

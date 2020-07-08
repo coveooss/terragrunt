@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/terragrunt/v2/util"
 	hclwrite "github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform/configs"
@@ -43,7 +42,15 @@ func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[str
 			case "yml", "yaml":
 				content, err = yaml.Marshal(variables)
 			case "tfvars", "hcl":
-				content, err = hcl.MarshalTFVarsIndent(variables, "", "  ")
+				file := hclwrite.NewEmptyFile()
+				for key, valueInterface := range variables.AsMap() {
+					value, err := util.ToCtyValue(valueInterface)
+					if err != nil {
+						return err
+					}
+					file.Body().SetAttributeValue(key, *value)
+				}
+				content = file.Bytes()
 			case "json":
 				content, err = json.MarshalIndent(variables, "", "  ")
 			case "tf":
