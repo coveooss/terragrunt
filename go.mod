@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.33.1
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
-	github.com/coveooss/gotemplate/v3 v3.4.1
+	github.com/coveooss/gotemplate/v3 v3.4.2
 	github.com/coveooss/multilogger v0.4.8
 	github.com/fatih/color v1.9.0
 	github.com/go-errors/errors v1.1.1

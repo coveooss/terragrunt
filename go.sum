@@ -130,9 +130,8 @@ github.com/coreos/go-semver v0.2.0 h1:3Jm3tLmsgAYcjC+4Up7hJrFBPr+n7rAqYeSw/SZazu
 github.com/coreos/go-semver v0.2.0/go.mod h1:nnelYz7RCh+5ahJtPPxZlU+153eP4D4r3EedlOD2RNk=
 github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
-github.com/coveooss/gotemplate/v3 v3.4.1 h1:+xH4k+ckf6AYYekpddRMfcQ38GQezN6C8p1Ap0BkAZk=
-github.com/coveooss/gotemplate/v3 v3.4.1/go.mod h1:UKEk6oGOJQf2gw90X4ExENxVExk0ZZY4OPFw0cP8Uto=
-github.com/coveooss/multilogger v0.4.7/go.mod h1:MwtlfEwkxTa2WlEqiv99F1jWjdgIHXflZKP0TdbDDWg=
+github.com/coveooss/gotemplate/v3 v3.4.2 h1:ePhpXiXBi5RPYuEjhmnAGt4+BiERNhmSLXJNozc0Gp4=
+github.com/coveooss/gotemplate/v3 v3.4.2/go.mod h1:s78cX77/8G3aOjxDepRtORVnQGPvwHzcSjqABzpI/Kw=
 github.com/coveooss/multilogger v0.4.8 h1:UodWv9PFx0KwPb3/9qXsOmlJDGoIgKUFJyJ/4aYfCSM=
 github.com/coveooss/multilogger v0.4.8/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
 github.com/coveord/hcl/v2 v2.6.0-coveo-2 h1:xVoJq4VHngITr24oxLHfFJ8oLIhXRTcJhwK/EoPU574=
@@ -342,7 +341,6 @@ github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O
 github.com/mattn/go-colorable v0.0.9/go.mod h1:9vuHe8Xs5qXnSaW/c/ABM9alt+Vo+STaOChaDxuIBZU=
 github.com/mattn/go-colorable v0.1.1/go.mod h1:FuOcm+DKB9mbwrcAfNl7/TZVBZ6rcnceauSikq3lYCQ=
 github.com/mattn/go-colorable v0.1.4/go.mod h1:U0ppj6V5qS13XJ6of8GYAs25YV2eR4EVcfRqFIhoBtE=
-github.com/mattn/go-colorable v0.1.6/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope9wVRipJSqc=
 github.com/mattn/go-colorable v0.1.7 h1:bQGKb3vps/j0E9GfJQ03JyhRuxsvdAanXlT9BTw3mdw=
 github.com/mattn/go-colorable v0.1.7/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope9wVRipJSqc=
 github.com/mattn/go-isatty v0.0.3/go.mod h1:M+lRXTBqGeGNdLjl/ufCoiOlB5xdOkqRJdNxMWT7Zi4=
