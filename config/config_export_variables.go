@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/terragrunt/v2/util"
 	hclwrite "github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform/configs"
@@ -43,7 +42,7 @@ func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[str
 			case "yml", "yaml":
 				content, err = yaml.Marshal(variables)
 			case "tfvars", "hcl":
-				content, err = hcl.MarshalTFVarsIndent(variables, "", "  ")
+				content, err = marshalHcl2Attributes(variables.AsMap())
 			case "json":
 				content, err = json.MarshalIndent(variables, "", "  ")
 			case "tf":
@@ -63,6 +62,20 @@ func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[str
 	return
 }
 
+// marshalHcl2Attributes marshals the given variables as HCL2 attributes (not blocks)
+func marshalHcl2Attributes(variables map[string]interface{}) ([]byte, error) {
+	file := hclwrite.NewEmptyFile()
+	for key, valueInterface := range variables {
+		value, err := util.ToCtyValue(valueInterface)
+		if err != nil {
+			return nil, err
+		}
+		file.Body().SetAttributeValue(key, *value)
+	}
+	return file.Bytes(), nil
+}
+
+// marshalTerraformVariables marshals the given variables as Terraform variable blocks
 func marshalTerraformVariables(existingTerraformVariables map[string]*configs.Variable, variables map[string]interface{}) ([]byte, error) {
 	file := hclwrite.NewEmptyFile()
 	for key, value := range variables {

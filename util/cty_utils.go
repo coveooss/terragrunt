@@ -1,7 +1,8 @@
 package util
 
 import (
-	"github.com/coveooss/gotemplate/v3/json"
+	"encoding/json"
+
 	"github.com/zclconf/go-cty/cty"
 	ctyJson "github.com/zclconf/go-cty/cty/json"
 )
