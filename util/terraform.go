@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/terraform/configs"
+	"github.com/zclconf/go-cty/cty"
 
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/json"
@@ -56,6 +57,13 @@ func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}
 		var value interface{}
 		if err := FromCtyValue(ctyValue, &value); err != nil {
 			return nil, err
+		}
+		// All numbers are floats in HCL2, an integer is just a validation over that
+		// However, this is not so for Go itself which distinguishes between float and int
+		// We can therefore cast floats as ints if they are absolute
+		// The opposite case (defining an absolute float that will be cast into a int) will break but it is far less common
+		if ctyValue.Type() == cty.Number && ctyValue.Absolute().Equals(ctyValue).True() {
+			value = int(value.(float64))
 		}
 		result[key] = value
 	}
