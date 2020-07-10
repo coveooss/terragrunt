@@ -362,20 +362,23 @@ func Test_filterVarsAndVarFiles(t *testing.T) {
 		{"With invalid value 7", "plan", []string{"-var-file="}, nil, variables{}, true},
 		{"With invalid file", "plan", []string{"-var-file", "foo"}, nil, variables{}, true},
 		{"With var and var-file", "plan", []string{"-var", "bar=foo", "-var-file", "../test/fixture-args/test.tfvars"}, nil, variables{
-			"foo": ov{Source: varfile, Value: "bar"},
-			"int": ov{Source: varfile, Value: 1},
-			"bar": ov{Source: param, Value: "foo"},
+			"float": ov{Source: varfile, Value: 1.5},
+			"foo":   ov{Source: varfile, Value: "bar"},
+			"int":   ov{Source: varfile, Value: 1},
+			"bar":   ov{Source: param, Value: "foo"},
 		}, false},
 		{"With var overwrite", "plan", []string{"-var", "foo=overwritten", "-var-file", "../test/fixture-args/test.tfvars"}, nil, variables{
-			"foo": ov{Source: param, Value: "overwritten"},
-			"int": ov{Source: varfile, Value: 1},
+			"float": ov{Source: varfile, Value: 1.5},
+			"foo":   ov{Source: param, Value: "overwritten"},
+			"int":   ov{Source: varfile, Value: 1},
 		}, false},
 		{"With filtered arguments", "whatever",
 			[]string{"-test", "dummy", "-var", "foo=yes", "other", "-var-file", "../test/fixture-args/test.tfvars"},
 			[]string{"-test", "dummy", "other"},
 			variables{
-				"foo": ov{Source: param, Value: "yes"},
-				"int": ov{Source: varfile, Value: 1},
+				"float": ov{Source: varfile, Value: 1.5},
+				"foo":   ov{Source: param, Value: "yes"},
+				"int":   ov{Source: varfile, Value: 1},
 			}, false},
 	}
 	for _, tt := range tests {
