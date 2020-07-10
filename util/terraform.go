@@ -57,6 +57,13 @@ func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}
 		if err := FromCtyValue(ctyValue, &value); err != nil {
 			return nil, err
 		}
+		// All numbers are floats in HCL2, an integer is just a validation over that
+		// However, this is not so for Go itself which distinguishes between float and int
+		// We can therefore cast floats as ints if they are absolute
+		// The opposite case (defining an absolute float that will be cast into a int) will break but it is far less common
+		if floatValue, isFloat := value.(float64); isFloat && floatValue == float64(int(floatValue)) {
+			value = int(floatValue)
+		}
 		result[key] = value
 	}
 	return result, nil
