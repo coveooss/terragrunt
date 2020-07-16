@@ -167,7 +167,11 @@ func getTerraformVariableValues(terraformConfig interface{}, includeNil bool) (m
 			if err := FromCtyValue(variable.Default, &value); err != nil {
 				return nil, err
 			}
-			variablesMap[variable.Name] = value
+			if !template.IsCode(fmt.Sprint(value)) {
+				// The default value contains gotemplate code, we don't want to make it available
+				// to gotemplate and we let terraform code initialize the value
+				variablesMap[variable.Name] = value
+			}
 		}
 	}
 	return variablesMap, nil
