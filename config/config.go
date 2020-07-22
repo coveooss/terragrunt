@@ -378,11 +378,11 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	}
 	var terragruntConfigFile *TerragruntConfigFile
 	if terragruntConfigFile, err = parseConfigStringAsTerragruntConfig(configString, includeContext); err != nil {
-		return nil, fmt.Errorf("caught error while parsing the Terragrunt config: %s", err)
+		return nil, fmt.Errorf("caught error while parsing the Terragrunt config: %w", err)
 	}
 
 	if config, err = terragruntConfigFile.convertToTerragruntConfig(terragruntOptions); err != nil {
-		return nil, fmt.Errorf("caught error while initializing the Terragrunt config: %s", err)
+		return nil, fmt.Errorf("caught error while initializing the Terragrunt config: %w", err)
 	}
 
 	terragruntOptions.ImportVariablesMap(config.Inputs, options.ConfigVarFile)
@@ -517,7 +517,7 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 				variables, err := util.LoadVariablesFromSource(bootConfigString, bootstrapFile, terragruntOptions.WorkingDir, false, nil)
 				terragruntOptions.ImportVariablesMap(variables, options.ConfigVarFile)
 				if err != nil {
-					err = fmt.Errorf("got error while parsing bootstrap config: %v\n then caught error while parsing it as a variables file: %v", caughtError, err)
+					err = fmt.Errorf("got error while parsing bootstrap config: %v\n then caught error while parsing it as a variables file: %w", caughtError, err)
 					return err
 				}
 				continue

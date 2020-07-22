@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,7 +14,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
 	"github.com/coveooss/terragrunt/v2/awshelper"
-	"github.com/coveooss/terragrunt/v2/errors"
+	errs "github.com/coveooss/terragrunt/v2/errors"
 	getter "github.com/hashicorp/go-getter"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/matryer/try.v1"
@@ -78,7 +79,7 @@ func CanonicalPaths(paths []string, basePath string) ([]string, error) {
 func DeleteFiles(files []string) error {
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
-			return errors.WithStackTrace(err)
+			return errs.WithStackTrace(err)
 		}
 	}
 	return nil
@@ -88,13 +89,13 @@ func DeleteFiles(files []string) error {
 func Grep(regex *regexp.Regexp, folder string, patterns ...string) (bool, error) {
 	matches, err := utils.FindFiles(folder, false, false, patterns...)
 	if err != nil {
-		return false, errors.WithStackTrace(err)
+		return false, errs.WithStackTrace(err)
 	}
 
 	for _, match := range matches {
 		bytes, err := ioutil.ReadFile(match)
 		if err != nil {
-			return false, errors.WithStackTrace(err)
+			return false, errs.WithStackTrace(err)
 		}
 
 		if regex.Match(bytes) {
@@ -116,17 +117,17 @@ func GetPathRelativeTo(path, basePath string) (string, error) {
 
 	inputFolderAbs, err := filepath.Abs(basePath)
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", errs.WithStackTrace(err)
 	}
 
 	fileAbs, err := filepath.Abs(path)
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", errs.WithStackTrace(err)
 	}
 
 	relPath, err := filepath.Rel(inputFolderAbs, fileAbs)
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", errs.WithStackTrace(err)
 	}
 
 	return filepath.ToSlash(relPath), nil
@@ -175,7 +176,7 @@ func GetPathRelativeToMax(path, basePath string, maxLevel uint) (result string) 
 func ReadFileAsString(path string) (string, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", errors.WithStackTraceAndPrefix(err, "Error reading file at path %s", path)
+		return "", errs.WithStackTraceAndPrefix(err, "Error reading file at path %s", path)
 	}
 
 	return string(bytes), nil
@@ -219,8 +220,11 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		var err error
 		result, err = getSource(source, pwd, logf)
 		if err != nil {
+			if attempt >= 3 || errors.Is(err, os.ErrNotExist) {
+				return false, err
+			}
 			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 2 seconds. Err: %v", source, err)
-			time.Sleep(2 * time.Second)
+			time.Sleep(time.Second)
 			delete(sharedContent, result)
 			if result != "" && FileExists(result) {
 				// Download failed but the dir exists, let's delete it
@@ -231,9 +235,9 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 			}
 
 		}
-		return attempt <= 3, err
+		return false, err
 	}); finalErr != nil {
-		return "", fmt.Errorf("%v while copying source from %s", finalErr, source)
+		return "", fmt.Errorf("%w while copying source from %s", finalErr, source)
 	}
 	return result, nil
 }
@@ -281,12 +285,12 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 			if !alreadyInCache {
 				err = os.RemoveAll(cacheDir)
 				if err != nil {
-					return "", fmt.Errorf("%v while deleting the cache for %s", err, source)
+					return "", fmt.Errorf("%w while deleting the cache for %s", err, source)
 				}
 			}
 
 			if err := GetCopy(cacheDir, source); err != nil {
-				return "", fmt.Errorf("caught error while fetching files from %s: %v", source, err)
+				return "", fmt.Errorf("caught error while fetching files from %s: %w", source, err)
 			}
 
 			if s3Object != nil {
@@ -295,7 +299,7 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 				err = awshelper.SaveS3Status(s3Object, cacheDir)
 			}
 			if err != nil {
-				return "", fmt.Errorf("caught %v while saving status for %s", err, source)
+				return "", fmt.Errorf("caught %w while saving status for %s", err, source)
 			}
 			logf(logrus.DebugLevel, "Files from %s successfully added to the cache at %s", source, cacheDir)
 		}
@@ -315,7 +319,7 @@ var sharedContent = map[string]bool{}
 func CopyFolderContents(source, destination string, excluded ...string) error {
 	files, err := ioutil.ReadDir(source)
 	if err != nil {
-		return errors.WithStackTrace(err)
+		return errs.WithStackTrace(err)
 	}
 
 	for _, file := range files {
@@ -328,7 +332,7 @@ func CopyFolderContents(source, destination string, excluded ...string) error {
 			continue
 		} else if file.IsDir() {
 			if err := os.MkdirAll(dest, file.Mode()); err != nil {
-				return errors.WithStackTrace(err)
+				return errs.WithStackTrace(err)
 			}
 
 			if err := CopyFolderContents(src, dest); err != nil {
@@ -359,7 +363,7 @@ func PathContainsHiddenFileOrFolder(path string) bool {
 func CopyFile(source string, destination string) error {
 	contents, err := ioutil.ReadFile(source)
 	if err != nil {
-		return errors.WithStackTrace(err)
+		return errs.WithStackTrace(err)
 	}
 
 	return WriteFileWithSamePermissions(source, destination, contents)
@@ -370,7 +374,7 @@ func WriteFileWithSamePermissions(source string, destination string, contents []
 	fileInfo, err := FileStat(source)
 
 	if err != nil {
-		return errors.WithStackTrace(err)
+		return errs.WithStackTrace(err)
 	}
 
 	return ioutil.WriteFile(destination, contents, fileInfo.Mode())

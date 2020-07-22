@@ -14,6 +14,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/json"
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/yaml"
+	"github.com/coveooss/multilogger/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,11 +23,7 @@ func LoadDefaultValues(folder string) (importedVariables map[string]interface{},
 	var terraformConfig *configs.Module
 	parser := configs.NewParser(nil)
 	if terraformConfig, err = parser.LoadConfigDir(folder); err != nil && err.(hcl.Diagnostics).HasErrors() {
-		errors := []string{}
-		for _, err := range err.(hcl.Diagnostics).Errs() {
-			errors = append(errors, " - "+err.Error())
-		}
-		err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, strings.Join(errors, "\n"))
+		err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%w", folder, errors.Array(err.(hcl.Diagnostics).Errs()))
 		return
 	}
 	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
@@ -38,12 +35,12 @@ func LoadDefaultValues(folder string) (importedVariables map[string]interface{},
 func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}, error) {
 	hclFile, diag := hclparse.NewParser().ParseHCL([]byte(bytes), filename)
 	if diag != nil && diag.HasErrors() {
-		return nil, fmt.Errorf("caught an error while parsing HCL from %s: %s", filename, diag.Error())
+		return nil, fmt.Errorf("caught an error while parsing HCL from %s: %w", filename, diag)
 	}
 
 	attributes, diag := hclFile.Body.JustAttributes()
 	if diag != nil && diag.HasErrors() {
-		return nil, fmt.Errorf("caught an error while getting content from %s: %s", filename, diag.Error())
+		return nil, fmt.Errorf("caught an error while getting content from %s: %w", filename, diag)
 	}
 
 	result := make(map[string]interface{})
@@ -51,7 +48,7 @@ func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}
 	for key, attribute := range attributes {
 		ctyValue, diag := attribute.Expr.Value(nil)
 		if diag != nil && diag.HasErrors() {
-			return nil, fmt.Errorf("caught an error while reading attribute %s from %s: %s", key, filename, diag.Error())
+			return nil, fmt.Errorf("caught an error while reading attribute %s from %s: %w", key, filename, diag)
 		}
 		var value interface{}
 		if err := FromCtyValue(ctyValue, &value); err != nil {
@@ -114,7 +111,7 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 
 		if t != nil {
 			if err := template.TemplateLog.SetDefaultConsoleHookLevel(logrus.InfoLevel); err != nil {
-				return nil, fmt.Errorf("unable to set logging level for templates: %v", err)
+				return nil, fmt.Errorf("unable to set logging level for templates: %w", err)
 			}
 			if modifiedContent, err := t.ProcessContent(content, fileName); err != nil {
 				// In case of error, we simply issue a warning and continue with the original content
