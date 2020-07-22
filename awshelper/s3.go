@@ -114,7 +114,7 @@ var s3Patterns []*regexp.Regexp
 func SaveS3Status(bucketInfo *BucketInfo, folder string) (err error) {
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("%s %v", bucketInfo, err)
+			err = fmt.Errorf("%s %w", bucketInfo, err)
 		}
 	}()
 
@@ -146,12 +146,12 @@ func CheckS3Status(folder string) error {
 	var status bucketStatus
 	err = json.Unmarshal(content, &status)
 	if err != nil {
-		return fmt.Errorf("content of %s/%s (%s) is not valid JSON: %v", folder, CacheFile, content, err)
+		return fmt.Errorf("content of %s/%s (%s) is not valid JSON: %w", folder, CacheFile, content, err)
 	}
 
 	s3Status, err := getS3Status(status.BucketInfo)
 	if err != nil {
-		return fmt.Errorf("error while reading %s: %v", status.BucketInfo, err)
+		return fmt.Errorf("error while reading %s: %w", status.BucketInfo, err)
 	}
 
 	if !reflect.DeepEqual(status, *s3Status) {
@@ -180,7 +180,7 @@ func getS3Status(info BucketInfo) (*bucketStatus, error) {
 	})
 	if err != nil {
 		clearSessionCache()
-		return nil, fmt.Errorf("caught error while calling HeadObject on key %s of bucket %s: %v", info.Key, info.BucketName, err)
+		return nil, fmt.Errorf("caught error while calling HeadObject on key %s of bucket %s: %w", info.Key, info.BucketName, err)
 	}
 
 	return &bucketStatus{

@@ -182,7 +182,7 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 			errs = append(errs, currentErr)
 		} else if currentErr != nil {
 			errOccurred = true
-			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %v", hook.itemType(), hook.id(), currentErr))
+			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %w", hook.itemType(), hook.id(), currentErr))
 		}
 		hook.setState(currentErr)
 		result = append(result, temp)

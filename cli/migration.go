@@ -103,7 +103,7 @@ func migrate(cliContext *cli.Context) (err error) {
 				command.Env = []string{"TF_LOG=DEBUG"}
 				if output, err := command.CombinedOutput(); err != nil {
 					fmt.Println(string(output))
-					return fmt.Errorf("terraform upgrade error in path %s: %v", path, err)
+					return fmt.Errorf("terraform upgrade error in path %s: %w", path, err)
 				}
 				break
 			}
@@ -229,12 +229,12 @@ func migrateConfigurationFile(fullPath, relativePath string) error {
 
 	var inputVariables map[string]interface{}
 	if err := gotemplateHcl.Unmarshal([]byte(content), &inputVariables); err != nil {
-		return fmt.Errorf("Error unmarshalling with gotemplate: %v", err)
+		return fmt.Errorf("Error unmarshalling with gotemplate: %w", err)
 	}
 	if len(inputVariables) > 0 {
 		inputVariablesMarshalled, err := gotemplateHcl.MarshalTFVarsIndent(map[string]interface{}{"inputs": inputVariables}, "  ", "  ")
 		if err != nil {
-			return fmt.Errorf("error marshalling input variables: %v", err)
+			return fmt.Errorf("error marshalling input variables: %w", err)
 		}
 		newContent += "\n" + string(inputVariablesMarshalled)
 	}
