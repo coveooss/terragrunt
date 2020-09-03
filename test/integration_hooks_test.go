@@ -216,3 +216,15 @@ func TestTerragruntHookOverwrite(t *testing.T) {
 	assert.NoError(t, err, "Reading result")
 	assert.Equal(t, string(content), stdout.String(), "Comparing result")
 }
+
+func TestTerragruntHookIgnoreError(t *testing.T) {
+	t.Parallel()
+
+	const testPath = "fixture-hooks/ignore-error"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+	assert.Nil(t, err)
+}

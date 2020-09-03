@@ -180,7 +180,7 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 		currentErr = shell.FilterPlanError(currentErr, hook.options().TerraformCliArgs[0])
 		if _, ok := currentErr.(errors.PlanWithChanges); ok {
 			errs = append(errs, currentErr)
-		} else if currentErr != nil {
+		} else if currentErr != nil && !hook.IgnoreError {
 			errOccurred = true
 			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %w", hook.itemType(), hook.id(), currentErr))
 		}
