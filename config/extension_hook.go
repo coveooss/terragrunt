@@ -24,6 +24,7 @@ type Hook struct {
 	ExpandArgs        bool              `hcl:"expand_args,optional"`
 	OnCommands        []string          `hcl:"on_commands,optional"`
 	IgnoreError       bool              `hcl:"ignore_error,optional"`
+	RunOnErrors       bool              `hcl:"run_on_errors,optional"`
 	BeforeImports     bool              `hcl:"before_imports,optional"`
 	AfterInitState    bool              `hcl:"after_init_state,optional"`
 	Order             int               `hcl:"order,optional"`
@@ -172,7 +173,7 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 		errOccurred bool
 	)
 	for _, hook := range list {
-		if (status != nil || errOccurred) && !hook.IgnoreError {
+		if (status != nil || errOccurred) && !hook.RunOnErrors {
 			continue
 		}
 		hook.normalize()
