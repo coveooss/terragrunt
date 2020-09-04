@@ -199,7 +199,8 @@ pre_hook|post_hook "name" {
   os               = [list of os]                   # optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
   arguments        = [list of arguments]            # optional
   expand_args      = false                          # optional, expand pattern like *, ? [] on arguments
-  ignore_error     = false                          # optional, continue execution on error
+  run_on_errors    = false                          # optional, if true, this hook will run even if previous steps failed
+  ignore_error     = false                          # optional, succeed even if the hook exits with an error
   before_imports   = false                          # optional, run command before terraform imports its files
   after_init_state = false                          # optional, run command after the state has been initialized
   order            = 0                              # optional, default run hooks in declaration order (hooks defined in uppermost parent first, negative number are supported)

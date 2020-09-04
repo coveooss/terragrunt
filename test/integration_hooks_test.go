@@ -142,6 +142,21 @@ func TestTerragruntHookExitCode1(t *testing.T) {
 	assert.Contains(t, err.Error(), "Error while executing hooks(post_hook_1): exit status 1")
 }
 
+func TestTerragruntHookExitCode1RunOnErrors(t *testing.T) {
+	t.Parallel()
+
+	const testPath = "fixture-hooks/exitcode-1-run-on-errors"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
+	assert.NoError(t, exception)
+	assert.Contains(t, err.Error(), "Error while executing hooks(post_hook_1): exit status 1")
+}
+
 func TestTerragruntHookExitCode2(t *testing.T) {
 	t.Parallel()
 
@@ -215,4 +230,16 @@ func TestTerragruntHookOverwrite(t *testing.T) {
 	content, err := ioutil.ReadFile(util.JoinPath(rootPath, "result"))
 	assert.NoError(t, err, "Reading result")
 	assert.Equal(t, string(content), stdout.String(), "Comparing result")
+}
+
+func TestTerragruntHookIgnoreError(t *testing.T) {
+	t.Parallel()
+
+	const testPath = "fixture-hooks/ignore-error"
+	cleanupTerraformFolder(t, testPath)
+	tmpEnvPath := copyEnvironment(t, testPath)
+	rootPath := util.JoinPath(tmpEnvPath, testPath)
+
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+	assert.Nil(t, err)
 }
