@@ -18,7 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-var S3PathNotFoundError = errors.New("HeadObject failed on the given object")
+// ErrS3PathNotFoundError is the error that will be returned if an object doesn't exist in S3
+var ErrS3PathNotFoundError = errors.New("HeadObject failed on the given object")
 
 // CacheFile is the name of the file that hold the S3 source configuration for the folder
 const CacheFile = ".terragrunt.cache"
@@ -148,7 +149,7 @@ func CheckS3Status(sourceBucketInfo *BucketInfo, folder string) error {
 		var awsError awserr.Error
 		if errors.As(err, &awsError) {
 			if awsError.Code() == "NotFound" {
-				return fmt.Errorf("%s does not exist: %w", *sourceBucketInfo, S3PathNotFoundError)
+				return fmt.Errorf("%s does not exist: %w", *sourceBucketInfo, ErrS3PathNotFoundError)
 			}
 		}
 		return fmt.Errorf("error while reading %s: %w", *sourceBucketInfo, err)
