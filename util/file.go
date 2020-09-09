@@ -221,6 +221,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		result, err = getSource(source, pwd, logf)
 		if err != nil {
 			if attempt > 3 || errors.Is(err, awshelper.S3PathNotFoundError) {
+				// If the object doesn't exist in S3, there's no point in retrying
 				return false, err
 			}
 			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 1 second. Err: %v", source, err)
@@ -272,6 +273,8 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 		source = s3Object.String()
 		err = awshelper.CheckS3Status(s3Object, cacheDir)
 		if errors.Is(err, awshelper.S3PathNotFoundError) {
+			logf(logrus.DebugLevel, "%s was not found in S3", source)
+			// If the source is not found in S3, return right away
 			return "", err
 		}
 	}

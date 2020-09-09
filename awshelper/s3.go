@@ -142,6 +142,7 @@ func SaveS3Status(bucketInfo *BucketInfo, folder string) (err error) {
 // CheckS3Status compares the saved status with the current version of the bucket folder
 // returns true if the objects has not changed
 func CheckS3Status(sourceBucketInfo *BucketInfo, folder string) error {
+	// Check for the status of the object in S3. If it doesn't exist in S3, there's no point in reading the local/saved status
 	s3Status, err := getS3Status(*sourceBucketInfo)
 	if err != nil {
 		var awsError awserr.Error
