@@ -3,6 +3,7 @@ package awshelper
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -13,8 +14,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
+
+var S3PathNotFoundError = errors.New("HeadObject failed on the given object")
 
 // CacheFile is the name of the file that hold the S3 source configuration for the folder
 const CacheFile = ".terragrunt.cache"
@@ -137,7 +141,18 @@ func SaveS3Status(bucketInfo *BucketInfo, folder string) (err error) {
 
 // CheckS3Status compares the saved status with the current version of the bucket folder
 // returns true if the objects has not changed
-func CheckS3Status(folder string) error {
+func CheckS3Status(sourceBucketInfo *BucketInfo, folder string) error {
+	s3Status, err := getS3Status(*sourceBucketInfo)
+	if err != nil {
+		var awsError awserr.Error
+		if errors.As(err, &awsError) {
+			if awsError.Code() == "NotFound" {
+				return fmt.Errorf("%s does not exist: %w", *sourceBucketInfo, S3PathNotFoundError)
+			}
+		}
+		return fmt.Errorf("error while reading %s: %w", *sourceBucketInfo, err)
+	}
+
 	content, err := ioutil.ReadFile(filepath.Join(folder, CacheFile))
 	if err != nil {
 		return err
@@ -147,11 +162,6 @@ func CheckS3Status(folder string) error {
 	err = json.Unmarshal(content, &status)
 	if err != nil {
 		return fmt.Errorf("content of %s/%s (%s) is not valid JSON: %w", folder, CacheFile, content, err)
-	}
-
-	s3Status, err := getS3Status(status.BucketInfo)
-	if err != nil {
-		return fmt.Errorf("error while reading %s: %w", status.BucketInfo, err)
 	}
 
 	if !reflect.DeepEqual(status, *s3Status) {

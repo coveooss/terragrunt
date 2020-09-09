@@ -496,6 +496,10 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 				bootstrapDir = strings.Replace(bootstrapDir, "s3:/", "s3://", -1)
 			}
 
+			if !strings.HasSuffix(bootstrapDir, "/") {
+				bootstrapDir = bootstrapDir + "/"
+			}
+
 			sourcePath, err := util.GetSource(bootstrapDir, terragruntOptions.WorkingDir, terragruntOptions.Logger)
 			if err != nil {
 				return err
