@@ -220,10 +220,11 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		var err error
 		result, err = getSource(source, pwd, logf)
 		if err != nil {
-			if attempt >= 3 || errors.Is(err, os.ErrNotExist) {
+			if attempt > 3 || errors.Is(err, awshelper.ErrS3PathNotFoundError) {
+				// If the object doesn't exist in S3, there's no point in retrying
 				return false, err
 			}
-			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 2 seconds. Err: %v", source, err)
+			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 1 second. Err: %v", source, err)
 			time.Sleep(time.Second)
 			delete(sharedContent, result)
 			if result != "" && FileExists(result) {
@@ -270,12 +271,17 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 	if s3Object != nil {
 		logf(logrus.TraceLevel, "Confirmed that this is an S3 object. Checking status for %s", source)
 		source = s3Object.String()
-		err = awshelper.CheckS3Status(cacheDir)
+		err = awshelper.CheckS3Status(s3Object, cacheDir)
+		if errors.Is(err, awshelper.ErrS3PathNotFoundError) {
+			logf(logrus.DebugLevel, "%s was not found in S3", source)
+			// If the source is not found in S3, return right away
+			return "", err
+		}
 	}
 
 	_, alreadyInCache := sharedContent[cacheDir]
 	if !alreadyInCache || err != nil {
-		logf(logrus.DebugLevel, "Adding %s to the cache", source)
+		logf(logrus.DebugLevel, "Adding %s to the in-memory cache", source)
 		if !FileExists(cacheDir) || err != nil {
 			var reason string
 			if err != nil {
