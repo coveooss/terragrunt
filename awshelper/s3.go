@@ -190,9 +190,16 @@ func getS3Status(info BucketInfo) (*bucketStatus, error) {
 		Bucket: aws.String(info.BucketName),
 		Key:    aws.String(info.Key),
 	})
+	if !strings.HasSuffix(info.Key, "/") {
+		// Retrying with / at the end
+		answer, err = svc.HeadObject(&s3.HeadObjectInput{
+			Bucket: aws.String(info.BucketName),
+			Key:    aws.String(info.Key + "/"),
+		})
+	}
 	if err != nil {
 		clearSessionCache()
-		return nil, fmt.Errorf("caught error while calling HeadObject on key %s of bucket %s: %w", info.Key, info.BucketName, err)
+		return nil, fmt.Errorf("caught error while calling HeadObject on key %s (with or without slash) of bucket %s: %w", info.Key, info.BucketName, err)
 	}
 
 	return &bucketStatus{
