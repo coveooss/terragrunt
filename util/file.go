@@ -236,7 +236,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 			}
 
 		}
-		return false, err
+		return true, err
 	}); finalErr != nil {
 		return "", fmt.Errorf("%w while copying source from %s", finalErr, source)
 	}
