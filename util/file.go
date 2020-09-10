@@ -222,6 +222,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 		if err != nil {
 			if attempt > 3 || errors.Is(err, awshelper.ErrS3PathNotFoundError) {
 				// If the object doesn't exist in S3, there's no point in retrying
+				// false tells Try.Do to not retry
 				return false, err
 			}
 			logf(logrus.WarnLevel, "Downloading %s failed. Retrying in 1 second. Err: %v", source, err)
@@ -236,7 +237,8 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 			}
 
 		}
-		return false, err
+		// Try.Do will retry if err is not nil
+		return true, err
 	}); finalErr != nil {
 		return "", fmt.Errorf("%w while copying source from %s", finalErr, source)
 	}
