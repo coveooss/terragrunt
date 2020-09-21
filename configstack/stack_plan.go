@@ -121,8 +121,9 @@ func warnAboutMissingDependencies(module TerraformModule, output string) {
 
 // Parse the output message to extract a summary
 func extractSummaryResultFromPlan(output string) (string, int) {
-	const noChange = "No changes. Infrastructure is up-to-date."
-	if strings.Contains(output, noChange) {
+	const noChangeV012 = "No changes. Infrastructure is up-to-date."
+	const noChangeV013 = "Plan: 0 to add, 0 to change, 0 to destroy."
+	if strings.Contains(output, noChangeV012) || strings.Contains(output, noChangeV013) {
 		return "No change", 0
 	}
 
