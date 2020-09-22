@@ -241,5 +241,5 @@ func TestTerragruntHookIgnoreError(t *testing.T) {
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
-	assert.Nil(t, err)
+	assert.Nilf(t, err, "%v", err)
 }
