@@ -452,6 +452,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
+	// Since we already imported files into the main folder, we optimize here by processing only the
+	// other folder ignoring the first one. This avoid copying files twice in the main folder.
 	if folders := foldersWithTerraformFiles[1:]; len(folders) > 0 {
 		if err := conf.ImportFiles.Run(err, folders...); stopOnError(err) {
 			return
@@ -464,9 +466,11 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		template.InternalLog.SetDefaultConsoleHookLevel(terragruntOptions.Logger.GetLevel() - 1)
 		var t *template.Template
 		subst := []string{
+			// Remove quotes around providers if there are. Terraform issue a warning if we left it with quotes.
+			// This is required when we generate the providers using gotemplate code such as `provider = "aws.@variable"`
 			`/(?m)^(?P<attr>\s*provider\s*=\s*)"(?P<name>.*)"\s*$/$attr$name`,
-			`/(?m)^(?P<attr>\s*\w+\s*=\s*)"(?P<name>(?:data\.)?\w+_\w+\.\w+.*)"\s*$/$attr$name`,
-			`/(?m)^\s*$/`,
+			// Remove empty lines to increase visibility
+			`/(?m)^\s*\n\s*$/`,
 		}
 		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil, subst...); stopOnError(err) {
 			return
