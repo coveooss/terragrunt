@@ -323,8 +323,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 			terragruntOptions.Logger.Debugf("Configuration file at %s was modified by gotemplate", include.Path)
 			terragruntOptions.Logger.Tracef("Result:\n%s", configString)
 		} else {
-			terragruntOptions.Logger.Debugf("Configuration file at %s was not modified by gotemplate", include.Path)
-
+			terragruntOptions.Logger.Tracef("Configuration file at %s was not modified by gotemplate", include.Path)
 		}
 	}
 
@@ -386,7 +385,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	}
 
 	terragruntOptions.ImportVariablesMap(config.Inputs, options.ConfigVarFile)
-	terragruntOptions.Logger.Debugf("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
+	terragruntOptions.Logger.Tracef("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
 
 	if !path.IsAbs(include.Path) {
 		include.Path, _ = filepath.Abs(include.Path)
@@ -517,7 +516,7 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 					return err
 				}
 				caughtError := err
-				terragruntOptions.Logger.Debugf("Caught error while trying to load bootstrap file, trying parsing it as a variables file: %v", caughtError)
+				terragruntOptions.Logger.Tracef("Caught error while trying to load bootstrap file, trying parsing it as a variables file: %v", caughtError)
 				variables, err := util.LoadVariablesFromSource(bootConfigString, bootstrapFile, terragruntOptions.WorkingDir, false, nil)
 				terragruntOptions.ImportVariablesMap(variables, options.ConfigVarFile)
 				if err != nil {

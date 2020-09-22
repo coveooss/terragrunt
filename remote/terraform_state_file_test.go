@@ -33,7 +33,7 @@ func TestParseTerraformStateLocal(t *testing.T) {
 		Serial:  0,
 		Backend: nil,
 		Modules: []terraformStateModule{
-			terraformStateModule{
+			{
 				Path:      []string{"root"},
 				Outputs:   map[string]interface{}{},
 				Resources: map[string]interface{}{},
@@ -90,7 +90,7 @@ func TestParseTerraformStateRemote(t *testing.T) {
 			},
 		},
 		Modules: []terraformStateModule{
-			terraformStateModule{
+			{
 				Path:      []string{"root"},
 				Outputs:   map[string]interface{}{},
 				Resources: map[string]interface{}{},
@@ -220,7 +220,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 			},
 		},
 		Modules: []terraformStateModule{
-			terraformStateModule{
+			{
 				Path: []string{"root"},
 				Outputs: map[string]interface{}{
 					"key1": "value1",
@@ -229,7 +229,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 				},
 				Resources: map[string]interface{}{},
 			},
-			terraformStateModule{
+			{
 				Path: []string{"root", "module_with_outputs_no_resources"},
 				Outputs: map[string]interface{}{
 					"key1": "",
@@ -237,7 +237,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 				},
 				Resources: map[string]interface{}{},
 			},
-			terraformStateModule{
+			{
 				Path:    []string{"root", "module_with_resources_no_outputs"},
 				Outputs: map[string]interface{}{},
 				Resources: map[string]interface{}{
@@ -277,7 +277,7 @@ func TestParseTerraformStateRemoteFull(t *testing.T) {
 					},
 				},
 			},
-			terraformStateModule{
+			{
 				Path:      []string{"root", "module_level_1", "module_level_2"},
 				Outputs:   map[string]interface{}{},
 				Resources: map[string]interface{}{},

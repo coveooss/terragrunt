@@ -27,6 +27,7 @@ import (
 type CommandContext struct {
 	Stdout, Stderr io.Writer // If these variables are left unset, the default value from current options set will be used
 	DisplayCommand string    // If not specified, the actual command will be displayed
+	LogLevel       logrus.Level
 
 	command             string
 	options             *options.TerragruntOptions
@@ -48,6 +49,7 @@ func NewCmd(options *options.TerragruntOptions, cmd string) *CommandContext {
 		log:        options.Logger,
 		env:        options.EnvironmentVariables(),
 		workingDir: options.WorkingDir,
+		LogLevel:   logrus.DebugLevel,
 	}
 	return &context
 }
@@ -171,9 +173,9 @@ func (c CommandContext) Run() error {
 		}
 
 		if c.DisplayCommand == "" {
-			c.log.Debug(verb, "command: ", filepath.Base(cmd.Args[0]), " ", strings.Join(cmd.Args[1:], " "))
+			c.log.Log(c.LogLevel, verb, "command: ", filepath.Base(cmd.Args[0]), " ", strings.Join(cmd.Args[1:], " "))
 		} else {
-			c.log.Debug(verb, "command: ", c.DisplayCommand)
+			c.log.Log(c.LogLevel, verb, "command: ", c.DisplayCommand)
 		}
 
 		if tempFile != "" {
@@ -202,7 +204,7 @@ func (c CommandContext) Run() error {
 		if finalStatus == nil {
 			break
 		} else {
-			c.log.Debugf("Caught error on command: %s", finalStatus)
+			c.log.Log(c.LogLevel, "Caught error on command:", finalStatus)
 		}
 	}
 

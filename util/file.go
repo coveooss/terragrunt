@@ -259,7 +259,7 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 	}
 
 	if strings.HasPrefix(source, "file://") {
-		logf(logrus.DebugLevel, "Getting files directly (without copy) from %s", source)
+		logf(logrus.TraceLevel, "Getting files directly (without copy) from %s", source)
 		return strings.Replace(source, "file://", "", 1), nil
 	}
 
