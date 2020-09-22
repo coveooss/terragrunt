@@ -105,7 +105,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 				if util.FileExists(file) {
 					out = append(out, fmt.Sprintf("-var-file=%s", file))
 				} else {
-					terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
+					terragruntOptions.Logger.Tracef("Skipping var-file %s as it does not exist", file)
 				}
 			}
 		}

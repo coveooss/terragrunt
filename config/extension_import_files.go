@@ -87,12 +87,12 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 	logger := item.logger()
 
 	if !item.enabled() {
-		logger.Debugf("Import file %s skipped, executed only on %v", item.Name, item.OS)
+		logger.Tracef("Import file %s skipped, executed only on %v", item.Name, item.OS)
 		return
 	}
 
 	if item.Source == "" && len(item.Files) == 0 && len(item.CopyAndRename) == 0 {
-		logger.Debugf("Import file %s skipped, nothing to do", item.Name)
+		logger.Tracef("Import file %s skipped, nothing to do", item.Name)
 		return
 	}
 
@@ -100,6 +100,12 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 	if len(folders) == 0 {
 		folders = []string{item.options().WorkingDir}
 	}
+
+	trimmedFolders := make([]string, len(folders))
+	for i := range trimmedFolders {
+		trimmedFolders[i] = util.GetPathRelativeToMax(folders[i], item.options().WorkingDir, 2)
+	}
+	logger.Infof("%s to %s", item.DisplayName, strings.Join(trimmedFolders, ", "))
 
 	var sourceFolder, sourceFolderPrefix string
 	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required); err != nil {
@@ -177,7 +183,6 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 		}
 
 		for _, pattern := range item.Files {
-			name := pattern
 			if !filepath.IsAbs(pattern) {
 				pattern = filepath.Join(sourceFolder, pattern)
 			}
@@ -211,14 +216,11 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 			}
 			sourceFiles = append(sourceFiles, newFiles...)
 
-			if len(newFiles) == 1 {
-				logger.Debugf("Import file %s%s", util.GetPathRelativeToMax(newFiles[0].source, item.options().WorkingDir, 2), contextMessage)
-			} else {
+			if len(newFiles) > 1 {
 				copiedFiles := make([]string, len(newFiles))
 				for i := range newFiles {
 					copiedFiles[i] = util.GetPathRelativeToMax(newFiles[i].target, item.options().WorkingDir, 2)
 				}
-				logger.Debugf("Import file %s: %s%s", name, strings.Join(copiedFiles, ", "), contextMessage)
 			}
 		}
 

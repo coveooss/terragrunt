@@ -169,7 +169,7 @@ func (list ImportVariablesList) Import() (err error) {
 						return
 					}
 				} else {
-					terragruntOptions.Logger.Debugf("Skipping var-file %s as it does not exist", file)
+					terragruntOptions.Logger.Tracef("Skipping var-file %s as it does not exist", file)
 				}
 			}
 		}

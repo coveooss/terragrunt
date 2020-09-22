@@ -18,6 +18,8 @@ static:
 	staticcheck ./...
 	go mod tidy
 
+pre-commit: fmt static test
+
 codecov:
 	@sh ./scripts/coverage.sh --codecov
 

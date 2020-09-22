@@ -74,11 +74,11 @@ func createLockTable(tableName string, readCapacityUnits int, writeCapacityUnits
 	terragruntOptions.Logger.Infof("Creating table %s in DynamoDB", tableName)
 
 	attributeDefinitions := []*dynamodb.AttributeDefinition{
-		&dynamodb.AttributeDefinition{AttributeName: aws.String(attrLockID), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
+		{AttributeName: aws.String(attrLockID), AttributeType: aws.String(dynamodb.ScalarAttributeTypeS)},
 	}
 
 	keySchema := []*dynamodb.KeySchemaElement{
-		&dynamodb.KeySchemaElement{AttributeName: aws.String(attrLockID), KeyType: aws.String(dynamodb.KeyTypeHash)},
+		{AttributeName: aws.String(attrLockID), KeyType: aws.String(dynamodb.KeyTypeHash)},
 	}
 
 	_, err := client.CreateTable(&dynamodb.CreateTableInput{

@@ -263,6 +263,7 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
+	terragruntOptions.Logger.Info("Running terragrunt on", terragruntOptions.WorkingDir)
 	defer func() {
 		if _, hasStack := finalStatus.(*errors.Error); finalStatus != nil && !hasStack {
 			finalStatus = errors.WithStackTrace(finalStatus)
@@ -451,15 +452,23 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	if err := conf.ImportFiles.Run(err, foldersWithTerraformFiles...); stopOnError(err) {
-		return
+	if folders := foldersWithTerraformFiles[1:]; len(folders) > 0 {
+		if err := conf.ImportFiles.Run(err, folders...); stopOnError(err) {
+			return
+		}
 	}
 
 	// Run Gotemplate
 	if err == nil && useTempFolder && terragruntOptions.ApplyTemplate {
 		template.TemplateLog.SetDefaultConsoleHookLevel(terragruntOptions.Logger.GetLevel())
+		template.InternalLog.SetDefaultConsoleHookLevel(terragruntOptions.Logger.GetLevel() - 1)
 		var t *template.Template
-		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil); stopOnError(err) {
+		subst := []string{
+			`/(?m)^(?P<attr>\s*provider\s*=\s*)"(?P<name>.*)"\s*$/$attr$name`,
+			`/(?m)^(?P<attr>\s*\w+\s*=\s*)"(?P<name>(?:data\.)?\w+_\w+\.\w+.*)"\s*$/$attr$name`,
+			`/(?m)^\s*$/`,
+		}
+		if t, err = template.NewTemplate(terragruntOptions.WorkingDir, terragruntOptions.GetContext(), "", nil, subst...); stopOnError(err) {
 			return
 		}
 		t.SetOption(template.Overwrite, true)
@@ -476,8 +485,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 				return
 			}
 		}
+		utils.TerraformFormat(modifiedFiles...)
 		if len(modifiedFiles) > 0 {
-			terragruntOptions.Logger.Debugf("File(s) modified by go template: %s", filterPath(strings.Join(modifiedFiles, ", ")))
+			terragruntOptions.Logger.Infof("File(s) modified by go template: %s", color.HiBlackString(filterPath(strings.Join(modifiedFiles, ", "))))
 		}
 	}
 
@@ -585,6 +595,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if shouldBeApproved, approvalConfig := conf.ApprovalConfig.ShouldBeApproved(actualCommand.Command); shouldBeApproved {
 		cmd = cmd.Expect(approvalConfig.ExpectStatements, approvalConfig.CompletedStatements)
 	}
+	cmd.LogLevel = logrus.InfoLevel
 	err = shell.FilterPlanError(cmd.Run(), actualCommand.Command)
 
 	exitCode, errCode := shell.GetExitCode(err)

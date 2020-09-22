@@ -78,6 +78,6 @@ func withLockTable(t *testing.T, action func(tableName string, client *dynamodb.
 
 func createKeyFromItemID(itemID string) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
-		attrLockID: &dynamodb.AttributeValue{S: aws.String(itemID)},
+		attrLockID: {S: aws.String(itemID)},
 	}
 }
