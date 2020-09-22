@@ -38,7 +38,7 @@ func TestLoadDefaultValues(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult, _, err := LoadDefaultValues(tt.folder)
+			gotResult, _, err := LoadDefaultValues(tt.folder, nil)
 			assert.Equal(t, tt.wantResult, gotResult)
 			if tt.err != "" {
 				assert.Error(t, err, tt.err)

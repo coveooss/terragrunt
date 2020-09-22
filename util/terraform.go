@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/terraform/configs"
@@ -18,6 +19,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/gotemplate/v3/yaml"
+	"github.com/coveooss/multilogger"
 	"github.com/coveooss/multilogger/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -36,12 +38,8 @@ var (
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
-func LoadDefaultValues(folder string) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
-	var tmpDir string
+func LoadDefaultValues(folder string, logger *multilogger.Logger) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
 	defer func() {
-		if tmpDir != "" {
-			os.RemoveAll(tmpDir)
-		}
 		if cached := cacheDefault[folder]; cached == nil {
 			// We put the result in cache for the next call
 			cacheDefault[folder] = &cachedDefaultVariables{importedVariables, allVariables, err}
@@ -53,21 +51,7 @@ func LoadDefaultValues(folder string) (importedVariables map[string]interface{},
 		return cached.values, cached.all, nil
 	}
 
-	if tmpDir, err = createTerraformVariablesTemporaryFolder(folder); tmpDir == "" || err != nil {
-		return
-	}
-
-	var terraformConfig *configs.Module
-	parser := configs.NewParser(nil)
-	if terraformConfig, err = parser.LoadConfigDir(tmpDir); err != nil {
-		if err = convertHclError(err.(hcl.Diagnostics)); err != nil {
-			err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%w", folder, err)
-			return
-		}
-	}
-	importedVariables, err = getTerraformVariableValues(terraformConfig)
-	allVariables = terraformConfig.Variables
-	return
+	return loadDefaultValues(folder, true, logger)
 }
 
 // LoadVariablesFromHcl parses HCL content to get a map of the attributes
@@ -210,6 +194,32 @@ func getTerraformVariableValues(terraformConfig interface{}) (map[string]interfa
 		}
 	}
 	return variablesMap, nil
+}
+
+func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (map[string]interface{}, map[string]*configs.Variable, error) {
+	var err error
+	terraformConfig, err := configs.NewParser(nil).LoadConfigDir(folder)
+	if err != nil {
+		if err := convertHclError(err.(hcl.Diagnostics)); err != nil {
+			err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, err)
+			if !retry {
+				return nil, nil, err
+			}
+			// If we get an error while loading variables, we try to isolate variables definition in a temporay folder.
+			if logger != nil {
+				logger.Debugf("First try with terraform native LoadConfigDir failed\n%v", color.HiBlackString(err.Error()))
+				logger.Debug("Retrying with a temporary folder containing only variables deinitions")
+			}
+			tmpDir, err := createTerraformVariablesTemporaryFolder(folder)
+			if tmpDir == "" || err != nil {
+				return nil, nil, err
+			}
+			defer func() { os.RemoveAll(tmpDir) }()
+			return loadDefaultValues(tmpDir, false, logger)
+		}
+	}
+	importedVariables, err := getTerraformVariableValues(terraformConfig)
+	return importedVariables, terraformConfig.Variables, err
 }
 
 func isOverride(filename string) bool {
