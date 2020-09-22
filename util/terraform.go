@@ -3,7 +3,10 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/hashicorp/hcl/v2"
@@ -13,20 +16,56 @@ import (
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/json"
 	"github.com/coveooss/gotemplate/v3/template"
+	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/gotemplate/v3/yaml"
 	"github.com/coveooss/multilogger/errors"
 	"github.com/sirupsen/logrus"
 )
 
+type (
+	cachedDefaultVariables struct {
+		values map[string]interface{}
+		all    map[string]*configs.Variable
+		err    error
+	}
+)
+
+var (
+	reTfVariables = regexp.MustCompile(`(?ms)^variable\s+".*?"\s+{(\s*\n.*?^}|\s*}$)`)
+	cacheDefault  = make(map[string]*cachedDefaultVariables)
+)
+
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
 func LoadDefaultValues(folder string) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
-	var terraformConfig *configs.Module
-	parser := configs.NewParser(nil)
-	if terraformConfig, err = parser.LoadConfigDir(folder); err != nil && err.(hcl.Diagnostics).HasErrors() {
-		err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%w", folder, errors.Array(err.(hcl.Diagnostics).Errs()))
+	var tmpDir string
+	defer func() {
+		if tmpDir != "" {
+			os.RemoveAll(tmpDir)
+		}
+		if cached := cacheDefault[folder]; cached == nil {
+			// We put the result in cache for the next call
+			cacheDefault[folder] = &cachedDefaultVariables{importedVariables, allVariables, err}
+		}
+	}()
+
+	if cached := cacheDefault[folder]; cached != nil {
+		// If we already processed this folder, we simply return the cached values
+		return cached.values, cached.all, nil
+	}
+
+	if tmpDir, err = createTerraformVariablesTemporaryFolder(folder); tmpDir == "" || err != nil {
 		return
 	}
-	importedVariables, err = getTerraformVariableValues(terraformConfig, false)
+
+	var terraformConfig *configs.Module
+	parser := configs.NewParser(nil)
+	if terraformConfig, err = parser.LoadConfigDir(tmpDir); err != nil {
+		if err = convertHclError(err.(hcl.Diagnostics)); err != nil {
+			err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%w", folder, err)
+			return
+		}
+	}
+	importedVariables, err = getTerraformVariableValues(terraformConfig)
 	allVariables = terraformConfig.Variables
 	return
 }
@@ -71,7 +110,7 @@ func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...inte
 	if filepath.Ext(path) == ".tf" {
 		parser := configs.NewParser(nil)
 		if terraformConfig, err := parser.LoadConfigFile(path); err == nil {
-			return getTerraformVariableValues(terraformConfig, false)
+			return getTerraformVariableValues(terraformConfig)
 		}
 	}
 
@@ -79,7 +118,6 @@ func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...inte
 	if err != nil {
 		return nil, err
 	}
-
 	result, err := LoadVariablesFromSource(string(bytes), path, cwd, applyTemplate, context...)
 	if err != nil {
 		return nil, err
@@ -147,7 +185,7 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 	return
 }
 
-func getTerraformVariableValues(terraformConfig interface{}, includeNil bool) (map[string]interface{}, error) {
+func getTerraformVariableValues(terraformConfig interface{}) (map[string]interface{}, error) {
 	variables := []*configs.Variable{}
 	switch source := terraformConfig.(type) {
 	case *configs.Module:
@@ -159,7 +197,7 @@ func getTerraformVariableValues(terraformConfig interface{}, includeNil bool) (m
 	}
 	variablesMap := map[string]interface{}{}
 	for _, variable := range variables {
-		if includeNil || !variable.Default.IsNull() {
+		if !variable.Default.IsNull() {
 			var value interface{}
 			if err := FromCtyValue(variable.Default, &value); err != nil {
 				return nil, err
@@ -172,4 +210,86 @@ func getTerraformVariableValues(terraformConfig interface{}, includeNil bool) (m
 		}
 	}
 	return variablesMap, nil
+}
+
+func isOverride(filename string) bool {
+	return path.Base(filename) == "override.tf" ||
+		path.Base(filename) == "override.tf.json" ||
+		strings.HasSuffix(filename, "_override.tf") ||
+		strings.HasSuffix(filename, "_override.tf.json")
+}
+
+func convertHclError(err hcl.Diagnostics) error {
+	if !err.HasErrors() {
+		return nil
+	}
+	var x errors.Array
+	return append(x, err.Errs()...)
+}
+
+// Create a temporary folder containing only the terraform code used to declare and initialize variables.
+// This allows us to load the default variable value to make them available to gotemplate code before we
+// apply gotemplate on terraform file. If we don't, any terraform code that is not considered as valid
+// code will cause an error and make LoadDefaultValues fail.
+func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err error) {
+	var files []string
+
+	if _, err = os.Stat(folder); err != nil {
+		return
+	}
+	if files, err = utils.FindFiles(folder, false, false, "*.tf", "*.tf.json"); err != nil {
+		return
+	}
+
+	// The variables are splitted up into 4 different files depending if they are declared
+	// in a .tf file or a .tf.json file and if they are declareds in an override file or not.
+	generated := make(map[string]interface{})
+	for _, filename := range files {
+		name, ext := "regular", path.Ext(filename)
+		if isOverride(filename) {
+			name = "override"
+		}
+
+		var content []byte
+		if content, err = ioutil.ReadFile(filename); err != nil {
+			return
+		}
+
+		if ext == ".tf" {
+			if found := reTfVariables.FindAllString(string(content), -1); len(found) > 0 {
+				currentValue, _ := generated[name+ext].(string)
+				generated[name+ext] = currentValue + fmt.Sprintf("// %s\n%s\n", filename, strings.Join(found, "\n\n"))
+			}
+		} else {
+			ext = ".tf.json"
+			var jsonContent json.Dictionary
+			if err = json.Unmarshal(content, &jsonContent); err == nil {
+				variables := jsonContent.Clone("variable")
+				if variables.Len() > 0 {
+					currentValue, _ := generated[name+ext].(json.Dictionary)
+					generated[name+ext] = variables.Merge(currentValue)
+				}
+			}
+		}
+	}
+
+	if len(generated) > 0 {
+		// We write the resulting files
+		if tmpDir, err = ioutil.TempDir("", "load_defaults"); err != nil {
+			return
+		}
+		for filename, value := range generated {
+			var content []byte
+			switch value := value.(type) {
+			case string:
+				content = []byte(value)
+			case json.Dictionary:
+				content = []byte(value.PrettyPrint())
+			}
+			if err = ioutil.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
+				return
+			}
+		}
+	}
+	return
 }

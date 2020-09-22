@@ -11,17 +11,14 @@ const (
 )
 
 func TestLoadDefaultValues(t *testing.T) {
-	type args struct {
-		folder string
-	}
 	testCases := []struct {
-		name          string
-		args          args
-		wantResult    map[string]interface{}
-		errorContains string
+		name       string
+		folder     string
+		wantResult map[string]interface{}
+		err        string
 	}{
 		{"All Types",
-			args{testFixtureDefaultValues},
+			testFixtureDefaultValues,
 			map[string]interface{}{
 				"a":               "A (a.tf)",
 				"a_overridden_1":  "A (a_override.tf)",
@@ -37,22 +34,17 @@ func TestLoadDefaultValues(t *testing.T) {
 			},
 			"",
 		},
-		{
-			"Invalid Folder",
-			args{"Invalid"},
-			nil,
-			"Module directory Invalid does not exist or cannot be read",
-		},
+		{"Invalid Folder", "Invalid", nil, "Module directory Invalid does not exist or cannot be read"},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			gotResult, _, err := LoadDefaultValues(tt.args.folder)
-			if tt.errorContains != "" {
-				assert.Contains(t, err.Error(), tt.errorContains)
-			} else {
-				assert.Nil(t, err)
-			}
+			gotResult, _, err := LoadDefaultValues(tt.folder)
 			assert.Equal(t, tt.wantResult, gotResult)
+			if tt.err != "" {
+				assert.Error(t, err, tt.err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

@@ -240,6 +240,6 @@ func TestTerragruntHookIgnoreError(t *testing.T) {
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
 
-	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
+	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 	assert.Nil(t, err)
 }
