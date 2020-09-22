@@ -60,19 +60,19 @@ func (item *ImportVariables) loadVariablesFromFile(file string) error {
 }
 
 func (item *ImportVariables) loadVariables(newVariables map[string]interface{}, source options.VariableSource) {
-	for _, nested := range item.NestedObjects {
-		for k1, v1 := range newVariables {
-			// Simplify the reference to variables in case the key is repeated (ex: project.project.value can be directly acceeded with project.value)
-			if v1, isMap := v1.(map[string]interface{}); isMap {
-				if v2, isMap := v1[k1].(map[string]interface{}); isMap {
-					for k, v := range v2 {
-						if _, exist := v1[k]; !exist {
-							v1[k] = v
-						}
+	for key, value := range newVariables {
+		// Simplify the reference to variables in case the key is repeated (ex: project.project.value can be directly accessed with project.value)
+		if map1, isMap := value.(map[string]interface{}); isMap {
+			if map2, isMap := map1[key].(map[string]interface{}); isMap {
+				for mapKey, mapValue := range map2 {
+					if _, exist := map1[mapKey]; !exist {
+						map1[mapKey] = mapValue
 					}
 				}
 			}
 		}
+	}
+	for _, nested := range item.NestedObjects {
 		imported := newVariables
 		if nested != "" {
 			imported = map[string]interface{}{nested: imported}
