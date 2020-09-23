@@ -8,7 +8,7 @@ import (
 
 func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder string) error {
 	// Retrieve the default variables from the terraform files
-	importedVariables, _, err := util.LoadDefaultValues(folder)
+	importedVariables, _, err := util.LoadDefaultValues(folder, terragruntOptions.Logger, true)
 	if err != nil {
 		return err
 	}

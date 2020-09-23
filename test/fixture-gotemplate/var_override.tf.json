@@ -1,0 +1,7 @@
+{
+    "variable": {
+        "json2": {
+            "default": "I am json 2 (overridden)"
+        }
+    }
+}

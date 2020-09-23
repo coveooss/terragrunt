@@ -158,7 +158,7 @@ var terragruntRunID string
 var terraformVersion string
 
 // CreateTerragruntCli creates the Terragrunt CLI App.
-func CreateTerragruntCli(version string, writer io.Writer, errwriter io.Writer) *cli.App {
+func CreateTerragruntCli(version string, writer, errwriter io.Writer) *cli.App {
 	cli.OsExiter = func(exitCode int) {
 		// Do nothing. We just need to override this function, as the default value calls os.Exit, which
 		// kills the app (or any automated test) dead in its tracks.
@@ -499,7 +499,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Export Terragrunt variables to the paths defined in export_variables blocks
 	for _, folder := range foldersWithTerraformFiles {
 		var existingVariables map[string]*configs.Variable
-		_, existingVariables, err = util.LoadDefaultValues(folder)
+		_, existingVariables, err = util.LoadDefaultValues(folder, terragruntOptions.Logger, false)
 		if stopOnError(err) {
 			return err
 		}

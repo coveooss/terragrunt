@@ -1,0 +1,10 @@
+{
+    "variable": {
+        "json1": {
+            "default": "I am json 1"
+        },
+        "json2": {
+            "default": "I am json 2"
+        }
+    }
+}

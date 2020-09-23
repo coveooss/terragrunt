@@ -462,7 +462,7 @@ func runTerragrunt(t *testing.T, command string) {
 	runTerragruntRedirectOutput(t, command, os.Stdout, os.Stderr)
 }
 
-func runTerragruntRedirectOutput(t *testing.T, command string, writer io.Writer, errwriter io.Writer) {
+func runTerragruntRedirectOutput(t *testing.T, command string, writer, errwriter io.Writer) {
 	if err := runTerragruntCommand(t, command, writer, errwriter); err != nil {
 		message := ""
 		if err, captured := errwriter.(*bytes.Buffer); captured {
