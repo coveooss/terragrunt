@@ -22,14 +22,15 @@ const (
 
 // All environment variables that are published during Terragrunt execution to share current context during shell execution
 const (
-	EnvArgs         = "TERRAGRUNT_ARGS"          // Used to publish the supplied arguments to the Terragrunt command
-	EnvCommand      = "TERRAGRUNT_COMMAND"       // Used to publish the current Terragrunt command
-	EnvExtraCommand = "TERRAGRUNT_EXTRA_COMMAND" // Used to publish the name of the actual running command
-	EnvLaunchFolder = "TERRAGRUNT_LAUNCH_FOLDER" // Used to publish the launch folder from where the Terragrunt operation has been launched
-	EnvRunID        = "TERRAGRUNT_RUN_ID"        // Used to publish the current run id, this is unique to each Terragrunt execution, but can be used to link -all operations
-	EnvSourceFolder = "TERRAGRUNT_SOURCE_FOLDER" // Used to publish the current Terraform source folder used
-	EnvTFVersion    = "TERRAFORM_VERSION"        // Used to publish the Terraform version
-	EnvVersion      = "TERRAGRUNT_VERSION"       // Used to publish the Terragrunt version
+	EnvArgs            = "TERRAGRUNT_ARGS"             // Used to publish the supplied arguments to the Terragrunt command
+	EnvCommand         = "TERRAGRUNT_COMMAND"          // Used to publish the current Terragrunt command
+	EnvExtraCommand    = "TERRAGRUNT_EXTRA_COMMAND"    // Used to publish the name of the actual running command
+	EnvLaunchFolder    = "TERRAGRUNT_LAUNCH_FOLDER"    // Used to publish the launch folder from where the Terragrunt operation has been launched
+	EnvRunID           = "TERRAGRUNT_RUN_ID"           // Used to publish the current run id, this is unique to each Terragrunt execution, but can be used to link -all operations
+	EnvSourceFolder    = "TERRAGRUNT_SOURCE_FOLDER"    // Used to publish the current Terraform source folder used
+	EnvTemporaryFolder = "TERRAGRUNT_TEMPORARY_FOLDER" // Used to publish the Terragrunt temporary folder used
+	EnvTFVersion       = "TERRAFORM_VERSION"           // Used to publish the Terraform version
+	EnvVersion         = "TERRAGRUNT_VERSION"          // Used to publish the Terragrunt version
 )
 
 // All environment variables that are published during Terragrunt execution to indicate the current execution status
