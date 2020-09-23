@@ -1,5 +1,4 @@
 variable "my_list" {
-
   type = list(object({
     var1 = string
     var2 = string

@@ -115,6 +115,16 @@ func TestTerragruntImportVariables(t *testing.T) {
 			project:        "fixture-variables/list_from_inputs",
 			expectedOutput: []string{`example = [{"var1":"value5","var2":"value6"}]`},
 		},
+		// This tests that duplicated structure level can be acceded by skiping one level
+		{
+			project: "fixture-variables/import-duplicated-name",
+			expectedOutput: []string{
+				"\ndirect = world",
+				"\nindirect = world",
+				"\ndirect2 = world",
+				"\nindirect2 = world",
+			},
+		},
 	}
 	for _, test := range tests {
 		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
