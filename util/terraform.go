@@ -38,13 +38,15 @@ var (
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
-func LoadDefaultValues(folder string, logger *multilogger.Logger) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
-	defer func() {
-		if cached := cacheDefault[folder]; cached == nil {
-			// We put the result in cache for the next call
-			cacheDefault[folder] = &cachedDefaultVariables{importedVariables, allVariables, err}
-		}
-	}()
+func LoadDefaultValues(folder string, logger *multilogger.Logger, keepInCache bool) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
+	if keepInCache {
+		defer func() {
+			if cached := cacheDefault[folder]; cached == nil {
+				// We put the result in cache for the next call
+				cacheDefault[folder] = &cachedDefaultVariables{importedVariables, allVariables, err}
+			}
+		}()
+	}
 
 	if cached := cacheDefault[folder]; cached != nil {
 		// If we already processed this folder, we simply return the cached values

@@ -498,7 +498,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Export Terragrunt variables to the paths defined in export_variables blocks
 	for _, folder := range foldersWithTerraformFiles {
 		var existingVariables map[string]*configs.Variable
-		_, existingVariables, err = util.LoadDefaultValues(folder, terragruntOptions.Logger)
+		_, existingVariables, err = util.LoadDefaultValues(folder, terragruntOptions.Logger, false)
 		if stopOnError(err) {
 			return err
 		}
