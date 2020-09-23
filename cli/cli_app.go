@@ -346,6 +346,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			pathMsg := color.WhiteString("\nVerify that the following path exists:\n  Given:    %s\n  Absolute: %s", sourceURL, absSourceURL)
 			return fmt.Errorf("could not copy your source folder to a temporary location.\n%w\n%s", err, pathMsg)
 		}
+		terragruntOptions.Env[options.EnvTemporaryFolder] = terragruntOptions.WorkingDir
 	}
 
 	if err = conf.ImportVariables.Import(); stopOnError(err) {
