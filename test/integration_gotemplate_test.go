@@ -24,7 +24,9 @@ func TestTerragruntGoTemplate(t *testing.T) {
 			project:        "fixture-provider",
 			args:           "--terragrunt-apply-template",
 			expectedOutput: []string{`ok = Everything is fine`},
-			additionalTest: func(t *testing.T, folder, stdout, stderr string) { assert.NotContains(t, stdout, "Warning") },
+			additionalTest: func(t *testing.T, folder, stdout, stderr string) {
+				assert.NotContains(t, stdout, "Warning")
+			},
 		},
 		// Test that loading default variablesthe works even if the terraform original source is not compliant
 		{

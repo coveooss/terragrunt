@@ -1,13 +1,13 @@
-provider "aws" {
-  alias  = "test"
-  region = "eu-west-1"
+provider "template" {
+  alias = "test"
 }
 
-resource "aws_security_group" "test" {
-  provider = "aws.@(`test`)"
-  count    = 0
+# Create an arbitrary local resource
+data "template_file" "test" {
+  provider = "template.@(`test`)"
+  template = "Everything is fine"
 }
 
 output "ok" {
-  value = "Everything is fine"
+  value = data.template_file.test.rendered
 }
