@@ -5,11 +5,9 @@ import_variables "test2" {
   ]
 }
 
-// Variables defined in files have a lower priority than those defined explicitely
+// Variables defined in files have a lower priority than those defined explicitly
 import_variables "test" {
-  optional_var_files = [
-    "vars.json",
-  ]
+  optional_var_files = ["vars.json"]
 }
 
 export_variables {

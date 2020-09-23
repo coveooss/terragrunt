@@ -1,0 +1,5 @@
+project = {
+  project = {
+    hello = "world"
+  }
+}
