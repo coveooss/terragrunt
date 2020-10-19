@@ -3,7 +3,7 @@ module github.com/coveooss/terragrunt/v2
 go 1.13
 
 require (
-	github.com/aws/aws-sdk-go v1.35.7
+	github.com/aws/aws-sdk-go v1.35.9
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/coveooss/gotemplate/v3 v3.5.2
