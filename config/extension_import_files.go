@@ -105,7 +105,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 	for i := range trimmedFolders {
 		trimmedFolders[i] = util.GetPathRelativeToMax(folders[i], item.options().WorkingDir, 2)
 	}
-	logger.Infof("%s to %s", item.DisplayName, strings.Join(trimmedFolders, ", "))
+	logger.Debugf("import_files: %s to %s", item.DisplayName, strings.Join(trimmedFolders, ", "))
 
 	var sourceFolder, sourceFolderPrefix string
 	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required, ""); err != nil {
