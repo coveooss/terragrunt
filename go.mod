@@ -28,4 +28,6 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 )
 
+replace github.com/hashicorp/go-getter => github.com/coveord/go-getter v1.5.10
+
 replace github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.7.10

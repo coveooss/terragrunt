@@ -108,7 +108,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 	logger.Infof("%s to %s", item.DisplayName, strings.Join(trimmedFolders, ", "))
 
 	var sourceFolder, sourceFolderPrefix string
-	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required); err != nil {
+	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required, ""); err != nil {
 		return err
 	} else if sourceFolder != "" {
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)

@@ -25,6 +25,7 @@ type ImportVariables struct {
 	NestedObjects    []string          `hcl:"nested_under,optional"`
 	EnvVars          map[string]string `hcl:"env_vars,optional"`
 	OnCommands       []string          `hcl:"on_commands,optional"`
+	SourceFileRegex  string            `hcl:"source_file_regex,optional"`
 }
 
 func (item ImportVariables) itemType() (result string) {
@@ -121,7 +122,7 @@ func (list ImportVariablesList) Import() (err error) {
 				if source == "" {
 					source = terragruntOptions.WorkingDir
 				}
-				source, err := config.GetSourceFolder(item.Name, source, true)
+				source, err := config.GetSourceFolder(item.Name, source, true, item.SourceFileRegex)
 				if err != nil {
 					folderErrors = append(folderErrors, err)
 					continue
