@@ -258,6 +258,7 @@ import_variables "name" {
   nester_under           = []            # Optional, define variables under a specific object
   os                     = [list of os]  # Optional, default run on all os, os name are those supported by go, i.e. linux, darwin, windows
   disabled               = false         # Optional, provide a mechanism to temporary disable the import variables block
+  fetch_regex            = ""            # Optional, go-getter optimization. This sets a regex that sorts files to fetch from the sources
 }
 ```
 

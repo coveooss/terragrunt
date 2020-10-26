@@ -76,7 +76,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 			folders = append(folders, source)
 		}
 
-		if newSource, err := config.GetSourceFolder(arg.Name, arg.Source, len(arg.RequiredVarFiles) > 0); err != nil {
+		if newSource, err := config.GetSourceFolder(arg.Name, arg.Source, len(arg.RequiredVarFiles) > 0, ""); err != nil {
 			return nil, err
 		} else if newSource != "" {
 			folders = []string{newSource}

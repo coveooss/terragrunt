@@ -169,11 +169,11 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 
 // GetSourceFolder resolves remote source and returns the local temporary folder
 // If the source is local, it is directly returned
-func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool) (string, error) {
+func (tcf *TerragruntConfigFile) GetSourceFolder(name string, source string, failIfNotFound bool, fileRegex string) (string, error) {
 	terragruntOptions := tcf.options
 
 	if source != "" {
-		sourceFolder, err := util.GetSource(source, filepath.Dir(tcf.Path), terragruntOptions.Logger)
+		sourceFolder, err := util.GetSource(source, filepath.Dir(tcf.Path), terragruntOptions.Logger, fileRegex)
 		if err != nil {
 			if failIfNotFound {
 				return "", err
@@ -499,7 +499,7 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 				bootstrapDir = bootstrapDir + "/"
 			}
 
-			sourcePath, err := util.GetSource(bootstrapDir, terragruntOptions.WorkingDir, terragruntOptions.Logger)
+			sourcePath, err := util.GetSource(bootstrapDir, terragruntOptions.WorkingDir, terragruntOptions.Logger, "")
 			if err != nil {
 				return err
 			}

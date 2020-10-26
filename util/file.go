@@ -186,7 +186,7 @@ func ReadFileAsString(path string) (string, error) {
 // from an external source (github, s3, etc.) as a string
 // It uses terraform to execute its command
 func ReadFileAsStringFromSource(source, path string, logger *multilogger.Logger) (localFile, content string, err error) {
-	cacheDir, err := GetSource(source, "", logger)
+	cacheDir, err := GetSource(source, "", logger, "")
 	if err != nil {
 		return "", "", err
 	}
@@ -208,7 +208,7 @@ func GetTempDownloadFolder(folders ...string) string {
 // GetSource gets the content of the source in a temporary folder and returns
 // the local path. The function manages a cache to avoid multiple remote calls
 // if the content has not changed. When given a local path, it is directly returned
-func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
+func GetSource(source, pwd string, logger *multilogger.Logger, fileRegex string) (string, error) {
 	logf := func(level logrus.Level, format string, args ...interface{}) {
 		if logger != nil {
 			logger.Logf(level, format, args...)
@@ -218,7 +218,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 	var result string
 	if finalErr := try.Do(func(attempt int) (bool, error) {
 		var err error
-		result, err = getSource(source, pwd, logf)
+		result, err = getSource(source, pwd, logf, fileRegex)
 		if err != nil {
 			if attempt > 3 || errors.Is(err, awshelper.ErrS3PathNotFoundError) {
 				// If the object doesn't exist in S3, there's no point in retrying
@@ -245,7 +245,7 @@ func GetSource(source, pwd string, logger *multilogger.Logger) (string, error) {
 	return result, nil
 }
 
-func getSource(source, pwd string, logf func(level logrus.Level, format string, args ...interface{})) (string, error) {
+func getSource(source, pwd string, logf func(level logrus.Level, format string, args ...interface{}), fileRegex string) (string, error) {
 	logf(logrus.TraceLevel, "Converting S3 path to be compatible with getter for %s", source)
 	source, err := awshelper.ConvertS3Path(source)
 	if err != nil {
@@ -263,8 +263,9 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 		return strings.Replace(source, "file://", "", 1), nil
 	}
 
-	logf(logrus.TraceLevel, "Fetching and locking cache for %s", source)
-	cacheDir := GetTempDownloadFolder("terragrunt-cache", EncodeBase64Sha1(source))
+	cacheKey := fmt.Sprintf("%s (Regex: %s)", source, fileRegex)
+	logf(logrus.TraceLevel, "Fetching and locking cache for %s", cacheKey)
+	cacheDir := GetTempDownloadFolder("terragrunt-cache", EncodeBase64Sha1(cacheKey))
 	sharedMutex.Lock()
 	defer sharedMutex.Unlock()
 
@@ -289,7 +290,7 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 			if err != nil {
 				reason = fmt.Sprintf("because status = %v", err)
 			}
-			logf(logrus.DebugLevel, "Getting source files %s %s", source, reason)
+			logf(logrus.DebugLevel, "Getting source files %s %s", cacheKey, reason)
 			if !alreadyInCache {
 				err = os.RemoveAll(cacheDir)
 				if err != nil {
@@ -297,7 +298,7 @@ func getSource(source, pwd string, logf func(level logrus.Level, format string, 
 				}
 			}
 
-			if err := GetCopy(cacheDir, source); err != nil {
+			if err := GetCopy(cacheDir, source, fileRegex); err != nil {
 				return "", fmt.Errorf("caught error while fetching files from %s: %w", source, err)
 			}
 
