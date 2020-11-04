@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/template"
@@ -147,8 +146,6 @@ AUTHOR(S):
    {{range .Authors}}{{.}}{{end}}
    {{end}}
 `
-
-var moduleRegex = regexp.MustCompile(`module[[:blank:]]+".+"`)
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
 const defaultTerraformVersionConstaint = ">= v0.12.0"
