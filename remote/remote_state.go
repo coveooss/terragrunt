@@ -152,7 +152,7 @@ func (remoteState State) ToTerraformInitArgs() []string {
 		backendConfigArgs = append(backendConfigArgs, arg)
 	}
 
-	backendConfigArgs = append(backendConfigArgs, "-force-copy", "-get=false")
+	backendConfigArgs = append(backendConfigArgs, "-force-copy")
 	return backendConfigArgs
 }
 
