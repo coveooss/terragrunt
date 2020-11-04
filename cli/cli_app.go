@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/template"
@@ -147,8 +146,6 @@ AUTHOR(S):
    {{range .Authors}}{{.}}{{end}}
    {{end}}
 `
-
-var moduleRegex = regexp.MustCompile(`module[[:blank:]]+".+"`)
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
 const defaultTerraformVersionConstaint = ">= v0.12.0"
@@ -508,10 +505,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
-	if err := downloadModules(terragruntOptions); stopOnError(err) {
-		return
-	}
-
 	// If there is no terraform file in the folder, we skip the command
 	tfFiles, err := utils.FindFiles(terragruntOptions.WorkingDir, false, false, options.TerraformFilesPatterns...)
 	if stopOnError(err) {
@@ -634,35 +627,6 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 		return runAll(realCommand, terragruntOptions)
 	}
 	return errors.WithStackTrace(unrecognizedCommand(command))
-}
-
-// A quick sanity check that calls `terraform get` to download modules, if they aren't already downloaded.
-func downloadModules(terragruntOptions *options.TerragruntOptions) error {
-	command := util.IndexOrDefault(terragruntOptions.TerraformCliArgs, 0, "")
-	if util.ListContainsElement(terraformCommandsThatUseState, command) {
-		shouldDownload, err := shouldDownloadModules(terragruntOptions)
-		if err != nil {
-			return err
-		}
-		if shouldDownload {
-			return shell.NewTFCmd(terragruntOptions).Args("get", "-update").LogOutput(logrus.DebugLevel)
-		}
-	}
-
-	return nil
-}
-
-// Return true if modules aren't already downloaded and the Terraform templates in this project reference modules.
-// Note that to keep the logic in this code very simple, this code ONLY detects the case where you haven't downloaded
-// modules at all. Detecting if your downloaded modules are out of date (as opposed to missing entirely) is more
-// complicated and not something we handle at the moment.
-func shouldDownloadModules(terragruntOptions *options.TerragruntOptions) (bool, error) {
-	modulesPath := util.JoinPath(terragruntOptions.WorkingDir, ".terraform/modules")
-	if util.FileExists(modulesPath) {
-		return false, nil
-	}
-
-	return util.Grep(moduleRegex, terragruntOptions.WorkingDir, options.TerraformFilesTemplates...)
 }
 
 // If the user entered a Terraform command that uses state (e.g. plan, apply), make sure remote state is configured
