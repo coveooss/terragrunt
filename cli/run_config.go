@@ -1,6 +1,11 @@
 package cli
 
 import (
+	"fmt"
+	"math/rand"
+	"os"
+	"os/user"
+
 	"github.com/coveooss/terragrunt/v2/awshelper"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/util"
@@ -19,7 +24,23 @@ func importDefaultVariables(terragruntOptions *options.TerragruntOptions, folder
 }
 
 func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, roleArn string, assumeDuration *int) error {
-	roleVars, err := awshelper.AssumeRoleEnvironmentVariables(terragruntOptions.Logger, roleArn, "terragrunt", assumeDuration)
+	var userName string
+	if userName = os.Getenv(options.EnvAssumedRoleID); userName == "" {
+		if user, err := user.Current(); err != nil {
+			userName = user.Username
+		} else {
+			if userName = os.Getenv("LOGNAME"); userName == "" {
+				userName = os.Getenv("USER")
+			}
+		}
+		if userName == "" {
+			// If no user name has been defined, we generate a "unique" identifier
+			userName = fmt.Sprintf("Unknown_%d", rand.Int())
+		}
+	}
+	sessionName := fmt.Sprintf("terragrunt_%s", userName)
+
+	roleVars, err := awshelper.AssumeRoleEnvironmentVariables(terragruntOptions.Logger, roleArn, sessionName, assumeDuration)
 	if err != nil {
 		return err
 	}

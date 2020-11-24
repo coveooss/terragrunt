@@ -260,7 +260,7 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 // Run Terragrunt with the given options and CLI args. This will forward all the args directly to Terraform, enforcing
 // best practices along the way.
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
-	terragruntOptions.Logger.Info("Running terragrunt on", terragruntOptions.WorkingDir)
+	terragruntOptions.Logger.Info("Running terragrunt on ", terragruntOptions.WorkingDir)
 	defer func() {
 		if _, hasStack := finalStatus.(*errors.Error); finalStatus != nil && !hasStack {
 			finalStatus = errors.WithStackTrace(finalStatus)
@@ -419,7 +419,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 				break
 			}
 			if err := setRoleEnvironmentVariables(terragruntOptions, role, conf.AssumeRoleDurationHours); err == nil {
-				terragruntOptions.Logger.Debug("Assumed role ", role)
+				terragruntOptions.Logger.Infof("Assumed role %s for %s", terragruntOptions.Env[awshelper.EnvAssumedRole], terragruntOptions.Env[awshelper.EnvTokenDuration])
 				roleAssumed = true
 				break
 			}
