@@ -6,12 +6,20 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/coveooss/multilogger"
 	"github.com/coveooss/terragrunt/v2/errors"
+)
+
+// Environment variables used to publish the assumed role expiration date
+const (
+	EnvAssumedRole     = "TERRAGRUNT_ASSUMED_ROLE"
+	EnvTokenExpiration = "TERRAGRUNT_TOKEN_EXPIRATION"
+	EnvTokenDuration   = "TERRAGRUNT_TOKEN_DURATION"
 )
 
 var sessionCache sync.Map
@@ -126,6 +134,9 @@ func assumeRole(session *session.Session, roleArn, sessionName string, durationS
 			"AWS_ACCESS_KEY_ID":     *response.Credentials.AccessKeyId,
 			"AWS_SECRET_ACCESS_KEY": *response.Credentials.SecretAccessKey,
 			"AWS_SESSION_TOKEN":     *response.Credentials.SessionToken,
+			EnvAssumedRole:          *response.AssumedRoleUser.Arn,
+			EnvTokenExpiration:      fmt.Sprint(response.Credentials.Expiration),
+			EnvTokenDuration:        fmt.Sprint(time.Until(*response.Credentials.Expiration)),
 		}, nil
 	}
 	return nil, err

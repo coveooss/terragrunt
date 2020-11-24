@@ -88,6 +88,9 @@ ensure that at least one role is satisfied. Empty strings means to continue with
 The `assume_role` configuration could be defined in any terragrunt configuration files. If it is defined at several level, the leaf
 configuration will prevail.
 
+The assumed role will be identified by `terragrunt_username` to ease retrieval of AWS operations in the logs/cloud trails. It is however
+possible to override the name used to identify the assumed role by specifying a value in the environment variable `TERRAGRUNT_ASSUMED_ROLE_ID`.
+
 ### Conditional execution of a project
 
 It is possible to set conditions that must be met in order for a project to be executed. To do so, the following block must be defined in the terragrunt configuration file:
