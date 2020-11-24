@@ -527,6 +527,20 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		}
 	}
 
+	terragruntOptions.Logger.Info("Running Terraform init")
+	initArgs := []string{"init", "-reconfigure"}
+	if conf.RemoteState != nil {
+		initArgs = append(initArgs, conf.RemoteState.ToTerraformInitArgs()...)
+	}
+	if terragruntOptions.PluginsDirectory != "" {
+		// As of Terraform 0.13.5, the -get-plugins=false argument doesn't work, so we don't use it
+		// Passing a plugin-dir explicitely disallows downloads correctly
+		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", terragruntOptions.PluginsDirectory))
+	}
+	if err := shell.NewTFCmd(terragruntOptions).Args(initArgs...).WithRetries(3).LogOutput(logrus.DebugLevel); stopOnError(err) {
+		return
+	}
+
 	// Executing the pre-hook that should be ran after init state if there are
 	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(err); stopOnError(err) {
 		return

@@ -11,7 +11,6 @@ import (
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
 	"github.com/coveooss/terragrunt/v2/util"
-	"github.com/sirupsen/logrus"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -68,17 +67,9 @@ func (remoteState State) ConfigureRemoteState(terragruntOptions *options.Terragr
 
 	if shouldConfigure {
 		terragruntOptions.Logger.Debugf("Initializing remote state for the %s backend", remoteState.Backend)
-		if err := remoteState.Initialize(terragruntOptions); err != nil {
-			return err
-		}
+		return remoteState.Initialize(terragruntOptions)
 	}
-
-	terragruntOptions.Logger.Info("Running Terraform init")
-	initArgs := initCommand(remoteState)
-	if terragruntOptions.PluginsDirectory != "" {
-		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", terragruntOptions.PluginsDirectory))
-	}
-	return shell.NewTFCmd(terragruntOptions).Args(initArgs...).WithRetries(3).LogOutput(logrus.DebugLevel)
+	return nil
 }
 
 // Returns true if remote state needs to be configured. This will be the case when:
@@ -142,10 +133,6 @@ func shouldOverrideExistingRemoteState(existingBackend *terraformBackend, remote
 	return false, nil
 }
 
-func initCommand(remoteState State) []string {
-	return append([]string{"init"}, remoteState.ToTerraformInitArgs()...)
-}
-
 // ToTerraformInitArgs converts the State config into the format used by the terraform init command
 func (remoteState State) ToTerraformInitArgs() []string {
 	backendConfigArgs := make([]string, 0, len(remoteState.Config))
@@ -154,9 +141,7 @@ func (remoteState State) ToTerraformInitArgs() []string {
 		backendConfigArgs = append(backendConfigArgs, arg)
 	}
 
-	// As of Terraform 0.13.5, the -get-plugins=false argument doesn't work, so we don't use it
-	// Passing a plugin-dir explicitely disallows downloads correctly
-	backendConfigArgs = append(backendConfigArgs, "-force-copy", "-reconfigure")
+	backendConfigArgs = append(backendConfigArgs, "-force-copy")
 	return backendConfigArgs
 }
 
