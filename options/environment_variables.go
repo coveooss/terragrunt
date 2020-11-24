@@ -19,6 +19,7 @@ const (
 	EnvPreBootConfigs      = "TERRAGRUNT_PREBOOT_CONFIGS"       // Used to set defaults configuration when launching terragrunt (loaded before user files)
 	EnvIncludeEmptyFolders = "TERRAGRUNT_INCLUDE_EMPTY_FOLDERS" // Used to set the option terragrunt-include-empty-folders
 	EnvAssumedRoleID       = "TERRAGRUNT_ASSUMED_ROLE_ID"       // Used to configure the name of the role assumed by terragrunt
+	EnvPluginsDirectory    = "TERRAGRUNT_PLUGINS_DIRECTORY"     // Used to restrict the plugins download directory
 )
 
 // All environment variables that are published during Terragrunt execution to share current context during shell execution

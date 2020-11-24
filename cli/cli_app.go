@@ -46,6 +46,7 @@ const (
 	optBootConfigs                      = "terragrunt-boot-configs"
 	optPreBootConfigs                   = "terragrunt-pre-boot-configs"
 	optIncludeEmptyFolders              = "terragrunt-include-empty-folders"
+	optPluginsDirectory                 = "terragrunt-plugins-directory"
 )
 
 var allTerragruntBooleanOpts = []string{optNonInteractive, optTerragruntSourceUpdate, optTerragruntIgnoreDependencyErrors, optApplyTemplate, optIncludeEmptyFolders}
@@ -148,7 +149,7 @@ AUTHOR(S):
 `
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
-const defaultTerraformVersionConstaint = ">= v0.12.0"
+const defaultTerraformVersionConstaint = ">= v0.13.0"
 
 var terragruntVersion string
 var terragruntRunID string
@@ -182,10 +183,6 @@ func CreateTerragruntCli(version string, writer, errwriter io.Writer) *cli.App {
 // The sole action for the app
 func runApp(cliContext *cli.Context) (finalErr error) {
 	defer errors.Recover(func(cause error) { finalErr = cause })
-
-	if cliContext.Args().First() == "0.12upgrade" {
-		return migrate(cliContext)
-	}
 
 	terragruntRunID = fmt.Sprint(xid.New())
 
@@ -548,9 +545,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return
 		}
 	}()
-
-	// Run an init in case there are new modules or plugins to import
-	shell.NewTFCmd(terragruntOptions).Args([]string{"init", "--backend=false"}...).WithRetries(3).Output()
 
 	isApply := actualCommand.Command == "apply" || (actualCommand.Extra != nil && actualCommand.Extra.ActAs == "apply")
 	if terragruntOptions.NonInteractive && isApply && !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-auto-approve") {

@@ -104,6 +104,9 @@ type TerragruntOptions struct {
 
 	// PreBootConfigurationPaths is used to set defaults configuration when launching terragrunt. These will be loaded before the user's config
 	PreBootConfigurationPaths []string
+
+	// PluginsDirectory is used to restrict plugin downloads to a specific directory (no remote plugins will be downloaded if this is set)
+	PluginsDirectory string
 }
 
 // NewTerragruntOptions creates a new TerragruntOptions object with reasonable defaults for real usage

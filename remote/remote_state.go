@@ -71,12 +71,14 @@ func (remoteState State) ConfigureRemoteState(terragruntOptions *options.Terragr
 		if err := remoteState.Initialize(terragruntOptions); err != nil {
 			return err
 		}
-
-		terragruntOptions.Logger.Debugf("Configuring remote state for the %s backend", remoteState.Backend)
-		return shell.NewTFCmd(terragruntOptions).Args(initCommand(remoteState)...).WithRetries(3).LogOutput(logrus.DebugLevel)
 	}
 
-	return nil
+	terragruntOptions.Logger.Info("Running Terraform init")
+	initArgs := initCommand(remoteState)
+	if terragruntOptions.PluginsDirectory != "" {
+		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", terragruntOptions.PluginsDirectory))
+	}
+	return shell.NewTFCmd(terragruntOptions).Args(initArgs...).WithRetries(3).LogOutput(logrus.DebugLevel)
 }
 
 // Returns true if remote state needs to be configured. This will be the case when:
@@ -152,7 +154,9 @@ func (remoteState State) ToTerraformInitArgs() []string {
 		backendConfigArgs = append(backendConfigArgs, arg)
 	}
 
-	backendConfigArgs = append(backendConfigArgs, "-force-copy")
+	// As of Terraform 0.13.5, the -get-plugins=false argument doesn't work, so we don't use it
+	// Passing a plugin-dir explicitely disallows downloads correctly
+	backendConfigArgs = append(backendConfigArgs, "-force-copy", "-reconfigure")
 	return backendConfigArgs
 }
 
