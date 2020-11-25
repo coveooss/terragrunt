@@ -93,6 +93,7 @@ func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, 
 	opts.BootConfigurationPaths = parseList(optBootConfigs, os.Getenv(options.EnvBootConfigs))
 	opts.PreBootConfigurationPaths = parseList(optPreBootConfigs, os.Getenv(options.EnvPreBootConfigs))
 	opts.CheckSourceFolders = !parseBooleanArg(args, optIncludeEmptyFolders, options.EnvIncludeEmptyFolders, false)
+	opts.PluginsDirectory = parse(optPluginsDirectory, os.Getenv(options.EnvPluginsDirectory), "")
 
 	flushDelay := parse(optFlushDelay, os.Getenv(options.EnvFlushDelay), "60s")
 	nbWorkers := parse(optNbWorkers, os.Getenv(options.EnvWorkers), "10")

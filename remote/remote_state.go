@@ -11,7 +11,6 @@ import (
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
 	"github.com/coveooss/terragrunt/v2/util"
-	"github.com/sirupsen/logrus"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -68,14 +67,8 @@ func (remoteState State) ConfigureRemoteState(terragruntOptions *options.Terragr
 
 	if shouldConfigure {
 		terragruntOptions.Logger.Debugf("Initializing remote state for the %s backend", remoteState.Backend)
-		if err := remoteState.Initialize(terragruntOptions); err != nil {
-			return err
-		}
-
-		terragruntOptions.Logger.Debugf("Configuring remote state for the %s backend", remoteState.Backend)
-		return shell.NewTFCmd(terragruntOptions).Args(initCommand(remoteState)...).WithRetries(3).LogOutput(logrus.DebugLevel)
+		return remoteState.Initialize(terragruntOptions)
 	}
-
 	return nil
 }
 
@@ -138,10 +131,6 @@ func shouldOverrideExistingRemoteState(existingBackend *terraformBackend, remote
 
 	terragruntOptions.Logger.Debug("Remote state is already configured for backend", existingBackend.Type)
 	return false, nil
-}
-
-func initCommand(remoteState State) []string {
-	return append([]string{"init"}, remoteState.ToTerraformInitArgs()...)
 }
 
 // ToTerraformInitArgs converts the State config into the format used by the terraform init command
