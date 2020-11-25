@@ -27,7 +27,7 @@ jobs:
 
       - name: Install Terraform
         run: |
-          wget https://releases.hashicorp.com/terraform/{{ matrix.terraform }}/terraform_{{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
+          wget https://releases.hashicorp.com/terraform/${{ matrix.terraform }}/terraform_${{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
       - name: Run static checks
