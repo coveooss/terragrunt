@@ -1,5 +1,8 @@
 name: Build
 on:
+  pull_request:
+    branches:
+      - master
   push:
     branches:
       - master
@@ -9,6 +12,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        terraform: ["0.12.29", "0.13.5"]
     steps:
       - name: Setup Go
         uses: actions/setup-go@v1
@@ -21,7 +27,7 @@ jobs:
 
       - name: Install Terraform
         run: |
-          wget https://releases.hashicorp.com/terraform/0.13.5/terraform_0.13.5_linux_amd64.zip -O /tmp/terraform.zip
+          wget https://releases.hashicorp.com/terraform/{{ matrix.terraform }}/terraform_{{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
       - name: Run static checks

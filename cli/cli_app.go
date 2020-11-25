@@ -149,7 +149,7 @@ AUTHOR(S):
 `
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
-const defaultTerraformVersionConstaint = ">= v0.13.0"
+const defaultTerraformVersionConstaint = ">= v0.12.0"
 
 var terragruntVersion string
 var terragruntRunID string
