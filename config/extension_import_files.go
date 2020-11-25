@@ -25,6 +25,7 @@ type ImportFiles struct {
 	FileMode          *int            `hcl:"file_mode,optional"`
 	Target            string          `hcl:"target,optional"`
 	Prefix            *string         `hcl:"prefix,optional"`
+	SourceFileRegex   string          `hcl:"source_file_regex,optional"`
 }
 
 // CopyAndRename is a structure used by ImportFiles to rename the imported files
@@ -108,7 +109,7 @@ func (item *ImportFiles) importFiles(folders ...string) (err error) {
 	logger.Debugf("import_files: %s to %s", item.DisplayName, strings.Join(trimmedFolders, ", "))
 
 	var sourceFolder, sourceFolderPrefix string
-	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required, ""); err != nil {
+	if sourceFolder, err = item.config().GetSourceFolder(item.Name, item.Source, *item.Required, item.SourceFileRegex); err != nil {
 		return err
 	} else if sourceFolder != "" {
 		sourceFolderPrefix = fmt.Sprintf("%s%c", sourceFolder, filepath.Separator)
