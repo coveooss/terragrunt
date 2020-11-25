@@ -13,9 +13,6 @@ jobs:
     strategy:
       matrix:
         terraform: ["0.12.29", "0.13.5"]
-    env:
-      IS_PR: ${{ github.event_name == 'pull_request'}}
-      IS_TAG_PUSH: ${{ github.event_name == 'push' && github.ref != 'refs/heads/master' }}
     steps:
       - name: Setup Go
         uses: actions/setup-go@v1
@@ -32,13 +29,13 @@ jobs:
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
       - name: Run static checks
-        if: ${{ env.IS_PR }}
+        if: github.event_name == 'pull_request'
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           make static
 
       - name: Run full tests on releases
-        if: ${{ env.IS_TAG_PUSH }}
+        if: github.event_name != 'pull_request'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -47,14 +44,14 @@ jobs:
           make full-test
 
       - name: Run tests
-        if: ${{ env.IS_PR }}
+        if: github.event_name == 'pull_request'
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         run: |
           make codecov
 
       - name: Build tag
-        if: ${{ env.IS_TAG_PUSH }}
+        if: github.event_name != 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
