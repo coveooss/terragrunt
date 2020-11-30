@@ -147,6 +147,7 @@ github.com/coveooss/gotemplate/v3 v3.5.4 h1:rjHuStT11jaMH2ZKpTi9G0WucyV88iftqd9C
 github.com/coveooss/gotemplate/v3 v3.5.4/go.mod h1:FNQcEhPdBKA2IbAa6MKT0RzKRdrlF5iUfa7+OyMwS5U=
 github.com/coveooss/multilogger v0.5.2 h1:HmuMT1RTD0d6tkqrrO9FlUBbp2p7QYbcAR6guszlifc=
 github.com/coveooss/multilogger v0.5.2/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
+github.com/coveooss/terragrunt v1.7.10 h1:Zv8foo4yNr5wWgyLpm5QrueGb4VjwRoZo2VsxHXKY6Q=
 github.com/coveord/go-getter v1.5.10 h1:vqJ8Jwyj9Ye6IhCiwrqL19TE8tTWHRuYRz91Hdb96hM=
 github.com/coveord/go-getter v1.5.10/go.mod h1:a7z7NPPfNQpJWcn4rSWFtdrSldqLdLPEF3d8nFMsSLM=
 github.com/coveord/hcl/v2 v2.7.10 h1:A9ZJQ5yK0wnxnR1gzP60Lmu6zgvBDHCI81gV6/ljYhg=
@@ -438,6 +439,7 @@ github.com/mitchellh/iochan v1.0.0/go.mod h1:JwYml1nuB7xOzsp52dPpHFffvOCDupsG0Qu
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/mapstructure v1.3.3 h1:SzB1nHZ2Xi+17FP0zVQBHIZqvwRN9408fJO8h+eeNA8=
 github.com/mitchellh/mapstructure v1.3.3/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+github.com/mitchellh/mapstructure v1.4.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/panicwrap v1.0.0/go.mod h1:pKvZHwWrZowLUzftuFq7coarnxbBXU4aQh3N0BJOeeA=
 github.com/mitchellh/prefixedio v0.0.0-20190213213902-5733675afd51/go.mod h1:kB1naBgV9ORnkiTVeyJOI1DavaJkG4oNIq0Af6ZVKUo=
 github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
