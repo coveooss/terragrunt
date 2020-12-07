@@ -17,8 +17,8 @@ require (
 	github.com/go-errors/errors v1.1.1
 	github.com/hashicorp/go-getter v1.5.1
 	github.com/hashicorp/go-version v1.2.1
-	github.com/hashicorp/hcl/v2 v2.7.1
-	github.com/hashicorp/terraform v0.13.5
+	github.com/hashicorp/hcl/v2 v2.7.2
+	github.com/hashicorp/terraform v0.14.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
