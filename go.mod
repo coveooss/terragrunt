@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go v1.35.33
 	github.com/cheekybits/genny v1.0.0
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
-	github.com/coveooss/gotemplate/v3 v3.5.4
+	github.com/coveooss/gotemplate/v3 v3.6.0
 	github.com/coveooss/multilogger v0.5.2
 	github.com/fatih/color v1.10.0
 	github.com/go-errors/errors v1.1.1
@@ -38,7 +38,7 @@ require (
 	google.golang.org/genproto v0.0.0-20201119123407-9b1e624d6bc4 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 replace github.com/hashicorp/go-getter => github.com/coveord/go-getter v1.5.10
