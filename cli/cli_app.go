@@ -312,8 +312,8 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			finalStatus = errors.WithStackTrace(err)
 			return true
 		}
-		terragruntOptions.Logger.Error("Error, but continuing execution because ignore_error is set")
-		terragruntOptions.Logger.Debugf("%v", err)
+		terragruntOptions.Logger.Error(err)
+		terragruntOptions.Logger.Error("Continuing execution because ignore_error is set")
 		if finalStatus == nil {
 			finalStatus = errors.WithStackTrace(err)
 		}

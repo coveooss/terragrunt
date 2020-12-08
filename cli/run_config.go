@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"os/user"
@@ -34,11 +35,11 @@ func setRoleEnvironmentVariables(terragruntOptions *options.TerragruntOptions, r
 			}
 		}
 		if userName == "" {
-			// If no user name has been defined, we generate a "unique" identifier
-			userName = fmt.Sprintf("Unknown_%d", rand.Int())
+			userName = "Unknown"
 		}
 	}
-	sessionName := fmt.Sprintf("terragrunt_%s", userName)
+	uniqueID := rand.Intn(int(math.Pow(2, 24)))
+	sessionName := fmt.Sprintf("terragrunt-%s-%06X", userName, uniqueID)
 
 	roleVars, err := awshelper.AssumeRoleEnvironmentVariables(terragruntOptions.Logger, roleArn, sessionName, assumeDuration)
 	if err != nil {
