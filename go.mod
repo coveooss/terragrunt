@@ -17,14 +17,14 @@ require (
 	github.com/hashicorp/go-getter v1.5.1
 	github.com/hashicorp/go-version v1.2.0
 	github.com/hashicorp/hcl/v2 v2.8.0
-	github.com/hashicorp/terraform v0.13.5
+	github.com/hashicorp/terraform v0.14.2
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mitchellh/mapstructure v1.4.0
 	github.com/rs/xid v1.2.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
 	github.com/urfave/cli v1.22.5
-	github.com/zclconf/go-cty v1.5.1
+	github.com/zclconf/go-cty v1.7.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.4.0
