@@ -15,7 +15,7 @@ require (
 	github.com/fatih/color v1.10.0
 	github.com/go-errors/errors v1.1.1
 	github.com/hashicorp/go-getter v1.5.1
-	github.com/hashicorp/go-version v1.2.0
+	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.8.0
 	github.com/hashicorp/terraform v0.13.5
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect

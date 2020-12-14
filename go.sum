@@ -145,6 +145,7 @@ github.com/coveooss/gotemplate/v3 v3.6.1 h1:947bk9Zhd491OcnFFuqiUfC8h/QqT93inhVG
 github.com/coveooss/gotemplate/v3 v3.6.1/go.mod h1:X0Acra05ZhW8VNqbAbgh9VFtqvYcT7/dzjCESkcCM2s=
 github.com/coveooss/multilogger v0.5.2 h1:HmuMT1RTD0d6tkqrrO9FlUBbp2p7QYbcAR6guszlifc=
 github.com/coveooss/multilogger v0.5.2/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
+github.com/coveooss/terragrunt v1.7.10 h1:Zv8foo4yNr5wWgyLpm5QrueGb4VjwRoZo2VsxHXKY6Q=
 github.com/coveord/go-getter v1.5.10 h1:vqJ8Jwyj9Ye6IhCiwrqL19TE8tTWHRuYRz91Hdb96hM=
 github.com/coveord/go-getter v1.5.10/go.mod h1:a7z7NPPfNQpJWcn4rSWFtdrSldqLdLPEF3d8nFMsSLM=
 github.com/coveord/hcl/v2 v2.8.10 h1:2TyMNljKFQ3vZI20KL3vZdxLm8AQZydBjEbH9Ebv2tE=
@@ -318,6 +319,7 @@ github.com/hashicorp/go-version v1.0.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09
 github.com/hashicorp/go-version v1.1.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/go-version v1.2.0 h1:3vNe/fWF5CBgRIguda1meWhsZHy3m8gCJ5wx+dIzX/E=
 github.com/hashicorp/go-version v1.2.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
+github.com/hashicorp/go-version v1.2.1/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f/go.mod h1:oZtUIOe8dh44I2q6ScRibXws4Ajl+d+nod3AaR9vL5w=
