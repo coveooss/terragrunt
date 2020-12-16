@@ -450,7 +450,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Since we already imported files into the main folder, we optimize here by processing only the
 	// other folder ignoring the first one. This avoid copying files twice in the main folder.
 	if folders := foldersWithTerraformFiles[1:]; len(folders) > 0 {
-		if err := conf.ImportFiles.Run(err, folders...); stopOnError(err) {
+		if err = conf.ImportFiles.Run(err, folders...); stopOnError(err) {
 			return
 		}
 	}
@@ -477,9 +477,9 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		files = util.FilterList(files, func(item string) bool {
 			return !strings.HasPrefix(filterPath(item), ".terraform") // Do not run on cached modules
 		})
-		modifiedFiles, err := t.ProcessTemplates("", "", files...)
-		if err != nil {
-			err = fmt.Errorf("error(s) while applying go template\n%s", filterPath(err.Error()))
+		modifiedFiles, templateErr := t.ProcessTemplates("", "", files...)
+		if templateErr != nil {
+			err = fmt.Errorf("error(s) while applying go template\n%s", filterPath(templateErr.Error()))
 			if stopOnError(err) {
 				return
 			}
@@ -537,7 +537,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 
 	// Configure remote state if required
 	if conf.RemoteState != nil {
-		if err := configureRemoteState(conf.RemoteState, terragruntOptions); stopOnError(err) {
+		if err = configureRemoteState(conf.RemoteState, terragruntOptions); stopOnError(err) {
 			return
 		}
 	}
@@ -552,7 +552,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		// Passing a plugin-dir explicitely disallows downloads correctly
 		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", terragruntOptions.PluginsDirectory))
 	}
-	if err := shell.NewTFCmd(terragruntOptions).Args(initArgs...).WithRetries(3).LogOutput(logrus.DebugLevel); stopOnError(err) {
+	if err = shell.NewTFCmd(terragruntOptions).Args(initArgs...).WithRetries(3).LogOutput(logrus.DebugLevel); stopOnError(err) {
 		return
 	}
 
