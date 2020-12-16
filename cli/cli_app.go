@@ -515,6 +515,21 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Set the temporary script folder as the first item of the PATH
 	terragruntOptions.Env["PATH"] = fmt.Sprintf("%s%c%s", filepath.Join(terraformSource.WorkingDir, config.TerragruntScriptFolder), filepath.ListSeparator, terragruntOptions.Env["PATH"])
 
+	// We register the post hooks to be executed whenever the current function returns
+	defer func() {
+		// If there is an error but it is in fact a plan status, we run the post hooks normally
+		_, planStatusError := err.(errors.PlanWithChanges)
+
+		// Executing the post-hook commands if there are and there is no error
+		status := err
+		if planStatusError {
+			status = nil
+		}
+		if _, errHook := conf.PostHooks.Run(status); stopOnError(errHook) {
+			return
+		}
+	}()
+
 	// Executing the pre-hook commands that should be ran before init state if there are
 	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(err); stopOnError(err) {
 		return
@@ -545,20 +560,6 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(err); stopOnError(err) {
 		return
 	}
-
-	defer func() {
-		// If there is an error but it is in fact a plan status, we run the post hooks normally
-		_, planStatusError := err.(errors.PlanWithChanges)
-
-		// Executing the post-hook commands if there are and there is no error
-		status := err
-		if planStatusError {
-			status = nil
-		}
-		if _, errHook := conf.PostHooks.Run(status); stopOnError(errHook) {
-			return
-		}
-	}()
 
 	isApply := actualCommand.Command == "apply" || (actualCommand.Extra != nil && actualCommand.Extra.ActAs == "apply")
 	if terragruntOptions.NonInteractive && isApply && !util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-auto-approve") {
