@@ -204,7 +204,7 @@ func (c CommandContext) Run() error {
 		if finalStatus == nil {
 			break
 		} else {
-			c.log.Log(c.LogLevel, "Caught error on command:", finalStatus)
+			c.log.Errorf("Caught error on command: %v", finalStatus)
 		}
 	}
 

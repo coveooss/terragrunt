@@ -199,10 +199,9 @@ func getTerraformVariableValues(terraformConfig interface{}) (map[string]interfa
 }
 
 func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (map[string]interface{}, map[string]*configs.Variable, error) {
-	var err error
-	terraformConfig, err := configs.NewParser(nil).LoadConfigDir(folder)
-	if err != nil {
-		if err := convertHclError(err.(hcl.Diagnostics)); err != nil {
+	terraformConfig, diag := configs.NewParser(nil).LoadConfigDir(folder)
+	if diag.HasErrors() {
+		if err := convertHclError(diag); err != nil {
 			err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, err)
 			if !retry {
 				return nil, nil, err
