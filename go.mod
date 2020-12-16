@@ -28,7 +28,6 @@ require (
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.4.0
-	honnef.co/go/tools v0.1.0 // indirect
 )
 
 replace (
