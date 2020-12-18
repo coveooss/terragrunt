@@ -173,10 +173,9 @@ func (c CommandContext) Run() error {
 		}
 
 		if c.DisplayCommand == "" {
-			c.log.Log(c.LogLevel, verb, "command: ", filepath.Base(cmd.Args[0]), " ", strings.Join(cmd.Args[1:], " "))
-		} else {
-			c.log.Log(c.LogLevel, verb, "command: ", c.DisplayCommand)
+			c.DisplayCommand = filepath.Base(cmd.Args[0])
 		}
+		c.log.Log(c.LogLevel, verb, "command: ", c.DisplayCommand, " ", strings.Join(cmd.Args[1:], " "))
 
 		if tempFile != "" {
 			content, _ := ioutil.ReadFile(tempFile)

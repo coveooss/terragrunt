@@ -584,6 +584,12 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			cmd = cmd.ExpandArgs()
 		}
 
+		if actualCommand.Extra.DisplayName != "" {
+			cmd.DisplayCommand = actualCommand.Extra.DisplayName
+		} else {
+			cmd.DisplayCommand = actualCommand.Extra.Name
+		}
+
 		actualCommand.Command = actualCommand.Extra.ActAs
 	} else {
 		// If the command is 'init', stop here. That's because ConfigureRemoteState above will have already called
