@@ -144,6 +144,7 @@ github.com/coveooss/gotemplate/v3 v3.6.1 h1:947bk9Zhd491OcnFFuqiUfC8h/QqT93inhVG
 github.com/coveooss/gotemplate/v3 v3.6.1/go.mod h1:X0Acra05ZhW8VNqbAbgh9VFtqvYcT7/dzjCESkcCM2s=
 github.com/coveooss/multilogger v0.5.2 h1:HmuMT1RTD0d6tkqrrO9FlUBbp2p7QYbcAR6guszlifc=
 github.com/coveooss/multilogger v0.5.2/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
+github.com/coveooss/terragrunt v1.7.10 h1:Zv8foo4yNr5wWgyLpm5QrueGb4VjwRoZo2VsxHXKY6Q=
 github.com/coveord/go-getter v1.5.10 h1:vqJ8Jwyj9Ye6IhCiwrqL19TE8tTWHRuYRz91Hdb96hM=
 github.com/coveord/go-getter v1.5.10/go.mod h1:a7z7NPPfNQpJWcn4rSWFtdrSldqLdLPEF3d8nFMsSLM=
 github.com/coveord/hcl/v2 v2.8.10 h1:2TyMNljKFQ3vZI20KL3vZdxLm8AQZydBjEbH9Ebv2tE=
@@ -538,6 +539,7 @@ github.com/zclconf/go-cty v1.1.0/go.mod h1:xnAOWiHeOqg2nWS62VtQ7pbOu17FtxJNW8RLE
 github.com/zclconf/go-cty v1.2.0/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q/N4PQ8=
 github.com/zclconf/go-cty v1.7.0 h1:yMqLinUwNCYkmiHjEH+luio1yGl35cjqVzjvdRg2WlY=
 github.com/zclconf/go-cty v1.7.0/go.mod h1:VDR4+I79ubFBGm1uJac1226K5yANQFHeauxPBoP54+o=
+github.com/zclconf/go-cty v1.7.1/go.mod h1:VDR4+I79ubFBGm1uJac1226K5yANQFHeauxPBoP54+o=
 github.com/zclconf/go-cty-yaml v1.0.2 h1:dNyg4QLTrv2IfJpm7Wtxi55ed5gLGOlPrZ6kMd51hY0=
 github.com/zclconf/go-cty-yaml v1.0.2/go.mod h1:IP3Ylp0wQpYm50IHK8OZWKMu6sPJIUgKa8XhiVHura0=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
