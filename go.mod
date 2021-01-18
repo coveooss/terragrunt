@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.8.0
 	github.com/hashicorp/terraform v0.14.2
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
-	github.com/mitchellh/mapstructure v1.4.0
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/rs/xid v1.2.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.6.1
