@@ -357,7 +357,7 @@ To write your imported variables to a file, use the `export_variables` block. Ex
 export_variables {
   format          = "tf"              # Accepted values: "tfvars", "yaml", "json", "tf", "hcl"
   path            = "path_to_file.tf" # The format will be taken from file extension if the format wasn't given
-  ignore_if_error = true | false      # If set to true, errors will be ignored and the file just won't be written in that case
+  ignore_errors = true | false      # If set to true, errors will be ignored and the file just won't be written in that case
 }
 ```
 
@@ -369,7 +369,7 @@ In the same way that `export_variables` works, you can export Terragrunt's confi
 export_config {
   format          = "json"
   path            = "path_to_file.json"
-  ignore_if_error = true | false
+  ignore_errors = true | false
 }
 ```
 
@@ -381,7 +381,7 @@ cat test.json | jq '.ExportConfigConfigs'
     {
       "Path": "test.json",
       "Format": "",
-      "AllowErrors": true
+      "IgnoreErrors": true
     }
   ]
 
