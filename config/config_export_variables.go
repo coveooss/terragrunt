@@ -16,9 +16,9 @@ import (
 
 // ExportVariablesConfig represents a path and format where variables known to Terragrunt should be exported
 type ExportVariablesConfig struct {
-	Path         string `hcl:"path"`
-	Format       string `hcl:"format,optional"`
-	IgnoreErrors bool   `hcl:"ignore_errors,optional"`
+	Path        string `hcl:"path"`
+	Format      string `hcl:"format,optional"`
+	SkipOnError bool   `hcl:"skip_on_error,optional"`
 
 	exportConfig bool
 }
@@ -39,7 +39,7 @@ func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[str
 				return nil
 			}
 			message := fmt.Errorf("caught an error while handling the following export statement: Path: %v, is config: %t\n%v", exportStatement.Path, exportStatement.exportConfig, err)
-			if exportStatement.IgnoreErrors {
+			if exportStatement.SkipOnError {
 				conf.options.Logger.Error(message)
 				return nil
 			}
