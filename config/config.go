@@ -36,23 +36,24 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	ApprovalConfig          ApprovalConfigList `hcl:"approval_config,block"`
-	AssumeRole              []string
-	AssumeRoleDurationHours *int                        `hcl:"assume_role_duration_hours,attr"`
-	Dependencies            *ModuleDependencies         `hcl:"dependencies,block"`
-	Description             string                      `hcl:"description,optional"`
-	ExportVariablesConfigs  []ExportVariablesConfig     `hcl:"export_variables,block"`
-	ExtraArgs               TerraformExtraArgumentsList `hcl:"extra_arguments,block"`
-	ExtraCommands           ExtraCommandList            `hcl:"extra_command,block"`
-	ImportFiles             ImportFilesList             `hcl:"import_files,block"`
-	ImportVariables         ImportVariablesList         `hcl:"import_variables,block"`
+	ApprovalConfig          ApprovalConfigList          `hcl:"approval_config,block" export:"true"`
+	AssumeRole              []string                    `export:"true"`
+	AssumeRoleDurationHours *int                        `hcl:"assume_role_duration_hours,attr" export:"true"`
+	Dependencies            *ModuleDependencies         `hcl:"dependencies,block" export:"true"`
+	Description             string                      `hcl:"description,optional" export:"true"`
+	ExportVariablesConfigs  []ExportVariablesConfig     `hcl:"export_variables,block" export:"true"`
+	ExportConfigConfigs     []ExportVariablesConfig     `hcl:"export_config,block" export:"true"`
+	ExtraArgs               TerraformExtraArgumentsList `hcl:"extra_arguments,block" export:"true"`
+	ExtraCommands           ExtraCommandList            `hcl:"extra_command,block" export:"true"`
+	ImportFiles             ImportFilesList             `hcl:"import_files,block" export:"true"`
+	ImportVariables         ImportVariablesList         `hcl:"import_variables,block" export:"true"`
 	Inputs                  map[string]interface{}
-	PreHooks                HookList      `hcl:"pre_hook,block"`
-	PostHooks               HookList      `hcl:"post_hook,block"`
-	RemoteState             *remote.State `hcl:"remote_state,block"`
+	PreHooks                HookList      `hcl:"pre_hook,block" export:"true"`
+	PostHooks               HookList      `hcl:"post_hook,block" export:"true"`
+	RemoteState             *remote.State `hcl:"remote_state,block" export:"true"`
 	RunConditions           RunConditions
-	Terraform               *TerraformConfig `hcl:"terraform,block"`
-	UniquenessCriteria      *string          `hcl:"uniqueness_criteria,attr"`
+	Terraform               *TerraformConfig `hcl:"terraform,block" export:"true"`
+	UniquenessCriteria      *string          `hcl:"uniqueness_criteria,attr" export:"true"`
 
 	AssumeRoleHclDefinition    cty.Value                    `hcl:"assume_role,optional"`
 	InputsHclDefinition        cty.Value                    `hcl:"inputs,optional"`
@@ -68,6 +69,28 @@ func (conf TerragruntConfig) String() string {
 // ExtraArguments processes the extra_arguments defined in the terraform section of the config file
 func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
 	return conf.ExtraArgs.Filter(source)
+}
+
+// AsDictionary exports tagged (export: true) properties of the configuration as a dictionary
+func (conf TerragruntConfig) AsDictionary() (result collections.IDictionary, err error) {
+	defer errors.Recover(func(recovered error) { err = recovered })
+
+	result = collections.CreateDictionary()
+
+	v := reflect.ValueOf(conf)
+	t := reflect.TypeOf(conf)
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+		if !field.CanInterface() || field.IsZero() || field.Interface() == nil {
+			continue
+		}
+		if export, found := fieldType.Tag.Lookup("export"); export != "true" || !found {
+			continue
+		}
+		result.Set(fieldType.Name, field.Interface())
+	}
+	return
 }
 
 func (conf TerragruntConfig) globFiles(pattern string, stopOnMatch bool, folders ...string) (result []string) {
@@ -582,6 +605,12 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 		conf.ExportVariablesConfigs = includedConfig.ExportVariablesConfigs
 	} else if includedConfig.ExportVariablesConfigs != nil {
 		conf.ExportVariablesConfigs = append(conf.ExportVariablesConfigs, includedConfig.ExportVariablesConfigs...)
+	}
+
+	if conf.ExportConfigConfigs == nil {
+		conf.ExportConfigConfigs = includedConfig.ExportConfigConfigs
+	} else if includedConfig.ExportConfigConfigs != nil {
+		conf.ExportConfigConfigs = append(conf.ExportConfigConfigs, includedConfig.ExportConfigConfigs...)
 	}
 
 	conf.ExtraArgs.Merge(includedConfig.ExtraArgs)

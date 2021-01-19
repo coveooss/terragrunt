@@ -27,6 +27,11 @@ func TestTerragruntImportVariables(t *testing.T) {
 			project:        "fixture-variables/basic",
 			expectedOutput: []string{"sub folder content: zzz_unrelated.yaml"},
 		},
+		// Get the Terragrunt config and extract an attribute from it
+		{
+			project:        "fixture-variables/export-config",
+			expectedOutput: []string{"example = hello=123"},
+		},
 		{
 			project:        "fixture-variables/glob-file",
 			expectedOutput: []string{"example = json1-yaml1-json2-yaml2"},
