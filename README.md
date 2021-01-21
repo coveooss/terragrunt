@@ -355,9 +355,36 @@ To write your imported variables to a file, use the `export_variables` block. Ex
 
 ```hcl
 export_variables {
-  format = "tf" (Accepted values: "tfvars", "yaml", "json", "tf", "hcl")
-  path   = "path_to_file.tf"
+  format          = "tf"              # Accepted values: "tfvars", "yaml", "json", "tf", "hcl"
+  path            = "path_to_file.tf" # The format will be taken from file extension if the format wasn't given
+  skip_on_error   = true | false      # If set to true, errors will be ignored and the file just won't be written in that case
 }
+```
+
+### Export Terragrunt's config to a file
+
+In the same way that `export_variables` works, you can export Terragrunt's config to a file using an `export_config` block
+
+```hcl
+export_config {
+  format          = "json"
+  path            = "path_to_file.json"
+  skip_on_error   = true | false
+}
+```
+
+Note that this will export the configuration with internal struct attribute names (not HCL format). Here's an example:
+
+```bash
+cat test.json | jq '.ExportConfigConfigs'
+> [
+    {
+      "Path": "test.json",
+      "Format": "",
+      "SkipOnError": true
+    }
+  ]
+
 ```
 
 ### set_global_variable
