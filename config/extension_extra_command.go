@@ -1,5 +1,3 @@
-//lint:file-ignore U1000 Ignore all unused code, it's generated
-
 package config
 
 import (
@@ -39,19 +37,11 @@ func (item ExtraCommand) extraInfo() string {
 	return fmt.Sprintf("[%s]", strings.Join(util.RemoveElementFromList(item.list(), item.Name), ", "))
 }
 
-func (item ExtraCommand) help() (result string) {
-	if item.Description != "" {
-		result += fmt.Sprintf("\n%s\n", item.Description)
-	}
-
-	if item.OS != nil {
-		result += fmt.Sprintf("\nApplied only on the following OS: %s\n", strings.Join(item.OS, ", "))
-	}
-
+func (item ExtraCommand) helpDetails() string {
+	var result string
 	if item.Arguments != nil {
 		result += fmt.Sprintf("\nAutomatically added argument(s): %s\n", strings.Join(item.Arguments, ", "))
 	}
-
 	return result
 }
 
@@ -129,12 +119,11 @@ func (item *ExtraCommand) resolveAlias(cmd string) (result string, found bool) {
 
 // ----------------------- ExtraCommandList -----------------------
 
-//go:generate genny -in=extension_base_list.go -out=generated_extra_command.go gen "GenericItem=ExtraCommand"
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.extra_command.go gen Type=ExtraCommand
 func (list ExtraCommandList) argName() string { return "extra_command" }
 
-func (list ExtraCommandList) sort() ExtraCommandList {
+func (list ExtraCommandList) sort() {
 	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })
-	return list
 }
 
 // Merge elements from an imported list to the current list

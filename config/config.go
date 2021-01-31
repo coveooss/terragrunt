@@ -36,28 +36,29 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	ApprovalConfig          ApprovalConfigList          `hcl:"approval_config,block" export:"true"`
-	AssumeRole              []string                    `export:"true"`
-	AssumeRoleDurationHours *int                        `hcl:"assume_role_duration_hours,attr" export:"true"`
-	Dependencies            *ModuleDependencies         `hcl:"dependencies,block" export:"true"`
-	Description             string                      `hcl:"description,optional" export:"true"`
-	ExportVariablesConfigs  []ExportVariablesConfig     `hcl:"export_variables,block" export:"true"`
-	ExportConfigConfigs     []ExportVariablesConfig     `hcl:"export_config,block" export:"true"`
-	ExtraArgs               TerraformExtraArgumentsList `hcl:"extra_arguments,block" export:"true"`
-	ExtraCommands           ExtraCommandList            `hcl:"extra_command,block" export:"true"`
-	ImportFiles             ImportFilesList             `hcl:"import_files,block" export:"true"`
-	ImportVariables         ImportVariablesList         `hcl:"import_variables,block" export:"true"`
-	Inputs                  map[string]interface{}
-	PreHooks                HookList      `hcl:"pre_hook,block" export:"true"`
-	PostHooks               HookList      `hcl:"post_hook,block" export:"true"`
-	RemoteState             *remote.State `hcl:"remote_state,block" export:"true"`
-	RunConditions           RunConditions
-	Terraform               *TerraformConfig `hcl:"terraform,block" export:"true"`
-	UniquenessCriteria      *string          `hcl:"uniqueness_criteria,attr" export:"true"`
-
-	AssumeRoleHclDefinition    cty.Value                    `hcl:"assume_role,optional"`
-	InputsHclDefinition        cty.Value                    `hcl:"inputs,optional"`
+	ApprovalConfig             ApprovalConfigList           `hcl:"approval_config,block" export:"true"`
+	Dependencies               *ModuleDependencies          `hcl:"dependencies,block" export:"true"`
+	ExportVariablesConfigs     []ExportVariablesConfig      `hcl:"export_variables,block" export:"true"`
+	ExportConfigConfigs        []ExportVariablesConfig      `hcl:"export_config,block" export:"true"`
+	ExtraArgs                  TerraformExtraArgumentsList  `hcl:"extra_arguments,block" export:"true"`
+	ExtraCommands              ExtraCommandList             `hcl:"extra_command,block" export:"true"`
+	ImportFiles                ImportFilesList              `hcl:"import_files,block" export:"true"`
+	ImportVariables            ImportVariablesList          `hcl:"import_variables,block" export:"true"`
+	PreHooks                   HookList                     `hcl:"pre_hook,block" export:"true"`
+	PostHooks                  HookList                     `hcl:"post_hook,block" export:"true"`
+	RemoteState                *remote.State                `hcl:"remote_state,block" export:"true"`
 	RunConditionsHclDefinition []runConditionsHclDefinition `hcl:"run_conditions,block"`
+	Terraform                  *TerraformConfig             `hcl:"terraform,block" export:"true"`
+
+	AssumeRoleDurationHours *int      `hcl:"assume_role_duration_hours,attr" export:"true"`
+	AssumeRoleHclDefinition cty.Value `hcl:"assume_role,optional"`
+	Description             string    `hcl:"description,optional" export:"true"`
+	InputsHclDefinition     cty.Value `hcl:"inputs,optional"`
+	UniquenessCriteria      *string   `hcl:"uniqueness_criteria,attr" export:"true"`
+
+	AssumeRole    []string `export:"true"`
+	Inputs        map[string]interface{}
+	RunConditions RunConditions
 
 	options *options.TerragruntOptions
 }

@@ -14,7 +14,7 @@ require (
 	github.com/coveooss/multilogger v0.5.2
 	github.com/fatih/color v1.10.0
 	github.com/go-errors/errors v1.1.1
-	github.com/hashicorp/go-getter v1.5.2
+	github.com/hashicorp/go-getter v1.5.1
 	github.com/hashicorp/go-version v1.2.1
 	github.com/hashicorp/hcl/v2 v2.8.2
 	github.com/hashicorp/terraform v0.14.7
@@ -25,6 +25,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5
 	github.com/zclconf/go-cty v1.7.1
+	golang.org/x/tools v0.1.0 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.4.0

@@ -1,5 +1,3 @@
-//lint:file-ignore U1000 Ignore all unused code, it's generated
-
 package config
 
 import (
@@ -49,10 +47,8 @@ func (item *ImportFiles) normalize() {
 	}
 }
 
-func (item ImportFiles) help() (result string) {
-	if item.Description != "" {
-		result += fmt.Sprintf("\n%s\n", item.Description)
-	}
+func (item ImportFiles) helpDetails() string {
+	var result string
 	if item.Source != "" {
 		result += fmt.Sprintf("\nFrom %s:\n", item.Source)
 	} else {
@@ -81,7 +77,7 @@ func (item ImportFiles) help() (result string) {
 		attributes = append(attributes, fmt.Sprintf("File mode = %#o", *item.FileMode))
 	}
 	result += fmt.Sprintf("\n%s\n", strings.Join(attributes, ", "))
-	return
+	return result
 }
 
 func (item *ImportFiles) importFiles(folders ...string) (err error) {
@@ -269,9 +265,8 @@ func ensureIsFile(file string) error {
 
 // ----------------------- ImportFilesList -----------------------
 
-//go:generate genny -in=extension_base_list.go -out=generated_import_files.go gen "GenericItem=ImportFiles"
-func (list ImportFilesList) argName() string       { return "import_files" }
-func (list ImportFilesList) sort() ImportFilesList { return list }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.import_files.go gen Type=ImportFiles
+func (list ImportFilesList) argName() string { return "import_files" }
 
 // Merge elements from an imported list to the current list
 func (list *ImportFilesList) Merge(imported ImportFilesList) {
@@ -283,7 +278,6 @@ func (list ImportFilesList) Run(status error, args ...string) (err error) {
 	if len(list) == 0 {
 		return
 	}
-	list.sort()
 
 	for _, item := range list.Enabled() {
 		item.logger().Debugf("Running %s (%s): %s", item.itemType(), item.id(), item.name())

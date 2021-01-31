@@ -1,5 +1,3 @@
-//lint:file-ignore U1000 Ignore all unused code, it's generated
-
 package config
 
 import (
@@ -32,15 +30,29 @@ func (item ImportVariables) itemType() (result string) {
 	return ImportVariablesList{}.argName()
 }
 
-func (item ImportVariables) help() (result string) {
-	if item.Description != "" {
-		result += fmt.Sprintf("\n%s\n", item.Description)
-	}
-	if item.OnCommands != nil {
-		result += fmt.Sprintf("\nApplies on the following command(s): %s\n", strings.Join(item.OnCommands, ", "))
-	}
+func (item ImportVariables) onCommand() []string { return item.OnCommands }
 
-	return
+func (item ImportVariables) helpDetails() string {
+	var result string
+	if len(item.Vars) > 0 {
+		result += fmt.Sprintf("\nDefining variables: %s\n", strings.Join(item.Vars, ", "))
+	}
+	if len(item.RequiredVarFiles) > 0 {
+		result += fmt.Sprintf("\nRequired var files: %s\n", strings.Join(item.RequiredVarFiles, ", "))
+	}
+	if len(item.OptionalVarFiles) > 0 {
+		result += fmt.Sprintf("\nOptional var files: %s\n", strings.Join(item.OptionalVarFiles, ", "))
+	}
+	if len(item.NestedObjects) > 0 {
+		result += fmt.Sprintf("\nNested objects: %s\n", strings.Join(item.NestedObjects, ", "))
+	}
+	if len(item.EnvVars) > 0 {
+		result += fmt.Sprintf("\nEnvironment variables: %s\n", item.EnvVars)
+	}
+	if item.SourceFileRegex != "" {
+		result += fmt.Sprintf("\nSource file regex filter: %s\n", item.SourceFileRegex)
+	}
+	return result
 }
 
 func (item *ImportVariables) normalize() {
@@ -84,9 +96,8 @@ func (item *ImportVariables) loadVariables(newVariables map[string]interface{}, 
 
 // ----------------------- ImportVariablesList -----------------------
 
-//go:generate genny -in=extension_base_list.go -out=generated_import_variables.go gen "GenericItem=ImportVariables"
-func (list ImportVariablesList) argName() string           { return "import_variables" }
-func (list ImportVariablesList) sort() ImportVariablesList { return list }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.import_variables.go gen Type=ImportVariables
+func (list ImportVariablesList) argName() string { return "import_variables" }
 
 // Merge elements from an imported list to the current list
 func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
@@ -99,7 +110,7 @@ func (list ImportVariablesList) Import() (err error) {
 		return nil
 	}
 
-	config := IImportVariables(&list[0]).config()
+	config := list[0].config()
 	terragruntOptions := config.options
 
 	for _, item := range list.Enabled() {
@@ -154,9 +165,6 @@ func (list ImportVariablesList) Import() (err error) {
 					terragruntOptions.Logger.Warningf("-var ignored in %v: %v", item.Name, err)
 					continue
 				}
-			}
-			if util.ListContainsElement(terragruntOptions.VariablesExplicitlyProvided(), key) {
-				continue
 			}
 			item.loadVariables(map[string]interface{}{key: value}, options.VarParameter)
 		}
