@@ -1,5 +1,3 @@
-//lint:file-ignore U1000 Ignore all unused code, it's generated
-
 package config
 
 import (
@@ -25,24 +23,20 @@ func (item TerraformExtraArguments) itemType() (result string) {
 	return TerraformExtraArgumentsList{}.argName()
 }
 
-func (item TerraformExtraArguments) help() (result string) {
-	if item.Description != "" {
-		result += fmt.Sprintf("\n%s\n", item.Description)
-	}
-	if item.Commands != nil {
-		result += fmt.Sprintf("\nApplies on the following command(s): %s\n", strings.Join(item.Commands, ", "))
-	}
+func (item TerraformExtraArguments) onCommand() []string { return item.Commands }
+
+func (item TerraformExtraArguments) helpDetails() string {
+	var result string
 	if item.Arguments != nil {
 		result += fmt.Sprintf("\nAutomatically add the following parameter(s): %s\n", strings.Join(item.Arguments, ", "))
 	}
-	return
+	return result
 }
 
 // ----------------------- TerraformExtraArgumentsList -----------------------
 
-//go:generate genny -in=extension_base_list.go -out=generated_extra_args.go gen "GenericItem=TerraformExtraArguments"
-func (list TerraformExtraArgumentsList) argName() string                   { return "extra_arguments" }
-func (list TerraformExtraArgumentsList) sort() TerraformExtraArgumentsList { return list }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.extra_args.go gen Type=TerraformExtraArguments
+func (list TerraformExtraArgumentsList) argName() string { return "extra_arguments" }
 
 // Merge elements from an imported list to the current list
 func (list *TerraformExtraArgumentsList) Merge(imported TerraformExtraArgumentsList) {
@@ -55,7 +49,7 @@ func (list TerraformExtraArgumentsList) Filter(source string) (result []string, 
 		return nil, nil
 	}
 
-	config := ITerraformExtraArguments(&list[0]).config()
+	config := list[0].config()
 	terragruntOptions := config.options
 
 	out := []string{}

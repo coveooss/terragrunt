@@ -1,5 +1,3 @@
-//lint:file-ignore U1000 Ignore all unused code, it's generated
-
 package config
 
 import (
@@ -13,13 +11,15 @@ import (
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
 	"github.com/coveooss/terragrunt/v2/util"
+
+	multiloggerErrors "github.com/coveooss/multilogger/errors"
 )
 
 // Hook is a definition of user command that should be executed as part of the terragrunt process
 type Hook struct {
 	TerragruntExtensionBase `hcl:",remain"`
 
-	Command           string            `hcl:"command"`
+	Command           string            `hcl:"command,optional"`
 	Arguments         []string          `hcl:"arguments,optional"`
 	ExpandArgs        bool              `hcl:"expand_args,optional"`
 	OnCommands        []string          `hcl:"on_commands,optional"`
@@ -35,16 +35,10 @@ type Hook struct {
 
 func (hook Hook) itemType() (result string) { return HookList{}.argName() }
 
-func (hook Hook) help() (result string) {
-	if hook.Description != "" {
-		result += fmt.Sprintf("\n%s\n", hook.Description)
-	}
-	result += fmt.Sprintf("\nCommand: %s %s\n", hook.Command, strings.Join(hook.Arguments, " "))
+func (hook Hook) helpDetails() string {
+	result := fmt.Sprintf("\nCommand: %s %s\n", hook.Command, strings.Join(hook.Arguments, " "))
 	if hook.OnCommands != nil {
 		result += fmt.Sprintf("\nApplies on the following command(s): %s\n", strings.Join(hook.OnCommands, ", "))
-	}
-	if hook.OS != nil {
-		result += fmt.Sprintf("\nApplied only on the following OS: %s\n", strings.Join(hook.OS, ", "))
 	}
 	attributes := []string{
 		fmt.Sprintf("Order = %d", hook.Order),
@@ -52,7 +46,7 @@ func (hook Hook) help() (result string) {
 		fmt.Sprintf("Ignore error = %v", hook.IgnoreError),
 	}
 	result += fmt.Sprintf("\n%s\n", strings.Join(attributes, ", "))
-	return
+	return result
 }
 
 func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
@@ -60,6 +54,11 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 
 	if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, hook.options().Env[options.EnvCommand]) {
 		// The current command is not in the list of command on which the hook should be applied
+		return
+	}
+
+	if strings.TrimSpace(hook.Command) == "" {
+		logger.Debugf("Hook %s skipped, no command defined", hook.Name)
 		return
 	}
 
@@ -119,7 +118,7 @@ func (hook *Hook) setState(err error) {
 
 // ----------------------- HookList -----------------------
 
-//go:generate genny -in=extension_base_list.go -out=generated_hooks.go gen "GenericItem=Hook"
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.hooks.go gen Type=Hook
 func (list HookList) argName() string { return "hooks" }
 
 func (list HookList) sort() HookList {
@@ -149,16 +148,16 @@ func (list HookList) Filter(filter HookFilter) HookList {
 }
 
 // HookFilter is used to filter the hook on supplied criteria
-type HookFilter func(Hook) bool
+type HookFilter func(*Hook) bool
 
 // BeforeImports is a filter function
-var BeforeImports = func(hook Hook) bool { return hook.BeforeImports }
+var BeforeImports = func(hook *Hook) bool { return hook.BeforeImports }
 
 // BeforeInitState is a filter function
-var BeforeInitState = func(hook Hook) bool { return !hook.AfterInitState && !hook.BeforeImports }
+var BeforeInitState = func(hook *Hook) bool { return !hook.AfterInitState && !hook.BeforeImports }
 
 // AfterInitState is a filter function
-var AfterInitState = func(hook Hook) bool { return hook.AfterInitState && !hook.BeforeImports }
+var AfterInitState = func(hook *Hook) bool { return hook.AfterInitState && !hook.BeforeImports }
 
 // Run execute the content of the list
 func (list HookList) Run(status error, args ...interface{}) (result []interface{}, err error) {
@@ -168,33 +167,21 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 
 	list.sort()
 
-	var (
-		errs        errorArray
-		errOccurred bool
-	)
+	var errs multiloggerErrors.Array
 	for _, hook := range list {
-		if (status != nil || errOccurred) && !hook.RunOnErrors {
+		if (status != nil || errs.AsError() != nil) && !hook.RunOnErrors {
 			continue
 		}
-		hook.normalize()
 		temp, currentErr := hook.run(args...)
 		currentErr = shell.FilterPlanError(currentErr, hook.options().TerraformCliArgs[0])
 		if _, ok := currentErr.(errors.PlanWithChanges); ok {
 			errs = append(errs, currentErr)
 		} else if currentErr != nil && !hook.IgnoreError {
-			errOccurred = true
 			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %w", hook.itemType(), hook.id(), currentErr))
 		}
 		hook.setState(currentErr)
 		result = append(result, temp)
 	}
-	switch len(errs) {
-	case 0:
-		break
-	case 1:
-		err = errs[0]
-	default:
-		err = errs
-	}
+	err = errs.AsError()
 	return
 }

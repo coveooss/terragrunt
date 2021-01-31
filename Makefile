@@ -14,9 +14,8 @@ full-test:
 	go test -v ./...
 
 static:
-	go get honnef.co/go/tools/cmd/staticcheck
+	GO111MODULE=off go get honnef.co/go/tools/cmd/staticcheck
 	staticcheck ./...
-	go mod tidy
 
 pre-commit: fmt static test
 
