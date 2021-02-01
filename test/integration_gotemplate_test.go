@@ -23,7 +23,7 @@ func TestTerragruntGoTemplate(t *testing.T) {
 		{
 			project:        "fixture-provider",
 			args:           "--terragrunt-apply-template",
-			expectedOutput: []string{`ok = Everything is fine`},
+			expectedOutput: []string{`ok = "Everything is fine"`},
 			additionalTest: func(t *testing.T, folder, stdout, stderr string) {
 				assert.NotContains(t, stdout, "Warning")
 			},
@@ -33,11 +33,11 @@ func TestTerragruntGoTemplate(t *testing.T) {
 			project: "fixture-gotemplate",
 			args:    "--terragrunt-apply-template --terragrunt-logging-level DEBUG",
 			expectedOutput: []string{
-				`result = ok`,
-				`test1 = I am test 1`,
-				`test2 = I am test 2 (overridden)`,
-				`json1 = I am json 1`,
-				`json2 = I am json 2 (overridden)`,
+				`result = "ok"`,
+				`test1 = "I am test 1"`,
+				`test2 = "I am test 2 (overridden)"`,
+				`json1 = "I am json 1"`,
+				`json2 = "I am json 2 (overridden)"`,
 			},
 			additionalTest: func(t *testing.T, folder, stdout, stderr string) {
 				assert.Contains(t, stderr, "caught errors while trying to load default variable values from")
