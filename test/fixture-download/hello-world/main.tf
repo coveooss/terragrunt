@@ -1,9 +1,10 @@
 data "template_file" "test" {
-  template = "${module.hello.hello}, ${var.name}"
+  template = "hello remote from ${module.hello.hello}\n${module.remote.test}"
 }
 
 variable "name" {
   description = "Specify a name"
+  default     = "local"
 }
 
 output "test" {
@@ -12,9 +13,10 @@ output "test" {
 
 module "hello" {
   source = "./hello"
+  name   = var.name
 }
 
 module "remote" {
-  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world?ref=download_test"
+  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world-remote?ref=download_test"
   name   = var.name
 }
