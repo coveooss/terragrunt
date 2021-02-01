@@ -17,15 +17,15 @@ func TestTerragruntImportFiles(t *testing.T) {
 	}{
 		{
 			project:        "fixture-import-files/basic",
-			expectedOutput: "example = 123",
+			expectedOutput: `example = "123"`,
 		},
 		{
 			project:        "fixture-import-files/bad-source",
-			expectedOutput: "example = 123",
+			expectedOutput: `example = "123"`,
 		},
 		{
 			project:        "fixture-import-files/overwrite",
-			expectedOutput: "example = 456",
+			expectedOutput: `example = "456"`,
 		},
 	}
 	for _, tt := range tests {
@@ -40,9 +40,8 @@ func TestTerragruntImportFiles(t *testing.T) {
 			)
 
 			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
-			output := stdout.String()
-			assert.Contains(t, output, tt.expectedOutput)
-
+			t.Log(stdout.String())
+			assert.Contains(t, stdout.String(), tt.expectedOutput)
 		})
 	}
 }

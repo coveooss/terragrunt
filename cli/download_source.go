@@ -311,7 +311,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 		return nil
 	}
 
-	terragruntOptions.Logger.Debug("Cleaning up existing terraform files in", path)
+	terragruntOptions.Logger.Debugln("Cleaning up existing terraform files in", path)
 
 	files, err := utils.FindFiles(path, true, false, options.TerraformFilesTemplates...)
 	if err != nil {
