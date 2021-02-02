@@ -2,6 +2,7 @@
 .idea
 vendor
 .terraform
+.terraform.lock.hcl
 .vscode
 *.tfstate
 *.tfstate.backup
