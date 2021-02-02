@@ -168,8 +168,9 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 	list.sort()
 
 	var errs multiloggerErrors.Array
+	var errOccurred bool
 	for _, hook := range list {
-		if (status != nil || errs.AsError() != nil) && !hook.RunOnErrors {
+		if (status != nil || errOccurred) && !hook.RunOnErrors {
 			continue
 		}
 		temp, currentErr := hook.run(args...)
@@ -177,6 +178,7 @@ func (list HookList) Run(status error, args ...interface{}) (result []interface{
 		if _, ok := currentErr.(errors.PlanWithChanges); ok {
 			errs = append(errs, currentErr)
 		} else if currentErr != nil && !hook.IgnoreError {
+			errOccurred = true
 			errs = append(errs, fmt.Errorf("Error while executing %s(%s): %w", hook.itemType(), hook.id(), currentErr))
 		}
 		hook.setState(currentErr)
