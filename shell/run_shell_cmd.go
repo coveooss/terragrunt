@@ -203,7 +203,7 @@ func (c CommandContext) Run() error {
 		if finalStatus == nil {
 			break
 		} else {
-			c.log.Errorf("Caught error on command: %v", finalStatus)
+			c.log.Debugf("Caught error on command: %v", finalStatus)
 		}
 	}
 
