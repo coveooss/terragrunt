@@ -267,6 +267,55 @@ func TestResolveTerraformModulesInvalidPaths(t *testing.T) {
 	}
 }
 
+func TestResolveTerraformModulesIgnoreMissingDependenciesOutsideWorkingDir(t *testing.T) {
+	t.Parallel()
+
+	// ModuleM has a child but we won't go into it because it is ignored
+	moduleM := &TerraformModule{
+		Path:         canonical(t, "../test/fixture-modules/module-m"),
+		Dependencies: []*TerraformModule{},
+		Config: config.TerragruntConfig{
+			Terraform:    &config.TerraformConfig{Source: "test"},
+			Dependencies: &config.ModuleDependencies{Paths: []string{Abs("../test/fixture-modules/module-m/module-m-child")}},
+		},
+		TerragruntOptions:    mockOptions.Clone(canonical(t, "../test/fixture-modules/module-m/"+config.DefaultConfigName)),
+		AssumeAlreadyApplied: true,
+	}
+
+	moduleNChild := &TerraformModule{
+		Path:         canonical(t, "../test/fixture-modules/module-n/module-n-child"),
+		Dependencies: []*TerraformModule{moduleM},
+		Config: config.TerragruntConfig{
+			Terraform: &config.TerraformConfig{Source: "test"},
+			Dependencies: &config.ModuleDependencies{Paths: []string{
+				Abs("../test/fixture-modules/module-m"),
+				Abs("../test/fixture-modules/module-n/module-n-child"),
+			}},
+		},
+		TerragruntOptions: mockOptions.Clone(canonical(t, "../test/fixture-modules/module-n/module-n-child/"+config.DefaultConfigName)),
+	}
+
+	moduleN := &TerraformModule{
+		Path:         canonical(t, "../test/fixture-modules/module-n"),
+		Dependencies: []*TerraformModule{moduleM, moduleNChild},
+		Config: config.TerragruntConfig{
+			Terraform: &config.TerraformConfig{Source: "test"},
+			Dependencies: &config.ModuleDependencies{Paths: []string{
+				Abs("../test/fixture-modules/module-m"),
+				Abs("../test/fixture-modules/module-n/module-n-child"),
+			}},
+		},
+		TerragruntOptions: mockOptions.Clone(canonical(t, "../test/fixture-modules/module-n/"+config.DefaultConfigName)),
+	}
+
+	configPaths := []string{"../test/fixture-modules/module-n/" + config.DefaultConfigName, "../test/fixture-modules/module-n/module-n-child/" + config.DefaultConfigName}
+	expected := []*TerraformModule{moduleNChild, moduleN, moduleM}
+
+	actualModules, actualErr := ResolveTerraformModules(configPaths, mockOptions)
+	assert.Nil(t, actualErr, "Unexpected error: %v", actualErr)
+	assertModuleListsEqual(t, expected, actualModules)
+}
+
 func TestResolveTerraformModuleNoTerraformConfig(t *testing.T) {
 	t.Parallel()
 

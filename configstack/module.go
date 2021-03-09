@@ -329,7 +329,7 @@ func getDependenciesForModule(module *TerraformModule, moduleMap map[string]*Ter
 					}
 				}
 			}
-			if !foundModule {
+			if !foundModule && !module.AssumeAlreadyApplied {
 				err := UnrecognizedDependency{
 					ModulePath:            module.Path,
 					DependencyPath:        dependencyPath,
