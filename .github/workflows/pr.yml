@@ -29,9 +29,3 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           make static
-
-      - name: Run tests
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        run: |
-          make codecov

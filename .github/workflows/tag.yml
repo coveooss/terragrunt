@@ -27,7 +27,6 @@ jobs:
 
       - name: Run full tests on releases
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
