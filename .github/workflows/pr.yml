@@ -29,3 +29,13 @@ jobs:
         run: |
           export PATH=$PATH:$(go env GOPATH)/bin
           make static
+
+      - name: Generate code coverage files
+        run: make codecov
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          fail_ci_if_error: true

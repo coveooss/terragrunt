@@ -20,6 +20,12 @@ static:
 
 pre-commit: fmt static test
 
+codecov:
+	@sh ./scripts/coverage.sh --codecov
+
+html-coverage:
+	@sh ./scripts/coverage.sh --html
+
 build:
 	go generate -x ./...
 	go build
