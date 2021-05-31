@@ -1,0 +1,19 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: weekly
+  open-pull-requests-limit: 99
+  reviewers:
+  - julienduchesne
+  ignore:
+  - dependency-name: github.com/hashicorp/terraform
+    versions:
+    - 0.14.5
+    - 0.14.6
+  - dependency-name: github.com/aws/aws-sdk-go
+    versions:
+    - 1.36.31
+    - 1.37.1
+    - 1.37.6
