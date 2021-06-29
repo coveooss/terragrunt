@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 	"github.com/hashicorp/hcl/v2"
@@ -34,22 +35,23 @@ type (
 
 var (
 	reTfVariables = regexp.MustCompile(`(?ms)^variable\s+".*?"\s+{(\s*\n.*?^}|\s*}$)`)
-	cacheDefault  = make(map[string]*cachedDefaultVariables)
+	cacheDefault  sync.Map
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
 func LoadDefaultValues(folder string, logger *multilogger.Logger, keepInCache bool) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
 	if keepInCache {
 		defer func() {
-			if cached := cacheDefault[folder]; cached == nil {
+			if _, exist := cacheDefault.Load(folder); !exist {
 				// We put the result in cache for the next call
-				cacheDefault[folder] = &cachedDefaultVariables{importedVariables, allVariables, err}
+				cacheDefault.Store(folder, &cachedDefaultVariables{importedVariables, allVariables, err})
 			}
 		}()
 	}
 
-	if cached := cacheDefault[folder]; cached != nil {
+	if cached, exist := cacheDefault.Load(folder); exist {
 		// If we already processed this folder, we simply return the cached values
+		cached := cached.(*cachedDefaultVariables)
 		return cached.values, cached.all, nil
 	}
 
