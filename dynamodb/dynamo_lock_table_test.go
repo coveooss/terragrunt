@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func TestCreateLockTableIfNecessaryTableDoesntAlreadyExist(t *testing.T) {
 		t.Skip("skipping test in short mode.")
 	}
 
-	withLockTable(t, func(tableName string, client *dynamodb.DynamoDB) {
+	withLockTable(t, func(tableName string, client *dynamodb.Client) {
 		assertCanWriteToTable(t, tableName, client)
 	})
 }
@@ -63,7 +63,7 @@ func TestWaitForTableToBeActiveTableDoesNotExist(t *testing.T) {
 
 	err := waitForTableToBeActiveWithRandomSleep(tableName, client, retries, 1*time.Millisecond, 500*time.Millisecond, mockOptions)
 
-	assert.True(t, errors.IsError(err, tableActiveRetriesExceededError{TableName: tableName, Retries: retries}), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
+	assert.True(t, tgerrors.IsError(err, tableActiveRetriesExceededError{TableName: tableName, Retries: retries}), "Unexpected error of type %s: %s", reflect.TypeOf(err), err)
 }
 
 func TestCreateLockTableIfNecessaryTableAlreadyExists(t *testing.T) {
@@ -73,7 +73,7 @@ func TestCreateLockTableIfNecessaryTableAlreadyExists(t *testing.T) {
 	}
 
 	// Create the table the first time
-	withLockTable(t, func(tableName string, client *dynamodb.DynamoDB) {
+	withLockTable(t, func(tableName string, client *dynamodb.Client) {
 		assertCanWriteToTable(t, tableName, client)
 
 		// Try to create the table the second time and make sure you get no errors

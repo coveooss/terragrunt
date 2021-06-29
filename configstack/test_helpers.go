@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/coveooss/terragrunt/v2/config"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/remote"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/zclconf/go-cty/cty"
@@ -114,14 +114,14 @@ func assertRunningModulesEqual(t *testing.T, expected *runningModule, actual *ru
 // contains an array, and in Go, trying to compare arrays gives a "comparing noncomparable type
 // configstack.UnrecognizedDependency" panic. Therefore, we have to compare that error more manually.
 func assertErrorsEqual(t *testing.T, expected error, actual error, messageAndArgs ...interface{}) {
-	actual = errors.Unwrap(actual)
+	actual = tgerrors.Unwrap(actual)
 	if expectedUnrecognized, isUnrecognizedDependencyError := expected.(UnrecognizedDependency); isUnrecognizedDependencyError {
 		actualUnrecognized, isUnrecognizedDependencyError := actual.(UnrecognizedDependency)
 		if assert.True(t, isUnrecognizedDependencyError, messageAndArgs...) {
 			assert.Equal(t, expectedUnrecognized, actualUnrecognized, messageAndArgs...)
 		}
 	} else {
-		assert.True(t, errors.IsError(actual, expected), messageAndArgs...)
+		assert.True(t, tgerrors.IsError(actual, expected), messageAndArgs...)
 	}
 }
 
@@ -187,7 +187,7 @@ func optionsWithMockTerragruntCommand(terragruntConfigPath string, toReturnFromT
 }
 
 func assertMultiErrorContains(t *testing.T, actualError error, expectedErrors ...error) {
-	actualError = errors.Unwrap(actualError)
+	actualError = tgerrors.Unwrap(actualError)
 	errMulti, isMultiError := actualError.(errMulti)
 	if assert.True(t, isMultiError, "Expected a MultiError, but got: %v", actualError) {
 		assert.Equal(t, len(expectedErrors), len(errMulti.Errors))

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
@@ -61,7 +61,7 @@ func parseTerraformStateFileFromLocation(workingDir string) (*TerraformState, er
 func parseTerraformStateFile(path string) (*TerraformState, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, errors.WithStackTrace(errCantParseTerraformStateFile{Path: path, UnderlyingErr: err})
+		return nil, tgerrors.WithStackTrace(errCantParseTerraformStateFile{Path: path, UnderlyingErr: err})
 	}
 
 	return parseTerraformState(bytes)
@@ -72,7 +72,7 @@ func parseTerraformState(terraformStateData []byte) (*TerraformState, error) {
 	terraformState := &TerraformState{}
 
 	if err := json.Unmarshal(terraformStateData, terraformState); err != nil {
-		return nil, errors.WithStackTrace(err)
+		return nil, tgerrors.WithStackTrace(err)
 	}
 
 	return terraformState, nil

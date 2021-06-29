@@ -13,10 +13,10 @@ import (
 	"github.com/coveooss/terragrunt/v2/awshelper"
 	"github.com/coveooss/terragrunt/v2/config"
 	"github.com/coveooss/terragrunt/v2/configstack"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/remote"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
 	"github.com/hashicorp/terraform/configs"
@@ -182,7 +182,7 @@ func CreateTerragruntCli(version string, writer, errwriter io.Writer) *cli.App {
 
 // The sole action for the app
 func runApp(cliContext *cli.Context) (finalErr error) {
-	defer errors.Recover(func(cause error) { finalErr = cause })
+	defer tgerrors.Recover(func(cause error) { finalErr = cause })
 
 	terragruntRunID = fmt.Sprint(xid.New())
 
@@ -209,7 +209,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 
 	// If AWS is configured, we init the session to ensure that proper environment variables are set
 	if terragruntOptions.AwsProfile != "" || os.Getenv("AWS_PROFILE") != "" && os.Getenv("AWS_ACCESS_KEY_ID") == "" {
-		_, err := awshelper.InitAwsSession(terragruntOptions.AwsProfile)
+		_, err := awshelper.InitAwsConfig(terragruntOptions.AwsProfile)
 		if err != nil {
 			return err
 		}
@@ -259,8 +259,8 @@ var runHandler func(*options.TerragruntOptions, *config.TerragruntConfig) error
 func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus error) {
 	terragruntOptions.Logger.Info("Running terragrunt on ", terragruntOptions.WorkingDir)
 	defer func() {
-		if _, hasStack := finalStatus.(*errors.Error); finalStatus != nil && !hasStack {
-			finalStatus = errors.WithStackTrace(finalStatus)
+		if _, hasStack := finalStatus.(*tgerrors.Error); finalStatus != nil && !hasStack {
+			finalStatus = tgerrors.WithStackTrace(finalStatus)
 		}
 		terragruntOptions.CloseWriters()
 	}()
@@ -303,19 +303,19 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 			return false
 		}
 
-		if _, planStatusError := err.(errors.PlanWithChanges); planStatusError {
-			finalStatus = errors.WithStackTrace(err)
+		if _, planStatusError := err.(tgerrors.PlanWithChanges); planStatusError {
+			finalStatus = tgerrors.WithStackTrace(err)
 			return false
 		}
 
 		if !ignoreError {
-			finalStatus = errors.WithStackTrace(err)
+			finalStatus = tgerrors.WithStackTrace(err)
 			return true
 		}
 		terragruntOptions.Logger.Error(err)
 		terragruntOptions.Logger.Error("Continuing execution because ignore_error is set")
 		if finalStatus == nil {
-			finalStatus = errors.WithStackTrace(err)
+			finalStatus = tgerrors.WithStackTrace(err)
 		}
 		return false
 	}
@@ -518,7 +518,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// We register the post hooks to be executed whenever the current function returns
 	defer func() {
 		// If there is an error but it is in fact a plan status, we run the post hooks normally
-		_, planStatusError := err.(errors.PlanWithChanges)
+		_, planStatusError := err.(tgerrors.PlanWithChanges)
 
 		// Executing the post-hook commands if there are and there is no error
 		status := err
@@ -641,7 +641,7 @@ func runMultiModuleCommand(command string, terragruntOptions *options.Terragrunt
 	} else if strings.HasSuffix(command, multiModuleSuffix) {
 		return runAll(realCommand, terragruntOptions)
 	}
-	return errors.WithStackTrace(unrecognizedCommand(command))
+	return tgerrors.WithStackTrace(unrecognizedCommand(command))
 }
 
 // If the user entered a Terraform command that uses state (e.g. plan, apply), make sure remote state is configured
@@ -716,7 +716,7 @@ func destroyAll(command string, terragruntOptions *options.TerragruntOptions) er
 	}
 
 	if shouldDestroyAll {
-		return stack.RunAll([]string{command, "-force", "-input=false"}, terragruntOptions, configstack.ReverseOrder)
+		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, configstack.ReverseOrder)
 	}
 
 	return nil

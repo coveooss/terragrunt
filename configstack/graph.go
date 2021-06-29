@@ -1,7 +1,7 @@
 package configstack
 
 import (
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
@@ -34,7 +34,7 @@ func checkForCyclesUsingDepthFirstSearch(module *TerraformModule, visitedPaths *
 	}
 
 	if util.ListContainsElement(*currentTraversalPaths, module.Path) {
-		return errors.WithStackTrace(errDependencyCycle(append(*currentTraversalPaths, module.Path)))
+		return tgerrors.WithStackTrace(errDependencyCycle(append(*currentTraversalPaths, module.Path)))
 	}
 
 	*currentTraversalPaths = append(*currentTraversalPaths, module.Path)

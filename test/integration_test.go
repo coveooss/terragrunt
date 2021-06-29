@@ -2,6 +2,7 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,9 +13,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/terragrunt/v2/awshelper"
 	"github.com/coveooss/terragrunt/v2/cli"
@@ -627,14 +629,14 @@ func deleteS3Bucket(t *testing.T, awsRegion string, bucketName string) {
 
 	t.Logf("Deleting test s3 bucket %s", bucketName)
 
-	out, err := s3Client.ListObjectVersions(&s3.ListObjectVersionsInput{Bucket: aws.String(bucketName)})
+	out, err := s3Client.ListObjectVersions(context.TODO(), &s3.ListObjectVersionsInput{Bucket: aws.String(bucketName)})
 	if err != nil {
 		t.Fatalf("Failed to list object versions in s3 bucket %s: %v", bucketName, err)
 	}
 
-	objectIdentifiers := []*s3.ObjectIdentifier{}
+	objectIdentifiers := []types.ObjectIdentifier{}
 	for _, version := range out.Versions {
-		objectIdentifiers = append(objectIdentifiers, &s3.ObjectIdentifier{
+		objectIdentifiers = append(objectIdentifiers, types.ObjectIdentifier{
 			Key:       version.Key,
 			VersionId: version.VersionId,
 		})
@@ -643,29 +645,29 @@ func deleteS3Bucket(t *testing.T, awsRegion string, bucketName string) {
 	if len(objectIdentifiers) > 0 {
 		deleteInput := &s3.DeleteObjectsInput{
 			Bucket: aws.String(bucketName),
-			Delete: &s3.Delete{Objects: objectIdentifiers},
+			Delete: &types.Delete{Objects: objectIdentifiers},
 		}
-		if _, err := s3Client.DeleteObjects(deleteInput); err != nil {
+		if _, err := s3Client.DeleteObjects(context.TODO(), deleteInput); err != nil {
 			t.Fatalf("Error deleting all versions of all objects in bucket %s: %v", bucketName, err)
 		}
 	}
 
-	if _, err := s3Client.DeleteBucket(&s3.DeleteBucketInput{Bucket: aws.String(bucketName)}); err != nil {
+	if _, err := s3Client.DeleteBucket(context.TODO(), &s3.DeleteBucketInput{Bucket: aws.String(bucketName)}); err != nil {
 		t.Fatalf("Failed to delete S3 bucket %s: %v", bucketName, err)
 	}
 }
 
 // Create an authenticated client for DynamoDB
-func CreateDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.DynamoDB, error) {
-	session, err := awshelper.CreateAwsSession(awsRegion, awsProfile)
+func CreateDynamoDbClient(awsRegion, awsProfile string) (*dynamodb.Client, error) {
+	config, err := awshelper.CreateAwsConfig(awsRegion, awsProfile)
 	if err != nil {
 		return nil, err
 	}
 
-	return dynamodb.New(session), nil
+	return dynamodb.NewFromConfig(*config), nil
 }
 
-func createDynamoDbClientForTest(t *testing.T, awsRegion string) *dynamodb.DynamoDB {
+func createDynamoDbClientForTest(t *testing.T, awsRegion string) *dynamodb.Client {
 	client, err := CreateDynamoDbClient(awsRegion, "")
 	if err != nil {
 		t.Fatal(err)
