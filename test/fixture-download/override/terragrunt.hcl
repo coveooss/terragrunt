@@ -2,6 +2,11 @@
 terraform {
   source = "invalid-url-should-be-overridden-at-test-time"
 }
+
 inputs = {
-  name = "World"
+  name = "override"
+}
+
+export_variables {
+  path = "terraform.tfvars"
 }

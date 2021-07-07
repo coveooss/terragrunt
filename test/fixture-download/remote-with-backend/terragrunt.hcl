@@ -1,5 +1,5 @@
 terraform {
-  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world-with-backend?ref=v0.12.3"
+  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world-with-backend?ref=download_test"
 }
 
 # Configure Terragrunt to automatically store tfstate files in an S3 bucket
@@ -14,6 +14,11 @@ remote_state {
     dynamodb_table = "__FILL_IN_LOCK_TABLE_NAME__"
   }
 }
+
 inputs = {
   name = "World"
+}
+
+export_variables {
+  path = "terraform.tfvars"
 }

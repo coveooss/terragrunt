@@ -159,14 +159,19 @@ func waitUntilS3BucketExists(client *s3.Client, config *StateConfigS3, terragrun
 
 // Create the S3 bucket specified in the given config
 func createS3Bucket(client *s3.Client, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Info("Creating S3 bucket", config.Bucket)
-	_, err := client.CreateBucket(context.TODO(), &s3.CreateBucketInput{Bucket: aws.String(config.Bucket)})
+	terragruntOptions.Logger.Infof("Creating S3 bucket %s in %s", config.Bucket, config.Region)
+	_, err := client.CreateBucket(context.TODO(), &s3.CreateBucketInput{
+		Bucket: aws.String(config.Bucket),
+		CreateBucketConfiguration: &types.CreateBucketConfiguration{
+			LocationConstraint: types.BucketLocationConstraint(config.Region),
+		},
+	})
 	return tgerrors.WithStackTrace(err)
 }
 
 // Enable versioning for the S3 bucket specified in the given config
 func enableVersioningForS3Bucket(client *s3.Client, config *StateConfigS3, terragruntOptions *options.TerragruntOptions) error {
-	terragruntOptions.Logger.Info("Enabling versioning on S3 bucket", config.Bucket)
+	terragruntOptions.Logger.Infoln("Enabling versioning on S3 bucket", config.Bucket)
 	input := s3.PutBucketVersioningInput{
 		Bucket:                  aws.String(config.Bucket),
 		VersioningConfiguration: &types.VersioningConfiguration{Status: types.BucketVersioningStatusEnabled},
@@ -195,7 +200,7 @@ func createLockTableIfNecessary(s3Config *StateConfigS3, terragruntOptions *opti
 	return dynamodb.CreateLockTableIfNecessary(s3Config.LockTable, dynamodbClient, terragruntOptions)
 }
 
-// CreateS3Client creates an authenticated client for DynamoDB.
+// CreateS3Client creates an authenticated client for S3.
 func CreateS3Client(awsRegion, awsProfile string) (*s3.Client, error) {
 	config, err := awshelper.CreateAwsConfig(awsRegion, awsProfile)
 	if err != nil {
@@ -206,7 +211,6 @@ func CreateS3Client(awsRegion, awsProfile string) (*s3.Client, error) {
 }
 
 // Custom error types
-
 type errMissingRequiredS3RemoteStateConfig string
 
 func (configName errMissingRequiredS3RemoteStateConfig) Error() string {

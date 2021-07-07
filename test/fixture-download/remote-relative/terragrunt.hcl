@@ -1,6 +1,11 @@
 terraform {
-  source = "github.com/coveooss/terragrunt.git//test/fixture-download/relative?ref=v0.9.9"
+  source = "github.com/coveooss/terragrunt.git//test/fixture-download/relative?ref=download_test"
 }
+
 inputs = {
-  name = "World"
+  name = "remote-relative"
+}
+
+export_variables {
+  path = "terraform.tfvars"
 }

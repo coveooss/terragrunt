@@ -1,6 +1,11 @@
 terraform {
   source = "../hello-world"
 }
+
 inputs = {
-  name = "World"
+  name = "local"
+}
+
+export_variables {
+  path = "terraform.tfvars"
 }

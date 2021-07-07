@@ -58,7 +58,8 @@ func CreateLockTableIfNecessary(tableName string, client *dynamodb.Client, terra
 func lockTableExistsAndIsActive(tableName string, client *dynamodb.Client) (bool, error) {
 	output, err := client.DescribeTable(context.TODO(), &dynamodb.DescribeTableInput{TableName: aws.String(tableName)})
 	if err != nil {
-		if errors.Is(err, &types.ResourceNotFoundException{}) {
+		var notFound *types.ResourceNotFoundException
+		if errors.As(err, &notFound) {
 			return false, nil
 		}
 		return false, tgerrors.WithStackTrace(err)
@@ -94,7 +95,8 @@ func createLockTable(tableName string, readCapacityUnits int, writeCapacityUnits
 	})
 
 	if err != nil {
-		if errors.Is(err, &types.ResourceInUseException{}) {
+		var inUse *types.ResourceInUseException
+		if errors.As(err, &inUse) {
 			terragruntOptions.Logger.Warningf("Looks like someone created table %s at the same time. Will wait for it to be in active state.", tableName)
 		} else {
 			return tgerrors.WithStackTrace(err)

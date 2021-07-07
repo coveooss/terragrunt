@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        terraform: ["1.0.1"]
+        terraform: ["1.0.2"]
     steps:
       - name: Setup Go
         uses: actions/setup-go@v1

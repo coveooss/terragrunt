@@ -149,7 +149,7 @@ AUTHOR(S):
 `
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
-const defaultTerraformVersionConstaint = ">= v0.12.0"
+const defaultTerraformVersionConstaint = ">= v1.0.0"
 
 var terragruntVersion string
 var terragruntRunID string
@@ -227,6 +227,15 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 func runCommand(command string, terragruntOptions *options.TerragruntOptions) (finalEff error) {
 	if err := setRoleEnvironmentVariables(terragruntOptions, "", nil); err != nil {
 		return err
+	}
+
+	if (command == "apply" || command == "apply-all") && util.ListContainsElement(terragruntOptions.TerraformCliArgs, "-destroy") {
+		// Terraform replaced destroy operation by apply -destroy. However, Terragrunt has special logic to handle destroy operation properly
+		// especially on destroy-all operations to ensure that the stack is executed in reverse order. So if the user invoke terragrunt with
+		// the new form, we still convert the arguments to the old form (destroy) to ensure consistent behavior.
+		command = strings.Replace(command, "apply", "destroy", -1)
+		terragruntOptions.TerraformCliArgs[0] = command
+		terragruntOptions.TerraformCliArgs = util.RemoveElementFromList(terragruntOptions.TerraformCliArgs, "-destroy")
 	}
 	isMultiModules := command == getStackCommand || strings.HasSuffix(command, multiModuleSuffix)
 	terragruntOptions.Context = map[string]interface{}{
@@ -716,7 +725,7 @@ func destroyAll(command string, terragruntOptions *options.TerragruntOptions) er
 	}
 
 	if shouldDestroyAll {
-		return stack.RunAll([]string{command, "-input=false"}, terragruntOptions, configstack.ReverseOrder)
+		return stack.RunAll([]string{command, "-auto-approve", "-input=false"}, terragruntOptions, configstack.ReverseOrder)
 	}
 
 	return nil

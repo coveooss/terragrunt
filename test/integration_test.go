@@ -132,18 +132,14 @@ func TestTerragruntOutputAllCommandSpecificVariableIgnoreDependencyErrors(t *tes
 
 	environmentPath := fmt.Sprintf("%s/%s/env1", tmpEnvPath, testPath)
 
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply-all --terragrunt-non-interactive --terragrunt-working-dir %s", environmentPath))
+	runTerragrunt(t, fmt.Sprintf("terragrunt apply-all -no-color --terragrunt-non-interactive --terragrunt-working-dir %s", environmentPath))
 
-	var (
-		stdout bytes.Buffer
-		stderr bytes.Buffer
-	)
+	var stdout, stderr bytes.Buffer
 	// Call runTerragruntCommand directly because this command contains failures (which causes runTerragruntRedirectOutput to abort) but we don't care.
 	runTerragruntCommand(t, fmt.Sprintf("terragrunt output-all app2_text --terragrunt-ignore-dependency-errors --terragrunt-non-interactive --terragrunt-working-dir %s", environmentPath), &stdout, &stderr)
-	output := stdout.String()
 
 	// Without --terragrunt-ignore-dependency-errors, app2 never runs because its dependencies have "errors" since they don't have the output "app2_text".
-	assert.True(t, strings.Contains(output, "app2 output"))
+	assert.Contains(t, stdout.String(), `"app2 output"`)
 }
 
 func TestTerragruntStackCommands(t *testing.T) {
@@ -284,58 +280,52 @@ func TestTerragruntCustomConfig(t *testing.T) {
 	}
 }
 
-func TestLocalDownload(t *testing.T) {
+func TestDownloads(t *testing.T) {
 	t.Parallel()
-	const testPath = "fixture-download/local"
-	cleanupTerraformFolder(t, testPath)
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-}
-
-func TestLocalDownloadWithHiddenFolder(t *testing.T) {
-	t.Parallel()
-	const testPath = "fixture-download/local-with-hidden-folder"
-	cleanupTerraformFolder(t, testPath)
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-}
-
-func TestLocalDownloadWithRelativePath(t *testing.T) {
-	t.Parallel()
-	const testPath = "fixture-download/local-relative"
-	cleanupTerraformFolder(t, testPath)
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-}
-
-func TestRemoteDownload(t *testing.T) {
-	t.Parallel()
-	const testPath = "fixture-download/remote"
-	cleanupTerraformFolder(t, testPath)
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-}
-
-func TestRemoteDownloadWithRelativePath(t *testing.T) {
-	t.Parallel()
-	const testPath = "fixture-download/remote-relative"
-	cleanupTerraformFolder(t, testPath)
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", testPath))
-}
-
-func TestRemoteDownloadOverride(t *testing.T) {
-	t.Parallel()
-	const testPath = "fixture-download/override"
-	cleanupTerraformFolder(t, testPath)
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-source %s", testPath, "../hello-world"))
-	// Run a second time to make sure the temporary folder can be reused without errors
-	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s --terragrunt-source %s", testPath, "../hello-world"))
+	type test struct {
+		path           string
+		expectedOutput string
+		args           string
+	}
+	tests := []test{
+		{
+			path:           "fixture-download/local",
+			expectedOutput: `^test = "Hello, local"$`,
+		},
+		{
+			path:           "fixture-download/local-with-hidden-folder",
+			expectedOutput: `^test = "Hello, local-with-hidden-folder"$`,
+		},
+		{
+			path:           "fixture-download/local-relative",
+			expectedOutput: `^test = "Hello, local-relative"$`,
+		},
+		{
+			path:           "fixture-download/remote",
+			expectedOutput: `^test = <<EOT\nhello remote from remote$`,
+		},
+		{
+			path:           "fixture-download/remote-relative",
+			expectedOutput: `^test = <<EOT\nhello remote from remote-relative$`,
+		},
+		{
+			path:           "fixture-download/override",
+			expectedOutput: `^test = "Hello, override"$`,
+			args:           "--terragrunt-source ../hello-world",
+		},
+	}
+	for _, test := range tests {
+		tt := test // tt must be unique see https://github.com/golang/go/issues/16586
+		t.Run(tt.path, func(t *testing.T) {
+			t.Parallel()
+			cleanupTerraformFolder(t, tt.path)
+			runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s %s", tt.path, tt.args))
+			// Run a second time to make sure the temporary folder can be reused without errors
+			var stdout, stderr bytes.Buffer
+			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -no-color --terragrunt-non-interactive --terragrunt-working-dir %s %s", tt.path, tt.args), &stdout, &stderr)
+			assert.Regexp(t, fmt.Sprintf(`(?m).*%s.*`, tt.expectedOutput), stdout.String())
+		})
+	}
 }
 
 func TestLocalWithBackend(t *testing.T) {
@@ -429,7 +419,7 @@ func TestPriorityOrderOfArgument(t *testing.T) {
 	t.Log(out.String())
 	// And the result value for test should be the injected variable since the injected arguments are injected before the suplied parameters,
 	// so our override of extra_var should be the last argument.
-	assert.Contains(t, out.String(), fmt.Sprintf("test = %s", injectedValue))
+	assert.Contains(t, out.String(), fmt.Sprintf(`test = "%s"`, injectedValue))
 }
 
 func cleanupTerraformFolder(t *testing.T, templatesPath string) {
