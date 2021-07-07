@@ -1,6 +1,6 @@
 module github.com/coveooss/terragrunt/v2
 
-go 1.13
+go 1.16
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.7.0
