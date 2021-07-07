@@ -15,6 +15,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 // ErrS3PathNotFoundError is the error that will be returned if an object doesn't exist in S3
@@ -145,12 +146,10 @@ func CheckS3Status(sourceBucketInfo *BucketInfo, folder string) error {
 	// Check for the status of the object in S3. If it doesn't exist in S3, there's no point in reading the local/saved status
 	s3Status, err := getS3Status(*sourceBucketInfo)
 	if err != nil {
-		// var awsError awserr.Error
-		// if errors.As(err, &awsError) {
-		// 	if awsError.Code() == "NotFound" {
-		// 		return fmt.Errorf("%s does not exist: %w", *sourceBucketInfo, ErrS3PathNotFoundError)
-		// 	}
-		// }
+		var notFound *types.NotFound
+		if errors.As(err, &notFound) {
+			return fmt.Errorf("%s does not exist: %w", *sourceBucketInfo, ErrS3PathNotFoundError)
+		}
 		return fmt.Errorf("error while reading %s: %w", *sourceBucketInfo, err)
 	}
 
