@@ -10,8 +10,8 @@ import (
 
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/terragrunt/v2/config"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/hashicorp/go-getter"
 	urlhelper "github.com/hashicorp/go-getter/helper/url"
@@ -70,7 +70,7 @@ func downloadTerraformSourceIfNecessary(terraformSource *TerraformSource, terrag
 	if terragruntOptions.SourceUpdate {
 		terragruntOptions.Logger.Debugf("The --%s flag is set, so deleting the temporary folder %s before downloading source.", optTerragruntSourceUpdate, terraformSource.DownloadDir)
 		if err := os.RemoveAll(terraformSource.DownloadDir); err != nil {
-			return errors.WithStackTrace(err)
+			return tgerrors.WithStackTrace(err)
 		}
 	}
 
@@ -130,7 +130,7 @@ func readVersionFile(terraformSource *TerraformSource) (string, error) {
 // calculated using the encodeSourceVersion method.
 func writeVersionFile(terraformSource *TerraformSource) error {
 	version := encodeSourceVersion(terraformSource.CanonicalSourceURL)
-	return errors.WithStackTrace(ioutil.WriteFile(terraformSource.VersionFile, []byte(version), 0640))
+	return tgerrors.WithStackTrace(ioutil.WriteFile(terraformSource.VersionFile, []byte(version), 0640))
 }
 
 // Take the given source path and create a TerraformSource struct from it, including the folder where the source should
@@ -214,7 +214,7 @@ func toSourceURL(source string, workingDir string) (*url.URL, error) {
 	// parse the URL.
 	rawSourceURLWithGetter, err := getter.Detect(source, workingDir, getter.Detectors)
 	if err != nil {
-		return nil, errors.WithStackTrace(err)
+		return nil, tgerrors.WithStackTrace(err)
 	}
 
 	return parseSourceURL(rawSourceURLWithGetter)
@@ -228,7 +228,7 @@ func parseSourceURL(source string) (*url.URL, error) {
 	// Parse the URL without the getter prefix
 	canonicalSourceURL, err := urlhelper.Parse(rawSourceURL)
 	if err != nil {
-		return nil, errors.WithStackTrace(err)
+		return nil, tgerrors.WithStackTrace(err)
 	}
 
 	// Reattach the "getter" prefix as part of the scheme
@@ -261,7 +261,7 @@ func splitSourceURL(sourceURL *url.URL, terragruntOptions *options.TerragruntOpt
 	if len(pathSplitOnDoubleSlash) > 1 {
 		sourceURLModifiedPath, err := parseSourceURL(sourceURL.String())
 		if err != nil {
-			return nil, "", errors.WithStackTrace(err)
+			return nil, "", tgerrors.WithStackTrace(err)
 		}
 
 		sourceURLModifiedPath.Path = pathSplitOnDoubleSlash[0]
@@ -290,7 +290,7 @@ func encodeSourceVersion(sourceURL *url.URL) string {
 func encodeSourceName(sourceURL *url.URL) (string, error) {
 	sourceURLNoQuery, err := parseSourceURL(sourceURL.String())
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", tgerrors.WithStackTrace(err)
 	}
 
 	sourceURLNoQuery.RawQuery = ""
@@ -315,7 +315,7 @@ func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOpt
 
 	files, err := utils.FindFiles(path, true, false, options.TerraformFilesTemplates...)
 	if err != nil {
-		return errors.WithStackTrace(err)
+		return tgerrors.WithStackTrace(err)
 	}
 
 	// Filter out files in .terraform folders, since those are from modules downloaded via a call to terraform get,

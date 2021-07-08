@@ -8,9 +8,9 @@ import (
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/terragrunt/v2/config"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
@@ -335,7 +335,7 @@ func getDependenciesForModule(module *TerraformModule, moduleMap map[string]*Ter
 					DependencyPath:        dependencyPath,
 					TerragruntConfigPaths: terragruntConfigPaths,
 				}
-				return dependencies, errors.WithStackTrace(err)
+				return dependencies, tgerrors.WithStackTrace(err)
 			}
 			dependencies = append(dependencies, foundModules...)
 		}

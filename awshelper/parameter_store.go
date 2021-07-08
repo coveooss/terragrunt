@@ -1,22 +1,24 @@
 package awshelper
 
 import (
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ssm"
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
 // GetSSMParameter returns the value from the parameters store
 func GetSSMParameter(parameterName, region string) (string, error) {
-	session, err := CreateAwsSession(region, "")
+	config, err := CreateAwsConfig(region, "")
 	if err != nil {
 		return "", err
 	}
 
-	svc := ssm.New(session)
-	withDecryption := true
-	result, err := svc.GetParameter(&ssm.GetParameterInput{
+	svc := ssm.NewFromConfig(*config)
+	result, err := svc.GetParameter(context.TODO(), &ssm.GetParameterInput{
 		Name:           &parameterName,
-		WithDecryption: &withDecryption,
+		WithDecryption: true,
 	})
 
 	if err != nil {
@@ -27,18 +29,18 @@ func GetSSMParameter(parameterName, region string) (string, error) {
 }
 
 // GetSSMParametersByPath returns values from the parameters store matching the path
-func GetSSMParametersByPath(path, region string) (result []*ssm.Parameter, err error) {
-	session, err := CreateAwsSession(region, "")
+func GetSSMParametersByPath(path, region string) (result []types.Parameter, err error) {
+	config, err := CreateAwsConfig(region, "")
 	if err != nil {
 		return
 	}
 
-	svc := ssm.New(session)
+	svc := ssm.NewFromConfig(*config)
 
-	response, err := svc.GetParametersByPath(&ssm.GetParametersByPathInput{
+	response, err := svc.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 		Path:           aws.String(path),
-		Recursive:      aws.Bool(true),
-		WithDecryption: aws.Bool(true),
+		Recursive:      true,
+		WithDecryption: true,
 	})
 
 	if err != nil {

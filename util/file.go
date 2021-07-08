@@ -14,7 +14,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
 	"github.com/coveooss/terragrunt/v2/awshelper"
-	errs "github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	getter "github.com/hashicorp/go-getter"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/matryer/try.v1"
@@ -79,7 +79,7 @@ func CanonicalPaths(paths []string, basePath string) ([]string, error) {
 func DeleteFiles(files []string) error {
 	for _, file := range files {
 		if err := os.Remove(file); err != nil {
-			return errs.WithStackTrace(err)
+			return tgerrors.WithStackTrace(err)
 		}
 	}
 	return nil
@@ -89,13 +89,13 @@ func DeleteFiles(files []string) error {
 func Grep(regex *regexp.Regexp, folder string, patterns ...string) (bool, error) {
 	matches, err := utils.FindFiles(folder, false, false, patterns...)
 	if err != nil {
-		return false, errs.WithStackTrace(err)
+		return false, tgerrors.WithStackTrace(err)
 	}
 
 	for _, match := range matches {
 		bytes, err := ioutil.ReadFile(match)
 		if err != nil {
-			return false, errs.WithStackTrace(err)
+			return false, tgerrors.WithStackTrace(err)
 		}
 
 		if regex.Match(bytes) {
@@ -117,17 +117,17 @@ func GetPathRelativeTo(path, basePath string) (string, error) {
 
 	inputFolderAbs, err := filepath.Abs(basePath)
 	if err != nil {
-		return "", errs.WithStackTrace(err)
+		return "", tgerrors.WithStackTrace(err)
 	}
 
 	fileAbs, err := filepath.Abs(path)
 	if err != nil {
-		return "", errs.WithStackTrace(err)
+		return "", tgerrors.WithStackTrace(err)
 	}
 
 	relPath, err := filepath.Rel(inputFolderAbs, fileAbs)
 	if err != nil {
-		return "", errs.WithStackTrace(err)
+		return "", tgerrors.WithStackTrace(err)
 	}
 
 	return filepath.ToSlash(relPath), nil
@@ -176,7 +176,7 @@ func GetPathRelativeToMax(path, basePath string, maxLevel uint) (result string) 
 func ReadFileAsString(path string) (string, error) {
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		return "", errs.WithStackTraceAndPrefix(err, "Error reading file at path %s", path)
+		return "", tgerrors.WithStackTraceAndPrefix(err, "Error reading file at path %s", path)
 	}
 
 	return string(bytes), nil
@@ -328,7 +328,7 @@ var sharedContent = map[string]bool{}
 func CopyFolderContents(source, destination string, excluded ...string) error {
 	files, err := ioutil.ReadDir(source)
 	if err != nil {
-		return errs.WithStackTrace(err)
+		return tgerrors.WithStackTrace(err)
 	}
 
 	for _, file := range files {
@@ -341,7 +341,7 @@ func CopyFolderContents(source, destination string, excluded ...string) error {
 			continue
 		} else if file.IsDir() {
 			if err := os.MkdirAll(dest, file.Mode()); err != nil {
-				return errs.WithStackTrace(err)
+				return tgerrors.WithStackTrace(err)
 			}
 
 			if err := CopyFolderContents(src, dest); err != nil {
@@ -372,7 +372,7 @@ func PathContainsHiddenFileOrFolder(path string) bool {
 func CopyFile(source string, destination string) error {
 	contents, err := ioutil.ReadFile(source)
 	if err != nil {
-		return errs.WithStackTrace(err)
+		return tgerrors.WithStackTrace(err)
 	}
 
 	return WriteFileWithSamePermissions(source, destination, contents)
@@ -383,7 +383,7 @@ func WriteFileWithSamePermissions(source string, destination string, contents []
 	fileInfo, err := FileStat(source)
 
 	if err != nil {
-		return errs.WithStackTrace(err)
+		return tgerrors.WithStackTrace(err)
 	}
 
 	return ioutil.WriteFile(destination, contents, fileInfo.Mode())

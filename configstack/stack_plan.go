@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
@@ -52,7 +52,7 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 			terragruntOptions.Logger.Infof("There are no terraform changes but hooks have reported changes.")
 		}
 		if hasChanges {
-			return errors.PlanWithChanges{}
+			return tgerrors.PlanWithChanges{}
 		}
 	}
 
@@ -63,7 +63,7 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 func getResultHandler(detailedExitCode bool, results *[]moduleResult, hasChanges *bool) ModuleHandler {
 	return func(module TerraformModule, output string, err error) (string, error) {
 		warnAboutMissingDependencies(module, output)
-		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == errors.ChangeExitCode {
+		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == tgerrors.ChangeExitCode {
 			// We do not want to consider ChangeExitCode as an error and not execute the dependants because there is an "error" in the dependencies.
 			// ChangeExitCode is not an error in this case, it is simply a status. We will reintroduce the exit code at the very end to mimic the behaviour
 			// of the native terrafrom plan -detailed-exitcode to exit with ChangeExitCode if there are changes in any of the module in the stack.
@@ -158,7 +158,7 @@ func (e planMultiError) ExitStatus() (int, error) {
 	for i := range e.Errors {
 		if code, err := shell.GetExitCode(e.Errors[i]); err != nil {
 			return undefinedExitCode, e
-		} else if code == errorExitCode || code == errors.ChangeExitCode && exitCode == normalExitCode {
+		} else if code == errorExitCode || code == tgerrors.ChangeExitCode && exitCode == normalExitCode {
 			// The exit code 1 is more significant that the exit code 2 because it represents an error
 			// while 2 represent a warning.
 			return undefinedExitCode, e

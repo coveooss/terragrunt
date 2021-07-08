@@ -17,15 +17,15 @@ func TestTerragruntImportFiles(t *testing.T) {
 	}{
 		{
 			project:        "fixture-import-files/basic",
-			expectedOutput: "example = 123",
+			expectedOutput: `^example = "123"$`,
 		},
 		{
 			project:        "fixture-import-files/bad-source",
-			expectedOutput: "example = 123",
+			expectedOutput: `^example = "123"$`,
 		},
 		{
 			project:        "fixture-import-files/overwrite",
-			expectedOutput: "example = 456",
+			expectedOutput: `^example = "456"$`,
 		},
 	}
 	for _, tt := range tests {
@@ -34,15 +34,9 @@ func TestTerragruntImportFiles(t *testing.T) {
 			defer os.RemoveAll(tmpEnvPath)
 			rootPath := util.JoinPath(tmpEnvPath, tt.project)
 
-			var (
-				stdout bytes.Buffer
-				stderr bytes.Buffer
-			)
-
-			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
-			output := stdout.String()
-			assert.Contains(t, output, tt.expectedOutput)
-
+			var stdout, stderr bytes.Buffer
+			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -no-color --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, &stderr)
+			assert.Regexp(t, fmt.Sprintf(`(?m).*%s.*`, tt.expectedOutput), stdout.String())
 		})
 	}
 }

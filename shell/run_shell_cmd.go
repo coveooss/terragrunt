@@ -17,8 +17,8 @@ import (
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/sirupsen/logrus"
 )
@@ -120,7 +120,7 @@ func (c CommandContext) LogOutput(logLevel logrus.Level) error {
 // Run executes the command
 func (c CommandContext) Run() error {
 	if c.options == nil {
-		return errors.WithStackTrace(fmt.Errorf("options not configured for command"))
+		return tgerrors.WithStackTrace(fmt.Errorf("options not configured for command"))
 	}
 
 	// If the output is captured, we use a different logging level
@@ -157,11 +157,11 @@ func (c CommandContext) Run() error {
 	for try := 0; try <= c.retries; try++ {
 		cmd, tempFile, err := utils.GetCommandFromString(c.command, c.args...)
 		if err != nil {
-			return errors.WithStackTrace(err)
+			return tgerrors.WithStackTrace(err)
 		}
 
 		if cmd.Args[0], err = LookPath(cmd.Args[0], c.options.Env["PATH"]); err != nil {
-			return errors.WithStackTrace(err)
+			return tgerrors.WithStackTrace(err)
 		}
 
 		verb := "Running "
@@ -207,7 +207,7 @@ func (c CommandContext) Run() error {
 		}
 	}
 
-	return errors.WithStackTrace(finalStatus)
+	return tgerrors.WithStackTrace(finalStatus)
 }
 
 // LookPath search the supplied path to find the desired command
@@ -230,17 +230,17 @@ func LookPath(command string, paths ...string) (string, error) {
 
 var lookPathMutex sync.Mutex
 
-// GetExitCode returns the exit code of a command. If the error does not implement errors.IErrorCode or is not an exec.ExitError type,
+// GetExitCode returns the exit code of a command. If the error does not implement tgerrors.IErrorCode or is not an exec.ExitError type,
 // the error is returned.
 func GetExitCode(err error) (int, error) {
 	if err == nil {
 		return 0, nil
 	}
-	if exiterr, ok := errors.Unwrap(err).(errors.IErrorCode); ok {
+	if exiterr, ok := tgerrors.Unwrap(err).(tgerrors.IErrorCode); ok {
 		return exiterr.ExitStatus()
 	}
 
-	if exiterr, ok := errors.Unwrap(err).(*exec.ExitError); ok {
+	if exiterr, ok := tgerrors.Unwrap(err).(*exec.ExitError); ok {
 		status := exiterr.Sys().(syscall.WaitStatus)
 		return status.ExitStatus(), nil
 	}
@@ -249,9 +249,9 @@ func GetExitCode(err error) (int, error) {
 
 // FilterPlanError filters to trap plan exit code that are not real error
 func FilterPlanError(err error, command string) error {
-	if exitCode, err := GetExitCode(err); err == nil && command == "plan" && exitCode == errors.ChangeExitCode {
+	if exitCode, err := GetExitCode(err); err == nil && command == "plan" && exitCode == tgerrors.ChangeExitCode {
 		// For plan, an error with exit code 2 should not be considered as a real error
-		return errors.PlanWithChanges{}
+		return tgerrors.PlanWithChanges{}
 	}
 	return err
 }

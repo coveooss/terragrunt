@@ -5,9 +5,9 @@ import (
 
 	"github.com/coveooss/multilogger"
 	"github.com/coveooss/terragrunt/v2/cli"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 )
 
 // VERSION is set at build time using -ldflags parameters. For more info, see http://stackoverflow.com/a/11355611/483528
@@ -15,7 +15,7 @@ var VERSION = "1.4.1"
 
 // The main entrypoint for Terragrunt
 func main() {
-	defer errors.Recover(checkForErrorsAndExit)
+	defer tgerrors.Recover(checkForErrorsAndExit)
 
 	app := cli.CreateTerragruntCli(VERSION, os.Stdout, os.Stderr)
 	err := app.Run(os.Args)
@@ -30,10 +30,10 @@ func checkForErrorsAndExit(err error) {
 	} else {
 		logger := multilogger.New("terragrunt")
 
-		if _, ok := errors.Unwrap(err).(errors.PlanWithChanges); !ok {
+		if _, ok := tgerrors.Unwrap(err).(tgerrors.PlanWithChanges); !ok {
 			// Plan status are not considred as an error
 			if os.Getenv(options.EnvDebug) != "" {
-				logger.Error(errors.PrintErrorWithStackTrace(err))
+				logger.Error(tgerrors.PrintErrorWithStackTrace(err))
 			} else {
 				logger.Error(err)
 			}

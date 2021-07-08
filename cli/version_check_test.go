@@ -3,7 +3,7 @@ package cli
 import (
 	"testing"
 
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/assert"
 )
@@ -94,6 +94,6 @@ func testParseTerraformVersion(t *testing.T, versionString string, expectedVersi
 		assert.Nil(t, actualErr)
 		assert.Equal(t, expected, actualVersion)
 	} else {
-		assert.True(t, errors.IsError(actualErr, expectedErr))
+		assert.True(t, tgerrors.IsError(actualErr, expectedErr))
 	}
 }

@@ -15,9 +15,9 @@ import (
 	"github.com/coveooss/gotemplate/v3/template"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/gotemplate/v3/yaml"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/remote"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
 	"github.com/hashicorp/hcl/v2"
@@ -73,7 +73,7 @@ func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
 
 // AsDictionary exports tagged (export: true) properties of the configuration as a dictionary
 func (conf TerragruntConfig) AsDictionary() (result collections.IDictionary, err error) {
-	defer errors.Recover(func(recovered error) { err = recovered })
+	defer tgerrors.Recover(func(recovered error) { err = recovered })
 
 	result = collections.CreateDictionary()
 
@@ -253,7 +253,7 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 	if err == nil {
 		return conf, nil
 	}
-	switch errors.Unwrap(err).(type) {
+	switch tgerrors.Unwrap(err).(type) {
 	case *os.PathError:
 		stat, _ := os.Stat(filepath.Dir(terragruntOptions.TerragruntConfigPath))
 		if stat == nil || !stat.IsDir() {
@@ -272,8 +272,8 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 // this as a config included in some other config file when resolving relative paths.
 func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include IncludeConfig) (configString string, config *TerragruntConfig, err error) {
 	defer func() {
-		if _, hasStack := err.(*errors.Error); err != nil && !hasStack {
-			err = errors.WithStackTrace(err)
+		if _, hasStack := err.(*tgerrors.Error); err != nil && !hasStack {
+			err = tgerrors.WithStackTrace(err)
 		}
 	}()
 
@@ -455,8 +455,8 @@ func parseConfigStringAsTerragruntConfig(configString string, resolveContext *re
 func parseHcl(content string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
 	// The HCL2 parser and especially cty conversions will panic in many types of errors, so we have to recover from
 	// those panics here and convert them to normal errors
-	defer errors.Recover(func(cause error) {
-		err = errors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: cause, ConfigFile: filename})
+	defer tgerrors.Recover(func(cause error) {
+		err = tgerrors.WithStackTrace(panicWhileParsingConfig{RecoveredValue: cause, ConfigFile: filename})
 	})
 
 	parser := hclparse.NewParser()
@@ -626,7 +626,7 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 // Parse the config of the given include, if one is specified
 func parseIncludedConfig(includedConfig *IncludeConfig, terragruntOptions *options.TerragruntOptions) (configString string, config *TerragruntConfig, err error) {
 	if includedConfig.Path == "" && includedConfig.Source == "" {
-		return "", nil, errors.WithStackTrace(includedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
+		return "", nil, tgerrors.WithStackTrace(includedConfigMissingPath(terragruntOptions.TerragruntConfigPath))
 	}
 
 	if !filepath.IsAbs(includedConfig.Path) && includedConfig.Source == "" {

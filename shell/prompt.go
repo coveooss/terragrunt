@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 )
 
 // Prompt the user for text in the CLI. Returns the text entered by the user.
@@ -26,7 +26,7 @@ func promptUserForInput(prompt string, terragruntOptions *options.TerragruntOpti
 
 	text, err := reader.ReadString('\n')
 	if err != nil {
-		return "", errors.WithStackTrace(err)
+		return "", tgerrors.WithStackTrace(err)
 	}
 
 	return strings.TrimSpace(text), nil
@@ -37,7 +37,7 @@ func PromptUserForYesNo(prompt string, terragruntOptions *options.TerragruntOpti
 	resp, err := promptUserForInput(fmt.Sprintf("%s (y/n) ", prompt), terragruntOptions)
 
 	if err != nil {
-		return false, errors.WithStackTrace(err)
+		return false, tgerrors.WithStackTrace(err)
 	}
 
 	switch strings.ToLower(resp) {
