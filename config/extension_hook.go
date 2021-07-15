@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/utils"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 
 	multiloggerErrors "github.com/coveooss/multilogger/errors"
@@ -171,7 +171,7 @@ func (list extensionList) runHooks(status error) error {
 		}
 		currentErr := hook.run()
 		currentErr = shell.FilterPlanError(currentErr, hook.options().TerraformCliArgs[0])
-		if _, ok := currentErr.(errors.PlanWithChanges); ok {
+		if _, ok := currentErr.(tgerrors.PlanWithChanges); ok {
 			errs = append(errs, currentErr)
 		} else if currentErr != nil && !hook.IgnoreError {
 			errOccurred = true

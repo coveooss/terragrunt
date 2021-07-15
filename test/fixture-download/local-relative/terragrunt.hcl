@@ -1,6 +1,11 @@
 terraform {
   source = "..//relative"
 }
+
 inputs = {
-  name = "World"
+  name = "local-relative"
+}
+
+export_variables {
+  path = "terraform.tfvars"
 }

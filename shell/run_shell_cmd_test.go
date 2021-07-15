@@ -16,5 +16,5 @@ func TestRunShellCommand(t *testing.T) {
 
 	value, err := NewTFCmd(terragruntOptions).Args("not-a-real-command").Output()
 	assert.Error(t, err)
-	assert.Contains(t, value, "Usage: terraform")
+	assert.Contains(t, value, `Terraform has no command named "not-a-real-command"`)
 }

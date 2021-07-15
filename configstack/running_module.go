@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
 )
@@ -169,7 +169,7 @@ func crossLinkDependencies(modules map[string]*runningModule, dependencyOrder de
 		for _, dependency := range module.Module.Dependencies {
 			runningDependency, hasDependency := modules[dependency.Path]
 			if !hasDependency {
-				return modules, errors.WithStackTrace(errDependencyNotFoundWhileCrossLinking{module, dependency})
+				return modules, tgerrors.WithStackTrace(errDependencyNotFoundWhileCrossLinking{module, dependency})
 			}
 			if dependencyOrder == NormalOrder {
 				module.Dependencies[runningDependency.Module.Path] = runningDependency
@@ -197,7 +197,7 @@ func collectErrors(modules map[string]*runningModule) error {
 	if len(errs) == 0 {
 		return nil
 	}
-	return errors.WithStackTrace(CreateMultiErrors(errs))
+	return tgerrors.WithStackTrace(CreateMultiErrors(errs))
 }
 
 // Run a module once all of its dependencies have finished executing.

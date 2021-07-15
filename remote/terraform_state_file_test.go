@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -316,7 +316,7 @@ func TestParseTerraformStateInvalid(t *testing.T) {
 	assert.Nil(t, actualTerraformState)
 	assert.NotNil(t, err)
 
-	underlyingErr := errors.Unwrap(err)
+	underlyingErr := tgerrors.Unwrap(err)
 	_, isSyntaxErr := underlyingErr.(*json.SyntaxError)
 	assert.True(t, isSyntaxErr)
 }

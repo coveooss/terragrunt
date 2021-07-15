@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/hashicorp/go-version"
 )
 
@@ -34,7 +34,7 @@ func checkTerraformVersionMeetsConstraint(currentVersion *version.Version, const
 	}
 
 	if !versionConstraint.Check(currentVersion) {
-		return errors.WithStackTrace(ErrInvalidTerraformVersion{CurrentVersion: currentVersion, VersionConstraints: versionConstraint})
+		return tgerrors.WithStackTrace(ErrInvalidTerraformVersion{CurrentVersion: currentVersion, VersionConstraints: versionConstraint})
 	}
 
 	return nil
@@ -55,7 +55,7 @@ func parseTerraformVersion(versionCommandOutput string) (*version.Version, error
 	matches := terraformVersionRegex.FindStringSubmatch(versionCommandOutput)
 
 	if len(matches) != 2 {
-		return nil, errors.WithStackTrace(ErrInvalidTerraformVersionSyntax(versionCommandOutput))
+		return nil, tgerrors.WithStackTrace(ErrInvalidTerraformVersionSyntax(versionCommandOutput))
 	}
 
 	return version.NewVersion(matches[1])

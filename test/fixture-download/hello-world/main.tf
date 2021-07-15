@@ -17,6 +17,6 @@ module "hello" {
 }
 
 module "remote" {
-  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world-remote?ref=download_test"
+  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world?ref=download_test"
   name   = var.name
 }

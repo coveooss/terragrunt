@@ -14,6 +14,11 @@ remote_state {
     dynamodb_table = "__FILL_IN_LOCK_TABLE_NAME__"
   }
 }
+
 inputs = {
   name = "World"
+}
+
+export_variables {
+  path = "terraform.tfvars"
 }

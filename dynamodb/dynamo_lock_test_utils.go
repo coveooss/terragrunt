@@ -2,13 +2,15 @@ package dynamodb
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,7 +38,7 @@ func uniqueID() string {
 }
 
 // Create a DynamoDB client we can use at test time. If there are any errors creating the client, fail the test.
-func createDynamoDbClientForTest(t *testing.T) *dynamodb.DynamoDB {
+func createDynamoDbClientForTest(t *testing.T) *dynamodb.Client {
 	// We always use us-east-1 for test purpose
 	client, err := CreateDynamoDbClient("us-east-1", "")
 	if err != nil {
@@ -49,15 +51,15 @@ func uniqueTableNameForTest() string {
 	return fmt.Sprintf("terragrunt_test_%s", uniqueID())
 }
 
-func cleanupTableForTest(t *testing.T, tableName string, client *dynamodb.DynamoDB) {
+func cleanupTableForTest(t *testing.T, tableName string, client *dynamodb.Client) {
 	err := DeleteTable(tableName, client)
 	assert.Nil(t, err, "Unexpected error: %v", err)
 }
 
-func assertCanWriteToTable(t *testing.T, tableName string, client *dynamodb.DynamoDB) {
+func assertCanWriteToTable(t *testing.T, tableName string, client *dynamodb.Client) {
 	item := createKeyFromItemID(uniqueID())
 
-	_, err := client.PutItem(&dynamodb.PutItemInput{
+	_, err := client.PutItem(context.TODO(), &dynamodb.PutItemInput{
 		TableName: aws.String(tableName),
 		Item:      item,
 	})
@@ -65,7 +67,7 @@ func assertCanWriteToTable(t *testing.T, tableName string, client *dynamodb.Dyna
 	assert.Nil(t, err, "Unexpected error: %v", err)
 }
 
-func withLockTable(t *testing.T, action func(tableName string, client *dynamodb.DynamoDB)) {
+func withLockTable(t *testing.T, action func(tableName string, client *dynamodb.Client)) {
 	client := createDynamoDbClientForTest(t)
 	tableName := uniqueTableNameForTest()
 
@@ -76,8 +78,8 @@ func withLockTable(t *testing.T, action func(tableName string, client *dynamodb.
 	action(tableName, client)
 }
 
-func createKeyFromItemID(itemID string) map[string]*dynamodb.AttributeValue {
-	return map[string]*dynamodb.AttributeValue{
-		attrLockID: {S: aws.String(itemID)},
+func createKeyFromItemID(itemID string) map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		attrLockID: &types.AttributeValueMemberS{Value: itemID},
 	}
 }

@@ -3,7 +3,7 @@ package configstack
 import (
 	"testing"
 
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,7 +80,7 @@ func TestCheckForCycles(t *testing.T) {
 		if testCase.expected == nil {
 			assert.Nil(t, actual)
 		} else if assert.NotNil(t, actual, "For modules %v", testCase.modules) {
-			actualErr := errors.Unwrap(actual).(errDependencyCycle)
+			actualErr := tgerrors.Unwrap(actual).(errDependencyCycle)
 			assert.Equal(t, []string(testCase.expected), []string(actualErr), "For modules %v", testCase.modules)
 		}
 	}

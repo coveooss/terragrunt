@@ -42,17 +42,17 @@ var (
 func LoadDefaultValues(folder string, logger *multilogger.Logger, keepInCache bool) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
 	if keepInCache {
 		defer func() {
-			if _, ok := cacheDefault.Load(folder); !ok {
+			if _, exist := cacheDefault.Load(folder); !exist {
 				// We put the result in cache for the next call
 				cacheDefault.Store(folder, &cachedDefaultVariables{importedVariables, allVariables, err})
 			}
 		}()
 	}
 
-	if cached, ok := cacheDefault.Load(folder); ok {
+	if cached, exist := cacheDefault.Load(folder); exist {
 		// If we already processed this folder, we simply return the cached values
-		result := cached.(*cachedDefaultVariables)
-		return result.values, result.all, nil
+		cached := cached.(*cachedDefaultVariables)
+		return cached.values, cached.all, nil
 	}
 
 	return loadDefaultValues(folder, true, logger)

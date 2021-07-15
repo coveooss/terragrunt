@@ -11,8 +11,8 @@ import (
 
 	"github.com/coveooss/multilogger/reutils"
 	"github.com/coveooss/terragrunt/v2/config"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -43,7 +43,7 @@ func ParseTerragruntOptions(cliContext *cli.Context) (*options.TerragruntOptions
 func parseTerragruntOptionsFromArgs(args []string) (*options.TerragruntOptions, error) {
 	currentDir, err := os.Getwd()
 	if err != nil {
-		return nil, errors.WithStackTrace(err)
+		return nil, tgerrors.WithStackTrace(err)
 	}
 
 	parse := func(argName string, defaultValues ...string) (result string) {
@@ -273,7 +273,7 @@ func parseStringArg(args []string, argName string, defaultValue string) (string,
 			if (i + 1) < len(args) {
 				return args[i+1], nil
 			}
-			return "", errors.WithStackTrace(ErrArgMissingValue(argName))
+			return "", tgerrors.WithStackTrace(ErrArgMissingValue(argName))
 		}
 	}
 	return defaultValue, nil

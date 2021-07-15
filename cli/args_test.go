@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/coveooss/terragrunt/v2/config"
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/stretchr/testify/assert"
 )
@@ -139,7 +139,7 @@ func TestParseTerragruntOptionsFromArgs(t *testing.T) {
 	for _, testCase := range testCases {
 		actualOptions, actualErr := parseTerragruntOptionsFromArgs(testCase.args)
 		if testCase.expectedErr != nil {
-			assert.True(t, errors.IsError(actualErr, testCase.expectedErr), "Expected error %v but got error %v", testCase.expectedErr, actualErr)
+			assert.True(t, tgerrors.IsError(actualErr, testCase.expectedErr), "Expected error %v but got error %v", testCase.expectedErr, actualErr)
 		} else {
 			assert.Nil(t, actualErr, "Unexpected error: %v", actualErr)
 			assertOptionsEqual(t, *testCase.expectedOptions, *actualOptions, "For args %v", testCase.args)

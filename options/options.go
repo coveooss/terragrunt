@@ -14,7 +14,7 @@ import (
 	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/multilogger"
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
@@ -142,7 +142,7 @@ func NewTerragruntOptions(terragruntConfigPath string) *TerragruntOptions {
 		Writer:               os.Stdout,
 		ErrWriter:            os.Stderr,
 		RunTerragrunt: func(terragruntOptions *TerragruntOptions) error {
-			return errors.WithStackTrace(ErrRunTerragruntCommandNotSet)
+			return tgerrors.WithStackTrace(ErrRunTerragruntCommandNotSet)
 		},
 		TemplateAdditionalPatterns: []string{},
 		BootConfigurationPaths:     []string{},

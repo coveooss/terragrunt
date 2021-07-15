@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/coveooss/terragrunt/v2/errors"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/shell"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/zclconf/go-cty/cty"
 )
@@ -42,7 +42,7 @@ func (remoteState *State) Validate() error {
 	}
 
 	if remoteState.Backend == "" {
-		return errors.WithStackTrace(ErrBackendMissing)
+		return tgerrors.WithStackTrace(ErrBackendMissing)
 	}
 	return nil
 }

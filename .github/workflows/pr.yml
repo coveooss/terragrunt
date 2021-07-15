@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        terraform: ["0.14.5"]
+        terraform: ["1.0.2"]
     steps:
       - name: Setup Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.15
+          go-version: 1.16
         id: go
 
       - name: Checkout
@@ -30,8 +30,12 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           make static
 
-      - name: Run tests
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        run: |
-          make codecov
+      - name: Generate code coverage files
+        run: make codecov
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.txt
+          fail_ci_if_error: true

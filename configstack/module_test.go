@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/coveooss/terragrunt/v2/config"
-	"github.com/coveooss/terragrunt/v2/errors"
+	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -262,7 +262,7 @@ func TestResolveTerraformModulesInvalidPaths(t *testing.T) {
 
 	_, actualErr := ResolveTerraformModules(configPaths, mockOptions)
 	if assert.NotNil(t, actualErr, "Unexpected error: %v", actualErr) {
-		unwrapped := errors.Unwrap(actualErr)
+		unwrapped := tgerrors.Unwrap(actualErr)
 		assert.True(t, os.IsNotExist(unwrapped), "Expected a file not exists error but got %v", unwrapped)
 	}
 }
