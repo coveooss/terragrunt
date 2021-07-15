@@ -2,33 +2,55 @@
 // Any changes will be lost if this file is regenerated.
 // see https://github.com/cheekybits/genny
 
-// lint:file-ignore U1000 Ignore all unused code, it's generated
+//lint:file-ignore U1000 Ignore all unused code, it's generated
 
 package config
 
 // ImportVariablesList represents an array of ImportVariables
 type ImportVariablesList []*ImportVariables
 
-func (list ImportVariablesList) init(config *TerragruntConfigFile) { list.toGeneric().init(config) }
-
-func (list *ImportVariablesList) merge(imported ImportVariablesList, mode mergeMode, argName string) {
-	*list = toImportVariablesList(merge(list.toGeneric(), imported.toGeneric(), mode, argName))
+func (list ImportVariablesList) init(config *TerragruntConfigFile) error {
+	return list.toGeneric().init(config)
 }
 
 func (list ImportVariablesList) toGeneric(filters ...extensionFilter) extensionList {
 	return filterExtensions(list, filters)
 }
 
+func (list *ImportVariablesList) merge(data extensionList) {
+	*list = toImportVariablesList(merge(list.toGeneric(), data, list.mergeMode()))
+}
+
 func toImportVariablesList(list []terragruntExtensioner) ImportVariablesList {
-	return convert(list, ImportVariablesList{}).(ImportVariablesList)
+	converted := convert(list, ImportVariablesList{}).(ImportVariablesList)
+	return converted
+}
+
+func (item ImportVariables) itemType() string {
+	return ImportVariablesList{}.argName()
 }
 
 // Help returns the information relative to the elements within the list
 func (list ImportVariablesList) Help(listOnly bool, lookups ...string) string {
-	return help(list.Enabled(), listOnly, lookups...)
+	enabled := list.Enabled()
+	return help(&enabled, listOnly, lookups...)
 }
 
 // Enabled returns only the enabled items on the list
 func (list ImportVariablesList) Enabled() ImportVariablesList {
 	return toImportVariablesList(list.toGeneric(extensionEnabled))
 }
+
+// Filter is used to filter the list on supplied criteria
+func (list ImportVariablesList) Filter(filter ImportVariablesFilter) ImportVariablesList {
+	result := make(ImportVariablesList, 0, len(list))
+	for _, item := range list.Enabled() {
+		if filter(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// ImportVariablesFilter describe a function able to filter ImportVariables from a list
+type ImportVariablesFilter func(*ImportVariables) bool

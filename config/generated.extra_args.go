@@ -2,35 +2,55 @@
 // Any changes will be lost if this file is regenerated.
 // see https://github.com/cheekybits/genny
 
-// lint:file-ignore U1000 Ignore all unused code, it's generated
+//lint:file-ignore U1000 Ignore all unused code, it's generated
 
 package config
 
-// TerraformExtraArgumentsList represents an array of TerraformExtraArguments
-type TerraformExtraArgumentsList []*TerraformExtraArguments
+// ExtraArgumentsList represents an array of ExtraArguments
+type ExtraArgumentsList []*ExtraArguments
 
-func (list TerraformExtraArgumentsList) init(config *TerragruntConfigFile) {
-	list.toGeneric().init(config)
+func (list ExtraArgumentsList) init(config *TerragruntConfigFile) error {
+	return list.toGeneric().init(config)
 }
 
-func (list *TerraformExtraArgumentsList) merge(imported TerraformExtraArgumentsList, mode mergeMode, argName string) {
-	*list = toTerraformExtraArgumentsList(merge(list.toGeneric(), imported.toGeneric(), mode, argName))
-}
-
-func (list TerraformExtraArgumentsList) toGeneric(filters ...extensionFilter) extensionList {
+func (list ExtraArgumentsList) toGeneric(filters ...extensionFilter) extensionList {
 	return filterExtensions(list, filters)
 }
 
-func toTerraformExtraArgumentsList(list []terragruntExtensioner) TerraformExtraArgumentsList {
-	return convert(list, TerraformExtraArgumentsList{}).(TerraformExtraArgumentsList)
+func (list *ExtraArgumentsList) merge(data extensionList) {
+	*list = toExtraArgumentsList(merge(list.toGeneric(), data, list.mergeMode()))
+}
+
+func toExtraArgumentsList(list []terragruntExtensioner) ExtraArgumentsList {
+	converted := convert(list, ExtraArgumentsList{}).(ExtraArgumentsList)
+	return converted
+}
+
+func (item ExtraArguments) itemType() string {
+	return ExtraArgumentsList{}.argName()
 }
 
 // Help returns the information relative to the elements within the list
-func (list TerraformExtraArgumentsList) Help(listOnly bool, lookups ...string) string {
-	return help(list.Enabled(), listOnly, lookups...)
+func (list ExtraArgumentsList) Help(listOnly bool, lookups ...string) string {
+	enabled := list.Enabled()
+	return help(&enabled, listOnly, lookups...)
 }
 
 // Enabled returns only the enabled items on the list
-func (list TerraformExtraArgumentsList) Enabled() TerraformExtraArgumentsList {
-	return toTerraformExtraArgumentsList(list.toGeneric(extensionEnabled))
+func (list ExtraArgumentsList) Enabled() ExtraArgumentsList {
+	return toExtraArgumentsList(list.toGeneric(extensionEnabled))
 }
+
+// Filter is used to filter the list on supplied criteria
+func (list ExtraArgumentsList) Filter(filter ExtraArgumentsFilter) ExtraArgumentsList {
+	result := make(ExtraArgumentsList, 0, len(list))
+	for _, item := range list.Enabled() {
+		if filter(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// ExtraArgumentsFilter describe a function able to filter ExtraArguments from a list
+type ExtraArgumentsFilter func(*ExtraArguments) bool

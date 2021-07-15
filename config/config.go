@@ -23,6 +23,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/sirupsen/logrus"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -36,19 +37,19 @@ const (
 
 // TerragruntConfig represents a parsed and expanded configuration
 type TerragruntConfig struct {
-	ApprovalConfig             ApprovalConfigList           `hcl:"approval_config,block" export:"true"`
-	Dependencies               *ModuleDependencies          `hcl:"dependencies,block" export:"true"`
-	ExportVariablesConfigs     []ExportVariablesConfig      `hcl:"export_variables,block" export:"true"`
-	ExportConfigConfigs        []ExportVariablesConfig      `hcl:"export_config,block" export:"true"`
-	ExtraArgs                  TerraformExtraArgumentsList  `hcl:"extra_arguments,block" export:"true"`
-	ExtraCommands              ExtraCommandList             `hcl:"extra_command,block" export:"true"`
-	ImportFiles                ImportFilesList              `hcl:"import_files,block" export:"true"`
-	ImportVariables            ImportVariablesList          `hcl:"import_variables,block" export:"true"`
-	PreHooks                   HookList                     `hcl:"pre_hook,block" export:"true"`
-	PostHooks                  HookList                     `hcl:"post_hook,block" export:"true"`
-	RemoteState                *remote.State                `hcl:"remote_state,block" export:"true"`
-	RunConditionsHclDefinition []runConditionsHclDefinition `hcl:"run_conditions,block"`
-	Terraform                  *TerraformConfig             `hcl:"terraform,block" export:"true"`
+	ApprovalConfig  ApprovalConfigList  `hcl:"approval_config,block" export:"true"`
+	Dependencies    *ModuleDependencies `hcl:"dependencies,block" export:"true"`
+	ExportVariables ExportVariablesList `hcl:"export_variables,block" export:"true"`
+	ExportConfig    ExportConfigList    `hcl:"export_config,block" export:"true"`
+	ExtraArgs       ExtraArgumentsList  `hcl:"extra_arguments,block" export:"true"`
+	ExtraCommands   ExtraCommandList    `hcl:"extra_command,block" export:"true"`
+	ImportFiles     ImportFilesList     `hcl:"import_files,block" export:"true"`
+	ImportVariables ImportVariablesList `hcl:"import_variables,block" export:"true"`
+	RunConditions   RunConditionList    `hcl:"run_conditions,block"`
+	PreHooks        PreHookList         `hcl:"pre_hook,block" export:"true"`
+	PostHooks       PostHookList        `hcl:"post_hook,block" export:"true"`
+	RemoteState     *remote.State       `hcl:"remote_state,block" export:"true"`
+	Terraform       *TerraformConfig    `hcl:"terraform,block" export:"true"`
 
 	AssumeRoleDurationHours *int      `hcl:"assume_role_duration_hours,attr" export:"true"`
 	AssumeRoleHclDefinition cty.Value `hcl:"assume_role,optional"`
@@ -56,9 +57,8 @@ type TerragruntConfig struct {
 	InputsHclDefinition     cty.Value `hcl:"inputs,optional"`
 	UniquenessCriteria      *string   `hcl:"uniqueness_criteria,attr" export:"true"`
 
-	AssumeRole    []string `export:"true"`
-	Inputs        map[string]interface{}
-	RunConditions RunConditions
+	AssumeRole []string `export:"true"`
+	Inputs     map[string]interface{}
 
 	options *options.TerragruntOptions
 }
@@ -69,7 +69,7 @@ func (conf TerragruntConfig) String() string {
 
 // ExtraArguments processes the extra_arguments defined in the terraform section of the config file
 func (conf TerragruntConfig) ExtraArguments(source string) ([]string, error) {
-	return conf.ExtraArgs.Filter(source)
+	return conf.ExtraArgs.Apply(source)
 }
 
 // AsDictionary exports tagged (export: true) properties of the configuration as a dictionary
@@ -114,13 +114,12 @@ type TerragruntConfigFile struct {
 	// remain will send everything that isn't match into the labelled struct
 	// In that case, most of the config goes down to TerragruntConfig
 	// https://godoc.org/github.com/hashicorp/hcl/v2/gohcl
-	TerragruntConfig `hcl:",remain"`
+	TerragruntConfig `hcl:",squash"`
 	Include          *IncludeConfig `hcl:"include,block"`
 }
 
-func (tcf TerragruntConfigFile) String() string {
-	return collections.PrettyPrintStruct(tcf)
-}
+func (tcf *TerragruntConfigFile) init()         { tcf.TerragruntConfig.init(tcf) }
+func (tcf TerragruntConfigFile) String() string { return collections.PrettyPrintStruct(tcf) }
 
 // Convert the contents of a fully resolved Terragrunt configuration to a TerragruntConfig object
 func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *options.TerragruntOptions) (config *TerragruntConfig, err error) {
@@ -144,8 +143,14 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 	tcf.options = terragruntOptions
 
 	// We combine extra arguments defined in terraform block into the extra arguments defined in the terragrunt block
-	if tcf.Terraform != nil {
+	if tcf.Terraform != nil && len(tcf.Terraform.LegacyExtraArgs) > 0 {
+		tcf.Terraform.LegacyExtraArgs.init(tcf)
+		terragruntOptions.Logger.Warning(color.HiRedString("Specifying extra_arguments in the terraform block is deprecated, move the statement in the root document: %s", tcf.Terraform.LegacyExtraArgs))
 		tcf.ExtraArgs = append(tcf.ExtraArgs, tcf.Terraform.LegacyExtraArgs...)
+		tcf.Terraform.LegacyExtraArgs = nil
+		if tcf.Terraform.Source == "" {
+			tcf.Terraform = nil
+		}
 	}
 
 	if !tcf.InputsHclDefinition.IsNull() {
@@ -154,32 +159,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 		}
 	}
 
-	tcf.ExtraArgs.init(tcf)
-	tcf.ExtraCommands.init(tcf)
-	tcf.ImportFiles.init(tcf)
-	tcf.ImportVariables.init(tcf)
-	tcf.ApprovalConfig.init(tcf)
-	tcf.PreHooks.init(tcf)
-	tcf.PostHooks.init(tcf)
-	tcf.RunConditions = RunConditions{}
-	for _, condition := range tcf.RunConditionsHclDefinition {
-		if !condition.RunIf.IsNull() {
-			var runIfCondition map[string]interface{}
-			if err := util.FromCtyValue(condition.RunIf, &runIfCondition); err != nil {
-				return nil, err
-			}
-			tcf.RunConditions.Allows = append(tcf.RunConditions.Allows, runIfCondition)
-		}
-
-		if !condition.IgnoreIf.IsNull() {
-			var ignoreIfCondition map[string]interface{}
-			if err := util.FromCtyValue(condition.IgnoreIf, &ignoreIfCondition); err != nil {
-				return nil, err
-			}
-			tcf.RunConditions.Denies = append(tcf.RunConditions.Denies, ignoreIfCondition)
-		}
-	}
-	err = tcf.RunConditions.init(tcf.options)
+	tcf.init()
 
 	if tcf.Include == nil {
 		// If the newly loaded configuration file is not to be merged, we force the merge
@@ -239,8 +219,8 @@ func (deps *ModuleDependencies) String() string {
 
 // TerraformConfig specifies where to find the Terraform configuration files
 type TerraformConfig struct {
-	LegacyExtraArgs TerraformExtraArgumentsList `hcl:"extra_arguments,block"` // Kept here only for retro compatibility
-	Source          string                      `hcl:"source,optional"`
+	LegacyExtraArgs ExtraArgumentsList `hcl:"extra_arguments,block"` // Kept here only for retro compatibility
+	Source          string             `hcl:"source,optional"`
 }
 
 func (conf TerraformConfig) String() string {
@@ -316,7 +296,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 		return "", nil, err
 	}
 
-	terragruntOptions.Logger.Tracef("Read configuration file at %s\n%s", include.Path, configString)
+	if terragruntOptions.Logger.GetDefaultConsoleHookLevel() > logrus.TraceLevel {
+		terragruntOptions.Logger.Tracef("Read configuration file at %s\n%s", include.Path, configString)
+	}
 	if terragruntOptions.ApplyTemplate {
 		collections.SetListHelper(gotemplateHcl.GenericListHelper)
 		collections.SetDictionaryHelper(gotemplateHcl.DictionaryHelper)
@@ -345,7 +327,9 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 
 		if oldConfigString != configString {
 			terragruntOptions.Logger.Debugf("Configuration file at %s was modified by gotemplate", include.Path)
-			terragruntOptions.Logger.Tracef("Result:\n%s", configString)
+			if terragruntOptions.Logger.GetDefaultConsoleHookLevel() > logrus.TraceLevel {
+				terragruntOptions.Logger.Tracef("Result:\n%s", configString)
+			}
 		} else {
 			terragruntOptions.Logger.Tracef("Configuration file at %s was not modified by gotemplate", include.Path)
 		}
@@ -376,7 +360,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles sync.Map
-var hookWarningGiven bool
+var deprecatedHookWarning sync.Once
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
@@ -389,10 +373,11 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	// pre_hooks & post_hooks have been renamed to pre_hook & post_hook, we support old naming to avoid breaking change
 	configString = strings.Replace(configString, "pre_hooks", "pre_hook", -1)
 	configString = strings.Replace(configString, "post_hooks", "post_hook", -1)
-	if !hookWarningGiven && before != configString {
-		// We should issue this warning only once
-		hookWarningGiven = true
-		terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
+	if before != configString {
+		deprecatedHookWarning.Do(func() {
+			// We should issue this warning only once
+			terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
+		})
 	}
 
 	includeContext := &resolveContext{
@@ -409,7 +394,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	}
 
 	terragruntOptions.ImportVariablesMap(config.Inputs, options.ConfigVarFile)
-	terragruntOptions.Logger.Tracef("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
+	terragruntOptions.Logger.Tracef("Loaded configuration\n%v", color.HiYellowString(fmt.Sprint(terragruntConfigFile)))
 
 	if !path.IsAbs(include.Path) {
 		include.Path, _ = filepath.Abs(include.Path)
@@ -443,8 +428,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 // converts the HCL syntax in the string to the terragruntConfigFile struct; it does not process any interpolations.
 func parseConfigStringAsTerragruntConfig(configString string, resolveContext *resolveContext) (*TerragruntConfigFile, error) {
 	terragruntConfig := TerragruntConfigFile{}
-	err := parseHcl(configString, resolveContext.include.Path, &terragruntConfig, resolveContext)
-	if err != nil {
+	if err := parseHcl(configString, resolveContext.include.Path, &terragruntConfig, resolveContext); err != nil {
 		return nil, err
 	}
 	terragruntConfig.Path = resolveContext.include.Path
@@ -599,29 +583,31 @@ func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfi
 
 	if includedConfig.Inputs != nil {
 		conf.Inputs, _ = utils.MergeDictionaries(conf.Inputs, includedConfig.Inputs)
-
 	}
 
-	if conf.ExportVariablesConfigs == nil {
-		conf.ExportVariablesConfigs = includedConfig.ExportVariablesConfigs
-	} else if includedConfig.ExportVariablesConfigs != nil {
-		conf.ExportVariablesConfigs = append(conf.ExportVariablesConfigs, includedConfig.ExportVariablesConfigs...)
-	}
+	conf.merge(&includedConfig)
+}
 
-	if conf.ExportConfigConfigs == nil {
-		conf.ExportConfigConfigs = includedConfig.ExportConfigConfigs
-	} else if includedConfig.ExportConfigConfigs != nil {
-		conf.ExportConfigConfigs = append(conf.ExportConfigConfigs, includedConfig.ExportConfigConfigs...)
+func (conf *TerragruntConfig) init(configFile *TerragruntConfigFile) {
+	for i, t := 0, reflect.ValueOf(conf).Elem(); i < t.NumField(); i++ {
+		if field := t.Field(i); field.CanSet() {
+			if list, ok := field.Addr().Interface().(extensionListCompatible); ok {
+				list.init(configFile)
+			}
+		}
 	}
+}
 
-	conf.ExtraArgs.Merge(includedConfig.ExtraArgs)
-	conf.RunConditions.Merge(includedConfig.RunConditions)
-	conf.ImportFiles.Merge(includedConfig.ImportFiles)
-	conf.ImportVariables.Merge(includedConfig.ImportVariables)
-	conf.ExtraCommands.Merge(includedConfig.ExtraCommands)
-	conf.ApprovalConfig.Merge(includedConfig.ApprovalConfig)
-	conf.PreHooks.MergePrepend(includedConfig.PreHooks)
-	conf.PostHooks.MergeAppend(includedConfig.PostHooks)
+func (conf *TerragruntConfig) merge(other *TerragruntConfig) {
+	confValue := reflect.ValueOf(conf).Elem()
+	otherValue := reflect.ValueOf(other).Elem()
+	for i := 0; i < confValue.NumField(); i++ {
+		if field := confValue.Field(i); field.CanSet() {
+			if list, ok := field.Addr().Interface().(extensionListCompatible); ok {
+				list.merge(otherValue.Field(i).Addr().Interface().(extensionListCompatible).toGeneric())
+			}
+		}
+	}
 }
 
 // Parse the config of the given include, if one is specified

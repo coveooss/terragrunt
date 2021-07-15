@@ -394,12 +394,15 @@ type argConfig struct {
 }
 
 func getExtraArgsConfig(options *options.TerragruntOptions, argConfigs ...argConfig) TerragruntConfig {
-	args := TerraformExtraArgumentsList{}
+	args := ExtraArgumentsList{}
 	for _, argConfig := range argConfigs {
-		base := TerragruntExtensionBase{Name: argConfig.name}
-		base.init(&TerragruntConfigFile{}, &base)
-		base.config().options = options
-		args = append(args, &TerraformExtraArguments{TerragruntExtensionBase: base, Arguments: argConfig.extraArgs})
+		arg := ExtraArguments{
+			TerragruntExtensionIdentified: TerragruntExtensionIdentified{Name: argConfig.name},
+			Arguments:                     argConfig.extraArgs,
+		}
+		arg.init(&TerragruntConfigFile{}, &arg)
+		arg.config().options = options
+		args = append(args, &arg)
 	}
 	return TerragruntConfig{ExtraArgs: args}
 }

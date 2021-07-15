@@ -1,5 +1,5 @@
 // +build genny
-// lint:file-ignore U1000 Ignore all unused code, it's generated
+//lint:file-ignore U1000 Ignore all unused code, it's generated
 
 package config
 
@@ -7,31 +7,53 @@ import (
 	"github.com/cheekybits/genny/generic"
 )
 
-type Type generic.Type
+type TypeName generic.Type
 
-// TypeList represents an array of Type
-type TypeList []*Type
+// TypeNameList represents an array of TypeName
+type TypeNameList []*TypeName
 
-func (list TypeList) init(config *TerragruntConfigFile) { list.toGeneric().init(config) }
-
-func (list *TypeList) merge(imported TypeList, mode mergeMode, argName string) {
-	*list = toTypeList(merge(list.toGeneric(), imported.toGeneric(), mode, argName))
+func (list TypeNameList) init(config *TerragruntConfigFile) error {
+	return list.toGeneric().init(config)
 }
 
-func (list TypeList) toGeneric(filters ...extensionFilter) extensionList {
+func (list TypeNameList) toGeneric(filters ...extensionFilter) extensionList {
 	return filterExtensions(list, filters)
 }
 
-func toTypeList(list []terragruntExtensioner) TypeList {
-	return convert(list, TypeList{}).(TypeList)
+func (list *TypeNameList) merge(data extensionList) {
+	*list = toTypeNameList(merge(list.toGeneric(), data, list.mergeMode()))
+}
+
+func toTypeNameList(list []terragruntExtensioner) TypeNameList {
+	converted := convert(list, TypeNameList{}).(TypeNameList)
+	return converted
+}
+
+func (item TypeName) itemType() string {
+	return TypeNameList{}.argName()
 }
 
 // Help returns the information relative to the elements within the list
-func (list TypeList) Help(listOnly bool, lookups ...string) string {
-	return help(list.Enabled(), listOnly, lookups...)
+func (list TypeNameList) Help(listOnly bool, lookups ...string) string {
+	enabled := list.Enabled()
+	return help(&enabled, listOnly, lookups...)
 }
 
 // Enabled returns only the enabled items on the list
-func (list TypeList) Enabled() TypeList {
-	return toTypeList(list.toGeneric(extensionEnabled))
+func (list TypeNameList) Enabled() TypeNameList {
+	return toTypeNameList(list.toGeneric(extensionEnabled))
 }
+
+// Filter is used to filter the list on supplied criteria
+func (list TypeNameList) Filter(filter TypeNameFilter) TypeNameList {
+	result := make(TypeNameList, 0, len(list))
+	for _, item := range list.Enabled() {
+		if filter(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// TypeNameFilter describe a function able to filter TypeName from a list
+type TypeNameFilter func(*TypeName) bool

@@ -10,15 +10,14 @@ import (
 // ApprovalConfig represents an `expect` format configuration that instructs terragrunt to wait for input on an ExpectStatement
 // and to exit the command on a CompletedStatement
 type ApprovalConfig struct {
-	TerragruntExtensionBase `hcl:",remain"`
+	TerragruntExtensionIdentified `hcl:",squash"`
 
 	Commands            []string `hcl:"commands"`
 	ExpectStatements    []string `hcl:"expect_statements"`
 	CompletedStatements []string `hcl:"completed_statements"`
 }
 
-func (item ApprovalConfig) itemType() (result string) { return ApprovalConfigList{}.argName() }
-func (item ApprovalConfig) onCommand() []string       { return item.Commands }
+func (item ApprovalConfig) onCommand() []string { return item.Commands }
 
 func (item ApprovalConfig) helpDetails() string {
 	result := "Runs the command"
@@ -34,8 +33,9 @@ func (item ApprovalConfig) String() string {
 
 // ----------------------- ApprovalConfigList -----------------------
 
-//go:generate genny -tag=genny -in=template_extensions.go -out=generated.approval_config.go gen Type=ApprovalConfig
-func (list ApprovalConfigList) argName() string { return "approval_config" }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.approval_config.go gen TypeName=ApprovalConfig
+func (list ApprovalConfigList) argName() string      { return "approval_config" }
+func (list ApprovalConfigList) mergeMode() mergeMode { return mergeModeAppend }
 
 // ShouldBeApproved looks for an approval config that corresponds to the given command. If if exists, it's returned with the value `true`.
 func (list ApprovalConfigList) ShouldBeApproved(command string) (bool, *ApprovalConfig) {
@@ -47,9 +47,4 @@ func (list ApprovalConfigList) ShouldBeApproved(command string) (bool, *Approval
 		}
 	}
 	return false, nil
-}
-
-// Merge elements from an imported list to the current list
-func (list *ApprovalConfigList) Merge(imported ApprovalConfigList) {
-	list.merge(imported, mergeModeAppend, "approval_config")
 }

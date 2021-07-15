@@ -2,33 +2,55 @@
 // Any changes will be lost if this file is regenerated.
 // see https://github.com/cheekybits/genny
 
-// lint:file-ignore U1000 Ignore all unused code, it's generated
+//lint:file-ignore U1000 Ignore all unused code, it's generated
 
 package config
 
 // ApprovalConfigList represents an array of ApprovalConfig
 type ApprovalConfigList []*ApprovalConfig
 
-func (list ApprovalConfigList) init(config *TerragruntConfigFile) { list.toGeneric().init(config) }
-
-func (list *ApprovalConfigList) merge(imported ApprovalConfigList, mode mergeMode, argName string) {
-	*list = toApprovalConfigList(merge(list.toGeneric(), imported.toGeneric(), mode, argName))
+func (list ApprovalConfigList) init(config *TerragruntConfigFile) error {
+	return list.toGeneric().init(config)
 }
 
 func (list ApprovalConfigList) toGeneric(filters ...extensionFilter) extensionList {
 	return filterExtensions(list, filters)
 }
 
+func (list *ApprovalConfigList) merge(data extensionList) {
+	*list = toApprovalConfigList(merge(list.toGeneric(), data, list.mergeMode()))
+}
+
 func toApprovalConfigList(list []terragruntExtensioner) ApprovalConfigList {
-	return convert(list, ApprovalConfigList{}).(ApprovalConfigList)
+	converted := convert(list, ApprovalConfigList{}).(ApprovalConfigList)
+	return converted
+}
+
+func (item ApprovalConfig) itemType() string {
+	return ApprovalConfigList{}.argName()
 }
 
 // Help returns the information relative to the elements within the list
 func (list ApprovalConfigList) Help(listOnly bool, lookups ...string) string {
-	return help(list.Enabled(), listOnly, lookups...)
+	enabled := list.Enabled()
+	return help(&enabled, listOnly, lookups...)
 }
 
 // Enabled returns only the enabled items on the list
 func (list ApprovalConfigList) Enabled() ApprovalConfigList {
 	return toApprovalConfigList(list.toGeneric(extensionEnabled))
 }
+
+// Filter is used to filter the list on supplied criteria
+func (list ApprovalConfigList) Filter(filter ApprovalConfigFilter) ApprovalConfigList {
+	result := make(ApprovalConfigList, 0, len(list))
+	for _, item := range list.Enabled() {
+		if filter(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// ApprovalConfigFilter describe a function able to filter ApprovalConfig from a list
+type ApprovalConfigFilter func(*ApprovalConfig) bool

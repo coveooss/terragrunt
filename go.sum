@@ -162,6 +162,8 @@ github.com/coveooss/multilogger v0.5.2 h1:HmuMT1RTD0d6tkqrrO9FlUBbp2p7QYbcAR6gus
 github.com/coveooss/multilogger v0.5.2/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
 github.com/coveord/go-getter v1.5.12 h1:pIHiTtVZwf/jRL+Evy8OGhoL2VNRnJD7wSju8TMc9fI=
 github.com/coveord/go-getter v1.5.12/go.mod h1:orNH3BTYLu/fIxGIdLjLoAJHWMDQ/UKQr5O4m3iBuoo=
+github.com/coveord/hcl/v2 v2.8.20 h1:Y0L0+LVsCotNjdEqJVi7h4gJ+8ob24mbhU2quGxLKYo=
+github.com/coveord/hcl/v2 v2.8.20/go.mod h1:LtFUggWqp7d1sTMTZrmUbeWks/zOWLavwJzhqR3qB6A=
 github.com/coveord/hcl/v2 v2.8.102 h1:4ZvW6D7YPnVV1Q1KHMqLXdN1jpPfo87eb7qvuK3hoCQ=
 github.com/coveord/hcl/v2 v2.8.102/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
 github.com/coveord/kingpin/v2 v2.3.1/go.mod h1:G7snIuRD09h58XUezPxWrLPuZplFdreCh6cmJZMtNUU=

@@ -17,7 +17,7 @@ import (
 
 // ExtraCommand is a definition of user extra command that should be executed in place of terraform
 type ExtraCommand struct {
-	TerragruntExtensionBase `hcl:",remain"`
+	TerragruntExtensionIdentified `hcl:",squash"`
 
 	Commands     []string          `hcl:"commands,optional"`
 	Aliases      []string          `hcl:"aliases,optional"`
@@ -31,8 +31,6 @@ type ExtraCommand struct {
 	EnvVars      map[string]string `hcl:"env_vars,optional"`
 }
 
-func (item ExtraCommand) itemType() (result string) { return ExtraCommandList{}.argName() }
-
 func (item ExtraCommand) extraInfo() string {
 	return fmt.Sprintf("[%s]", strings.Join(util.RemoveElementFromList(item.list(), item.Name), ", "))
 }
@@ -45,7 +43,7 @@ func (item ExtraCommand) helpDetails() string {
 	return result
 }
 
-func (item *ExtraCommand) normalize() {
+func (item *ExtraCommand) normalize() error {
 	if item.Commands == nil {
 		// There is no list of commands, so we consider the name to be the extra command
 		item.Commands = []string{item.Name}
@@ -61,6 +59,7 @@ func (item *ExtraCommand) normalize() {
 	if item.ExpandArgs == nil {
 		item.ExpandArgs = def(true)
 	}
+	return nil
 }
 
 var validName = regexp.MustCompile(`^[\w\.-]+$`)
@@ -119,16 +118,12 @@ func (item *ExtraCommand) resolveAlias(cmd string) (result string, found bool) {
 
 // ----------------------- ExtraCommandList -----------------------
 
-//go:generate genny -tag=genny -in=template_extensions.go -out=generated.extra_command.go gen Type=ExtraCommand
-func (list ExtraCommandList) argName() string { return "extra_command" }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.extra_command.go gen TypeName=ExtraCommand
+func (list ExtraCommandList) argName() string      { return "extra_command" }
+func (list ExtraCommandList) mergeMode() mergeMode { return mergeModeAppend }
 
 func (list ExtraCommandList) sort() {
 	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })
-}
-
-// Merge elements from an imported list to the current list
-func (list *ExtraCommandList) Merge(imported ExtraCommandList) {
-	list.merge(imported, mergeModeAppend, list.argName())
 }
 
 // GetVersions returns the the list of versions for extra commands that have a version available

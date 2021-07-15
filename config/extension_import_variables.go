@@ -13,7 +13,7 @@ import (
 // the current execution. Variables could be defined either by loading files (required or optional)
 // or defining vairables directly. It is also possible to define global environment variables.
 type ImportVariables struct {
-	TerragruntExtensionBase `hcl:",remain"`
+	TerragruntExtensionIdentified `hcl:",squash"`
 
 	Vars             []string          `hcl:"vars,optional"`
 	RequiredVarFiles []string          `hcl:"required_var_files,optional"`
@@ -24,10 +24,6 @@ type ImportVariables struct {
 	EnvVars          map[string]string `hcl:"env_vars,optional"`
 	OnCommands       []string          `hcl:"on_commands,optional"`
 	SourceFileRegex  string            `hcl:"source_file_regex,optional"`
-}
-
-func (item ImportVariables) itemType() (result string) {
-	return ImportVariablesList{}.argName()
 }
 
 func (item ImportVariables) onCommand() []string { return item.OnCommands }
@@ -55,11 +51,12 @@ func (item ImportVariables) helpDetails() string {
 	return result
 }
 
-func (item *ImportVariables) normalize() {
+func (item *ImportVariables) normalize() error {
 	if len(item.NestedObjects) == 0 {
 		// By default, we load the variables at the root
 		item.NestedObjects = []string{""}
 	}
+	return nil
 }
 
 func (item *ImportVariables) loadVariablesFromFile(file string) error {
@@ -96,13 +93,9 @@ func (item *ImportVariables) loadVariables(newVariables map[string]interface{}, 
 
 // ----------------------- ImportVariablesList -----------------------
 
-//go:generate genny -tag=genny -in=template_extensions.go -out=generated.import_variables.go gen Type=ImportVariables
-func (list ImportVariablesList) argName() string { return "import_variables" }
-
-// Merge elements from an imported list to the current list
-func (list *ImportVariablesList) Merge(imported ImportVariablesList) {
-	list.merge(imported, mergeModePrepend, list.argName())
-}
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.import_variables.go gen TypeName=ImportVariables
+func (list ImportVariablesList) argName() string      { return "import_variables" }
+func (list ImportVariablesList) mergeMode() mergeMode { return mergeModePrepend }
 
 // Import actually process the variables importers to load and define all variables in the current context
 func (list ImportVariablesList) Import() (err error) {

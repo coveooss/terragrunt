@@ -29,6 +29,5 @@ require (
 
 replace (
 	github.com/hashicorp/go-getter => github.com/coveord/go-getter v1.5.12
-	// sum DB is messed up for v2.8.12
-	github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.8.102
+	github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.8.20
 )

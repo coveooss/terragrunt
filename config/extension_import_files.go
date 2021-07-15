@@ -13,7 +13,7 @@ import (
 // ImportFiles is a configuration of files that must be imported from another directory to the terraform directory
 // prior executing terraform commands
 type ImportFiles struct {
-	TerragruntExtensionBase `hcl:",remain"`
+	TerragruntExtensionIdentified `hcl:",squash"`
 
 	Source            string          `hcl:"source,optional"`
 	Files             []string        `hcl:"files"`
@@ -32,9 +32,7 @@ type copyAndRename struct {
 	Target string `hcl:"target"`
 }
 
-func (item ImportFiles) itemType() (result string) { return ImportFilesList{}.argName() }
-
-func (item *ImportFiles) normalize() {
+func (item *ImportFiles) normalize() error {
 	if item.Required == nil {
 		def := true
 		item.Required = &def
@@ -45,6 +43,7 @@ func (item *ImportFiles) normalize() {
 		prefix := reg.ReplaceAllString(util.EncodeBase64Sha1(item.Name), "") + "_"
 		item.Prefix = &prefix
 	}
+	return nil
 }
 
 func (item ImportFiles) helpDetails() string {
@@ -265,25 +264,21 @@ func ensureIsFile(file string) error {
 
 // ----------------------- ImportFilesList -----------------------
 
-//go:generate genny -tag=genny -in=template_extensions.go -out=generated.import_files.go gen Type=ImportFiles
-func (list ImportFilesList) argName() string { return "import_files" }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.import_files.go gen TypeName=ImportFiles
+func (list ImportFilesList) argName() string      { return "import_files" }
+func (list ImportFilesList) mergeMode() mergeMode { return mergeModePrepend }
 
-// Merge elements from an imported list to the current list
-func (list *ImportFilesList) Merge(imported ImportFilesList) {
-	list.merge(imported, mergeModePrepend, list.argName())
-}
-
-// Run execute the content of the list
-func (list ImportFilesList) Run(status error, args ...string) (err error) {
+// Import runs the enabled import_file statements
+func (list ImportFilesList) Import(folders ...string) error {
 	if len(list) == 0 {
-		return
+		return nil
 	}
 
 	for _, item := range list.Enabled() {
 		item.logger().Debugf("Running %s (%s): %s", item.itemType(), item.id(), item.name())
-		if err := item.importFiles(args...); err != nil {
+		if err := item.importFiles(folders...); err != nil {
 			return err
 		}
 	}
-	return
+	return nil
 }

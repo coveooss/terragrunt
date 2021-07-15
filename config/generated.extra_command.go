@@ -2,33 +2,55 @@
 // Any changes will be lost if this file is regenerated.
 // see https://github.com/cheekybits/genny
 
-// lint:file-ignore U1000 Ignore all unused code, it's generated
+//lint:file-ignore U1000 Ignore all unused code, it's generated
 
 package config
 
 // ExtraCommandList represents an array of ExtraCommand
 type ExtraCommandList []*ExtraCommand
 
-func (list ExtraCommandList) init(config *TerragruntConfigFile) { list.toGeneric().init(config) }
-
-func (list *ExtraCommandList) merge(imported ExtraCommandList, mode mergeMode, argName string) {
-	*list = toExtraCommandList(merge(list.toGeneric(), imported.toGeneric(), mode, argName))
+func (list ExtraCommandList) init(config *TerragruntConfigFile) error {
+	return list.toGeneric().init(config)
 }
 
 func (list ExtraCommandList) toGeneric(filters ...extensionFilter) extensionList {
 	return filterExtensions(list, filters)
 }
 
+func (list *ExtraCommandList) merge(data extensionList) {
+	*list = toExtraCommandList(merge(list.toGeneric(), data, list.mergeMode()))
+}
+
 func toExtraCommandList(list []terragruntExtensioner) ExtraCommandList {
-	return convert(list, ExtraCommandList{}).(ExtraCommandList)
+	converted := convert(list, ExtraCommandList{}).(ExtraCommandList)
+	return converted
+}
+
+func (item ExtraCommand) itemType() string {
+	return ExtraCommandList{}.argName()
 }
 
 // Help returns the information relative to the elements within the list
 func (list ExtraCommandList) Help(listOnly bool, lookups ...string) string {
-	return help(list.Enabled(), listOnly, lookups...)
+	enabled := list.Enabled()
+	return help(&enabled, listOnly, lookups...)
 }
 
 // Enabled returns only the enabled items on the list
 func (list ExtraCommandList) Enabled() ExtraCommandList {
 	return toExtraCommandList(list.toGeneric(extensionEnabled))
 }
+
+// Filter is used to filter the list on supplied criteria
+func (list ExtraCommandList) Filter(filter ExtraCommandFilter) ExtraCommandList {
+	result := make(ExtraCommandList, 0, len(list))
+	for _, item := range list.Enabled() {
+		if filter(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+// ExtraCommandFilter describe a function able to filter ExtraCommand from a list
+type ExtraCommandFilter func(*ExtraCommand) bool
