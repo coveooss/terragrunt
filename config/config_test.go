@@ -603,6 +603,30 @@ func TestParseTerragruntConfigTerraformWithMultipleExtraArguments(t *testing.T) 
 	assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.ExtraArgs[3].Commands)
 }
 
+func TestParseTerragruntConfigTerraformWithHooks(t *testing.T) {
+	t.Parallel()
+
+	config := `
+	pre_hook "pre_test" {
+		description = "This is just a pre hook test"
+	}
+
+	post_hook "post_test" {
+		description = "This is just a post hook test"
+	}
+	`
+
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Nil(t, terragruntConfig.RemoteState)
+	assert.Nil(t, terragruntConfig.Dependencies)
+	assert.Equal(t, terragruntConfig.PreHooks[0].Name, "pre_test")
+	assert.Equal(t, terragruntConfig.PostHooks[0].Name, "post_test")
+}
+
 func TestFindConfigFilesInPathOneNewConfig(t *testing.T) {
 	t.Parallel()
 

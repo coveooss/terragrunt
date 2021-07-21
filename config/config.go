@@ -360,7 +360,6 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 }
 
 var configFiles sync.Map
-var deprecatedHookWarning sync.Once
 
 // Parse the Terragrunt config contained in the given string.
 func parseConfigString(configString string, terragruntOptions *options.TerragruntOptions, include IncludeConfig) (config *TerragruntConfig, err error) {
@@ -368,17 +367,6 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	// TODO: actually convert structure to ensure that fields are also compatible (i.e. commands => on_commands, execute[] => string, run_on_error => IgnoreError)
 	configString = strings.Replace(configString, "before_hook", "pre_hook", -1)
 	configString = strings.Replace(configString, "after_hook", "post_hook", -1)
-
-	before := configString
-	// pre_hooks & post_hooks have been renamed to pre_hook & post_hook, we support old naming to avoid breaking change
-	configString = strings.Replace(configString, "pre_hooks", "pre_hook", -1)
-	configString = strings.Replace(configString, "post_hooks", "post_hook", -1)
-	if before != configString {
-		deprecatedHookWarning.Do(func() {
-			// We should issue this warning only once
-			terragruntOptions.Logger.Warning("pre_hooks/post_hooks are deprecated, please use pre_hook/post_hook instead")
-		})
-	}
 
 	includeContext := &resolveContext{
 		include: include,
