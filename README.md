@@ -95,10 +95,11 @@ possible to override the name used to identify the assumed role by specifying a 
 
 It is possible to set conditions that must be met in order for a project to be executed. To do so, the following block must be defined in the terragrunt configuration file:
 
-* All conditions within a `condition` attribute must be true to apply the rule (logical and between elements).  
-* If any block marked `ignore_if_true` is true, the code is not executed (logical or between elements).  
-* If any block *NOT* marked `ignore_if_true` is true, the code is executed (logical or between element).  
-* *Important: `ignore_if_true` blocks always take precedence over those that aren't*  
+* All conditions within a `condition` attribute must be true to apply the rule (logical `AND` between elements).
+* Only one `run_conditions` must be True to apply the rule (logical `OR` between elements)
+* If any block marked `ignore_if_true` is true, the code is not executed (logical `OR` between elements).  
+* If any block *NOT* marked `ignore_if_true` is true, the code is executed (logical `OR` between element).  
+* *Important: `ignore_if_true` blocks always take precedence over those that aren't* 
 
 ```hcl
 run_conditions {
