@@ -1,0 +1,129 @@
+Summary:
+    maestro-infrastructure : 0 to add, 2 to change, 0 to destroy.
+[terragrunt]   ( ) INFO     There are 2 changes to apply
+INFO     Checking plan output file: maestro_infrastructure.json
+INFO     ConfigStore initialized with region us-east-1
+INFO     Reading the Terraform plan validation configuration from s3://coveo-bootstrap-us-east-1/deployment-pipeline/terraform-validation-rules.yml
+INFO     Found TGF version 3.13 in terraform/deployment
+INFO     Reading package information for maestro/maestro/8c9acaf812ba_maestro_1.39.52
+INFO     Not running in dep: current caller IAM role is not in the dep account
+INFO     Returning without sending a message because mode is set to disabled
+INFO     Reading package information for maestro/maestro/8c9acaf812ba_maestro_1.39.52
+INFO     Reading package information for maestro/maestro/8c9acaf812ba_maestro_1.39.52
+INFO     Additional environment variables for tgf invocation:
+INFO       AWS_REGION=us-east-1
+INFO       TF_IN_AUTOMATION=true
+INFO       MAX_DIFF=0
+INFO       HOME=/home/jenkins/slaves/workspace/deploy-pipeline-terraform@4
+INFO       TGF_K8S_LABELS_JSON={"pipeline.dep.cloud.coveo.com/phase-id": "terraform", "pipeline.dep.cloud.coveo.com/product": "maestro", "pipeline.dep.cloud.coveo.com/repository": "github-maestro", "pipeline.dep.cloud.coveo.com/team-name": "ctinfra"}
+INFO       TGF_K8S_ANNOTATIONS_JSON={"moniker.spinnaker.io/application": "ctinframaestro"}
+INFO     Running TGF in directory: /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4/terraform/deployment
+tgf --no-interactive --docker-arg=--tty --temp-location=none "--docker-arg=-v /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4:/home/jenkins/slaves/workspace/deploy-pipeline-terraform@4" -- apply-all --terragrunt-non-interactive --terragrunt-logging-level info --terragrunt-source-update -var env=dev -var region=us-east-1
+3.13-aws: Pulling from tgf
+Digest: sha256:92e87f2bb497b8b508d052cea4309a0ff6f76e51946821202d43c9eba32997d1
+Status: Image is up to date for 458176070654.dkr.ecr.us-east-1.amazonaws.com/tgf:3.13-aws
+458176070654.dkr.ecr.us-east-1.amazonaws.com/tgf:3.13-aws
+
+terragrunt Stack at /current_sources/jenkins/slaves/workspace/deploy-pipeline-terraform@4/terraform/deployment:
+  => Module maestro-infrastructure (dependencies: [])
+Are you sure you want to run 'terragrunt apply' in each folder of the stack described above? (y/n) [terragrunt]   () INFO     
+The non-interactive flag is set to true, so assuming 'yes' for all prompts
+[terragrunt:maestro-infrastructure]   ( ) INFO     Running terragrunt on /current_sources/jenkins/slaves/workspace/deploy-pipeline-terraform@4/terraform/deployment/maestro-infrastructure
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (delete-linked-providers): Deleting all provider symlinks in local Terraform cache
+[terragrunt:maestro-infrastructure]   () INFO     Assumed role arn:aws:sts::064790157154:assumed-role/dev-terraform-deploy/terragrunt-Unknown-56EFCF for 3h59m59.23735
+[gotemplate-internal]   () INFO     Writing file _bootstrap_outputs.tf
+[gotemplate-internal]   () INFO     Writing file _bootstrap_providers.tf
+[terragrunt:maestro-infrastructure]   () INFO     File(s) modified by go template: _bootstrap_outputs.tf, _bootstrap_providers.tf
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (set-tgf-context): Initialize the current execution configuration
+[terragrunt:maestro-infrastructure]   () WARNING  Unable to use 10.6.8.5 as DNS Server. Did you configure your VPN properly?
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (apply-gotemplate): Apply go template
+[terragrunt:maestro-infrastructure]   () INFO     Running Terraform init
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (prepare-state): Prepare state
+[terragrunt:maestro-infrastructure]   ( ) INFO     Running command: Hide secrets in Terraform apply -lock-timeout=20m -input=false -auto-approve -input=false -var env=dev -var region=us-east-1
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (export-outputs): Export outputs
+[terragrunt:maestro-infrastructure]   () INFO     Still waiting for task to complete
+------------------------------------------------------------------------------------------------------------------------------------
+Worker #1: maestro-infrastructure (partial output):
+
+aws_s3_bucket_object.maestro_setup: Refreshing state... [id=connectors/crawling-modules/Maestro-setup.exe]
+aws_s3_bucket_object.maestro: Refreshing state... [id=connectors/crawling-modules/Maestro-Updater.zip]
+aws_s3_bucket_object.maestro: Modifying... [id=connectors/crawling-modules/Maestro-Updater.zip]
+aws_s3_bucket_object.maestro: Modifications complete after 2s [id=connectors/crawling-modules/Maestro-Updater.zip]
+aws_s3_bucket_object.maestro_setup: Modifying... [id=connectors/crawling-modules/Maestro-setup.exe]
+aws_s3_bucket_object.maestro_setup: Still modifying... [id=connectors/crawling-modules/Maestro-setup.exe, elapsed]
+aws_s3_bucket_object.maestro_setup: Modifications complete after [id=connectors/crawling-modules/Maestro-setup.exe]
+
+Apply complete! Resources: 0 added, 2 changed, 0 destroyed.
+
+Outputs:
+
+terraform_version = "0.14.7"
+tgf_version = "3.13"
+
+
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (check-for-deprecated-variables): check-for-deprecated-variables
+[terragrunt:maestro-infrastructure]   () INFO     Running hooks (cleanup-files): Cleanup files
+[terragrunt:maestro-infrastructure]   () INFO     Module Worker #1: maestro-infrastructure has finished successfully!
+------------------------------------------------------------------------------------------------------------------------------------
+Worker #1: maestro-infrastructure
+
+aws_s3_bucket_object.maestro_setup: Refreshing state... [id=connectors/crawling-modules/Maestro-setup.exe]
+aws_s3_bucket_object.maestro: Refreshing state... [id=connectors/crawling-modules/Maestro-Updater.zip]
+aws_s3_bucket_object.maestro: Modifying... [id=connectors/crawling-modules/Maestro-Updater.zip]
+aws_s3_bucket_object.maestro: Modifications complete after 2s [id=connectors/crawling-modules/Maestro-Updater.zip]
+aws_s3_bucket_object.maestro_setup: Modifying... [id=connectors/crawling-modules/Maestro-setup.exe]
+aws_s3_bucket_object.maestro_setup: Still modifying... [id=connectors/crawling-modules/Maestro-setup.exe, elapsed]
+aws_s3_bucket_object.maestro_setup: Modifications complete after [id=connectors/crawling-modules/Maestro-setup.exe]
+
+Apply complete! Resources: 0 added, 2 changed, 0 destroyed.
+
+Outputs:
+
+terraform_version = "0.14.7"
+tgf_version = "3.13"
+
+INFO     Reading package information for maestro/maestro/8c9acaf812ba_maestro_1.39.52
+INFO     Returning without sending a message because mode is set to disabled
+INFO     Writing usage metrics to the API
+INFO     Writing audit log to s3://coveo-deployment-package-audit-us-east-1/CLILogs/terraform/plan-all/jenkins/20210824-201408
++ printf 0
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] echo
+{"build_status": "SUCCESS", "monitoring_result": null}
+[Pipeline] readJSON
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+$ docker stop --time=1 5b3c4c349d23bd2dcb2ff560275fc9a3303ff136768fe63fa2cc09f19053b7be
+$ docker rm -f 5b3c4c349d23bd2dcb2ff560275fc9a3303ff136768fe63fa2cc09f19053b7be
+[Pipeline] // withDockerContainer
+[Pipeline] dir
+Running in /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4
+[Pipeline] {
+[Pipeline] archiveArtifacts
+Archiving artifacts
+[Pipeline] archiveArtifacts
+Archiving artifacts
+‘spinnaker_properties.json’ doesn’t match anything
+No artifacts found that match the file pattern "spinnaker_properties.json". Configuration error?
+[Pipeline] }
+[Pipeline] // dir
+[Pipeline] isUnix
+[Pipeline] isUnix
+[Pipeline] sh
++ rm -rf /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4/debug_logs /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4/terraform /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4/.docker
+[Pipeline] echo
+Deleted /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4/* /home/jenkins/slaves/workspace/deploy-pipeline-terraform@4/.[!.]*
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withCredentials
+[Pipeline] }
+[Pipeline] // timestamps
+[Pipeline] }
+[Pipeline] // wrap
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] End of Pipeline
+Finished: SUCCESS
