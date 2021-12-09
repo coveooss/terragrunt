@@ -33,7 +33,7 @@ func (hookType HookType) String() string {
 	case PostHookType:
 		return "post_hook"
 	default:
-		return fmt.Sprintf("(invalid hook type %d!)", hookType)
+		panic(fmt.Sprintf("Could not convert HookType (internal value: %d) to string.", hookType))
 	}
 }
 
