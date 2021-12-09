@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"io/ioutil"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -34,6 +36,75 @@ func TestParseTerragruntConfigRemoteStateMinimalConfig(t *testing.T) {
 		assert.Equal(t, "s3", terragruntConfig.RemoteState.Backend)
 		assert.Empty(t, terragruntConfig.RemoteState.Config)
 	}
+}
+
+func TestParseTerragruntConfigHooks(t *testing.T) {
+	config := `
+		pre_hook "pre_hook_1" {
+			command = "echo hello from pre_hook 1"
+		}
+		pre_hook "pre_hook_2" {
+			command = "echo hello from pre_hook 2"
+		}
+		post_hook "post_hook_1" {
+			command = "echo hello from post_hook 1"
+		}
+		post_hook "post_hook_2" {
+			command = "echo hello from post_hook 2"
+		}
+	`
+
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// During these tests, we don't care about the config references that are sprinkled everywhere
+	for idx := range terragruntConfig.PreHooks {
+		terragruntConfig.PreHooks[idx]._config = nil
+	}
+	for idx := range terragruntConfig.PostHooks {
+		terragruntConfig.PostHooks[idx]._config = nil
+	}
+
+	assert.Equal(t,
+		HookList{
+			Hook{
+				TerragruntExtensionBase: TerragruntExtensionBase{
+					Name: "pre_hook_1",
+				},
+				Type:    PreHookType,
+				Command: "echo hello from pre_hook 1",
+			},
+			Hook{
+				TerragruntExtensionBase: TerragruntExtensionBase{
+					Name: "pre_hook_2",
+				},
+				Type:    PreHookType,
+				Command: "echo hello from pre_hook 2",
+			},
+		},
+		terragruntConfig.PreHooks,
+	)
+	assert.Equal(t,
+		HookList{
+			Hook{
+				TerragruntExtensionBase: TerragruntExtensionBase{
+					Name: "post_hook_1",
+				},
+				Type:    PostHookType,
+				Command: "echo hello from post_hook 1",
+			},
+			Hook{
+				TerragruntExtensionBase: TerragruntExtensionBase{
+					Name: "post_hook_2",
+				},
+				Type:    PostHookType,
+				Command: "echo hello from post_hook 2",
+			},
+		},
+		terragruntConfig.PostHooks,
+	)
 }
 
 func TestParseTerragruntConfigRemoteStateMissingBackend(t *testing.T) {
@@ -131,7 +202,7 @@ func TestParseTerragruntConfigRemoteStateDynamoDbTerraformConfigAndDependenciesF
 		terraform {
 			source = "foo"
 		}
-	
+
 		remote_state {
 			backend = "s3"
 			config = {
@@ -141,7 +212,7 @@ func TestParseTerragruntConfigRemoteStateDynamoDbTerraformConfigAndDependenciesF
 				region = "us-east-1"
 			}
 		}
-	
+
 		dependencies {
 			paths = ["../vpc", "../mysql", "../backend-app"]
 		}
@@ -227,7 +298,7 @@ func TestParseTerragruntConfigIncludeOverrideRemote(t *testing.T) {
 		  include {
 		    path = "../../../%s"
 		  }
-	  
+
 		  # Configure Terragrunt to automatically store tfstate files in an S3 bucket
 		  remote_state {
 		    backend = "s3"
@@ -263,11 +334,11 @@ func TestParseTerragruntConfigIncludeOverrideAll(t *testing.T) {
 		  include {
 		    path = "../../../%s"
 		  }
-	  
+
 		  terraform {
 		    source = "foo"
 		  }
-	  
+
 		  # Configure Terragrunt to automatically store tfstate files in an S3 bucket
 		  remote_state {
 		    backend = "s3"
@@ -278,7 +349,7 @@ func TestParseTerragruntConfigIncludeOverrideAll(t *testing.T) {
 		      region = "override"
 		    }
 		  }
-	  
+
 		  dependencies {
 		    paths = ["override"]
 		  }
@@ -386,6 +457,34 @@ func TestParseInvalid(t *testing.T) {
 	config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest("../test/fixture-noconfig/invalid/" + DefaultConfigName + ".invalid"))
 	assert.NotNil(t, err)
 	assert.Nil(t, config)
+}
+
+func TestReadTerragruntConfigHooksAreInitalized(t *testing.T) {
+	t.Parallel()
+
+	fixturesDir := "../test/fixture-hooks"
+
+	files, err := ioutil.ReadDir(fixturesDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, file := range files {
+		if file.IsDir() {
+			fixturePath := path.Join(fixturesDir, file.Name())
+			t.Run(fixturePath, func(t *testing.T) {
+				config, err := ReadTerragruntConfig(options.NewTerragruntOptionsForTest(path.Join(fixturePath, DefaultConfigName)))
+				assert.Nil(t, err)
+
+				for _, hook := range config.PreHooks {
+					assert.Equal(t, PreHookType, hook.Type)
+				}
+				for _, hook := range config.PostHooks {
+					assert.Equal(t, PostHookType, hook.Type)
+				}
+			})
+		}
+	}
 }
 
 type argConfig struct {
@@ -551,7 +650,7 @@ func TestParseTerragruntConfigTerraformWithMultipleExtraArguments(t *testing.T) 
 		        "output"
 		      ]
 		    }
-		
+
 		    extra_arguments "fmt_diff" {
 		      arguments = [
 		        "-diff=true"
@@ -560,7 +659,7 @@ func TestParseTerragruntConfigTerraformWithMultipleExtraArguments(t *testing.T) 
 		        "fmt"
 		      ]
 		    }
-		
+
 		    extra_arguments "required_tfvars" {
 		      required_var_files = [
 		        "file1.tfvars",
@@ -568,7 +667,7 @@ func TestParseTerragruntConfigTerraformWithMultipleExtraArguments(t *testing.T) 
 		      ]
 		      commands = get_terraform_commands_that_need_vars()
 		    }
-		
+
 		    extra_arguments "optional_tfvars" {
 		      optional_var_files = [
 		        "opt1.tfvars",

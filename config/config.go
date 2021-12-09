@@ -251,7 +251,6 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 	include := IncludeConfig{Path: terragruntOptions.TerragruntConfigPath}
 	_, conf, err := ParseConfigFile(terragruntOptions, include)
 	if err == nil {
-		conf.initializeHooks()
 		return conf, nil
 	}
 	switch tgerrors.Unwrap(err).(type) {
@@ -410,6 +409,8 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 
 	terragruntOptions.ImportVariablesMap(config.Inputs, options.ConfigVarFile)
 	terragruntOptions.Logger.Tracef("Loaded configuration\n%v", color.GreenString(fmt.Sprint(terragruntConfigFile)))
+
+	config.initializeHooks()
 
 	if !path.IsAbs(include.Path) {
 		include.Path, _ = filepath.Abs(include.Path)
