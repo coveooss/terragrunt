@@ -251,6 +251,7 @@ func ReadTerragruntConfig(terragruntOptions *options.TerragruntOptions) (*Terrag
 	include := IncludeConfig{Path: terragruntOptions.TerragruntConfigPath}
 	_, conf, err := ParseConfigFile(terragruntOptions, include)
 	if err == nil {
+		conf.initializeHooks()
 		return conf, nil
 	}
 	switch tgerrors.Unwrap(err).(type) {
@@ -435,6 +436,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	}
 
 	config.mergeIncludedConfig(*includedConfig, terragruntOptions)
+
 	return
 }
 

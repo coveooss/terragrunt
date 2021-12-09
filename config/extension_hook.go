@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/coveooss/gotemplate/v3/utils"
 	"github.com/coveooss/terragrunt/v2/options"
@@ -15,10 +16,32 @@ import (
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
+type HookType int
+
+const (
+	UnsetHookType HookType = iota
+	PreHookType
+	PostHookType
+)
+
+func (hookType HookType) String() string {
+	switch hookType {
+	case UnsetHookType:
+		return "(unset hook type!)"
+	case PreHookType:
+		return "pre_hook"
+	case PostHookType:
+		return "post_hook"
+	default:
+		return fmt.Sprintf("(invalid hook type %d!)", hookType)
+	}
+}
+
 // Hook is a definition of user command that should be executed as part of the terragrunt process
 type Hook struct {
 	TerragruntExtensionBase `hcl:",remain"`
 
+	Type              HookType
 	Command           string            `hcl:"command"`
 	Arguments         []string          `hcl:"arguments,optional"`
 	ExpandArgs        bool              `hcl:"expand_args,optional"`
@@ -64,15 +87,20 @@ func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
 	}
 
 	if !hook.enabled() {
-		logger.Debugf("Hook %s skipped, executed only on %v", hook.Name, hook.OS)
+		logger.Debugf("%s %s skipped, executed only on %v", hook.Type, hook.Name, hook.OS)
 		return
 	}
 
-	logger.Infof("Running %s (%s): %s", hook.itemType(), hook.id(), hook.name())
+	logger.Infof("Running %s (%s): %s", hook.Type, hook.id(), hook.name())
+
+	startTime := time.Now()
+	defer func() {
+		logger.Debugf("Hook timings: %s %s ran in %s", hook.Type, hook.id(), time.Since(startTime))
+	}()
 
 	hook.Command = strings.TrimSpace(hook.Command)
 	if len(hook.Command) == 0 {
-		logger.Debugf("Hook %s skipped, no command to execute", hook.Name)
+		logger.Debugf("%s %s skipped, no command to execute", hook.Type, hook.Name)
 		return
 	}
 
@@ -146,6 +174,16 @@ func (list HookList) Filter(filter HookFilter) HookList {
 		}
 	}
 	return result
+}
+
+func (config *TerragruntConfig) initializeHooks() {
+	for idx := range config.PreHooks {
+		config.PreHooks[idx].Type = PreHookType
+	}
+
+	for idx := range config.PostHooks {
+		config.PostHooks[idx].Type = PostHookType
+	}
 }
 
 // HookFilter is used to filter the hook on supplied criteria
