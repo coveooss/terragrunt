@@ -115,7 +115,7 @@ func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDir(t *te
 func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirDifferentVersion(t *testing.T) {
 	t.Parallel()
 
-	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v0.9.7"
+	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=download_test"
 	downloadDir := tmpDir(t)
 	defer os.Remove(downloadDir)
 
@@ -127,7 +127,7 @@ func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirDiffer
 func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirSameVersion(t *testing.T) {
 	t.Parallel()
 
-	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v0.9.7"
+	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=download_test"
 	downloadDir := tmpDir(t)
 	defer os.Remove(downloadDir)
 
@@ -139,7 +139,7 @@ func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirSameVe
 func TestDownloadTerraformSourceIfNecessaryRemoteUrlOverrideSource(t *testing.T) {
 	t.Parallel()
 
-	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v0.9.7"
+	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=download_test"
 	downloadDir := tmpDir(t)
 	defer os.Remove(downloadDir)
 

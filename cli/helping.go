@@ -52,7 +52,7 @@ func PrintDoc(terragruntOptions *options.TerragruntOptions, conf *config.Terragr
 			}
 		}
 
-		terragruntOptions.Printf(format, collections.IndentN(content, 4))
+		terragruntOptions.Printf(format, collections.IndentN(content, 2))
 		if *listOnly && content != "" {
 			terragruntOptions.Println()
 		}

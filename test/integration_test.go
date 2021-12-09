@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -52,6 +53,8 @@ func TestTerragruntWorksWithLocalTerraformVersion(t *testing.T) {
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
 	defer cleanupTableForTest(t, lockTableName, terraformRemoteStateS3Region)
+	defer os.Remove(path.Join(testFixturePath, ".terraform.lock.hcl"))
+	defer os.RemoveAll(path.Join(testFixturePath, ".terraform"))
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, testFixturePath))
 	validateS3BucketExists(t, terraformRemoteStateS3Region, s3BucketName)
@@ -74,6 +77,8 @@ func TestTerragruntWorksWithIncludes(t *testing.T) {
 	tmpTerragruntConfigPath := createTmpTerragruntConfigWithParentAndChild(t, testPath, relative, s3BucketName, config.DefaultConfigName, config.DefaultConfigName)
 
 	defer deleteS3Bucket(t, terraformRemoteStateS3Region, s3BucketName)
+	defer os.Remove(path.Join(testPath, relative, ".terraform.lock.hcl"))
+	defer os.RemoveAll(path.Join(testPath, relative, ".terraform"))
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 }
@@ -360,10 +365,8 @@ func TestRemoteWithBackend(t *testing.T) {
 
 	s3BucketName := fmt.Sprintf("terragrunt-test-bucket-%s", strings.ToLower(uniqueID()))
 	lockTableName := fmt.Sprintf("terragrunt-lock-table-%s", strings.ToLower(uniqueID()))
-
 	tmpEnvPath := copyEnvironment(t, testPath)
 	rootPath := util.JoinPath(tmpEnvPath, testPath)
-
 	rootTerragruntConfigPath := util.JoinPath(rootPath, config.DefaultConfigName)
 	copyTerragruntConfigAndFillPlaceholders(t, rootTerragruntConfigPath, rootTerragruntConfigPath, s3BucketName, lockTableName)
 

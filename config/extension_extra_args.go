@@ -1,5 +1,3 @@
-//lint:file-ignore U1000 Ignore all unused code, it's generated
-
 package config
 
 import (
@@ -9,9 +7,9 @@ import (
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
-// TerraformExtraArguments sets a list of arguments to pass to Terraform if command fits any in the `Commands` list
-type TerraformExtraArguments struct {
-	TerragruntExtensionBase `hcl:",remain"`
+// ExtraArguments sets a list of arguments to pass to Terraform if command fits any in the `Commands` list
+type ExtraArguments struct {
+	TerragruntExtensionIdentified `hcl:",squash"`
 
 	Source           string            `hcl:"source,optional"`
 	Arguments        []string          `hcl:"arguments,optional"`
@@ -21,41 +19,29 @@ type TerraformExtraArguments struct {
 	EnvVars          map[string]string `hcl:"env_vars,optional"`
 }
 
-func (item TerraformExtraArguments) itemType() (result string) {
-	return TerraformExtraArgumentsList{}.argName()
-}
+func (item ExtraArguments) onCommand() []string { return item.Commands }
 
-func (item TerraformExtraArguments) help() (result string) {
-	if item.Description != "" {
-		result += fmt.Sprintf("\n%s\n", item.Description)
-	}
-	if item.Commands != nil {
-		result += fmt.Sprintf("\nApplies on the following command(s): %s\n", strings.Join(item.Commands, ", "))
-	}
+func (item ExtraArguments) helpDetails() string {
+	var result string
 	if item.Arguments != nil {
 		result += fmt.Sprintf("\nAutomatically add the following parameter(s): %s\n", strings.Join(item.Arguments, ", "))
 	}
-	return
+	return result
 }
 
 // ----------------------- TerraformExtraArgumentsList -----------------------
 
-//go:generate genny -in=extension_base_list.go -out=generated_extra_args.go gen "GenericItem=TerraformExtraArguments"
-func (list TerraformExtraArgumentsList) argName() string                   { return "extra_arguments" }
-func (list TerraformExtraArgumentsList) sort() TerraformExtraArgumentsList { return list }
+//go:generate genny -tag=genny -in=template_extensions.go -out=generated.extra_args.go gen TypeName=ExtraArguments
+func (list ExtraArgumentsList) argName() string      { return "extra_arguments" }
+func (list ExtraArgumentsList) mergeMode() mergeMode { return mergeModePrepend }
 
-// Merge elements from an imported list to the current list
-func (list *TerraformExtraArgumentsList) Merge(imported TerraformExtraArgumentsList) {
-	list.merge(imported, mergeModePrepend, list.argName())
-}
-
-// Filter applies extra_arguments to the current configuration
-func (list TerraformExtraArgumentsList) Filter(source string) (result []string, err error) {
+// Apply applies extra_arguments to the current configuration
+func (list ExtraArgumentsList) Apply(source string) (result []string, err error) {
 	if len(list) == 0 {
 		return nil, nil
 	}
 
-	config := ITerraformExtraArguments(&list[0]).config()
+	config := list[0].config()
 	terragruntOptions := config.options
 
 	out := []string{}

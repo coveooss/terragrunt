@@ -394,12 +394,15 @@ type argConfig struct {
 }
 
 func getExtraArgsConfig(options *options.TerragruntOptions, argConfigs ...argConfig) TerragruntConfig {
-	args := []TerraformExtraArguments{}
+	args := ExtraArgumentsList{}
 	for _, argConfig := range argConfigs {
-		base := TerragruntExtensionBase{Name: argConfig.name}
-		base.init(&TerragruntConfigFile{})
-		base.config().options = options
-		args = append(args, TerraformExtraArguments{TerragruntExtensionBase: base, Arguments: argConfig.extraArgs})
+		arg := ExtraArguments{
+			TerragruntExtensionIdentified: TerragruntExtensionIdentified{Name: argConfig.name},
+			Arguments:                     argConfig.extraArgs,
+		}
+		arg.init(&TerragruntConfigFile{}, &arg)
+		arg.config().options = options
+		args = append(args, &arg)
 	}
 	return TerragruntConfig{ExtraArgs: args}
 }
@@ -598,6 +601,30 @@ func TestParseTerragruntConfigTerraformWithMultipleExtraArguments(t *testing.T) 
 	assert.Equal(t, "optional_tfvars", terragruntConfig.ExtraArgs[3].Name)
 	assert.Equal(t, []string{"opt1.tfvars", "opt2.tfvars"}, terragruntConfig.ExtraArgs[3].OptionalVarFiles)
 	assert.Equal(t, TerraformCommandWithVarFile, terragruntConfig.ExtraArgs[3].Commands)
+}
+
+func TestParseTerragruntConfigTerraformWithHooks(t *testing.T) {
+	t.Parallel()
+
+	config := `
+	pre_hook "pre_test" {
+		description = "This is just a pre hook test"
+	}
+
+	post_hook "post_test" {
+		description = "This is just a post hook test"
+	}
+	`
+
+	terragruntConfig, err := parseConfigString(config, mockOptions, mockDefaultInclude)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Nil(t, terragruntConfig.RemoteState)
+	assert.Nil(t, terragruntConfig.Dependencies)
+	assert.Equal(t, terragruntConfig.PreHooks[0].Name, "pre_test")
+	assert.Equal(t, terragruntConfig.PostHooks[0].Name, "post_test")
 }
 
 func TestFindConfigFilesInPathOneNewConfig(t *testing.T) {

@@ -1,9 +1,10 @@
 data "template_file" "test" {
-  template = "${module.hello.hello}, ${var.name}"
+  template = "hello remote from ${module.hello.hello}\n${module.remote.test}"
 }
 
 variable "name" {
   description = "Specify a name"
+  default     = "local"
 }
 
 output "test" {
@@ -12,6 +13,7 @@ output "test" {
 
 module "hello" {
   source = "./hello"
+  name   = var.name
 }
 
 module "remote" {

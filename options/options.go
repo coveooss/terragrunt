@@ -461,7 +461,7 @@ const (
 	FunctionOverwrite
 )
 
-//go:generate stringer -type=VariableSource -output generated_variable_source.go
+//go:generate stringer -type=VariableSource -output generated.variable_source.go
 
 // SetVariableResult indicates the status of trying to add a variable to the options
 type SetVariableResult byte
@@ -474,7 +474,7 @@ const (
 	SetVariableResultCount
 )
 
-//go:generate stringer -type=SetVariableResult -output generated_set_variables.go
+//go:generate stringer -type=SetVariableResult -output generated.set_variables.go
 
 // ErrRunTerragruntCommandNotSet is a custom error
 var ErrRunTerragruntCommandNotSet = fmt.Errorf("the RunTerragrunt option has not been set on this TerragruntOptions object")

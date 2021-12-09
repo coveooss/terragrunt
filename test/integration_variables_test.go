@@ -108,17 +108,17 @@ func TestTerragruntImportVariables(t *testing.T) {
 		// This tests that values exported to the `terraform.tfvars` file support lists of a single element (issue in HCL1)
 		{
 			project:        "fixture-variables/list",
-			expectedOutput: []string{`example = [{"var1":"value1","var2":"value2"}]`},
+			expectedOutput: []string{`example = "[{\"var1\":\"value1\",\"var2\":\"value2\"}]"`},
 		},
 		// This tests that values loaded from tfvars files support lists of a single element (issue in HCL1)
 		{
 			project:        "fixture-variables/list_from_tfvars",
-			expectedOutput: []string{`example = [{"var1":"value3","var2":"value4"}]`},
+			expectedOutput: []string{`example = "[{\"var1\":\"value3\",\"var2\":\"value4\"}]"`},
 		},
 		// This tests that values loaded from inputs support lists of a single element (issue in HCL1)
 		{
 			project:        "fixture-variables/list_from_inputs",
-			expectedOutput: []string{`example = [{"var1":"value5","var2":"value6"}]`},
+			expectedOutput: []string{`example = "[{\"var1\":\"value5\",\"var2\":\"value6\"}]"`},
 		},
 		// This tests that duplicated structure level can be acceded by skiping one level
 		{

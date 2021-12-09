@@ -19,7 +19,6 @@ import (
 	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
-	"github.com/hashicorp/terraform/configs"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -242,7 +241,7 @@ func runCommand(command string, terragruntOptions *options.TerragruntOptions) (f
 		"Version":              terragruntVersion,
 		"AwsProfile":           terragruntOptions.AwsProfile,
 		"DownloadDir":          terragruntOptions.DownloadDir,
-		"LoggingLevel":         terragruntOptions.Logger.GetHookLevel(""),
+		"LoggingLevel":         int(terragruntOptions.Logger.GetHookLevel("")),
 		"LoggingLevelName":     terragruntOptions.Logger.GetHookLevel("").String(),
 		"NbWorkers":            terragruntOptions.NbWorkers,
 		"SourceUpdate":         terragruntOptions.SourceUpdate,
@@ -341,7 +340,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		return err
 	}
 
-	useTempFolder := hasSourceURL || len(conf.ImportFiles)+len(conf.ExportVariablesConfigs)+len(conf.ExportConfigConfigs) > 0
+	useTempFolder := hasSourceURL || len(conf.ImportFiles)+len(conf.ExportVariables)+len(conf.ExportConfig) > 0
 	if useTempFolder {
 		// If there are import files, we force the usage of a temp directory.
 		if err = downloadTerraformSource(terraformSource, terragruntOptions); err != nil {
@@ -384,14 +383,14 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Executing the pre-hook commands that should be ran before the ImportFiles
-	if _, err = conf.PreHooks.Filter(config.BeforeImports).Run(err); stopOnError(err) {
+	if err = conf.PreHooks.Filter(config.BeforeImports).Run(err); stopOnError(err) {
 		return
 	}
 
 	// Import the required files in the temporary folder and copy the temporary imported file in the
 	// working folder. We did not put them directly into the folder because terraform init would complain
 	// if there are already terraform files in the target folder
-	if err := conf.ImportFiles.Run(err); stopOnError(err) {
+	if err := conf.ImportFiles.Import(); stopOnError(err) {
 		return
 	}
 
@@ -459,7 +458,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	// Since we already imported files into the main folder, we optimize here by processing only the
 	// other folder ignoring the first one. This avoid copying files twice in the main folder.
 	if folders := foldersWithTerraformFiles[1:]; len(folders) > 0 {
-		if err = conf.ImportFiles.Run(err, folders...); stopOnError(err) {
+		if err = conf.ImportFiles.Import(folders...); stopOnError(err) {
 			return
 		}
 	}
@@ -500,15 +499,17 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Export Terragrunt variables to the paths defined in export_variables blocks
-	for _, folder := range foldersWithTerraformFiles {
-		var existingVariables map[string]*configs.Variable
-		_, existingVariables, err = util.LoadDefaultValues(folder, terragruntOptions.Logger, false)
+	for i, folder := range foldersWithTerraformFiles {
+		_, existingVariables, err := util.LoadDefaultValues(folder, terragruntOptions.Logger, false)
 		if stopOnError(err) {
-			return err
-		}
-		if err = conf.ExportVariables(existingVariables, folder); stopOnError(err) {
 			return
 		}
+		if err := conf.ExportVariables.Export(existingVariables, folder, i == 0); stopOnError(err) {
+			return
+		}
+	}
+	if err := conf.ExportConfig.Export(); stopOnError(err) {
+		return
 	}
 
 	// If there is no terraform file in the folder, we skip the command
@@ -534,13 +535,13 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 		if planStatusError {
 			status = nil
 		}
-		if _, errHook := conf.PostHooks.Run(status); stopOnError(errHook) {
+		if errHook := conf.PostHooks.Run(status); stopOnError(errHook) {
 			return
 		}
 	}()
 
 	// Executing the pre-hook commands that should be ran before init state if there are
-	if _, err = conf.PreHooks.Filter(config.BeforeInitState).Run(err); stopOnError(err) {
+	if err = conf.PreHooks.Filter(config.BeforeInitState).Run(err); stopOnError(err) {
 		return
 	}
 
@@ -566,7 +567,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 
 	// Executing the pre-hook that should be ran after init state if there are
-	if _, err = conf.PreHooks.Filter(config.AfterInitState).Run(err); stopOnError(err) {
+	if err = conf.PreHooks.Filter(config.AfterInitState).Run(err); stopOnError(err) {
 		return
 	}
 

@@ -1,3 +1,4 @@
+variable "name" {}
 output "hello" {
-  value = "Hello"
+  value = var.name
 }
