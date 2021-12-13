@@ -19,7 +19,7 @@ func IHook(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list HookList) init(config *TerragruntConfigFile) {
+func (list HookList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		IHook(&list[i]).init(config)
 	}

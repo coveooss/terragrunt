@@ -153,13 +153,13 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 		}
 	}
 
-	tcf.ExtraArgs.init(tcf)
-	tcf.ExtraCommands.init(tcf)
-	tcf.ImportFiles.init(tcf)
-	tcf.ImportVariables.init(tcf)
-	tcf.ApprovalConfig.init(tcf)
-	tcf.PreHooks.init(tcf)
-	tcf.PostHooks.init(tcf)
+	tcf.ExtraArgs.baseInit(tcf)
+	tcf.ExtraCommands.baseInit(tcf)
+	tcf.ImportFiles.baseInit(tcf)
+	tcf.ImportVariables.baseInit(tcf)
+	tcf.ApprovalConfig.baseInit(tcf)
+	tcf.PreHooks.init(tcf, PreHookType)
+	tcf.PostHooks.init(tcf, PostHookType)
 	tcf.RunConditions = RunConditions{}
 	for _, condition := range tcf.RunConditionsHclDefinition {
 		if !condition.RunIf.IsNull() {
@@ -435,6 +435,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 	}
 
 	config.mergeIncludedConfig(*includedConfig, terragruntOptions)
+
 	return
 }
 

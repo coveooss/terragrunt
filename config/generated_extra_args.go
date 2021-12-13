@@ -19,7 +19,7 @@ func ITerraformExtraArguments(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list TerraformExtraArgumentsList) init(config *TerragruntConfigFile) {
+func (list TerraformExtraArgumentsList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		ITerraformExtraArguments(&list[i]).init(config)
 	}

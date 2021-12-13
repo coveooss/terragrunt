@@ -19,7 +19,7 @@ func IImportVariables(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list ImportVariablesList) init(config *TerragruntConfigFile) {
+func (list ImportVariablesList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		IImportVariables(&list[i]).init(config)
 	}
