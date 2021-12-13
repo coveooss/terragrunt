@@ -176,13 +176,11 @@ func (list HookList) Filter(filter HookFilter) HookList {
 	return result
 }
 
-func (config *TerragruntConfig) initializeHooks() {
-	for idx := range config.PreHooks {
-		config.PreHooks[idx].Type = PreHookType
-	}
+func (hookList HookList) init(config *TerragruntConfigFile, hookType HookType) {
+	hookList.baseInit(config)
 
-	for idx := range config.PostHooks {
-		config.PostHooks[idx].Type = PostHookType
+	for idx := range hookList {
+		hookList[idx].Type = hookType
 	}
 }
 

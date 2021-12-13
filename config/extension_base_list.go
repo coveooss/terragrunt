@@ -20,7 +20,7 @@ func IGenericItem(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list GenericItemList) init(config *TerragruntConfigFile) {
+func (list GenericItemList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		IGenericItem(&list[i]).init(config)
 	}

@@ -19,7 +19,7 @@ func IApprovalConfig(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list ApprovalConfigList) init(config *TerragruntConfigFile) {
+func (list ApprovalConfigList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		IApprovalConfig(&list[i]).init(config)
 	}

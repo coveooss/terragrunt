@@ -19,7 +19,7 @@ func IExtraCommand(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list ExtraCommandList) init(config *TerragruntConfigFile) {
+func (list ExtraCommandList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		IExtraCommand(&list[i]).init(config)
 	}

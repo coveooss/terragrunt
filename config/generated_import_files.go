@@ -19,7 +19,7 @@ func IImportFiles(item interface{}) TerragruntExtensioner {
 	return item.(TerragruntExtensioner)
 }
 
-func (list ImportFilesList) init(config *TerragruntConfigFile) {
+func (list ImportFilesList) baseInit(config *TerragruntConfigFile) {
 	for i := range list {
 		IImportFiles(&list[i]).init(config)
 	}
