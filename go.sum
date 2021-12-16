@@ -183,6 +183,8 @@ github.com/coreos/go-systemd v0.0.0-20181012123002-c6f51f82210d/go.mod h1:F5haX7
 github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f/go.mod h1:E3G3o1h8I7cfcXa63jLwjI0eiQQMgzzUDFVpN/nH/eA=
 github.com/coveooss/gotemplate/v3 v3.7.0 h1:j3dx025hmqG5ZjHj2sYgENTqEUAO3XRmoMm00xhsaBk=
 github.com/coveooss/gotemplate/v3 v3.7.0/go.mod h1:ZFJQwofmJthXf9pWEc+5n4HL7q/PYVd4LXL2y2Aq5Ls=
+github.com/coveooss/gotemplate/v3 v3.7.2 h1:9PnDAJ/732DNPPMs6WNOwC5quXpHFvpHJIO/rhtGIL0=
+github.com/coveooss/gotemplate/v3 v3.7.2/go.mod h1:wrtSTUgjuCtJtcGYgrYbLwLOls5r2HwXXPgH3DuPyAY=
 github.com/coveooss/multilogger v0.5.2 h1:HmuMT1RTD0d6tkqrrO9FlUBbp2p7QYbcAR6guszlifc=
 github.com/coveooss/multilogger v0.5.2/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
 github.com/coveord/go-getter v1.5.12 h1:pIHiTtVZwf/jRL+Evy8OGhoL2VNRnJD7wSju8TMc9fI=
@@ -228,6 +230,8 @@ github.com/gliderlabs/ssh v0.2.2 h1:6zsha5zo/TWhRhwqCD3+EarCAgZ2yN28ipRnGPnwkI0=
 github.com/gliderlabs/ssh v0.2.2/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/go-errors/errors v1.4.0 h1:2OA7MFw38+e9na72T1xgkomPb6GzZzzxvJ5U630FoRM=
 github.com/go-errors/errors v1.4.0/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
+github.com/go-errors/errors v1.4.1 h1:IvVlgbzSsaUNudsw5dcXSzF3EWyXTi5XrAdngnuhRyg=
+github.com/go-errors/errors v1.4.1/go.mod h1:sIVyrIiJhuEF+Pj9Ebtd6P/rEYROXFi3BopGUQ5a5Og=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
