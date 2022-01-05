@@ -118,8 +118,7 @@ func runModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 		if module.Module.TerragruntOptions.NbWorkers <= 0 {
 			module.Module.TerragruntOptions.NbWorkers = len(runningModules)
 		}
-		// go initWorkers(module.Module.TerragruntOptions.NbWorkers)
-		initWorkers(module.Module.TerragruntOptions.NbWorkers)
+		go initWorkers(module.Module.TerragruntOptions.NbWorkers)
 		break
 	}
 
@@ -212,10 +211,14 @@ func (module *runningModule) dependencies() []string {
 
 // Run a module once all of its dependencies have finished executing.
 func (module *runningModule) runModuleWhenReady() {
+	module.Module.TerragruntOptions.Logger.Infof("#!#!# Starting the WAIT FOR DEPENDENCIES for module %s", module.displayName())
 	err := module.waitForDependencies()
 	if err == nil {
+		module.Module.TerragruntOptions.Logger.Infof("#!#!# Starting the WAIT FOR A WORKER for module %s", module.displayName())
 		module.workerID = waitWorker()
+		module.Module.TerragruntOptions.Logger.Infof("#!#!# Captured the worker with id %d for module %s", module.workerID, module.displayName())
 		defer func() { freeWorker(module.workerID) }()
+		module.Module.TerragruntOptions.Logger.Infof("#!#!# Starting the ACTUAL RUN for module %s", module.displayName())
 		err = module.runNow()
 	}
 	module.moduleFinished(err)
@@ -229,7 +232,9 @@ func (module *runningModule) waitForDependencies() error {
 		log.Debugf("Module %s must wait for %s to finish", module.displayName(), strings.Join(module.dependencies(), ", "))
 	}
 	for len(module.Dependencies) > 0 {
+		module.Module.TerragruntOptions.Logger.Infof("#!#!# Still WAITING on dependencies for module %s", module.displayName())
 		doneDependency := <-module.DependencyDone
+		module.Module.TerragruntOptions.Logger.Infof("#!#!# The WAIT FOR dependency %s for module %s done!", doneDependency.displayName(), module.displayName())
 		delete(module.Dependencies, doneDependency.Module.Path)
 
 		depPath := util.GetPathRelativeToWorkingDirMax(doneDependency.Module.Path, 3)
