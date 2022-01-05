@@ -16,9 +16,9 @@ func initWorkers(n int) {
 	if burstyLimiter == nil {
 		burstyLimiter = make(chan int, n)
 		for i := 1; i <= n; i++ {
+			time.Sleep(waitTimeBetweenThread * time.Millisecond) // Start workers progressively to avoid throttling
 			fmt.Println("Adding token", i, "to the channel")
 			burstyLimiter <- i
-			time.Sleep(waitTimeBetweenThread * time.Millisecond) // Start workers progressively to avoid throttling
 		}
 	}
 }
