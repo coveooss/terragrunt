@@ -118,7 +118,8 @@ func runModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 		if module.Module.TerragruntOptions.NbWorkers <= 0 {
 			module.Module.TerragruntOptions.NbWorkers = len(runningModules)
 		}
-		go initWorkers(module.Module.TerragruntOptions.NbWorkers)
+		// go initWorkers(module.Module.TerragruntOptions.NbWorkers)
+		initWorkers(module.Module.TerragruntOptions.NbWorkers)
 		break
 	}
 
