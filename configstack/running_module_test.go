@@ -12,13 +12,13 @@ import (
 var mockOptions = options.NewTerragruntOptionsForTest("running_module_test")
 
 func TestToRunningModulesNoModules(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	testToRunningModules(t, []*TerraformModule{}, NormalOrder, map[string]*runningModule{})
 }
 
 func TestToRunningModulesOneModuleNoDependencies(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	moduleA := &TerraformModule{
 		Path:              "a",
@@ -42,7 +42,7 @@ func TestToRunningModulesOneModuleNoDependencies(t *testing.T) {
 }
 
 func TestToRunningModulesTwoModulesNoDependencies(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	moduleA := &TerraformModule{
 		Path:              "a",
@@ -81,7 +81,7 @@ func TestToRunningModulesTwoModulesNoDependencies(t *testing.T) {
 }
 
 func TestToRunningModulesTwoModulesWithDependencies(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	moduleA := &TerraformModule{
 		Path:              "a",
@@ -122,7 +122,7 @@ func TestToRunningModulesTwoModulesWithDependencies(t *testing.T) {
 }
 
 func TestToRunningModulesTwoModulesWithDependenciesReverseOrder(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	moduleA := &TerraformModule{
 		Path:              "a",
@@ -163,7 +163,7 @@ func TestToRunningModulesTwoModulesWithDependenciesReverseOrder(t *testing.T) {
 }
 
 func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	moduleA := &TerraformModule{
 		Path:              "a",
@@ -263,7 +263,7 @@ func TestToRunningModulesMultipleModulesWithAndWithoutDependencies(t *testing.T)
 }
 
 func TestToRunningModulesMultipleModulesWithAndWithoutDependenciesReverseOrder(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	moduleA := &TerraformModule{
 		Path:              "a",
@@ -365,14 +365,14 @@ func testToRunningModules(t *testing.T, modules []*TerraformModule, order depend
 }
 
 func TestRunModulesNoModules(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	err := runModules([]*TerraformModule{})
 	assert.Nil(t, err, "Unexpected error: %v", err)
 }
 
 func TestRunModulesOneModuleSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -388,7 +388,7 @@ func TestRunModulesOneModuleSuccess(t *testing.T) {
 }
 
 func TestRunModulesOneModuleAssumeAlreadyRan(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -405,7 +405,7 @@ func TestRunModulesOneModuleAssumeAlreadyRan(t *testing.T) {
 }
 
 func TestRunModulesReverseOrderOneModuleSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -421,7 +421,7 @@ func TestRunModulesReverseOrderOneModuleSuccess(t *testing.T) {
 }
 
 func TestRunModulesOneModuleError(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	expectedErrA := fmt.Errorf("Expected error for module a")
@@ -438,7 +438,7 @@ func TestRunModulesOneModuleError(t *testing.T) {
 }
 
 func TestRunModulesReverseOrderOneModuleError(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	expectedErrA := fmt.Errorf("Expected error for module a")
@@ -455,7 +455,7 @@ func TestRunModulesReverseOrderOneModuleError(t *testing.T) {
 }
 
 func TestRunModulesMultipleModulesNoDependenciesSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -490,7 +490,7 @@ func TestRunModulesMultipleModulesNoDependenciesSuccess(t *testing.T) {
 }
 
 func TestRunModulesReverseOrderMultipleModulesNoDependenciesSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -525,7 +525,7 @@ func TestRunModulesReverseOrderMultipleModulesNoDependenciesSuccess(t *testing.T
 }
 
 func TestRunModulesMultipleModulesNoDependenciesOneFailure(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -561,7 +561,7 @@ func TestRunModulesMultipleModulesNoDependenciesOneFailure(t *testing.T) {
 }
 
 func TestRunModulesMultipleModulesNoDependenciesMultipleFailures(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	expectedErrA := fmt.Errorf("Expected error for module a")
@@ -599,7 +599,7 @@ func TestRunModulesMultipleModulesNoDependenciesMultipleFailures(t *testing.T) {
 }
 
 func TestRunModulesMultipleModulesWithDependenciesSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -634,7 +634,7 @@ func TestRunModulesMultipleModulesWithDependenciesSuccess(t *testing.T) {
 }
 
 func TestRunModulesMultipleModulesWithDependenciesWithAssumeAlreadyRanSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -679,7 +679,7 @@ func TestRunModulesMultipleModulesWithDependenciesWithAssumeAlreadyRanSuccess(t 
 }
 
 func TestRunModulesReverseOrderMultipleModulesWithDependenciesSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -714,7 +714,7 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesSuccess(t *testing
 }
 
 func TestRunModulesMultipleModulesWithDependenciesOneFailure(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -752,7 +752,7 @@ func TestRunModulesMultipleModulesWithDependenciesOneFailure(t *testing.T) {
 }
 
 func TestRunModulesMultipleModulesWithDependenciesOneFailureIgnoreDependencyErrors(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	terragruntOptionsA := optionsWithMockTerragruntCommand("a", nil, &aRan)
@@ -794,7 +794,7 @@ func TestRunModulesMultipleModulesWithDependenciesOneFailureIgnoreDependencyErro
 }
 
 func TestRunModulesReverseOrderMultipleModulesWithDependenciesOneFailure(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -832,7 +832,7 @@ func TestRunModulesReverseOrderMultipleModulesWithDependenciesOneFailure(t *test
 }
 
 func TestRunModulesMultipleModulesWithDependenciesMultipleFailures(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	expectedErrA := fmt.Errorf("Expected error for module a")
@@ -871,7 +871,7 @@ func TestRunModulesMultipleModulesWithDependenciesMultipleFailures(t *testing.T)
 }
 
 func TestRunModulesMultipleModulesWithDependenciesLargeGraphAllSuccess(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -933,7 +933,7 @@ func TestRunModulesMultipleModulesWithDependenciesLargeGraphAllSuccess(t *testin
 }
 
 func TestRunModulesMultipleModulesWithDependenciesLargeGraphPartialFailure(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
@@ -1009,7 +1009,7 @@ func TestRunModulesMultipleModulesWithDependenciesLargeGraphPartialFailure(t *te
 }
 
 func TestRunModulesReverseOrderMultipleModulesWithDependenciesLargeGraphPartialFailure(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	aRan := false
 	moduleA := &TerraformModule{
