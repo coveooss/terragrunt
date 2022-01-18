@@ -113,13 +113,11 @@ func runModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 		return err
 	}
 
-	for _, module := range runningModules {
-		// Starts mechanism that control the maximum number of active workers
-		if module.Module.TerragruntOptions.NbWorkers <= 0 {
-			module.Module.TerragruntOptions.NbWorkers = len(runningModules)
+	if len(modules) != 0 {
+		if modules[0].TerragruntOptions.NbWorkers <= 0 {
+			modules[0].TerragruntOptions.NbWorkers = len(runningModules)
 		}
-		initWorkers(module.Module.TerragruntOptions.NbWorkers)
-		break
+		initWorkers(modules[0].TerragruntOptions.NbWorkers)
 	}
 
 	var waitGroup sync.WaitGroup

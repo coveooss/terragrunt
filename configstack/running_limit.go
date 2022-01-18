@@ -7,8 +7,6 @@ import (
 	"github.com/fatih/color"
 )
 
-const waitTimeBetweenThread = 2500
-
 func initWorkers(n int) {
 	if n <= 0 {
 		panic(fmt.Errorf("the number of workers must be greater than 0 (%d)", n))
@@ -16,7 +14,6 @@ func initWorkers(n int) {
 	if burstyLimiter == nil {
 		burstyLimiter = make(chan int, n)
 		for i := 1; i <= n; i++ {
-			time.Sleep(waitTimeBetweenThread * time.Millisecond) // Start workers progressively to avoid throttling
 			burstyLimiter <- i
 		}
 	}
