@@ -114,10 +114,12 @@ func runModulesWithHandler(modules []*TerraformModule, handler ModuleHandler, or
 	}
 
 	if len(modules) != 0 {
-		if modules[0].TerragruntOptions.NbWorkers <= 0 {
-			modules[0].TerragruntOptions.NbWorkers = len(runningModules)
+		options := modules[0].TerragruntOptions
+		// We don't gain anything by running on more workers than there are modules
+		if options.NbWorkers <= 0 || options.NbWorkers > len(runningModules) {
+			options.NbWorkers = len(runningModules)
 		}
-		initWorkers(modules[0].TerragruntOptions.NbWorkers)
+		initWorkers(options.NbWorkers)
 	}
 
 	var waitGroup sync.WaitGroup
