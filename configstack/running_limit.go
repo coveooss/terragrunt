@@ -7,7 +7,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const waitTimeBetweenThread = 500
+const progressiveStartDelay = 500 * time.Millisecond
 
 func initWorkers(n int) {
 	if n <= 0 {
@@ -18,7 +18,7 @@ func initWorkers(n int) {
 		go func() {
 			for i := 1; i <= n; i++ {
 				burstyLimiter <- i
-				time.Sleep(waitTimeBetweenThread * time.Millisecond) // Start workers progressively to avoid throttling
+				time.Sleep(progressiveStartDelay) // Start workers progressively to avoid throttling
 			}
 		}()
 	}
