@@ -7,15 +7,20 @@ import (
 	"github.com/fatih/color"
 )
 
+const progressiveStartDelay = 500 * time.Millisecond
+
 func initWorkers(n int) {
 	if n <= 0 {
 		panic(fmt.Errorf("the number of workers must be greater than 0 (%d)", n))
 	}
 	if burstyLimiter == nil {
 		burstyLimiter = make(chan int, n)
-		for i := 1; i <= n; i++ {
-			burstyLimiter <- i
-		}
+		go func() {
+			for i := 1; i <= n; i++ {
+				burstyLimiter <- i
+				time.Sleep(progressiveStartDelay) // Start workers progressively to avoid throttling
+			}
+		}()
 	}
 }
 
