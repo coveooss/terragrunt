@@ -22,7 +22,7 @@ require (
 	github.com/hashicorp/terraform v0.15.3
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mitchellh/mapstructure v1.4.3
-	github.com/rs/xid v1.3.0
+	github.com/rs/xid v1.4.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5
