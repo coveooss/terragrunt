@@ -15,7 +15,7 @@ require (
 	github.com/coveooss/gotemplate/v3 v3.7.2
 	github.com/coveooss/multilogger v0.5.2
 	github.com/fatih/color v1.13.0
-	github.com/go-errors/errors v1.4.1
+	github.com/go-errors/errors v1.4.2
 	github.com/hashicorp/go-getter v1.5.5
 	github.com/hashicorp/go-version v1.4.0
 	github.com/hashicorp/hcl/v2 v2.10.0
