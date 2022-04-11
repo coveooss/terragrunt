@@ -24,7 +24,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/rs/xid v1.4.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli v1.22.5
 	github.com/zclconf/go-cty v1.10.0
 	golang.org/x/tools v0.1.4 // indirect
