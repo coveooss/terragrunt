@@ -15,6 +15,8 @@ full-test:
 
 static:
 	go install honnef.co/go/tools/cmd/staticcheck@2022.1
+	staticcheck --version
+
 	staticcheck ./...
 
 pre-commit: fmt static test
@@ -28,6 +30,7 @@ html-coverage:
 build:
 	go install golang.org/x/tools/cmd/stringer@latest
 	go install github.com/cheekybits/genny@latest
+
 	go generate -x ./...
 	go build
 
