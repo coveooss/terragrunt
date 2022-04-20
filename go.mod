@@ -27,7 +27,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/urfave/cli v1.22.5
 	github.com/zclconf/go-cty v1.10.0
-	golang.org/x/tools v0.1.4 // indirect
+	golang.org/x/tools v0.1.11-0.20220316014157-77aa08bb151a // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.4.0
