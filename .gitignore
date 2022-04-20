@@ -1,3 +1,7 @@
+# coverage reports
+/.cover
+coverage.txt
+
 # fixtures write `.out` files in their hooks
 *.out
 
@@ -13,4 +17,3 @@ dist
 *.test
 
 terragrunt
-coverage.txt
