@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 20
-    reviewers: &reviewers
+    reviewers:
       - dblanchette
       - dlevesque-coveo
       - dotboris
@@ -19,4 +19,11 @@ updates:
     open-pull-requests-limit: 20
     schedule:
       interval: daily
-    reviewers: *reviewers
+    reviewers:
+      - dblanchette
+      - dlevesque-coveo
+      - dotboris
+      - jocgir
+      - jonapich
+      - pballandras
+      - wtrep
