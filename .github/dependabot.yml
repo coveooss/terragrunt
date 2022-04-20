@@ -4,9 +4,19 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 99
-    reviewers:
-      - jocgir
+    open-pull-requests-limit: 20
+    reviewers: &reviewers
       - dblanchette
-      - jheilcoveo
+      - dlevesque-coveo
       - dotboris
+      - jocgir
+      - jonapich
+      - pballandras
+      - wtrep
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    open-pull-requests-limit: 20
+    schedule:
+      interval: daily
+    reviewers: *reviewers
