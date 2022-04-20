@@ -26,7 +26,7 @@ html-coverage:
 	@sh ./scripts/coverage.sh --html
 
 build:
-	go install golang.org/x/tools/stringer@latest
+	go install golang.org/x/tools/cmd/stringer@latest
 	go install github.com/cheekybits/genny@latest
 	go generate -x ./...
 	go build
