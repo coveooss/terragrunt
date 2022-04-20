@@ -8,9 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: '1.16'
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -22,9 +22,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: '1.16'
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -35,9 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: '1.16'
 
       - name: Checkout
         uses: actions/checkout@v3
@@ -51,9 +51,9 @@ jobs:
         terraform:
           - "1.0.2"
     steps:
-      - uses: actions/setup-go@v1
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.16
+          go-version: '1.16'
 
       - name: Checkout
         uses: actions/checkout@v3
