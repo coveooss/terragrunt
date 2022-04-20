@@ -14,7 +14,7 @@ full-test:
 	go test -v ./...
 
 static:
-	go install honnef.co/go/tools/cmd/staticcheck@latest
+	go install honnef.co/go/tools/cmd/staticcheck@2022.1
 	staticcheck ./...
 
 pre-commit: fmt static test
