@@ -3,7 +3,7 @@ module github.com/coveooss/terragrunt/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.1
+	github.com/aws/aws-sdk-go-v2 v1.16.2
 	github.com/aws/aws-sdk-go-v2/config v1.13.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.8.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.15.2
