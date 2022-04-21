@@ -12,12 +12,17 @@ import (
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
+type planSummary struct {
+	Message         string
+	NumberOfChanges int
+	AreChangesKnown bool
+}
+
 // The returned information for each module
 type moduleResult struct {
-	Module    TerraformModule
-	Err       error
-	Message   string
-	NbChanges int
+	Module      TerraformModule
+	Err         error
+	PlanSummary planSummary
 }
 
 var planResultRegex = regexp.MustCompile(`(\d+) to add, (\d+) to change, (\d+) to destroy.`)
@@ -38,19 +43,39 @@ func (stack *Stack) planWithSummary(terragruntOptions *options.TerragruntOptions
 
 	// If there is no error, but -detail-exitcode is specified, we return an error with the number of changes.
 	if err == nil && detailedExitCode {
-		sum := 0
+		knownChanges := 0
+		modulesWithUnknownChanges := 0
 		for _, status := range results {
-			sum += status.NbChanges
+			if status.PlanSummary.AreChangesKnown {
+				knownChanges += status.PlanSummary.NumberOfChanges
+			} else {
+				modulesWithUnknownChanges += 1
+			}
 		}
-		if sum != 0 {
+
+		if knownChanges != 0 {
 			article, plural := "is", ""
-			if sum > 1 {
+			if knownChanges > 1 {
 				article, plural = "are", "s"
 			}
-			terragruntOptions.Logger.Infof("There %s %v change%s to apply", article, sum, plural)
+			terragruntOptions.Logger.Infof("There %s %v change%s to apply", article, knownChanges, plural)
 		} else if hasChanges {
 			terragruntOptions.Logger.Infof("There are no terraform changes but hooks have reported changes.")
 		}
+
+		if modulesWithUnknownChanges > 0 {
+			plural := ""
+			if modulesWithUnknownChanges > 1 {
+				plural = "s"
+			}
+
+			terragruntOptions.Logger.Infof(
+				"We were not able to determine the number of changes for %v module%s.",
+				modulesWithUnknownChanges,
+				plural,
+			)
+		}
+
 		if hasChanges {
 			return tgerrors.PlanWithChanges{}
 		}
@@ -72,10 +97,10 @@ func getResultHandler(detailedExitCode bool, results *[]moduleResult, hasChanges
 		}
 
 		if output != "" {
-			message, count := extractSummaryResultFromPlan(output)
+			summary := extractSummaryResultFromPlan(output)
 
 			// We add the result to the result list (there is no concurrency problem because it is handled by the running_module)
-			*results = append(*results, moduleResult{module, err, message, count})
+			*results = append(*results, moduleResult{module, err, summary})
 		}
 
 		return output, err
@@ -101,7 +126,12 @@ func printSummary(terragruntOptions *options.TerragruntOptions, results []module
 			errMsg = fmt.Sprintf(", Error: %v", result.Err)
 		}
 
-		terragruntOptions.Printf(format, util.GetPathRelativeToWorkingDir(result.Module.Path), result.Message, errMsg)
+		terragruntOptions.Printf(
+			format,
+			util.GetPathRelativeToWorkingDir(result.Module.Path),
+			result.PlanSummary.Message,
+			errMsg,
+		)
 	}
 }
 
@@ -120,17 +150,17 @@ func warnAboutMissingDependencies(module TerraformModule, output string) {
 }
 
 // Parse the output message to extract a summary
-func extractSummaryResultFromPlan(output string) (string, int) {
+func extractSummaryResultFromPlan(output string) planSummary {
 	const noChangeV012 = "No changes. Infrastructure is up-to-date."
 	const noChangeV013 = "Plan: 0 to add, 0 to change, 0 to destroy."
 	const noChangeV102 = "Your infrastructure matches the configuration."
 	if strings.Contains(output, noChangeV012) || strings.Contains(output, noChangeV013) || strings.Contains(output, noChangeV102) {
-		return "No change", 0
+		return planSummary{"No change", 0, true}
 	}
 
 	result := planResultRegex.FindStringSubmatch(output)
 	if len(result) == 0 {
-		return "Unable to determine the plan status", -1
+		return planSummary{"Unable to determine the plan status", -1, false}
 	}
 
 	// Count the total number of changes
@@ -140,11 +170,11 @@ func extractSummaryResultFromPlan(output string) (string, int) {
 		sum += count
 	}
 	if sum != 0 {
-		return result[0], sum
+		return planSummary{result[0], sum, true}
 	}
 
 	// Sometimes, terraform returns 0 add, 0 change and 0 destroy. We return a more explicit message
-	return "No effective change", 0
+	return planSummary{"No effective change", 0, true}
 }
 
 // planMultiError is a specialized version of errMulti type
