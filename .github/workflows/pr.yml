@@ -4,33 +4,66 @@ on:
     branches:
       - master
 jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Run static checks
+        run: make static
+
   build:
-    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - run: make build
+
+  fmt-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - run: make fmtcheck
+
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        terraform: ["1.0.2"]
+        terraform:
+          - "1.0.2"
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v1
+      - uses: actions/setup-go@v3
         with:
-          go-version: 1.16
-        id: go
+          go-version: '1.18'
 
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Install Terraform
         run: |
           wget https://releases.hashicorp.com/terraform/${{ matrix.terraform }}/terraform_${{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
-      - name: Run static checks
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          make static
-
-      - name: Generate code coverage files
+      - name: Run full tests with coverage (for codecov)
         run: make codecov
 
       - name: Upload to codecov
