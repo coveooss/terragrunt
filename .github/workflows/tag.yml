@@ -15,10 +15,12 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: '1.18'
-        id: go
 
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          # We need the whole history so that goreleaser can figure out the changes
+          fetch-depth: 0
 
       - name: Install Terraform
         run: |
