@@ -3,13 +3,13 @@ module github.com/coveooss/terragrunt/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.3
+	github.com/aws/aws-sdk-go-v2 v1.16.4
 	github.com/aws/aws-sdk-go-v2/config v1.15.5
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.0
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.2
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.15.4
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.26.9
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.27.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.16.4
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.6
 	github.com/cheekybits/genny v1.0.0
 	github.com/coveooss/gotemplate/v3 v3.7.2
 	github.com/coveooss/multilogger v0.5.2
@@ -48,17 +48,17 @@ require (
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.1 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.4 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.10 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.4 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.5 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.11 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.11.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.5 // indirect
 	github.com/aws/smithy-go v1.11.2 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
