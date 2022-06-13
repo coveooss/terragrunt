@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/xid v1.4.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.7.2
 	github.com/urfave/cli v1.22.9
 	github.com/zclconf/go-cty v1.10.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
@@ -127,7 +127,7 @@ require (
 	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace (
