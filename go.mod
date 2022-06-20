@@ -22,7 +22,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/xid v1.4.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.3
 	github.com/urfave/cli v1.22.9
 	github.com/zclconf/go-cty v1.10.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
