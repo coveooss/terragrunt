@@ -16,7 +16,7 @@ require (
 	github.com/fatih/color v1.13.0
 	github.com/go-errors/errors v1.4.2
 	github.com/hashicorp/go-getter v1.5.5
-	github.com/hashicorp/go-version v1.5.0
+	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/hashicorp/terraform v0.15.3
 	github.com/mitchellh/mapstructure v1.5.0
