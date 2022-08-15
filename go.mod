@@ -3,7 +3,7 @@ module github.com/coveooss/terragrunt/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.8
+	github.com/aws/aws-sdk-go-v2 v1.16.11
 	github.com/aws/aws-sdk-go-v2/config v1.15.15
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.10
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.15.10
@@ -59,7 +59,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.13.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.11.13 // indirect
-	github.com/aws/smithy-go v1.12.0 // indirect
+	github.com/aws/smithy-go v1.12.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
