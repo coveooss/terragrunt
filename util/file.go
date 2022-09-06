@@ -414,6 +414,7 @@ func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 		arg = strings.Replace(os.ExpandEnv(arg), stringEscape, "$", -1)
 		if strings.ContainsAny(arg, "*?[]") && !strings.ContainsAny(arg, "$|`") && !strings.HasPrefix(arg, "-") {
 			// The string contains wildcard and is not a shell command
+			originalArg := arg
 			if !filepath.IsAbs(arg) {
 				arg = prefix + arg
 			}
@@ -426,7 +427,7 @@ func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 				}
 			} else {
 				// there was nothing to expand, reappend the original arg
-				result = append(result, strings.TrimPrefix(arg, prefix))
+				result = append(result, originalArg)
 			}
 			continue
 		}
