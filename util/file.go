@@ -418,10 +418,15 @@ func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 				arg = prefix + arg
 			}
 			expanded, _ := filepath.Glob(arg)
-			for i := range expanded {
-				// We remove the prefix from the result as if it was executed directly in the folder directory
-				expanded[i] = strings.TrimPrefix(expanded[i], prefix)
-				result = append(result, expanded[i])
+			if len(expanded) > 0 {
+				for i := range expanded {
+					// We remove the prefix from the result as if it was executed directly in the folder directory
+					expanded[i] = strings.TrimPrefix(expanded[i], prefix)
+					result = append(result, expanded[i])
+				}
+			} else {
+				// there was nothing to expand, reappend the original arg
+				result = append(result, strings.TrimPrefix(arg, prefix))
 			}
 			continue
 		}

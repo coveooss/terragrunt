@@ -89,3 +89,19 @@ func TestPathContainsHiddenFileOrFolder(t *testing.T) {
 		assert.Equal(t, testCase.expected, actual, "For path %s", path)
 	}
 }
+
+func TestExpandArgs(t *testing.T) {
+	testCases := []struct {
+		args     []interface{}
+		expected []interface{}
+	}{
+		{[]interface{}{"1"}, []interface{}{"1"}},
+		{[]interface{}{"words"}, []interface{}{"words"}},
+		{[]interface{}{"something.something\\[0\\]"}, []interface{}{"something.something\\[0\\]"}},
+		{[]interface{}{"-target"}, []interface{}{"-target"}},
+		{[]interface{}{"-lock-timeout=20m"}, []interface{}{"-lock-timeout=20m"}},
+	}
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expected, ExpandArguments(tc.args, "."))
+	}
+}
