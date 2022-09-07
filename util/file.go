@@ -414,14 +414,20 @@ func ExpandArguments(args []interface{}, folder string) (result []interface{}) {
 		arg = strings.Replace(os.ExpandEnv(arg), stringEscape, "$", -1)
 		if strings.ContainsAny(arg, "*?[]") && !strings.ContainsAny(arg, "$|`") && !strings.HasPrefix(arg, "-") {
 			// The string contains wildcard and is not a shell command
+			originalArg := arg
 			if !filepath.IsAbs(arg) {
 				arg = prefix + arg
 			}
 			expanded, _ := filepath.Glob(arg)
-			for i := range expanded {
-				// We remove the prefix from the result as if it was executed directly in the folder directory
-				expanded[i] = strings.TrimPrefix(expanded[i], prefix)
-				result = append(result, expanded[i])
+			if len(expanded) > 0 {
+				for i := range expanded {
+					// We remove the prefix from the result as if it was executed directly in the folder directory
+					expanded[i] = strings.TrimPrefix(expanded[i], prefix)
+					result = append(result, expanded[i])
+				}
+			} else {
+				// there was nothing to expand, reappend the original arg
+				result = append(result, originalArg)
 			}
 			continue
 		}

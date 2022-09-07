@@ -1,6 +1,7 @@
 package util
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -87,5 +88,23 @@ func TestPathContainsHiddenFileOrFolder(t *testing.T) {
 		path := filepath.FromSlash(testCase.path)
 		actual := PathContainsHiddenFileOrFolder(path)
 		assert.Equal(t, testCase.expected, actual, "For path %s", path)
+	}
+}
+
+func TestExpandArgs(t *testing.T) {
+	testCases := []struct {
+		args     []interface{}
+		expected []interface{}
+	}{
+		{[]interface{}{"1"}, []interface{}{"1"}},
+		{[]interface{}{"something.something\\[0\\]"}, []interface{}{"something.something\\[0\\]"}},
+		{[]interface{}{"-target"}, []interface{}{"-target"}},
+		{[]interface{}{"-lock-timeout=20m"}, []interface{}{"-lock-timeout=20m"}},
+		{[]interface{}{"wordsWithBrackets[]"}, []interface{}{"wordsWithBrackets[]"}},
+		{[]interface{}{"envExpansion", "$USER"}, []interface{}{"envExpansion", os.Getenv("USER")}},
+		{[]interface{}{"-going-to-expand", "../test/fixture-expand/*"}, []interface{}{"-going-to-expand", "../test/fixture-expand/1", "../test/fixture-expand/2", "../test/fixture-expand/3", "../test/fixture-expand/4"}},
+	}
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expected, ExpandArguments(tc.args, "."))
 	}
 }
