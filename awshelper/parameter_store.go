@@ -18,7 +18,7 @@ func GetSSMParameter(parameterName, region string) (string, error) {
 	svc := ssm.NewFromConfig(*config)
 	result, err := svc.GetParameter(context.TODO(), &ssm.GetParameterInput{
 		Name:           &parameterName,
-		WithDecryption: true,
+		WithDecryption: aws.Bool(true),
 	})
 
 	if err != nil {
@@ -39,8 +39,8 @@ func GetSSMParametersByPath(path, region string) (result []types.Parameter, err 
 
 	response, err := svc.GetParametersByPath(context.TODO(), &ssm.GetParametersByPathInput{
 		Path:           aws.String(path),
-		Recursive:      true,
-		WithDecryption: true,
+		Recursive:      aws.Bool(true),
+		WithDecryption: aws.Bool(true),
 	})
 
 	if err != nil {
