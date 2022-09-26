@@ -3,12 +3,12 @@ module github.com/coveooss/terragrunt/v2
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.16.15
+	github.com/aws/aws-sdk-go-v2 v1.16.16
 	github.com/aws/aws-sdk-go-v2/config v1.17.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.19
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.10
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.28.0
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.29.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.18
 	github.com/cheekybits/genny v1.0.0
 	github.com/coveooss/gotemplate/v3 v3.7.2
@@ -49,8 +49,8 @@ require (
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.8 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.16 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.22 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.16 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.23 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.17 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.23 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.9 // indirect
