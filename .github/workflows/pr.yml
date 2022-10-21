@@ -74,6 +74,8 @@ jobs:
           fail_ci_if_error: true
 
   phil-testing-stuff:
+    permissions:
+      id-token: write # required for AWS assume role
     runs-on: ubuntu-latest
     strategy:
       matrix:
