@@ -103,5 +103,7 @@ jobs:
           role-to-assume: arn:aws:iam::043612128888:role/nrd-oss-terragrunt-github-actions-ci
 
       - name: Run full tests on releases
+        env:
+          AWS_REGION: us-east-1
         run: |
           make full-test
