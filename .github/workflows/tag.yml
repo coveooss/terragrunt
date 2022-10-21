@@ -27,10 +27,12 @@ jobs:
           wget https://releases.hashicorp.com/terraform/${{ matrix.terraform }}/terraform_${{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
+      - uses: coveooss/configure-aws-credentials-action@v1.7.0
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::043612128888:role/nrd-oss-tgf-github-actions-ci
+
       - name: Run full tests on releases
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           make full-test
 
