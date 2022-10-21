@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const terraformRemoteStateS3Region = "us-east-1"
+const terraformRemoteStateS3Region = "us-west-2"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
