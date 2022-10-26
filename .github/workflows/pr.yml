@@ -72,3 +72,11 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.txt
           fail_ci_if_error: true
+  
+  stuff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: echo stuff
+        env:
+          ACTOR: ${{ github.actor }}
+        run: echo $ACTOR
