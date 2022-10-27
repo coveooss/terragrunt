@@ -9,7 +9,7 @@ jobs:
     permissions:
       id-token: write # required for AWS assume role
       # This is because the permission block is replacive instead of additive so setting
-      #   id-token removes any other permissions the job has and goreleaser need to write contents
+      # id-token removes any other permissions the job has and goreleaser need to write contents
       contents: write
     runs-on: ubuntu-latest
     strategy:
