@@ -13,7 +13,7 @@ require (
 	github.com/cheekybits/genny v1.0.0
 	github.com/coveooss/gotemplate/v3 v3.7.3
 	github.com/coveooss/multilogger v0.5.2
-	github.com/fatih/color v1.14.0
+	github.com/fatih/color v1.14.1
 	github.com/go-errors/errors v1.4.2
 	github.com/hashicorp/go-getter v1.5.5
 	github.com/hashicorp/go-version v1.6.0
