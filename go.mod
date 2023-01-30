@@ -5,11 +5,11 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go-v2 v1.17.3
 	github.com/aws/aws-sdk-go-v2/config v1.18.8
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.8
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.10
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.18.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.30.0
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.35.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.18.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.18.2
 	github.com/cheekybits/genny v1.0.0
 	github.com/coveooss/gotemplate/v3 v3.7.3
 	github.com/coveooss/multilogger v0.5.2
