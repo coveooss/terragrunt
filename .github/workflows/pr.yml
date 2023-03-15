@@ -49,7 +49,9 @@ jobs:
     strategy:
       matrix:
         terraform:
-          - "1.0.2"
+          - '1.0.2'
+          - '1.3.8'
+          - '1.4.0'
     steps:
       - uses: actions/setup-go@v3
         with:
@@ -63,12 +65,4 @@ jobs:
           wget https://releases.hashicorp.com/terraform/${{ matrix.terraform }}/terraform_${{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
-      - name: Run full tests with coverage (for codecov)
-        run: make codecov
-
-      - name: Upload to codecov
-        uses: codecov/codecov-action@v3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.txt
-          fail_ci_if_error: true
+      - run: make test
