@@ -21,12 +21,6 @@ static:
 
 pre-commit: fmt static test
 
-codecov:
-	@sh ./scripts/coverage.sh --codecov
-
-html-coverage:
-	@sh ./scripts/coverage.sh --html
-
 build:
 	go install golang.org/x/tools/cmd/stringer@latest
 	go install github.com/cheekybits/genny@latest
