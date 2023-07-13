@@ -11,5 +11,5 @@
     from tags that get pushed. Create your tag with `git tag`.
 
 1. Push that tag
-1. Wait for the [Release on Tag](https://github.com/coveooss/tgf/actions/workflows/tag.yml) to build your release.
+1. Wait for the [Release on Tag](https://github.com/coveooss/terragrunt/actions/workflows/tag.yml) to build your release.
 1. Find your release and make sure things are as you expect them to be
