@@ -1,9 +1,7 @@
 # Terragrunt
 
-[![Maintained by Gruntwork.io](https://img.shields.io/badge/maintained%20by-gruntwork.io-%235849a6.svg)](https://gruntwork.io/?ref=repo_terragrunt)
 [![Go Report Card](https://goreportcard.com/badge/github.com/coveooss/terragrunt)](https://goreportcard.com/report/github.com/coveooss/terragrunt)
 [![GoDoc](https://godoc.org/github.com/coveooss/terragrunt?status.svg)](https://godoc.org/github.com/coveooss/terragrunt)
-![Terraform Version](https://img.shields.io/badge/tf-%3E%3D0.12.0-blue.svg)
 
 Terragrunt is a thin wrapper for [Terraform](https://www.terraform.io/) that provides extra tools for keeping your
 Terraform configurations [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself),
@@ -97,9 +95,9 @@ It is possible to set conditions that must be met in order for a project to be e
 
 * All conditions within a `condition` attribute must be true to apply the rule (logical `AND` between elements).
 * Only one `run_conditions` must be True to apply the rule (logical `OR` between elements)
-* If any block marked `ignore_if_true` is true, the code is not executed (logical `OR` between elements).  
-* If any block *NOT* marked `ignore_if_true` is true, the code is executed (logical `OR` between element).  
-* *Important: `ignore_if_true` blocks always take precedence over those that aren't* 
+* If any block marked `ignore_if_true` is true, the code is not executed (logical `OR` between elements).
+* If any block *NOT* marked `ignore_if_true` is true, the code is executed (logical `OR` between element).
+* *Important: `ignore_if_true` blocks always take precedence over those that aren't*
 
 ```hcl
 run_conditions {
@@ -117,12 +115,12 @@ run_conditions {
 }
 ```
 
-The condition for this project to run would be as follows:  
+The condition for this project to run would be as follows:
 `region in ["us-east-1", "us-west-2"] AND another_var in ["value"] AND my_map.my_var in ["value"] AND env not in ["qa"]`
 
-The conditions are evaluated using variables passed to terragrunt/terraform and the accepted or rejected values must be in the form of a list.  
-Any non existing variable will cause an error and the project will be ignored.  
-For more complex situation, it is possible to use variable interpolation as the key:  
+The conditions are evaluated using variables passed to terragrunt/terraform and the accepted or rejected values must be in the form of a list.
+Any non existing variable will cause an error and the project will be ignored.
+For more complex situation, it is possible to use variable interpolation as the key:
 
 ```hcl
 run_conditions {
@@ -352,7 +350,7 @@ uniqueness_criteria = "${var.env}${var.region}/${var.project}"
 There are various ways to import variables such as `inputs` in the terragrunt config or `import_variables` blocks but these variables are
 not accessible by Terraform directly
 
-To write your imported variables to a file, use the `export_variables` block. Example:  
+To write your imported variables to a file, use the `export_variables` block. Example:
 
 ```hcl
 export_variables {
