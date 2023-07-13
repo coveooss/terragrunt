@@ -87,8 +87,6 @@ jobs:
           distribution: goreleaser
           version: latest
           args: release --snapshot --clean
-        env:
-          CGO_ENABLED: 0
 
       - uses: actions/upload-artifact@v3
         with:
