@@ -5,11 +5,12 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/coveooss/gotemplate/v3/hcl"
 	"github.com/coveooss/terragrunt/v2/config"
 	"github.com/coveooss/terragrunt/v2/configstack"
 	"github.com/coveooss/terragrunt/v2/options"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
+
 	yaml "gopkg.in/yaml.v2"
 )
 

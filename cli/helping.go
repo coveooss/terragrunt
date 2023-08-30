@@ -3,11 +3,11 @@ package cli
 import (
 	"fmt"
 
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/terragrunt/v2/config"
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/fatih/color"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // PrintVersions prints the version of all configured underlying tools
