@@ -107,6 +107,8 @@ github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0 h1:MzVXffFU
 github.com/apparentlymart/go-dump v0.0.0-20190214190832-042adf3cf4a0/go.mod h1:oL81AME2rN47vu18xqj1S1jPIPuN7afo62yKTNn3XMM=
 github.com/apparentlymart/go-shquot v0.0.1/go.mod h1:lw58XsE5IgUXZ9h0cxnypdx31p9mPFIVEQ9P3c7MlrU=
 github.com/apparentlymart/go-textseg v1.0.0/go.mod h1:z96Txxhf3xSFMPmb5X/1W05FF/Nj9VFpLOpjS5yuumk=
+github.com/apparentlymart/go-textseg/v12 v12.0.0 h1:bNEQyAGak9tojivJNkoqWErVCQbjdL7GzRt3F8NvfJ0=
+github.com/apparentlymart/go-textseg/v12 v12.0.0/go.mod h1:S/4uRK2UtaQttw1GenVJEynmyUenKwP++x/+DdGV/Ec=
 github.com/apparentlymart/go-textseg/v13 v13.0.0 h1:Y+KvPE1NYz0xl601PVImeQfFyEy6iT90AvPUL1NNfNw=
 github.com/apparentlymart/go-textseg/v13 v13.0.0/go.mod h1:ZK2fH7c4NqDTLtiYLvIkEghdlcqw7yxLeM89kiTRPUo=
 github.com/apparentlymart/go-userdirs v0.0.0-20200915174352-b0c018a67c13/go.mod h1:7kfpUbyCdGJ9fDRCp3fopPQi5+cKNHgTE4ZuNrO71Cw=
@@ -195,8 +197,8 @@ github.com/coveooss/multilogger v0.5.2 h1:HmuMT1RTD0d6tkqrrO9FlUBbp2p7QYbcAR6gus
 github.com/coveooss/multilogger v0.5.2/go.mod h1:Pw3jXW2Y4KEd+j5vFTTGSAFRX4fIOvJZzDPnvf9dr7U=
 github.com/coveord/go-getter v1.5.12 h1:pIHiTtVZwf/jRL+Evy8OGhoL2VNRnJD7wSju8TMc9fI=
 github.com/coveord/go-getter v1.5.12/go.mod h1:orNH3BTYLu/fIxGIdLjLoAJHWMDQ/UKQr5O4m3iBuoo=
-github.com/coveord/hcl/v2 v2.10.11 h1:BgqzH3N2A58wYHZHFr3mJ+WSJ6jdhSgPUEECfDr6/5A=
-github.com/coveord/hcl/v2 v2.10.11/go.mod h1:jGPS3ZDvHntIcswgZNHxWTBGq5I+ejLX0YsAyrrzVDI=
+github.com/coveord/hcl/v2 v2.8.102 h1:4ZvW6D7YPnVV1Q1KHMqLXdN1jpPfo87eb7qvuK3hoCQ=
+github.com/coveord/hcl/v2 v2.8.102/go.mod h1:bQTN5mpo+jewjJgh8jr0JUguIi7qPHUF6yIfAEN3jqY=
 github.com/cpuguy83/go-md2man/v2 v2.0.2 h1:p1EgwI/C7NhT0JmVkwCD2ZBK8j4aeHQX2pMHHBfMQ6w=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/creack/pty v1.1.7/go.mod h1:lj5s0c3V2DBrqTV7llrYr5NG6My20zk30Fl46Y7DoTY=
@@ -597,7 +599,6 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 github.com/zclconf/go-cty v1.0.0/go.mod h1:xnAOWiHeOqg2nWS62VtQ7pbOu17FtxJNW8RLEih+O3s=
 github.com/zclconf/go-cty v1.1.0/go.mod h1:xnAOWiHeOqg2nWS62VtQ7pbOu17FtxJNW8RLEih+O3s=
 github.com/zclconf/go-cty v1.2.0/go.mod h1:hOPWgoHbaTUnI5k4D2ld+GRpFJSCe6bCM7m1q/N4PQ8=
-github.com/zclconf/go-cty v1.8.0/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty v1.8.3/go.mod h1:vVKLxnk3puL4qRAv72AO+W99LUD4da90g3uUAzyuvAk=
 github.com/zclconf/go-cty v1.13.3 h1:m+b9q3YDbg6Bec5rr+KGy1MzEVzY/jC2X+YX4yqKtHI=
 github.com/zclconf/go-cty v1.13.3/go.mod h1:YKQzy/7pZ7iq2jNFzy5go57xdxdWoLLpaEp4u238AE0=

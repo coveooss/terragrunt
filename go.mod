@@ -18,7 +18,7 @@ require (
 	github.com/go-errors/errors v1.4.2
 	github.com/hashicorp/go-getter v1.7.2
 	github.com/hashicorp/go-version v1.6.0
-	github.com/hashicorp/hcl/v2 v2.17.0
+	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/hashicorp/terraform v0.15.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/xid v1.5.0
@@ -42,6 +42,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
+	github.com/apparentlymart/go-textseg/v12 v12.0.0 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
@@ -131,5 +132,5 @@ require (
 replace (
 	github.com/hashicorp/go-getter => github.com/coveord/go-getter v1.5.12
 	// sum DB is messed up for v2.8.12
-	github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.10.11
+	github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.8.102
 )
