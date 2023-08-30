@@ -6,6 +6,19 @@
     "group:allNonMajor",
   ],
 
+  ignoreDeps: [
+    // We have a fork of `hashicorp/hcl/v2` which we rely on for some low level HCL parsing behaviour. We can't update
+    // our fork the upstream version of the package. See: https://github.com/hashicorp/hcl/issues/348
+    "github.com/hashicorp/hcl/v2",
+    "github.com/coveord/hcl/v2",
+
+    // Parts of our implementation relies on importing the `.../configs` and `.../lang` packages from
+    // github.com/hashicorp/terraform. In v0.15.4, terraform moved these packages and others under `.../internal/...`.
+    // This clearly marks them as internal and indicates that they should not be imported externally.
+    // See: https://github.com/hashicorp/terraform/commit/cf6e328d92193e63f0b560455a7cd9f437c72725
+    "github.com/hashicorp/terraform",
+  ],
+
   dependencyDashboard: true,
 
   branchPrefix: "renovate/",
