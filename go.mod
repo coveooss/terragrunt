@@ -4,28 +4,28 @@ go 1.18
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.3.2
-	github.com/aws/aws-sdk-go-v2 v1.20.1
-	github.com/aws/aws-sdk-go-v2/config v1.18.28
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.27
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.20.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.37.0
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.37.1
-	github.com/aws/aws-sdk-go-v2/service/sts v1.19.3
+	github.com/aws/aws-sdk-go-v2 v1.21.0
+	github.com/aws/aws-sdk-go-v2/config v1.18.37
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.35
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.21.5
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.38.5
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.37.5
+	github.com/aws/aws-sdk-go-v2/service/sts v1.21.5
 	github.com/cheekybits/genny v1.0.0
-	github.com/coveooss/gotemplate/v3 v3.7.3
+	github.com/coveooss/gotemplate/v3 v3.7.5
 	github.com/coveooss/multilogger v0.5.2
 	github.com/fatih/color v1.15.0
 	github.com/go-errors/errors v1.4.2
-	github.com/hashicorp/go-getter v1.7.0
+	github.com/hashicorp/go-getter v1.7.2
 	github.com/hashicorp/go-version v1.6.0
-	github.com/hashicorp/hcl/v2 v2.10.0
-	github.com/hashicorp/terraform v0.15.3
+	github.com/hashicorp/hcl/v2 v2.17.0
+	github.com/hashicorp/terraform v0.15.5
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/xid v1.5.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.14
-	github.com/zclconf/go-cty v1.12.1
+	github.com/zclconf/go-cty v1.13.3
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -133,5 +133,5 @@ require (
 replace (
 	github.com/hashicorp/go-getter => github.com/coveord/go-getter v1.5.12
 	// sum DB is messed up for v2.8.12
-	github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.8.102
+	github.com/hashicorp/hcl/v2 => github.com/coveord/hcl/v2 v2.10.11
 )
