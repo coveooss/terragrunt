@@ -22,7 +22,7 @@ jobs:
           go-version: '1.18'
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # We need the whole history so that goreleaser can figure out the changes
           fetch-depth: 0
