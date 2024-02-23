@@ -3,20 +3,20 @@ module github.com/coveooss/terragrunt/v2
 go 1.18
 
 require (
-	github.com/alecthomas/kingpin/v2 v2.3.2
-	github.com/aws/aws-sdk-go-v2 v1.21.0
-	github.com/aws/aws-sdk-go-v2/config v1.18.43
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.41
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.22.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.0
-	github.com/aws/aws-sdk-go-v2/service/ssm v1.38.0
-	github.com/aws/aws-sdk-go-v2/service/sts v1.23.0
+	github.com/alecthomas/kingpin/v2 v2.4.0
+	github.com/aws/aws-sdk-go-v2 v1.25.2
+	github.com/aws/aws-sdk-go-v2/config v1.27.4
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.4
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.30.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.1
+	github.com/aws/aws-sdk-go-v2/service/ssm v1.49.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.28.1
 	github.com/cheekybits/genny v1.0.0
 	github.com/coveooss/gotemplate/v3 v3.7.5
 	github.com/coveooss/multilogger v0.5.2
-	github.com/fatih/color v1.15.0
+	github.com/fatih/color v1.16.0
 	github.com/go-errors/errors v1.5.1
-	github.com/hashicorp/go-getter v1.7.2
+	github.com/hashicorp/go-getter v1.7.3
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hcl/v2 v2.10.0
 	github.com/hashicorp/terraform v0.15.3
@@ -25,7 +25,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.14
-	github.com/zclconf/go-cty v1.14.1
+	github.com/zclconf/go-cty v1.14.2
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -46,20 +46,20 @@ require (
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
 	github.com/apparentlymart/go-versions v1.0.1 // indirect
 	github.com/aws/aws-sdk-go v1.37.0 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.11 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.43 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.1.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.14 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.36 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.7.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.35 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.15.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.15.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.17.1 // indirect
-	github.com/aws/smithy-go v1.14.2 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.9.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.20.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.23.1 // indirect
+	github.com/aws/smithy-go v1.20.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
@@ -90,7 +90,7 @@ require (
 	github.com/klauspost/compress v1.11.2 // indirect
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
@@ -114,7 +114,7 @@ require (
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43 // indirect
-	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/term v0.11.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
