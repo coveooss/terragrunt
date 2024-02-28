@@ -26,7 +26,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.14
 	github.com/zclconf/go-cty v1.14.2
-	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
+	gopkg.in/matryer/try.v1 9ac251b645a2
 	gopkg.in/yaml.v2 v2.4.0
 )
 
