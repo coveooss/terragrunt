@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"regexp"
@@ -130,7 +129,7 @@ func readVersionFile(terraformSource *TerraformSource) (string, error) {
 // calculated using the encodeSourceVersion method.
 func writeVersionFile(terraformSource *TerraformSource) error {
 	version := encodeSourceVersion(terraformSource.CanonicalSourceURL)
-	return tgerrors.WithStackTrace(ioutil.WriteFile(terraformSource.VersionFile, []byte(version), 0640))
+	return tgerrors.WithStackTrace(os.WriteFile(terraformSource.VersionFile, []byte(version), 0640))
 }
 
 // Take the given source path and create a TerraformSource struct from it, including the folder where the source should

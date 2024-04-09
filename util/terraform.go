@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -102,7 +101,7 @@ func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...inte
 		}
 	}
 
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +263,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 		}
 
 		var content []byte
-		if content, err = ioutil.ReadFile(filename); err != nil {
+		if content, err = os.ReadFile(filename); err != nil {
 			return
 		}
 
@@ -288,7 +287,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 
 	if len(generated) > 0 {
 		// We write the resulting files
-		if tmpDir, err = ioutil.TempDir("", "load_defaults"); err != nil {
+		if tmpDir, err = os.MkdirTemp("", "load_defaults"); err != nil {
 			return
 		}
 		for filename, value := range generated {
@@ -299,7 +298,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 			case json.Dictionary:
 				content = []byte(value.PrettyPrint())
 			}
-			if err = ioutil.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
+			if err = os.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
 				return
 			}
 		}

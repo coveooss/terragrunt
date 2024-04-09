@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -14,10 +13,6 @@ import (
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/stretchr/testify/assert"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 var mockOptions = options.NewTerragruntOptionsForTest("dynamo_lock_test_utils")
 
