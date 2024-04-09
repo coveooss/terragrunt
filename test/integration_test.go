@@ -4,15 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"math/rand"
-	"os"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -25,13 +16,15 @@ import (
 	"github.com/coveooss/terragrunt/v2/remote"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/stretchr/testify/assert"
+	"io"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
 )
 
 const terraformRemoteStateS3Region = "us-west-2"
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 func trim(s string) string { return fmt.Sprintln(strings.TrimSpace(collections.UnIndent(s))) }
 
@@ -492,7 +485,7 @@ func withEnv(variables string, testFunction func()) {
 }
 
 func copyEnvironment(t *testing.T, environmentPath string) string {
-	tmpDir, err := ioutil.TempDir("", "terragrunt-stack-test")
+	tmpDir, err := os.MkdirTemp("", "terragrunt-stack-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir due to error: %v", err)
 	}
@@ -526,15 +519,15 @@ func copyEnvironment(t *testing.T, environmentPath string) string {
 }
 
 func copyFile(srcPath string, destPath string) error {
-	contents, err := ioutil.ReadFile(srcPath)
+	contents, err := os.ReadFile(srcPath)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(destPath, contents, 0644)
+	return os.WriteFile(destPath, contents, 0644)
 }
 
 func createTmpTerragruntConfigWithParentAndChild(t *testing.T, parentPath string, childRelPath string, s3BucketName string, parentConfigFileName string, childConfigFileName string) string {
-	tmpDir, err := ioutil.TempDir("", "terragrunt-parent-child-test")
+	tmpDir, err := os.MkdirTemp("", "terragrunt-parent-child-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir due to error: %v", err)
 	}
@@ -557,7 +550,7 @@ func createTmpTerragruntConfigWithParentAndChild(t *testing.T, parentPath string
 }
 
 func createTmpTerragruntConfig(t *testing.T, templatesPath string, s3BucketName string, lockTableName string, configFileName string) string {
-	tmpFolder, err := ioutil.TempDir("", "terragrunt-test")
+	tmpFolder, err := os.MkdirTemp("", "terragrunt-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp folder due to error: %v", err)
 	}
@@ -578,7 +571,7 @@ func copyTerragruntConfigAndFillPlaceholders(t *testing.T, configSrcPath string,
 	contents = strings.Replace(contents, "__FILL_IN_BUCKET_NAME__", s3BucketName, -1)
 	contents = strings.Replace(contents, "__FILL_IN_LOCK_TABLE_NAME__", lockTableName, -1)
 
-	if err := ioutil.WriteFile(configDestPath, []byte(contents), 0444); err != nil {
+	if err := os.WriteFile(configDestPath, []byte(contents), 0444); err != nil {
 		t.Fatalf("Error writing temp Terragrunt config to %s: %v", configDestPath, err)
 	}
 }

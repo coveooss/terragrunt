@@ -2,7 +2,6 @@ package util
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,7 +36,7 @@ const (
 // can't be updated on its own.
 func GetCopy(dst, src, fileRegex string) error {
 	// Create the temporary directory to do the real Get to
-	tmpDir, err := ioutil.TempDir("", "tf")
+	tmpDir, err := os.MkdirTemp("", "tf")
 	if err != nil {
 		return err
 	}
