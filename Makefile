@@ -14,7 +14,7 @@ full-test:
 	go test -v ./...
 
 static:
-	go install honnef.co/go/tools/cmd/staticcheck@2023.1.7
+	go install honnef.co/go/tools/cmd/staticcheck@2022.1
 	staticcheck --version
 
 	staticcheck ./...

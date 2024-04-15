@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -177,7 +178,7 @@ func (c CommandContext) Run() error {
 		c.log.Log(c.LogLevel, verb, "command: ", c.DisplayCommand, " ", strings.Join(cmd.Args[1:], " "))
 
 		if tempFile != "" {
-			content, _ := os.ReadFile(tempFile)
+			content, _ := ioutil.ReadFile(tempFile)
 			if c.DisplayCommand == "" {
 				c.options.Logger.Debugf("\n%s", string(content))
 			}

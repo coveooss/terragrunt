@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -136,7 +136,7 @@ func SaveS3Status(bucketInfo *BucketInfo, folder string) (err error) {
 	if err != nil {
 		return
 	}
-	err = os.WriteFile(filepath.Join(folder, CacheFile), jsonString, 0644)
+	err = ioutil.WriteFile(filepath.Join(folder, CacheFile), jsonString, 0644)
 	return
 }
 
@@ -153,7 +153,7 @@ func CheckS3Status(sourceBucketInfo *BucketInfo, folder string) error {
 		return fmt.Errorf("error while reading %s: %w", *sourceBucketInfo, err)
 	}
 
-	content, err := os.ReadFile(filepath.Join(folder, CacheFile))
+	content, err := ioutil.ReadFile(filepath.Join(folder, CacheFile))
 	if err != nil {
 		return err
 	}

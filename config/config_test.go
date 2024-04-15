@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"os"
+	"io/ioutil"
 	"path"
 	"path/filepath"
 	"testing"
@@ -464,7 +464,7 @@ func TestReadTerragruntConfigHooksAreInitalized(t *testing.T) {
 
 	fixturesDir := "../test/fixture-hooks"
 
-	files, err := os.ReadDir(fixturesDir)
+	files, err := ioutil.ReadDir(fixturesDir)
 	if err != nil {
 		t.Fatal(err)
 	}
