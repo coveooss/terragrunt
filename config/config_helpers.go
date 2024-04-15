@@ -217,8 +217,7 @@ func (ctx *resolveContext) getParentDir() (string, error) {
 }
 
 // Returns the named environment variable or default value if it does not exist
-//
-//	get_env(variable_name, default_value)
+//     get_env(variable_name, default_value)
 func (ctx *resolveContext) getEnvironmentVariable(env, defValue string) string {
 	if value, exists := ctx.options.Env[env]; exists {
 		return value

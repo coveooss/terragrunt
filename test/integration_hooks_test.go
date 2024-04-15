@@ -3,6 +3,7 @@ package test
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -22,7 +23,7 @@ func TestTerragruntBeforeHook(t *testing.T) {
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 
-	_, exception := os.ReadFile(rootPath + "/file.out")
+	_, exception := ioutil.ReadFile(rootPath + "/file.out")
 
 	assert.NoError(t, exception)
 }
@@ -37,7 +38,7 @@ func TestTerragruntAfterHook(t *testing.T) {
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 
-	_, exception := os.ReadFile(rootPath + "/file.out")
+	_, exception := ioutil.ReadFile(rootPath + "/file.out")
 
 	assert.NoError(t, exception)
 }
@@ -52,8 +53,8 @@ func TestTerragruntBeforeAndAfterHook(t *testing.T) {
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath))
 
-	_, beforeException := os.ReadFile(rootPath + "/before.out")
-	_, afterException := os.ReadFile(rootPath + "/after.out")
+	_, beforeException := ioutil.ReadFile(rootPath + "/before.out")
+	_, afterException := ioutil.ReadFile(rootPath + "/after.out")
 
 	assert.NoError(t, beforeException)
 	assert.NoError(t, afterException)
@@ -82,11 +83,11 @@ func TestTerragruntBeforeAndAfterMergeHook(t *testing.T) {
 
 	runTerragrunt(t, fmt.Sprintf("terragrunt apply --terragrunt-non-interactive --terragrunt-config %s --terragrunt-working-dir %s", tmpTerragruntConfigPath, childPath))
 
-	_, beforeException := os.ReadFile(childPath + "/before.out")
-	_, beforeChildException := os.ReadFile(childPath + "/before-child.out")
-	_, beforeOverriddenParentException := os.ReadFile(childPath + "/before-parent.out")
-	_, afterException := os.ReadFile(childPath + "/after.out")
-	_, afterParentException := os.ReadFile(childPath + "/after-parent.out")
+	_, beforeException := ioutil.ReadFile(childPath + "/before.out")
+	_, beforeChildException := ioutil.ReadFile(childPath + "/before-child.out")
+	_, beforeOverriddenParentException := ioutil.ReadFile(childPath + "/before-parent.out")
+	_, afterException := ioutil.ReadFile(childPath + "/after.out")
+	_, afterParentException := ioutil.ReadFile(childPath + "/after-parent.out")
 
 	assert.NoError(t, beforeException)
 	assert.NoError(t, beforeChildException)
@@ -136,7 +137,7 @@ func TestTerragruntHookExitCode1(t *testing.T) {
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
-	_, exception := os.ReadFile(rootPath + "/test.out")
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
 	assert.Error(t, exception)
 	assert.Contains(t, err.Error(), "Error while executing hooks(post_hook_1): exit status 1")
 }
@@ -151,7 +152,7 @@ func TestTerragruntHookExitCode1RunOnErrors(t *testing.T) {
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
-	_, exception := os.ReadFile(rootPath + "/test.out")
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "Error while executing hooks(post_hook_1): exit status 1")
 }
@@ -166,7 +167,7 @@ func TestTerragruntHookExitCode2(t *testing.T) {
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
-	_, exception := os.ReadFile(rootPath + "/test.out")
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "There are changes in the plan")
 }
@@ -181,7 +182,7 @@ func TestTerragruntHookExitCode2InPreHook(t *testing.T) {
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
-	_, exception := os.ReadFile(rootPath + "/test2.out")
+	_, exception := ioutil.ReadFile(rootPath + "/test2.out")
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "There are changes in the plan")
 }
@@ -196,7 +197,7 @@ func TestTerragruntHookExitCode2PlanAll(t *testing.T) {
 
 	err := runTerragruntCommand(t, fmt.Sprintf("terragrunt plan-all -detailed-exitcode --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), os.Stdout, os.Stderr)
 
-	_, exception := os.ReadFile(rootPath + "/test.out")
+	_, exception := ioutil.ReadFile(rootPath + "/test.out")
 	assert.NoError(t, exception)
 	assert.Contains(t, err.Error(), "There are changes in the plan")
 }
@@ -211,7 +212,7 @@ func TestTerragruntHookWithEnvVars(t *testing.T) {
 
 			var stdout, stderr bytes.Buffer
 			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt cmd%d --terragrunt-non-interactive --terragrunt-working-dir %s", i, rootPath), &stdout, &stderr)
-			content, err := os.ReadFile(util.JoinPath(rootPath, fmt.Sprintf("result%d", i)))
+			content, err := ioutil.ReadFile(util.JoinPath(rootPath, fmt.Sprintf("result%d", i)))
 			assert.NoError(t, err, "Reading result%d", i)
 			assert.Equal(t, string(content), stdout.String(), "Comparing result %d", i)
 		})
@@ -226,7 +227,7 @@ func TestTerragruntHookOverwrite(t *testing.T) {
 
 	var stdout bytes.Buffer
 	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt cmd --terragrunt-non-interactive --terragrunt-working-dir %s", rootPath), &stdout, os.Stderr)
-	content, err := os.ReadFile(util.JoinPath(rootPath, "result"))
+	content, err := ioutil.ReadFile(util.JoinPath(rootPath, "result"))
 	assert.NoError(t, err, "Reading result")
 	assert.Equal(t, string(content), stdout.String(), "Comparing result")
 }

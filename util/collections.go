@@ -44,10 +44,9 @@ func RemoveDuplicatesFromListKeepLast(list []string) []string {
 
 // RemoveDuplicatesFromList returns a copy of the given list with all duplicates removed (keeping the last encountereds)
 // Params:
-//
-//	  list: The list to filter
-//	  keepLast: Indicates whether the last or first encountered duplicate element should be kept
-//		 getKey: Function used to extract the actual key from the string
+//   list: The list to filter
+//   keepLast: Indicates whether the last or first encountered duplicate element should be kept
+//	 getKey: Function used to extract the actual key from the string
 func RemoveDuplicatesFromList(list []string, keepLast bool, getKey func(key string) string) []string {
 	out := make([]string, 0, len(list))
 	present := make(map[string]bool)

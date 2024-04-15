@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -182,7 +183,7 @@ func testAlreadyHaveLatestCode(t *testing.T, canonicalURL string, downloadDir st
 }
 
 func tmpDir(t *testing.T) string {
-	dir, err := os.MkdirTemp("", "download-source-test")
+	dir, err := ioutil.TempDir("", "download-source-test")
 	if err != nil {
 		t.Fatal(err)
 	}

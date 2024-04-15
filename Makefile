@@ -14,7 +14,7 @@ full-test:
 	go test -v ./...
 
 static:
-	go install honnef.co/go/tools/cmd/staticcheck@2023.1.7
+	go install honnef.co/go/tools/cmd/staticcheck@2022.1
 	staticcheck --version
 
 	staticcheck ./...
@@ -22,8 +22,8 @@ static:
 pre-commit: fmt static test
 
 build:
-	go install golang.org/x/tools/cmd/stringer@latest
-	go install github.com/cheekybits/genny@latest
+	go install golang.org/x/tools/cmd/stringer@v0.19.0
+	go install github.com/cheekybits/genny@v1.0.0
 
 	go generate -x ./...
 	go build

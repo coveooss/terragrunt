@@ -3,6 +3,7 @@ package util
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -92,7 +93,7 @@ func Grep(regex *regexp.Regexp, folder string, patterns ...string) (bool, error)
 	}
 
 	for _, match := range matches {
-		bytes, err := os.ReadFile(match)
+		bytes, err := ioutil.ReadFile(match)
 		if err != nil {
 			return false, tgerrors.WithStackTrace(err)
 		}
@@ -173,7 +174,7 @@ func GetPathRelativeToMax(path, basePath string, maxLevel uint) (result string) 
 
 // ReadFileAsString returns the contents of the file at the given path as a string
 func ReadFileAsString(path string) (string, error) {
-	bytes, err := os.ReadFile(path)
+	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
 		return "", tgerrors.WithStackTraceAndPrefix(err, "Error reading file at path %s", path)
 	}
@@ -325,7 +326,7 @@ var sharedContent = map[string]bool{}
 // CopyFolderContents copies the files and folders within the source folder into the destination folder. Note that hidden files and folders
 // (those starting with a dot) will be skipped.
 func CopyFolderContents(source, destination string, excluded ...string) error {
-	files, err := os.ReadDir(source)
+	files, err := ioutil.ReadDir(source)
 	if err != nil {
 		return tgerrors.WithStackTrace(err)
 	}
@@ -339,7 +340,7 @@ func CopyFolderContents(source, destination string, excluded ...string) error {
 		if PathContainsHiddenFileOrFolder(src) {
 			continue
 		} else if file.IsDir() {
-			if err := os.MkdirAll(dest, file.Type()); err != nil {
+			if err := os.MkdirAll(dest, file.Mode()); err != nil {
 				return tgerrors.WithStackTrace(err)
 			}
 
@@ -369,7 +370,7 @@ func PathContainsHiddenFileOrFolder(path string) bool {
 
 // CopyFile copies a file from source to destination
 func CopyFile(source string, destination string) error {
-	contents, err := os.ReadFile(source)
+	contents, err := ioutil.ReadFile(source)
 	if err != nil {
 		return tgerrors.WithStackTrace(err)
 	}
@@ -385,7 +386,7 @@ func WriteFileWithSamePermissions(source string, destination string, contents []
 		return tgerrors.WithStackTrace(err)
 	}
 
-	return os.WriteFile(destination, contents, fileInfo.Mode())
+	return ioutil.WriteFile(destination, contents, fileInfo.Mode())
 }
 
 // JoinPath always use / as the separator.
