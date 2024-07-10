@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -178,7 +177,7 @@ func (c CommandContext) Run() error {
 		c.log.Log(c.LogLevel, verb, "command: ", c.DisplayCommand, " ", strings.Join(cmd.Args[1:], " "))
 
 		if tempFile != "" {
-			content, _ := ioutil.ReadFile(tempFile)
+			content, _ := os.ReadFile(tempFile)
 			if c.DisplayCommand == "" {
 				c.options.Logger.Debugf("\n%s", string(content))
 			}
@@ -236,12 +235,12 @@ func GetExitCode(err error) (int, error) {
 	if err == nil {
 		return 0, nil
 	}
-	if exiterr, ok := tgerrors.Unwrap(err).(tgerrors.IErrorCode); ok {
-		return exiterr.ExitStatus()
+	if exitErr, ok := tgerrors.Unwrap(err).(tgerrors.IErrorCode); ok {
+		return exitErr.ExitStatus()
 	}
 
-	if exiterr, ok := tgerrors.Unwrap(err).(*exec.ExitError); ok {
-		status := exiterr.Sys().(syscall.WaitStatus)
+	if exitErr, ok := tgerrors.Unwrap(err).(*exec.ExitError); ok {
+		status := exitErr.Sys().(syscall.WaitStatus)
 		return status.ExitStatus(), nil
 	}
 	return 0, err

@@ -39,6 +39,6 @@ func GetRandomTime(lowerBound, upperBound time.Duration) time.Duration {
 
 // Generate a random int between min and max, inclusive
 func random(min int, max int) int {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(max-min) + min
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return r.Intn(max-min) + min
 }

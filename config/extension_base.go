@@ -50,7 +50,7 @@ func (base *TerragruntExtensionBase) init(config *TerragruntConfigFile) {
 	base._config = config
 }
 
-func (base TerragruntExtensionBase) run(args ...interface{}) ([]interface{}, error) {
+func (base TerragruntExtensionBase) run(...interface{}) ([]interface{}, error) {
 	return nil, nil
 }
 
@@ -90,7 +90,7 @@ func (base TerragruntExtensionBase) enabled() bool {
 	return !base.Disabled && (len(base.OS) == 0 || util.ListContainsElement(base.OS, runtime.GOOS))
 }
 
-// TitleID add formating to the id of the elements
+// TitleID add formatting to the id of the elements
 var TitleID = color.New(color.FgHiYellow).SprintFunc()
 
 type mergeMode int

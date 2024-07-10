@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"regexp"
@@ -130,7 +129,7 @@ func readVersionFile(terraformSource *TerraformSource) (string, error) {
 // calculated using the encodeSourceVersion method.
 func writeVersionFile(terraformSource *TerraformSource) error {
 	version := encodeSourceVersion(terraformSource.CanonicalSourceURL)
-	return tgerrors.WithStackTrace(ioutil.WriteFile(terraformSource.VersionFile, []byte(version), 0640))
+	return tgerrors.WithStackTrace(os.WriteFile(terraformSource.VersionFile, []byte(version), 0640))
 }
 
 // Take the given source path and create a TerraformSource struct from it, including the folder where the source should
@@ -304,7 +303,7 @@ func isLocalSource(sourceURL *url.URL) bool {
 }
 
 // If this temp folder already exists, simply delete all the Terraform files within it
-// (the terraform init command will redownload the latest ones), but leave all the other files, such
+// (the terraform init command will re-download the latest ones), but leave all the other files, such
 // as the .terraform folder with the downloaded modules and remote state settings.
 func cleanupTerraformFiles(path string, terragruntOptions *options.TerragruntOptions) error {
 	if !util.FileExists(path) {
