@@ -11,7 +11,7 @@ import (
 	"github.com/coveooss/terragrunt/v2/util"
 	hclwrite "github.com/hashicorp/hcl/v2/hclwrite"
 	"github.com/hashicorp/terraform/configs"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // ExportVariablesConfig represents a path and format where variables known to Terragrunt should be exported

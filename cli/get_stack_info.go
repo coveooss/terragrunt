@@ -11,7 +11,7 @@ import (
 	"github.com/coveooss/terragrunt/v2/configstack"
 	"github.com/coveooss/terragrunt/v2/options"
 
-	yaml "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 )
 
 const getStackCommand = "get-stack"
