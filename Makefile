@@ -14,15 +14,14 @@ full-test:
 	go test -v ./...
 
 static:
-	go install honnef.co/go/tools/cmd/staticcheck@2022.1
+	go install honnef.co/go/tools/cmd/staticcheck@2023.1.7
 	staticcheck --version
-
 	staticcheck ./...
 
 pre-commit: fmt static test
 
 build:
-	go install golang.org/x/tools/cmd/stringer@v0.19.0
+	go install golang.org/x/tools/cmd/stringer@v0.23.0
 	go install github.com/cheekybits/genny@v1.0.0
 
 	go generate -x ./...
