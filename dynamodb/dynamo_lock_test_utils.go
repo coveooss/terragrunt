@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 var mockOptions = options.NewTerragruntOptionsForTest("dynamo_lock_test_utils")

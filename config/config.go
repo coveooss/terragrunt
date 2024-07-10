@@ -184,7 +184,7 @@ func (tcf *TerragruntConfigFile) convertToTerragruntConfig(terragruntOptions *op
 		// If the newly loaded configuration file is not to be merged, we force the merge
 		// process to ensure that duplicated elements will be properly processed
 		newConfig := &TerragruntConfig{options: tcf.options}
-		newConfig.mergeIncludedConfig(tcf.TerragruntConfig, terragruntOptions)
+		newConfig.mergeIncludedConfig(tcf.TerragruntConfig)
 		return newConfig, err
 	}
 	return &tcf.TerragruntConfig, err
@@ -298,7 +298,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 	config = &TerragruntConfig{options: terragruntOptions}
 	if include.isIncludedBy == nil && !include.isBootstrap {
 		if err = config.loadBootConfigs(terragruntOptions, &IncludeConfig{isBootstrap: true}, terragruntOptions.PreBootConfigurationPaths); err != nil {
-			terragruntOptions.Logger.Debugf("Error parsing preboot configuration files: %v", err)
+			terragruntOptions.Logger.Debugf("Error parsing pre-boot configuration files: %v", err)
 			return
 		}
 	}
@@ -365,7 +365,7 @@ func ParseConfigFile(terragruntOptions *options.TerragruntOptions, include Inclu
 			}
 		}
 	}
-	config.mergeIncludedConfig(*userConfig, terragruntOptions)
+	config.mergeIncludedConfig(*userConfig)
 
 	if include.isIncludedBy == nil {
 		configFiles.Store(include.Path, []interface{}{configString, config})
@@ -434,7 +434,7 @@ func parseConfigString(configString string, terragruntOptions *options.Terragrun
 		return
 	}
 
-	config.mergeIncludedConfig(*includedConfig, terragruntOptions)
+	config.mergeIncludedConfig(*includedConfig)
 
 	return
 }
@@ -452,7 +452,7 @@ func parseConfigStringAsTerragruntConfig(configString string, resolveContext *re
 }
 
 // parseHcl uses the HCL2 parser to parse the given string into the struct specified by out.
-// If the supplied data is in another format, it converts it to json to use HCL2 ParseJSON instea
+// If the supplied data is in another format, it converts it to json to use HCL2 ParseJSON instead
 func parseHcl(content string, filename string, out interface{}, resolveContext *resolveContext) (err error) {
 	// The HCL2 parser and especially cty conversions will panic in many types of errors, so we have to recover from
 	// those panics here and convert them to normal errors
@@ -549,15 +549,15 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 				}
 				continue
 			}
-			conf.mergeIncludedConfig(*bootConfig, terragruntOptions)
+			conf.mergeIncludedConfig(*bootConfig)
 		}
 	}
 	return nil
 }
 
 // Merge an included config into the current config. Some elements specified in both config will be merged while
-// others will be overridded only if they are not already specified in the original config.
-func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfig, terragruntOptions *options.TerragruntOptions) {
+// others will be overridden only if they are not already specified in the original config.
+func (conf *TerragruntConfig) mergeIncludedConfig(includedConfig TerragruntConfig) {
 	if includedConfig.Description != "" {
 		if conf.Description != "" {
 			conf.Description += "\n"

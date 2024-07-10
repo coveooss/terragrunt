@@ -32,21 +32,22 @@ func RemoveElementFromList(list []string, element string) []string {
 	return removeElementFromList(list, element, wholeValue)
 }
 
-// RemoveDuplicatesFromListKeepFirst returns a copy of the given list with all duplicates removed (keeping the first encountereds)
+// RemoveDuplicatesFromListKeepFirst returns a copy of the given list with all duplicates removed (keeping the first encountered)
 func RemoveDuplicatesFromListKeepFirst(list []string) []string {
 	return RemoveDuplicatesFromList(list, false, wholeValue)
 }
 
-// RemoveDuplicatesFromListKeepLast returns a copy of the given list with all duplicates removed (keeping the last encountereds)
+// RemoveDuplicatesFromListKeepLast returns a copy of the given list with all duplicates removed (keeping the last encountered)
 func RemoveDuplicatesFromListKeepLast(list []string) []string {
 	return RemoveDuplicatesFromList(list, true, wholeValue)
 }
 
-// RemoveDuplicatesFromList returns a copy of the given list with all duplicates removed (keeping the last encountereds)
+// RemoveDuplicatesFromList returns a copy of the given list with all duplicates removed (keeping the last encountered)
 // Params:
-//   list: The list to filter
-//   keepLast: Indicates whether the last or first encountered duplicate element should be kept
-//	 getKey: Function used to extract the actual key from the string
+//
+//	  list: The list to filter
+//	  keepLast: Indicates whether the last or first encountered duplicate element should be kept
+//		 getKey: Function used to extract the actual key from the string
 func RemoveDuplicatesFromList(list []string, keepLast bool, getKey func(key string) string) []string {
 	out := make([]string, 0, len(list))
 	present := make(map[string]bool)
@@ -78,7 +79,7 @@ func FilterList(list []string, test func(string) bool) (ret []string) {
 func removeElementFromList(list []string, element string, getKey func(key string) string) []string {
 	out := []string{}
 	for _, item := range list {
-		if item != element {
+		if getKey(item) != element {
 			out = append(out, item)
 		}
 	}
@@ -87,7 +88,7 @@ func removeElementFromList(list []string, element string, getKey func(key string
 
 func wholeValue(key string) string { return key }
 
-// CommaSeparatedStrings returns an HCL compliant formated list of strings (each string within double quote)
+// CommaSeparatedStrings returns an HCL compliant formatted list of strings (each string within double quote)
 func CommaSeparatedStrings(list []string) string {
 	values := make([]string, 0, len(list))
 	for _, value := range list {

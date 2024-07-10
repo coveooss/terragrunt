@@ -1,7 +1,6 @@
 package configstack
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,12 +51,7 @@ func TestFindStackInSubfolders(t *testing.T) {
 }
 
 func createTempFolder(t *testing.T) string {
-	tmpFolder, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %s\n", err.Error())
-	}
-
-	return filepath.ToSlash(tmpFolder)
+	return filepath.ToSlash(os.TempDir())
 }
 
 // Create a dummy Terragrunt config file at each of the given paths
@@ -69,7 +63,7 @@ func writeDummyTerragruntConfigs(t *testing.T, tmpFolder string, paths []string)
 		containingDir := filepath.Dir(absPath)
 		createDirIfNotExist(t, containingDir)
 
-		err := ioutil.WriteFile(absPath, contents, os.ModePerm)
+		err := os.WriteFile(absPath, contents, os.ModePerm)
 		if err != nil {
 			t.Fatalf("Failed to write file at path %s: %s\n", path, err.Error())
 		}

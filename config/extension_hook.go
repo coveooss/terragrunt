@@ -78,7 +78,7 @@ func (hook Hook) help() (result string) {
 	return
 }
 
-func (hook *Hook) run(args ...interface{}) (result []interface{}, err error) {
+func (hook *Hook) run(...interface{}) (result []interface{}, err error) {
 	logger := hook.logger()
 
 	if len(hook.OnCommands) > 0 && !util.ListContainsElement(hook.OnCommands, hook.options().Env[options.EnvCommand]) {

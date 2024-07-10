@@ -3,7 +3,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -85,7 +85,7 @@ func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[str
 			if len(content) > 0 && content[len(content)-1] != '\n' {
 				content = append(content, '\n')
 			}
-			if err = ioutil.WriteFile(writePath, content, 0644); handleError(err) != nil {
+			if err = os.WriteFile(writePath, content, 0644); handleError(err) != nil {
 				return fmt.Errorf("file write error: %v", err)
 			}
 		}

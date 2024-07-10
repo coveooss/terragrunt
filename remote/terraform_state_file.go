@@ -3,7 +3,7 @@ package remote
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
@@ -59,7 +59,7 @@ func parseTerraformStateFileFromLocation(workingDir string) (*TerraformState, er
 
 // Parse the Terraform .tfstate file at the given path
 func parseTerraformStateFile(path string) (*TerraformState, error) {
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, tgerrors.WithStackTrace(errCantParseTerraformStateFile{Path: path, UnderlyingErr: err})
 	}
