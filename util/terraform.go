@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -102,7 +101,7 @@ func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...inte
 		}
 	}
 
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -208,10 +207,10 @@ func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (m
 			if !retry {
 				return nil, nil, err
 			}
-			// If we get an error while loading variables, we try to isolate variables definition in a temporay folder.
+			// If we get an error while loading variables, we try to isolate variables definition in a temporary folder.
 			if logger != nil {
 				logger.Debugf("First try with terraform native LoadConfigDir failed\n%v", color.HiBlackString(err.Error()))
-				logger.Debug("Retrying with a temporary folder containing only variables deinitions")
+				logger.Debug("Retrying with a temporary folder containing only variables definitions")
 			}
 			tmpDir, err := createTerraformVariablesTemporaryFolder(folder)
 			if tmpDir == "" || err != nil {
@@ -254,8 +253,8 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 		return
 	}
 
-	// The variables are splitted up into 4 different files depending if they are declared
-	// in a .tf file or a .tf.json file and if they are declareds in an override file or not.
+	// The variables are spitted up into 4 different files depending if they are declared
+	// in a .tf file or a .tf.json file and if they are declared in an override file or not.
 	generated := make(map[string]interface{})
 	for _, filename := range files {
 		name, ext := "regular", path.Ext(filename)
@@ -264,7 +263,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 		}
 
 		var content []byte
-		if content, err = ioutil.ReadFile(filename); err != nil {
+		if content, err = os.ReadFile(filename); err != nil {
 			return
 		}
 
@@ -288,7 +287,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 
 	if len(generated) > 0 {
 		// We write the resulting files
-		if tmpDir, err = ioutil.TempDir("", "load_defaults"); err != nil {
+		if tmpDir, err = os.MkdirTemp("", "load_defaults"); err != nil {
 			return
 		}
 		for filename, value := range generated {
@@ -299,7 +298,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 			case json.Dictionary:
 				content = []byte(value.PrettyPrint())
 			}
-			if err = ioutil.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
+			if err = os.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
 				return
 			}
 		}

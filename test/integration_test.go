@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -30,7 +29,7 @@ import (
 const terraformRemoteStateS3Region = "us-west-2"
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 func trim(s string) string { return fmt.Sprintln(strings.TrimSpace(collections.UnIndent(s))) }
@@ -189,7 +188,7 @@ func TestTerragruntCustomConfig(t *testing.T) {
 		`), out.String())
 		assert.Equal(t, "", err.String())
 	}
-	{ // Outpout yaml
+	{ // Output yaml
 		command := command + " -oy"
 		var out, err bytes.Buffer
 		runTerragruntRedirectOutput(t, command, &out, &err)
@@ -210,7 +209,7 @@ func TestTerragruntCustomConfig(t *testing.T) {
 		`)+"\n", out.String())
 		assert.Equal(t, "", err.String())
 	}
-	{ // Outpout json
+	{ // Output json
 		command := command + " -oj"
 		var out, err bytes.Buffer
 		runTerragruntRedirectOutput(t, command, &out, &err)
@@ -244,7 +243,7 @@ func TestTerragruntCustomConfig(t *testing.T) {
 		`), out.String())
 		assert.Equal(t, "", err.String())
 	}
-	{ // Outpout hcl
+	{ // Output hcl
 		command := command + " -oh"
 		var out, err bytes.Buffer
 		runTerragruntRedirectOutput(t, command, &out, &err)
@@ -417,7 +416,7 @@ func TestPriorityOrderOfArgument(t *testing.T) {
 	injectedValue := "Injected-directly-by-argument"
 	runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -var extra_var=%s --terragrunt-non-interactive --terragrunt-working-dir %s", injectedValue, tmpEnvPath), out, os.Stderr)
 	t.Log(out.String())
-	// And the result value for test should be the injected variable since the injected arguments are injected before the suplied parameters,
+	// And the result value for test should be the injected variable since the injected arguments are injected before the supplied parameters,
 	// so our override of extra_var should be the last argument.
 	assert.Contains(t, out.String(), fmt.Sprintf(`test = "%s"`, injectedValue))
 }
@@ -444,7 +443,7 @@ func removeFolder(t *testing.T, path string) {
 	}
 }
 
-func runTerragruntCommand(t *testing.T, command string, writer io.Writer, errwriter io.Writer) error {
+func runTerragruntCommand(_ *testing.T, command string, writer io.Writer, errwriter io.Writer) error {
 	args := util.RemoveElementFromList(strings.Split(command, " "), "")
 	app := cli.CreateTerragruntCli("TEST", writer, errwriter)
 	return app.Run(args)
@@ -492,7 +491,7 @@ func withEnv(variables string, testFunction func()) {
 }
 
 func copyEnvironment(t *testing.T, environmentPath string) string {
-	tmpDir, err := ioutil.TempDir("", "terragrunt-stack-test")
+	tmpDir, err := os.MkdirTemp("", "terragrunt-stack-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir due to error: %v", err)
 	}
@@ -526,15 +525,15 @@ func copyEnvironment(t *testing.T, environmentPath string) string {
 }
 
 func copyFile(srcPath string, destPath string) error {
-	contents, err := ioutil.ReadFile(srcPath)
+	contents, err := os.ReadFile(srcPath)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(destPath, contents, 0644)
+	return os.WriteFile(destPath, contents, 0644)
 }
 
 func createTmpTerragruntConfigWithParentAndChild(t *testing.T, parentPath string, childRelPath string, s3BucketName string, parentConfigFileName string, childConfigFileName string) string {
-	tmpDir, err := ioutil.TempDir("", "terragrunt-parent-child-test")
+	tmpDir, err := os.MkdirTemp("", "terragrunt-parent-child-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir due to error: %v", err)
 	}
@@ -557,7 +556,7 @@ func createTmpTerragruntConfigWithParentAndChild(t *testing.T, parentPath string
 }
 
 func createTmpTerragruntConfig(t *testing.T, templatesPath string, s3BucketName string, lockTableName string, configFileName string) string {
-	tmpFolder, err := ioutil.TempDir("", "terragrunt-test")
+	tmpFolder, err := os.MkdirTemp("", "terragrunt-test")
 	if err != nil {
 		t.Fatalf("Failed to create temp folder due to error: %v", err)
 	}
@@ -578,7 +577,7 @@ func copyTerragruntConfigAndFillPlaceholders(t *testing.T, configSrcPath string,
 	contents = strings.Replace(contents, "__FILL_IN_BUCKET_NAME__", s3BucketName, -1)
 	contents = strings.Replace(contents, "__FILL_IN_LOCK_TABLE_NAME__", lockTableName, -1)
 
-	if err := ioutil.WriteFile(configDestPath, []byte(contents), 0444); err != nil {
+	if err := os.WriteFile(configDestPath, []byte(contents), 0444); err != nil {
 		t.Fatalf("Error writing temp Terragrunt config to %s: %v", configDestPath, err)
 	}
 }
