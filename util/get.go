@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hashicorp/go-getter/v2"
+	"github.com/hashicorp/go-getter"
 )
 
 // GetMode is an enum that describes how modules are loaded.

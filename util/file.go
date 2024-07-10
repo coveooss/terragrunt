@@ -15,7 +15,7 @@ import (
 	"github.com/coveooss/multilogger"
 	"github.com/coveooss/terragrunt/v2/awshelper"
 	"github.com/coveooss/terragrunt/v2/tgerrors"
-	getter "github.com/hashicorp/go-getter/v2"
+	getter "github.com/hashicorp/go-getter"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/matryer/try.v1"
 )
