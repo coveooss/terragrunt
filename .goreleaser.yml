@@ -1,4 +1,5 @@
 # Build customization
+version: 2
 builds:
   - binary: terragrunt
     ldflags: -s -w -X main.VERSION={{.Version}}
