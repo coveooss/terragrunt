@@ -11,9 +11,9 @@ import (
 	"github.com/coveooss/terragrunt/v2/util"
 )
 
-// ImportVariables is a configuration that allows defintion of variables that will be added to
+// ImportVariables is a configuration that allows definition of variables that will be added to
 // the current execution. Variables could be defined either by loading files (required or optional)
-// or defining vairables directly. It is also possible to define global environment variables.
+// or defining variables directly. It is also possible to define global environment variables.
 type ImportVariables struct {
 	TerragruntExtensionBase `hcl:",remain"`
 
