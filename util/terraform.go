@@ -164,7 +164,6 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 
 func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (map[string]interface{}, map[string]*tfconfig.Variable, error) {
 	module, diags := tfconfig.LoadModule(folder)
-	fmt.Println("Hello", folder, diags)
 	if diags.HasErrors() {
 		var err errors.Array
 		for _, diag := range diags {
