@@ -1,13 +1,9 @@
-data "template_file" "test" {
-  template = "hello, ${var.name}"
-}
-
 variable "name" {
   description = "Specify a name"
 }
 
-output "test" {
-  value = data.template_file.test.rendered
+output "example" {
+  value = "hello, ${var.name}"
 }
 
 terraform {

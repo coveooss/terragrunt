@@ -1,9 +1,5 @@
-data "template_file" "@String(`This is an example`).Fields().Join(`_`)" {
-  template = "ok"
-}
-
-output "result" {
-  value = data.template_file.This_is_an_example.rendered
+output "@String(`This is an output`).Fields().Join(`_`)" {
+  value = "ok"
 }
 
 variable "test1" {

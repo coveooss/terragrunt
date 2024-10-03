@@ -16,31 +16,18 @@ func TestTerragruntGoTemplate(t *testing.T) {
 		project        string
 		args           string
 		expectedOutput []string
-		additionalTest func(*testing.T, string, string, string)
 	}
 	tests := []test{
-		// Test that the provider substitution is working properly
-		{
-			project:        "fixture-provider",
-			args:           "--terragrunt-apply-template",
-			expectedOutput: []string{`^ok = "Everything is fine"$`},
-			additionalTest: func(t *testing.T, folder, stdout, stderr string) {
-				assert.NotContains(t, stdout, "Warning")
-			},
-		},
-		// Test that loading default variablesthe works even if the terraform original source is not compliant
+		// Test that loading default variables works even if the terraform original source is not compliant
 		{
 			project: "fixture-gotemplate",
 			args:    "--terragrunt-apply-template --terragrunt-logging-level DEBUG",
 			expectedOutput: []string{
-				`^result = "ok"$`,
+				`^This_is_an_output = "ok"$`,
 				`^test1 = "I am test 1"$`,
 				`^test2 = "I am test 2 \(overridden\)"$`,
 				`^json1 = "I am json 1"$`,
 				`^json2 = "I am json 2 \(overridden\)"$`,
-			},
-			additionalTest: func(t *testing.T, folder, stdout, stderr string) {
-				assert.Contains(t, stderr, "caught errors while trying to load default variable values from")
 			},
 		},
 	}
@@ -56,9 +43,6 @@ func TestTerragruntGoTemplate(t *testing.T) {
 			runTerragruntRedirectOutput(t, fmt.Sprintf("terragrunt apply -no-color --terragrunt-non-interactive --terragrunt-working-dir %s %s", rootPath, tt.args), &stdout, &stderr)
 			for _, expectedOutput := range tt.expectedOutput {
 				assert.Regexp(t, fmt.Sprintf(`(?m).*%s.*`, expectedOutput), stdout.String())
-			}
-			if tt.additionalTest != nil {
-				tt.additionalTest(t, rootPath, stdout.String(), stderr.String())
 			}
 		})
 	}

@@ -1,6 +1,6 @@
 import_variables "test" {
   required_var_files = [
-    "vars.tf",
+    "vars.tfvars",
   ]
 
   nested_under = ["loaded"]
