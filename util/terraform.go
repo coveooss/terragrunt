@@ -164,11 +164,16 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 
 func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (map[string]interface{}, map[string]*tfconfig.Variable, error) {
 	module, diags := tfconfig.LoadModule(folder)
+	fmt.Println("Hello", folder, diags)
 	if diags.HasErrors() {
 		var err errors.Array
 		for _, diag := range diags {
-			diag.Pos.Filename = strings.TrimPrefix(diag.Pos.Filename, folder)
-			err = append(err, fmt.Errorf("%s:%d: (%c) %s, %s", diag.Pos.Filename, diag.Pos.Line, diag.Severity, diag.Summary, diag.Detail))
+			if diag.Pos != nil && diag.Pos.Filename != "" {
+				diag.Pos.Filename = strings.TrimPrefix(diag.Pos.Filename, folder)
+				err = append(err, fmt.Errorf("%s:%d: (%c) %s, %s", diag.Pos.Filename, diag.Pos.Line, diag.Severity, diag.Summary, diag.Detail))
+			} else {
+				err = append(err, fmt.Errorf("(%c) %s, %s", diag.Severity, diag.Summary, diag.Detail))
+			}
 		}
 		if !retry {
 			return nil, nil, err
