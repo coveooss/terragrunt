@@ -46,7 +46,7 @@ func TestResolveTerraformModulesOneModuleWithIncludesNoDependencies(t *testing.T
 		Path:         canonical(t, "../test/fixture-modules/module-b/module-b-child"),
 		Dependencies: []*TerraformModule{},
 		Config: config.TerragruntConfig{
-			RemoteState: state(t, "bucket", "module-b-child/terraform.tfstate"),
+			RemoteState: state("bucket", "module-b-child/terraform.tfstate"),
 			Terraform:   &config.TerraformConfig{Source: "..."},
 		},
 		TerragruntOptions: mockOptions.Clone(canonical(t, "../test/fixture-modules/module-b/module-b-child/"+config.DefaultConfigName)),
@@ -104,7 +104,7 @@ func TestResolveTerraformModulesMultipleModulesWithDependencies(t *testing.T) {
 		Path:         canonical(t, "../test/fixture-modules/module-b/module-b-child"),
 		Dependencies: []*TerraformModule{},
 		Config: config.TerragruntConfig{
-			RemoteState: state(t, "bucket", "module-b-child/terraform.tfstate"),
+			RemoteState: state("bucket", "module-b-child/terraform.tfstate"),
 			Terraform:   &config.TerraformConfig{Source: "..."},
 		},
 		TerragruntOptions: mockOptions.Clone(canonical(t, "../test/fixture-modules/module-b/module-b-child/"+config.DefaultConfigName)),
@@ -152,7 +152,7 @@ func TestResolveTerraformModulesMultipleModulesWithDependenciesWithIncludes(t *t
 		Path:         canonical(t, "../test/fixture-modules/module-b/module-b-child"),
 		Dependencies: []*TerraformModule{},
 		Config: config.TerragruntConfig{
-			RemoteState: state(t, "bucket", "module-b-child/terraform.tfstate"),
+			RemoteState: state("bucket", "module-b-child/terraform.tfstate"),
 			Terraform:   &config.TerraformConfig{Source: "..."},
 		},
 		TerragruntOptions: mockOptions.Clone(canonical(t, "../test/fixture-modules/module-b/module-b-child/"+config.DefaultConfigName)),
@@ -162,7 +162,7 @@ func TestResolveTerraformModulesMultipleModulesWithDependenciesWithIncludes(t *t
 		Path:         canonical(t, "../test/fixture-modules/module-e/module-e-child"),
 		Dependencies: []*TerraformModule{moduleA, moduleB},
 		Config: config.TerragruntConfig{
-			RemoteState:  state(t, "bucket", "module-e-child/terraform.tfstate"),
+			RemoteState:  state("bucket", "module-e-child/terraform.tfstate"),
 			Dependencies: &config.ModuleDependencies{Paths: []string{Abs("../test/fixture-modules/module-a"), Abs("../test/fixture-modules/module-b/module-b-child")}},
 			Terraform:    &config.TerraformConfig{Source: "test"},
 		},

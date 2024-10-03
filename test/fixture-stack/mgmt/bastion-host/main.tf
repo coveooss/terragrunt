@@ -2,13 +2,8 @@ terraform {
   backend "s3" {}
 }
 
-# Create an arbitrary local resource
-data "template_file" "text" {
-  template = "[I am a bastion-host template. Data from my dependencies: vpc = ${data.terraform_remote_state.vpc.outputs.text}]"
-}
-
 output "text" {
-  value = data.template_file.text.rendered
+  value = "[I am a bastion-host template. Data from my dependencies: vpc = ${data.terraform_remote_state.vpc.outputs.text}]"
 }
 
 variable "terraform_remote_state_s3_bucket" {

@@ -17,14 +17,14 @@ func TestFindStackInSubfolders(t *testing.T) {
 	t.Parallel()
 
 	filePaths := []string{
-		"/stage/data-stores/redis/" + config.DefaultConfigName,
-		"/stage/data-stores/postgres/" + config.DefaultConfigName,
-		"/stage/ecs-cluster/" + config.DefaultConfigName,
-		"/stage/kms-master-key/" + config.DefaultConfigName,
-		"/stage/vpc/" + config.DefaultConfigName,
+		"stage/data-stores/redis/" + config.DefaultConfigName,
+		"stage/data-stores/postgres/" + config.DefaultConfigName,
+		"stage/ecs-cluster/" + config.DefaultConfigName,
+		"stage/kms-master-key/" + config.DefaultConfigName,
+		"stage/vpc/" + config.DefaultConfigName,
 	}
 
-	tempFolder := createTempFolder(t)
+	tempFolder := createTempFolder()
 	writeDummyTerragruntConfigs(t, tempFolder, filePaths)
 
 	envFolder := filepath.ToSlash(util.JoinPath(tempFolder + "/stage"))
@@ -51,13 +51,8 @@ func TestFindStackInSubfolders(t *testing.T) {
 	}
 }
 
-func createTempFolder(t *testing.T) string {
-	tmpFolder, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %s\n", err.Error())
-	}
-
-	return filepath.ToSlash(tmpFolder)
+func createTempFolder() string {
+	return filepath.ToSlash(os.TempDir())
 }
 
 // Create a dummy Terragrunt config file at each of the given paths

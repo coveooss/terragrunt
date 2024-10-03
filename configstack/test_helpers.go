@@ -111,7 +111,7 @@ func assertRunningModulesEqual(t *testing.T, expected *runningModule, actual *ru
 }
 
 // We can't do a simple IsError comparison for UnrecognizedDependency because that error is a struct that
-// contains an array, and in Go, trying to compare arrays gives a "comparing noncomparable type
+// contains an array, and in Go, trying to compare arrays gives a "comparing non comparable type
 // configstack.UnrecognizedDependency" panic. Therefore, we have to compare that error more manually.
 func assertErrorsEqual(t *testing.T, expected error, actual error, messageAndArgs ...interface{}) {
 	actual = tgerrors.Unwrap(actual)
@@ -165,7 +165,7 @@ func canonical(t *testing.T, path string) string {
 }
 
 // Create a State struct
-func state(t *testing.T, bucket string, key string) *remote.State {
+func state(bucket string, key string) *remote.State {
 	return &remote.State{
 		Backend: "s3",
 		Config: map[string]interface{}{
