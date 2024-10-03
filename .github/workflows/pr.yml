@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - uses: actions/checkout@v4
 
       - name: Run static checks
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - uses: actions/checkout@v4
 
       - run: make build
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - uses: actions/checkout@v4
 
       - run: make fmtcheck
@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - uses: actions/checkout@v4
 
       - name: Install Terraform
@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
       - uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
@@ -79,7 +79,7 @@ jobs:
           fetch-depth: 0 # goreleaser needs the whole history to build the release notes
       - uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.23'
 
       - uses: goreleaser/goreleaser-action@v6
         with:

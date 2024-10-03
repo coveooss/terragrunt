@@ -2,8 +2,6 @@ module github.com/coveooss/terragrunt/v2
 
 go 1.23
 
-toolchain go1.22.5
-
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aws/aws-sdk-go-v2 v1.31.0
