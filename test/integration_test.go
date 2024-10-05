@@ -196,16 +196,16 @@ func TestTerragruntCustomConfig(t *testing.T) {
 			- path: fixture-custom-config/sub-project-1
 			- path: fixture-custom-config/sub-project-2/sub-project-2-1
 			  dependencies:
-			  - fixture-custom-config/sub-project-1
+			    - fixture-custom-config/sub-project-1
 			- path: fixture-custom-config/sub-project-2/sub-project-2-2
 			  dependencies:
-			  - fixture-custom-config/sub-project-2/sub-project-2-1
-			  - fixture-custom-config/sub-project-1
+			    - fixture-custom-config/sub-project-2/sub-project-2-1
+			    - fixture-custom-config/sub-project-1
 			- path: fixture-custom-config/sub-project-3
 			  dependencies:
-			  - fixture-custom-config/sub-project-2/sub-project-2-1
-			  - fixture-custom-config/sub-project-2/sub-project-2-2
-			  - fixture-custom-config/sub-project-1
+			    - fixture-custom-config/sub-project-2/sub-project-2-1
+			    - fixture-custom-config/sub-project-2/sub-project-2-2
+			    - fixture-custom-config/sub-project-1
 		`)+"\n", out.String())
 		assert.Equal(t, "", err.String())
 	}
@@ -301,11 +301,11 @@ func TestDownloads(t *testing.T) {
 		},
 		{
 			path:           "fixture-download/remote",
-			expectedOutput: `^test = <<EOT\nhello remote from remote$`,
+			expectedOutput: `^test = "Hello, remote"$`,
 		},
 		{
 			path:           "fixture-download/remote-relative",
-			expectedOutput: `^test = <<EOT\nhello remote from remote-relative$`,
+			expectedOutput: `^test = "Hello, remote-relative"$`,
 		},
 		{
 			path:           "fixture-download/override",

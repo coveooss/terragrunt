@@ -16,11 +16,11 @@ func TestFindStackInSubfolders(t *testing.T) {
 	t.Parallel()
 
 	filePaths := []string{
-		"stage/data-stores/redis/" + config.DefaultConfigName,
-		"stage/data-stores/postgres/" + config.DefaultConfigName,
-		"stage/ecs-cluster/" + config.DefaultConfigName,
-		"stage/kms-master-key/" + config.DefaultConfigName,
-		"stage/vpc/" + config.DefaultConfigName,
+		"/stage/data-stores/redis/" + config.DefaultConfigName,
+		"/stage/data-stores/postgres/" + config.DefaultConfigName,
+		"/stage/ecs-cluster/" + config.DefaultConfigName,
+		"/stage/kms-master-key/" + config.DefaultConfigName,
+		"/stage/vpc/" + config.DefaultConfigName,
 	}
 
 	tempFolder := createTempFolder()
@@ -37,10 +37,10 @@ func TestFindStackInSubfolders(t *testing.T) {
 
 	var modulePaths []string
 
+	tempFolder = strings.TrimSuffix(tempFolder, "/")
 	for _, module := range stack.Modules {
 		relPath := strings.Replace(module.Path, tempFolder, "", 1)
 		relPath = filepath.ToSlash(util.JoinPath(relPath, config.DefaultConfigName))
-
 		modulePaths = append(modulePaths, relPath)
 	}
 
