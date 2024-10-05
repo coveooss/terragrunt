@@ -1,5 +1,3 @@
-GOFMT_FILES?=$$(find . -name '*.go' | grep -v vendor)
-
 fmt:
 	@echo "Running source files through go fmt ..."
 	go fmt ./...
