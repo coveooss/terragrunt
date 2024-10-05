@@ -9,8 +9,3 @@ output "test" {
 module "hello" {
   source = "./hello"
 }
-
-module "remote" {
-  source = "github.com/coveooss/terragrunt.git//test/fixture-download/hello-world?ref=download_test"
-  name   = var.name
-}
