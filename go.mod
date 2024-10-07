@@ -25,7 +25,7 @@ require (
 	github.com/rs/xid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/urfave/cli v1.22.15
+	github.com/urfave/cli/v2 v2.27.4
 	github.com/zclconf/go-cty v1.15.0
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v3 v3.0.1
@@ -122,6 +122,7 @@ require (
 	github.com/ulikunitz/xz v0.5.12 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/zclconf/go-cty-yaml v1.1.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.30.0 // indirect
