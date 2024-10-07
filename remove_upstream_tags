@@ -1,0 +1,11 @@
+delete_tags() {
+    while read tag; do
+        echo Deleting tag $tag
+        # delete remote tag
+        git push --delete coveooss $tag
+        # delete local tag
+        git tag -d $tag
+    done
+}
+
+git tag | grep ^v0\. | delete_tags

@@ -1,4 +1,5 @@
 # Build customization
+version: 2
 builds:
   - binary: terragrunt
     ldflags: -s -w -X main.VERSION={{.Version}}
@@ -32,3 +33,9 @@ archives:
 # GitHub release customization
 release:
   prerelease: auto
+
+git:
+  tag_sort: -version:creatordate
+  prerelease_suffix: "-"
+  ignore_tags:
+    - download_test

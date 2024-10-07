@@ -3,14 +3,14 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/terragrunt/v2/util"
 	hclwrite "github.com/hashicorp/hcl/v2/hclwrite"
-	"github.com/hashicorp/terraform/configs"
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,7 +24,7 @@ type ExportVariablesConfig struct {
 }
 
 // ExportVariables saves variables to paths defined in the export_variables blocks
-func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[string]*configs.Variable, folders ...string) (err error) {
+func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[string]*tfconfig.Variable, folders ...string) (err error) {
 	acceptedFormats := []string{"yml", "yaml", "tfvars", "hcl", "json", "tf"}
 
 	exportStatements := append([]ExportVariablesConfig{}, conf.ExportVariablesConfigs...)
@@ -85,7 +85,7 @@ func (conf *TerragruntConfig) ExportVariables(existingTerraformVariables map[str
 			if len(content) > 0 && content[len(content)-1] != '\n' {
 				content = append(content, '\n')
 			}
-			if err = ioutil.WriteFile(writePath, content, 0644); handleError(err) != nil {
+			if err = os.WriteFile(writePath, content, 0644); handleError(err) != nil {
 				return fmt.Errorf("file write error: %v", err)
 			}
 		}
@@ -107,7 +107,7 @@ func marshalHcl2Attributes(variables map[string]interface{}) ([]byte, error) {
 }
 
 // marshalTerraformVariables marshals the given variables as Terraform variable blocks
-func marshalTerraformVariables(existingTerraformVariables map[string]*configs.Variable, variables map[string]interface{}) ([]byte, error) {
+func marshalTerraformVariables(existingTerraformVariables map[string]*tfconfig.Variable, variables map[string]interface{}) ([]byte, error) {
 	file := hclwrite.NewEmptyFile()
 	for key, value := range variables {
 		if _, ok := existingTerraformVariables[key]; ok {

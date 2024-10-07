@@ -19,7 +19,7 @@ import (
 	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/fatih/color"
-	"github.com/hashicorp/terraform/configs"
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -149,7 +149,7 @@ AUTHOR(S):
 `
 
 // This uses the constraint syntax from https://github.com/hashicorp/go-version
-const defaultTerraformVersionConstaint = ">= v1.0.0"
+const defaultTerraformVersionConstraint = ">= v1.7.0"
 
 var terragruntVersion string
 var terragruntRunID string
@@ -215,7 +215,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		}
 	}
 
-	if err := CheckTerraformVersion(defaultTerraformVersionConstaint, terragruntOptions); err != nil {
+	if err := CheckTerraformVersion(defaultTerraformVersionConstraint, terragruntOptions); err != nil {
 		return err
 	}
 
@@ -501,7 +501,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 
 	// Export Terragrunt variables to the paths defined in export_variables blocks
 	for _, folder := range foldersWithTerraformFiles {
-		var existingVariables map[string]*configs.Variable
+		var existingVariables map[string]*tfconfig.Variable
 		_, existingVariables, err = util.LoadDefaultValues(folder, terragruntOptions.Logger, false)
 		if stopOnError(err) {
 			return err
@@ -558,7 +558,7 @@ func runTerragrunt(terragruntOptions *options.TerragruntOptions) (finalStatus er
 	}
 	if terragruntOptions.PluginsDirectory != "" {
 		// As of Terraform 0.13.5, the -get-plugins=false argument doesn't work, so we don't use it
-		// Passing a plugin-dir explicitely disallows downloads correctly
+		// Passing a plugin-dir explicitly disallows downloads correctly
 		initArgs = append(initArgs, fmt.Sprintf("-plugin-dir=%s", terragruntOptions.PluginsDirectory))
 	}
 	if err = shell.NewTFCmd(terragruntOptions).Args(initArgs...).WithRetries(3).LogOutput(logrus.DebugLevel); stopOnError(err) {

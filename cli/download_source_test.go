@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -115,7 +114,7 @@ func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDir(t *te
 func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirDifferentVersion(t *testing.T) {
 	t.Parallel()
 
-	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v0.9.7"
+	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v1.0.0"
 	downloadDir := tmpDir(t)
 	defer os.Remove(downloadDir)
 
@@ -127,6 +126,7 @@ func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirDiffer
 func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirSameVersion(t *testing.T) {
 	t.Parallel()
 
+	// The version specified does not have to exist, we just want to compare the hash computed from the url with the content of the file
 	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v0.9.7"
 	downloadDir := tmpDir(t)
 	defer os.Remove(downloadDir)
@@ -139,7 +139,7 @@ func TestDownloadTerraformSourceIfNecessaryRemoteUrlToAlreadyDownloadedDirSameVe
 func TestDownloadTerraformSourceIfNecessaryRemoteUrlOverrideSource(t *testing.T) {
 	t.Parallel()
 
-	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v0.9.7"
+	canonicalURL := "github.com/coveooss/terragrunt//test/fixture-download-source/hello-world?ref=v1.0.0"
 	downloadDir := tmpDir(t)
 	defer os.Remove(downloadDir)
 
@@ -183,7 +183,7 @@ func testAlreadyHaveLatestCode(t *testing.T, canonicalURL string, downloadDir st
 }
 
 func tmpDir(t *testing.T) string {
-	dir, err := ioutil.TempDir("", "download-source-test")
+	dir, err := os.MkdirTemp("", "download-source-test")
 	if err != nil {
 		t.Fatal(err)
 	}

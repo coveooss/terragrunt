@@ -1,7 +1,6 @@
 package configstack
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,11 +16,11 @@ func TestFindStackInSubfolders(t *testing.T) {
 	t.Parallel()
 
 	filePaths := []string{
-		"stage/data-stores/redis/" + config.DefaultConfigName,
-		"stage/data-stores/postgres/" + config.DefaultConfigName,
-		"stage/ecs-cluster/" + config.DefaultConfigName,
-		"stage/kms-master-key/" + config.DefaultConfigName,
-		"stage/vpc/" + config.DefaultConfigName,
+		"/stage/data-stores/redis/" + config.DefaultConfigName,
+		"/stage/data-stores/postgres/" + config.DefaultConfigName,
+		"/stage/ecs-cluster/" + config.DefaultConfigName,
+		"/stage/kms-master-key/" + config.DefaultConfigName,
+		"/stage/vpc/" + config.DefaultConfigName,
 	}
 
 	tempFolder := createTempFolder()
@@ -38,10 +37,10 @@ func TestFindStackInSubfolders(t *testing.T) {
 
 	var modulePaths []string
 
+	tempFolder = strings.TrimSuffix(tempFolder, "/")
 	for _, module := range stack.Modules {
 		relPath := strings.Replace(module.Path, tempFolder, "", 1)
 		relPath = filepath.ToSlash(util.JoinPath(relPath, config.DefaultConfigName))
-
 		modulePaths = append(modulePaths, relPath)
 	}
 
@@ -64,7 +63,7 @@ func writeDummyTerragruntConfigs(t *testing.T, tmpFolder string, paths []string)
 		containingDir := filepath.Dir(absPath)
 		createDirIfNotExist(t, containingDir)
 
-		err := ioutil.WriteFile(absPath, contents, os.ModePerm)
+		err := os.WriteFile(absPath, contents, os.ModePerm)
 		if err != nil {
 			t.Fatalf("Failed to write file at path %s: %s\n", path, err.Error())
 		}

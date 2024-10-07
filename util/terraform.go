@@ -2,18 +2,11 @@ package util
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
-
-	"github.com/fatih/color"
-	"github.com/hashicorp/hcl/v2"
-	"github.com/hashicorp/hcl/v2/hclparse"
-	"github.com/hashicorp/terraform/configs"
 
 	"github.com/coveooss/gotemplate/v3/collections"
 	"github.com/coveooss/gotemplate/v3/json"
@@ -22,13 +15,16 @@ import (
 	"github.com/coveooss/gotemplate/v3/yaml"
 	"github.com/coveooss/multilogger"
 	"github.com/coveooss/multilogger/errors"
+	"github.com/fatih/color"
+	"github.com/hashicorp/hcl/v2/hclparse"
+	"github.com/hashicorp/terraform-config-inspect/tfconfig"
 	"github.com/sirupsen/logrus"
 )
 
 type (
 	cachedDefaultVariables struct {
 		values map[string]interface{}
-		all    map[string]*configs.Variable
+		all    map[string]*tfconfig.Variable
 		err    error
 	}
 )
@@ -39,7 +35,7 @@ var (
 )
 
 // LoadDefaultValues returns a map of the variables defined in the tfvars file
-func LoadDefaultValues(folder string, logger *multilogger.Logger, keepInCache bool) (importedVariables map[string]interface{}, allVariables map[string]*configs.Variable, err error) {
+func LoadDefaultValues(folder string, logger *multilogger.Logger, keepInCache bool) (importedVariables map[string]interface{}, allVariables map[string]*tfconfig.Variable, err error) {
 	if keepInCache {
 		defer func() {
 			if _, exist := cacheDefault.Load(folder); !exist {
@@ -95,14 +91,7 @@ func LoadVariablesFromHcl(filename string, bytes []byte) (map[string]interface{}
 
 // LoadVariablesFromFile returns a map of the variables defined in the tfvars file
 func LoadVariablesFromFile(path, cwd string, applyTemplate bool, context ...interface{}) (map[string]interface{}, error) {
-	if filepath.Ext(path) == ".tf" {
-		parser := configs.NewParser(nil)
-		if terraformConfig, err := parser.LoadConfigFile(path); err == nil {
-			return getTerraformVariableValues(terraformConfig)
-		}
-	}
-
-	bytes, err := ioutil.ReadFile(path)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -173,56 +162,46 @@ func LoadVariablesFromSource(content, fileName, cwd string, applyTemplate bool, 
 	return
 }
 
-func getTerraformVariableValues(terraformConfig interface{}) (map[string]interface{}, error) {
-	variables := []*configs.Variable{}
-	switch source := terraformConfig.(type) {
-	case *configs.Module:
-		for _, variable := range source.Variables {
-			variables = append(variables, variable)
-		}
-	case *configs.File:
-		variables = source.Variables
-	}
-	variablesMap := map[string]interface{}{}
-	for _, variable := range variables {
-		if !variable.Default.IsNull() {
-			var value interface{}
-			if err := FromCtyValue(variable.Default, &value); err != nil {
-				return nil, err
+func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (map[string]interface{}, map[string]*tfconfig.Variable, error) {
+	module, diags := tfconfig.LoadModule(folder)
+	if diags.HasErrors() {
+		var err errors.Array
+		for _, diag := range diags {
+			if diag.Pos != nil && diag.Pos.Filename != "" {
+				diag.Pos.Filename = strings.TrimPrefix(diag.Pos.Filename, folder)
+				err = append(err, fmt.Errorf("%s:%d: (%c) %s, %s", diag.Pos.Filename, diag.Pos.Line, diag.Severity, diag.Summary, diag.Detail))
+			} else {
+				err = append(err, fmt.Errorf("(%c) %s, %s", diag.Severity, diag.Summary, diag.Detail))
 			}
-			if !template.IsCode(fmt.Sprint(value)) {
+		}
+		if !retry {
+			return nil, nil, err
+		}
+
+		// If we get an error while loading variables, we try to isolate variables definition in a temporary folder.
+		if logger != nil {
+			logger.Debugf("First try with terraform native LoadConfigDir failed\n%v", color.HiBlackString(err.Error()))
+			logger.Debug("Retrying with a temporary folder containing only variables definitions")
+		}
+		tmpDir, errTmpDir := createTerraformVariablesTemporaryFolder(folder)
+		if tmpDir == "" || errTmpDir != nil {
+			return nil, nil, append(err, errTmpDir)
+		}
+		defer func() { os.RemoveAll(tmpDir) }()
+		return loadDefaultValues(tmpDir, false, logger)
+	}
+
+	variablesMap := map[string]interface{}{}
+	for name, variable := range module.Variables {
+		if variable.Default != nil {
+			if !template.IsCode(fmt.Sprint(variable.Default)) {
 				// The default value contains gotemplate code, we don't want to make it available
 				// to gotemplate and we let terraform code initialize the value
-				variablesMap[variable.Name] = value
+				variablesMap[name] = variable.Default
 			}
 		}
 	}
-	return variablesMap, nil
-}
-
-func loadDefaultValues(folder string, retry bool, logger *multilogger.Logger) (map[string]interface{}, map[string]*configs.Variable, error) {
-	terraformConfig, diag := configs.NewParser(nil).LoadConfigDir(folder)
-	if diag.HasErrors() {
-		if err := convertHclError(diag); err != nil {
-			err = fmt.Errorf("caught errors while trying to load default variable values from %s:\n%v", folder, err)
-			if !retry {
-				return nil, nil, err
-			}
-			// If we get an error while loading variables, we try to isolate variables definition in a temporay folder.
-			if logger != nil {
-				logger.Debugf("First try with terraform native LoadConfigDir failed\n%v", color.HiBlackString(err.Error()))
-				logger.Debug("Retrying with a temporary folder containing only variables deinitions")
-			}
-			tmpDir, err := createTerraformVariablesTemporaryFolder(folder)
-			if tmpDir == "" || err != nil {
-				return nil, nil, err
-			}
-			defer func() { os.RemoveAll(tmpDir) }()
-			return loadDefaultValues(tmpDir, false, logger)
-		}
-	}
-	importedVariables, err := getTerraformVariableValues(terraformConfig)
-	return importedVariables, terraformConfig.Variables, err
+	return variablesMap, module.Variables, nil
 }
 
 func isOverride(filename string) bool {
@@ -230,14 +209,6 @@ func isOverride(filename string) bool {
 		path.Base(filename) == "override.tf.json" ||
 		strings.HasSuffix(filename, "_override.tf") ||
 		strings.HasSuffix(filename, "_override.tf.json")
-}
-
-func convertHclError(err hcl.Diagnostics) error {
-	if !err.HasErrors() {
-		return nil
-	}
-	var x errors.Array
-	return append(x, err.Errs()...)
 }
 
 // Create a temporary folder containing only the terraform code used to declare and initialize variables.
@@ -254,8 +225,8 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 		return
 	}
 
-	// The variables are splitted up into 4 different files depending if they are declared
-	// in a .tf file or a .tf.json file and if they are declareds in an override file or not.
+	// The variables are spitted up into 4 different files depending if they are declared
+	// in a .tf file or a .tf.json file and if they are declared in an override file or not.
 	generated := make(map[string]interface{})
 	for _, filename := range files {
 		name, ext := "regular", path.Ext(filename)
@@ -264,7 +235,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 		}
 
 		var content []byte
-		if content, err = ioutil.ReadFile(filename); err != nil {
+		if content, err = os.ReadFile(filename); err != nil {
 			return
 		}
 
@@ -288,7 +259,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 
 	if len(generated) > 0 {
 		// We write the resulting files
-		if tmpDir, err = ioutil.TempDir("", "load_defaults"); err != nil {
+		if tmpDir, err = os.MkdirTemp("", "load_defaults"); err != nil {
 			return
 		}
 		for filename, value := range generated {
@@ -299,7 +270,7 @@ func createTerraformVariablesTemporaryFolder(folder string) (tmpDir string, err 
 			case json.Dictionary:
 				content = []byte(value.PrettyPrint())
 			}
-			if err = ioutil.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
+			if err = os.WriteFile(path.Join(tmpDir, filename), content, 0644); err != nil {
 				return
 			}
 		}

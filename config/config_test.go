@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"testing"
@@ -459,12 +459,12 @@ func TestParseInvalid(t *testing.T) {
 	assert.Nil(t, config)
 }
 
-func TestReadTerragruntConfigHooksAreInitalized(t *testing.T) {
+func TestReadTerragruntConfigHooksAreInitialized(t *testing.T) {
 	t.Parallel()
 
 	fixturesDir := "../test/fixture-hooks"
 
-	files, err := ioutil.ReadDir(fixturesDir)
+	files, err := os.ReadDir(fixturesDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -556,7 +556,7 @@ func TestMergeConfigIntoIncludedConfig(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase.config.mergeIncludedConfig(testCase.includedConfig, mockOptions)
+		(&testCase.config).mergeIncludedConfig(testCase.includedConfig)
 		assert.Equal(t, testCase.config, testCase.expected, "For config %v and includeConfig %v", testCase.config, testCase.includedConfig)
 	}
 }
