@@ -12,8 +12,8 @@ import (
 	"github.com/coveooss/terragrunt/v2/options"
 	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
-	"github.com/hashicorp/go-getter"
-	urlhelper "github.com/hashicorp/go-getter/helper/url"
+	"github.com/hashicorp/go-getter/v2"
+	urlhelper "github.com/hashicorp/go-getter/v2/helper/url"
 )
 
 // TerraformSource represents information about Terraform source code that needs to be downloaded
