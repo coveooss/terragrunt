@@ -25,7 +25,7 @@ func (list ApprovalConfigList) baseInit(config *TerragruntConfigFile) {
 	}
 }
 
-// Merge elements from an imported list to the current list priorising those already existing
+// Merge elements from an imported list to the current list prioritizing those already existing
 func (list *ApprovalConfigList) merge(imported ApprovalConfigList, mode mergeMode, argName string) {
 	if len(imported) == 0 {
 		return

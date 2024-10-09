@@ -25,7 +25,7 @@ func (list ImportVariablesList) baseInit(config *TerragruntConfigFile) {
 	}
 }
 
-// Merge elements from an imported list to the current list priorising those already existing
+// Merge elements from an imported list to the current list prioritizing those already existing
 func (list *ImportVariablesList) merge(imported ImportVariablesList, mode mergeMode, argName string) {
 	if len(imported) == 0 {
 		return

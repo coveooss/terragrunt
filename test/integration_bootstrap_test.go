@@ -36,7 +36,7 @@ func TestTerragruntBootstrap(t *testing.T) {
 			expectedOutput: "my_value my_value2 my_value3", // This is output by the hook
 		},
 		{
-			name:           "Simple pre-bootstrap with a file prependend with file:// (Testing accepted values)",
+			name:           "Simple pre-bootstrap with a file prepended with file:// (Testing accepted values)",
 			project:        "fixture-bootstrap/preboot",
 			preboot:        []string{"file://" + absoluteTestPath + "/preboot/variables.json", absoluteTestPath + "/preboot/variables.yml"},
 			expectedOutput: "my_value my_value2 my_value3", // This is output by the hook
@@ -49,13 +49,13 @@ func TestTerragruntBootstrap(t *testing.T) {
 			expectedOutput: "test output",
 		},
 		{
-			name:           "Test gotemplating in a template file",
+			name:           "Test go templating in a template file",
 			project:        "fixture-bootstrap/templating-in-bootstrap",
 			bootstrap:      []string{absoluteTestPath + "/_external_dir/templating-in-bootstrap.hcl"},
 			expectedOutput: "test variable", // This is output by the hook
 		},
 		{
-			name:           "Test gotemplating with terragrunt functions in a template file",
+			name:           "Test go templating with terragrunt functions in a template file",
 			project:        "fixture-bootstrap/terragrunt-function-in-bootstrap",
 			bootstrap:      []string{absoluteTestPath + "/_external_dir/terragrunt-function-in-bootstrap.hcl"},
 			expectedOutput: "default_env_value", // This is output by the hook

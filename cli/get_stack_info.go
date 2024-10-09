@@ -24,7 +24,7 @@ func getStack(terragruntOptions *options.TerragruntOptions) (err error) {
 		modules  configstack.SimpleTerraformModules
 	)
 
-	run := app.Flag("run", "Run the full stack to get the result instead of just analysing the dependencies").Short('r').Bool()
+	run := app.Flag("run", "Run the full stack to get the result instead of just analyzing the dependencies").Short('r').Bool()
 	output := app.Flag("output", "Specify format of the output (hcl, json, yaml)").Short('o').Enum("h", "hcl", "H", "HCL", "j", "json", "J", "JSON", "y", "yml", "yaml", "Y", "YML", "YAML")
 	app.Flag("absolute", "Output absolute path (--abs)").Short('a').BoolVar(&absolute)
 	app.Flag("abs", "").Hidden().BoolVar(&absolute)

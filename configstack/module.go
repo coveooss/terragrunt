@@ -99,12 +99,12 @@ func ResolveTerraformModules(terragruntConfigPaths []string, terragruntOptions *
 	if err != nil {
 		return []*TerraformModule{}, err
 	}
-	return crosslinkDependencies(mergeMaps(modules, externalDependencies), canonicalTerragruntConfigPaths)
+	return crossLinkDependencies(mergeMaps(modules, externalDependencies), canonicalTerragruntConfigPaths)
 }
 
 // Go through each of the given Terragrunt configuration files and resolve the module that configuration file represents
 // into a TerraformModule struct. Note that this method will NOT fill in the Dependencies field of the TerraformModule
-// struct (see the crosslinkDependencies method for that). Return a map from module path to TerraformModule struct.
+// struct (see the crossLinkDependencies method for that). Return a map from module path to TerraformModule struct.
 //
 // resolveExternal is used to exclude modules that don't contain terraform files. This is used to avoid requirements of
 // adding terragrunt.ignore when a parent folder doesn't have terraform files to deploy by itself.
@@ -126,7 +126,7 @@ func resolveModules(canonicalTerragruntConfigPaths []string, terragruntOptions *
 
 // Create a TerraformModule struct for the Terraform module specified by the given Terragrunt configuration file path.
 // Note that this method will NOT fill in the Dependencies field of the TerraformModule struct (see the
-// crosslinkDependencies method for that).
+// crossLinkDependencies method for that).
 func resolveTerraformModule(terragruntConfigPath string, terragruntOptions *options.TerragruntOptions) (module *TerraformModule, tfFiles bool, err error) {
 	modulePath, err := util.CanonicalPath(filepath.Dir(terragruntConfigPath), ".")
 	if err != nil {
@@ -168,7 +168,7 @@ func resolveTerraformModule(terragruntConfigPath string, terragruntOptions *opti
 // These external dependencies are outside of the current working directory, which means they may not be part of the
 // environment the user is trying to apply-all or destroy-all. Therefore, this method also confirms whether the user wants
 // to actually apply those dependencies or just assume they are already applied. Note that this method will NOT fill in
-// the Dependencies field of the TerraformModule struct (see the crosslinkDependencies method for that).
+// the Dependencies field of the TerraformModule struct (see the crossLinkDependencies method for that).
 func resolveExternalDependenciesForModules(canonicalTerragruntConfigPaths []string, moduleMap map[string]*TerraformModule, terragruntOptions *options.TerragruntOptions) (map[string]*TerraformModule, error) {
 	allExternalDependencies := map[string]*TerraformModule{}
 
@@ -218,7 +218,7 @@ func resolveExternalDependenciesForModules(canonicalTerragruntConfigPaths []stri
 // config (i.e. those dependencies not in the given list of Terragrunt config canonical file paths). These external
 // dependencies are outside of the current working directory, which means they may not be part of the environment the
 // user is trying to apply-all or destroy-all. Note that this method will NOT fill in the Dependencies field of the
-// TerraformModule struct (see the crosslinkDependencies method for that).
+// TerraformModule struct (see the crossLinkDependencies method for that).
 func resolveExternalDependenciesForModule(module *TerraformModule, canonicalTerragruntConfigPaths []string, terragruntOptions *options.TerragruntOptions) (result map[string]*TerraformModule, err error) {
 	result = make(map[string]*TerraformModule)
 	if module.Config.Dependencies == nil || len(module.Config.Dependencies.Paths) == 0 {
@@ -276,7 +276,7 @@ func mergeMaps(modules map[string]*TerraformModule, externalDependencies map[str
 
 // Go through each module in the given map and cross-link its dependencies to the other modules in that same map. If
 // a dependency is referenced that is not in the given map, return an error.
-func crosslinkDependencies(moduleMap map[string]*TerraformModule, canonicalTerragruntConfigPaths []string) ([]*TerraformModule, error) {
+func crossLinkDependencies(moduleMap map[string]*TerraformModule, canonicalTerragruntConfigPaths []string) ([]*TerraformModule, error) {
 	modules := []*TerraformModule{}
 
 	for _, module := range moduleMap {
