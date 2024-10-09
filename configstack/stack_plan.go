@@ -91,7 +91,7 @@ func getResultHandler(detailedExitCode bool, results *[]moduleResult, hasChanges
 		if exitCode, convErr := shell.GetExitCode(err); convErr == nil && detailedExitCode && exitCode == tgerrors.ChangeExitCode {
 			// We do not want to consider ChangeExitCode as an error and not execute the dependants because there is an "error" in the dependencies.
 			// ChangeExitCode is not an error in this case, it is simply a status. We will reintroduce the exit code at the very end to mimic the behaviour
-			// of the native terrafrom plan -detailed-exitcode to exit with ChangeExitCode if there are changes in any of the module in the stack.
+			// of the native terraform plan -detailed-exitcode to exit with ChangeExitCode if there are changes in any of the module in the stack.
 			*hasChanges = true
 			err = nil
 		}

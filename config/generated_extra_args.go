@@ -25,7 +25,7 @@ func (list TerraformExtraArgumentsList) baseInit(config *TerragruntConfigFile) {
 	}
 }
 
-// Merge elements from an imported list to the current list priorising those already existing
+// Merge elements from an imported list to the current list prioritizing those already existing
 func (list *TerraformExtraArgumentsList) merge(imported TerraformExtraArgumentsList, mode mergeMode, argName string) {
 	if len(imported) == 0 {
 		return

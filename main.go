@@ -31,7 +31,7 @@ func checkForErrorsAndExit(err error) {
 		logger := multilogger.New("terragrunt")
 
 		if _, ok := tgerrors.Unwrap(err).(tgerrors.PlanWithChanges); !ok {
-			// Plan status are not considred as an error
+			// Plan status are not considered as an error
 			if os.Getenv(options.EnvDebug) != "" {
 				logger.Error(tgerrors.PrintErrorWithStackTrace(err))
 			} else {

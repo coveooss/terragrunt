@@ -145,7 +145,7 @@ func (remoteState State) ToTerraformInitArgs() []string {
 	return backendConfigArgs
 }
 
-// ErrBackendMissing indicates that there is no backend configration defined.
+// ErrBackendMissing indicates that there is no backend configuration defined.
 var ErrBackendMissing = fmt.Errorf("the remote_state.backend field cannot be empty")
 
 // Return true if the existing config from a .tfstate file is equal to the new config from the user's backend

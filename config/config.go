@@ -515,7 +515,7 @@ func (conf *TerragruntConfig) loadBootConfigs(terragruntOptions *options.Terragr
 		if bootstrapFile != "" {
 			bootstrapDir := path.Dir(bootstrapFile)
 			if strings.HasPrefix(bootstrapDir, "s3:/") {
-				// The path.Dir removes the double slash, so s3:// is not longer interpretated correctly
+				// The path.Dir removes the double slash, so s3:// is not longer interpreted correctly
 				bootstrapDir = strings.Replace(bootstrapDir, "s3:/", "s3://", -1)
 			}
 

@@ -70,7 +70,7 @@ const (
 // ModuleHandler is a function prototype to inject interaction during the processing.
 // The function receive the current module, its output and its error in parameter.
 // Normally, the handler should return the same error as received in parameter, but it is possible to
-// alter the normal course of the proccess by changing the error result.
+// alter the normal course of the process by changing the error result.
 type ModuleHandler func(TerraformModule, string, error) (string, error)
 
 // Create a new RunningModule struct for the given module. This will initialize all fields to reasonable defaults,
@@ -156,7 +156,7 @@ func toRunningModules(modules []*TerraformModule, dependencyOrder dependencyOrde
 		runningModules[module.Path] = newRunningModule(module, &mutex)
 	}
 
-	return crossLinkDependencies(runningModules, dependencyOrder)
+	return crossLinkRunningModulesDependencies(runningModules, dependencyOrder)
 }
 
 // Loop through the map of runningModules and for each module M:
@@ -164,7 +164,7 @@ func toRunningModules(modules []*TerraformModule, dependencyOrder dependencyOrde
 //   - If dependencyOrder is NormalOrder, plug in all the modules M depends on into the Dependencies field and all the
 //     modules that depend on M into the NotifyWhenDone field.
 //   - If dependencyOrder is ReverseOrder, do the reverse.
-func crossLinkDependencies(modules map[string]*runningModule, dependencyOrder dependencyOrder) (map[string]*runningModule, error) {
+func crossLinkRunningModulesDependencies(modules map[string]*runningModule, dependencyOrder dependencyOrder) (map[string]*runningModule, error) {
 	for _, module := range modules {
 		for _, dependency := range module.Module.Dependencies {
 			runningDependency, hasDependency := modules[dependency.Path]
