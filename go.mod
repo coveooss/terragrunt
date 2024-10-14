@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.43
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.41
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.36.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.65.2
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.65.3
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.55.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.32.2
 	github.com/cheekybits/genny v1.0.0
@@ -25,7 +25,7 @@ require (
 	github.com/rs/xid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/urfave/cli v1.22.15
+	github.com/urfave/cli v1.22.16
 	github.com/zclconf/go-cty v1.15.0
 	gopkg.in/matryer/try.v1 v1.0.0-20150601225556-312d2599e12e
 	gopkg.in/yaml.v3 v3.0.1
