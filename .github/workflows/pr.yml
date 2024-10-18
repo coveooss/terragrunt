@@ -74,7 +74,7 @@ jobs:
           go-version: ${{ env.GoVersion }}
           cache: false
 
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8
         with:
           distribution: goreleaser
           version: '~> v2'
@@ -91,7 +91,7 @@ jobs:
           go-version: ${{ env.GoVersion }}
           cache: false
 
-      - uses: goreleaser/goreleaser-action@v6
+      - uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8
         with:
           distribution: goreleaser
           version: '~> v2'
