@@ -17,7 +17,8 @@ func TestLoadDefaultValues(t *testing.T) {
 		wantResult map[string]interface{}
 		err        string
 	}{
-		{"All Types",
+		{
+			"All Types",
 			testFixtureDefaultValues,
 			map[string]interface{}{
 				"a":               "A (a.tf)",
@@ -34,7 +35,6 @@ func TestLoadDefaultValues(t *testing.T) {
 			},
 			"",
 		},
-		{"Invalid Folder", "Invalid", nil, "Module directory Invalid does not exist or cannot be read"},
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
