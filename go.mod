@@ -20,7 +20,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0
 	github.com/hashicorp/hcl/v2 v2.22.0
 	github.com/hashicorp/terraform v1.9.7
-	github.com/hashicorp/terraform-config-inspect v0.0.0-20240801114854-6714b46f5fe4
+	github.com/hashicorp/terraform-config-inspect v0.0.0-20241107133921-3adb156ecfe2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/xid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
