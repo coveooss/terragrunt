@@ -2,7 +2,6 @@ name: Pull Request
 on:
   pull_request:
     branches:
-      - master
       - main
 env:
   GoVersion: '1.23'
@@ -49,7 +48,7 @@ jobs:
         terraform:
           - '1.7.5'
           - '1.8.5'
-          - '1.9.7'
+          - '1.9.8'
     steps:
       - uses: actions/setup-go@v5
         with:
