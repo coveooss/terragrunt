@@ -61,10 +61,10 @@ func formatS3Path(bucket, region string, parts ...string) string {
 func GetBucketObjectInfoFromURL(url string) (*BucketInfo, error) {
 	if s3Patterns == nil {
 		s3Patterns = []*regexp.Regexp{
-			regexp.MustCompile(`^https?://(?P<bucket>[^/\.]+?).s3.amazonaws.com(?:/(?P<key>.*))?$`),
-			regexp.MustCompile(`^https?://(?P<bucket>[^/\.]+?).s3-(?P<region>.*?).amazonaws.com(?:/(?P<key>.*))?$`),
-			regexp.MustCompile(`^(s3::)?https?://s3.amazonaws.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
-			regexp.MustCompile(`^(s3::)?https?://s3-(?P<region>.*?).amazonaws\.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
+			regexp.MustCompile(`^https?://(?P<bucket>[^/\.]+?)\.s3\.amazonaws\.com(?:/(?P<key>.*))?$`),
+			regexp.MustCompile(`^https?://(?P<bucket>[^/\.]+?)\.s3-(?P<region>.*?)\.amazonaws\.com(?:/(?P<key>.*))?$`),
+			regexp.MustCompile(`^(s3::)?https?://s3\.amazonaws\.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
+			regexp.MustCompile(`^(s3::)?https?://s3-(?P<region>.*?)\.amazonaws\.com/(?P<bucket>[^/\.]+?)(?:/(?P<key>.*))?$`),
 		}
 	}
 
