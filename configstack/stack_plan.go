@@ -151,11 +151,16 @@ func warnAboutMissingDependencies(module TerraformModule, output string) {
 
 // Parse the output message to extract a summary
 func extractSummaryResultFromPlan(output string) planSummary {
-	const noChangeV012 = "No changes. Infrastructure is up-to-date."
-	const noChangeV013 = "Plan: 0 to add, 0 to change, 0 to destroy."
-	const noChangeV102 = "Your infrastructure matches the configuration."
-	if strings.Contains(output, noChangeV012) || strings.Contains(output, noChangeV013) || strings.Contains(output, noChangeV102) {
-		return planSummary{"No change", 0, true}
+	noChanges := []string{
+		"Plan: 0 to add, 0 to change, 0 to destroy.", // This was the message returned by terraform 0.11
+		"No changes. Infrastructure is up-to-date.",  // This was the message returned by terraform 0.12
+		"Your infrastructure matches the configuration.",
+		"without changing any real infrastructure.",
+	}
+	for _, noChange := range noChanges {
+		if strings.Contains(output, noChange) {
+			return planSummary{"No change", 0, true}
+		}
 	}
 
 	result := planResultRegex.FindStringSubmatch(output)
