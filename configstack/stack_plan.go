@@ -152,8 +152,8 @@ func warnAboutMissingDependencies(module TerraformModule, output string) {
 // Parse the output message to extract a summary
 func extractSummaryResultFromPlan(output string) planSummary {
 	noChanges := []string{
-		"No changes. Infrastructure is up-to-date.",
-		"Plan: 0 to add, 0 to change, 0 to destroy.",
+		"Plan: 0 to add, 0 to change, 0 to destroy.", // This was the message returned by terraform 0.11
+		"No changes. Infrastructure is up-to-date.",  // This was the message returned by terraform 0.12
 		"Your infrastructure matches the configuration.",
 		"without changing any real infrastructure.",
 	}
