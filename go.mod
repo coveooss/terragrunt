@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.32.6
 	github.com/aws/aws-sdk-go-v2/config v1.28.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.47
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.37.2
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.70.0
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.38.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.71.0
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.56.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.2
 	github.com/cheekybits/genny v1.0.0
