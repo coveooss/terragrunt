@@ -6,10 +6,18 @@ on:
 env:
   GoVersion: '1.23'
 
+permissions:
+  contents: read
+
 jobs:
   static:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GoVersion }}
@@ -22,6 +30,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GoVersion }}
@@ -33,6 +46,11 @@ jobs:
   fmt-check:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GoVersion }}
@@ -50,6 +68,11 @@ jobs:
           - '1.8.5'
           - '1.9.8'
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GoVersion }}
@@ -67,6 +90,11 @@ jobs:
   goreleaser-check:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -82,6 +110,11 @@ jobs:
   goreleaser-test-release:
     runs-on: ubuntu-latest
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # goreleaser needs the whole history to build the release notes

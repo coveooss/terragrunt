@@ -3,6 +3,9 @@ on:
   push:
     tags:
       - "*"
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
@@ -16,6 +19,11 @@ jobs:
       matrix:
         terraform: ["1.9.7"]
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@v2
+        with:
+          egress-policy: audit
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
