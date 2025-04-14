@@ -15,7 +15,7 @@ import (
 	"github.com/coveooss/terragrunt/v2/tgerrors"
 	"github.com/coveooss/terragrunt/v2/util"
 	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // ParseTerragruntOptions parses command line options that are passed in for Terragrunt
