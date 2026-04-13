@@ -16,7 +16,7 @@ static:
 pre-commit: fmt static test
 
 build:
-	go install golang.org/x/tools/cmd/stringer@v0.25.0
+	go install golang.org/x/tools/cmd/stringer@latest
 	go install github.com/cheekybits/genny@v1.0.0
 
 	go generate -x ./...
