@@ -17,7 +17,7 @@ universal_binaries:
 
 # Archive customization
 archives:
-  - format: zip
+  - formats: [zip]
     files:
       - nothing.*
 
