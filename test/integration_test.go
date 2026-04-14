@@ -446,7 +446,7 @@ func removeFolder(t *testing.T, path string) {
 func runTerragruntCommand(_ *testing.T, command string, writer io.Writer, errwriter io.Writer) error {
 	args := util.RemoveElementFromList(strings.Split(command, " "), "")
 	app := cli.CreateTerragruntCli("TEST", writer, errwriter)
-	return app.Run(args)
+	return app.Run(context.Background(), args)
 }
 
 func runTerragrunt(t *testing.T, command string) {
