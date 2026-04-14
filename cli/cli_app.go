@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -156,18 +157,18 @@ var terragruntRunID string
 var terraformVersion string
 
 // CreateTerragruntCli creates the Terragrunt CLI App.
-func CreateTerragruntCli(version string, writer, errwriter io.Writer) *cli.App {
+func CreateTerragruntCli(version string, writer, errwriter io.Writer) *cli.Command {
 	cli.OsExiter = func(exitCode int) {
 		// Do nothing. We just need to override this function, as the default value calls os.Exit, which
 		// kills the app (or any automated test) dead in its tracks.
 	}
 
-	cli.AppHelpTemplate = customUsageText
+	cli.RootCommandHelpTemplate = customUsageText
 
-	app := cli.NewApp()
+	app := &cli.Command{}
 
 	app.Name = "terragrunt"
-	app.Author = "Gruntwork <www.gruntwork.io>"
+	app.Authors = []any{"Gruntwork <www.gruntwork.io>"}
 	app.Version = version
 	app.Action = runApp
 	app.Usage = "terragrunt <COMMAND>"
@@ -181,7 +182,7 @@ func CreateTerragruntCli(version string, writer, errwriter io.Writer) *cli.App {
 }
 
 // The sole action for the app
-func runApp(cliContext *cli.Context) (finalErr error) {
+func runApp(ctx context.Context, cliContext *cli.Command) (finalErr error) {
 	defer tgerrors.Recover(func(cause error) { finalErr = cause })
 
 	terragruntRunID = fmt.Sprint(xid.New())
@@ -201,7 +202,7 @@ func runApp(cliContext *cli.Context) (finalErr error) {
 		terragruntOptions.Println(title("\nTERRAGRUNT\n"))
 		cli.ShowAppHelp(cliContext)
 
-		fmt.Fprintln(cliContext.App.Writer)
+		fmt.Fprintln(cliContext.Writer)
 		terragruntOptions.Println(title("TERRAFORM\n"))
 		shell.NewTFCmd(terragruntOptions).Args("--help").Run()
 		return nil

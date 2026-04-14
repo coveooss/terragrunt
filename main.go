@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/coveooss/multilogger"
@@ -18,7 +19,7 @@ func main() {
 	defer tgerrors.Recover(checkForErrorsAndExit)
 
 	app := cli.CreateTerragruntCli(VERSION, os.Stdout, os.Stderr)
-	err := app.Run(os.Args)
+	err := app.Run(context.Background(), os.Args)
 
 	checkForErrorsAndExit(err)
 }

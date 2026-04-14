@@ -19,13 +19,13 @@ import (
 )
 
 // ParseTerragruntOptions parses command line options that are passed in for Terragrunt
-func ParseTerragruntOptions(cliContext *cli.Context) (*options.TerragruntOptions, error) {
-	terragruntOptions, err := parseTerragruntOptionsFromArgs(cliContext.Args())
+func ParseTerragruntOptions(cliContext *cli.Command) (*options.TerragruntOptions, error) {
+	terragruntOptions, err := parseTerragruntOptionsFromArgs(cliContext.Args().Slice())
 	if err != nil {
 		return nil, err
 	}
-	terragruntOptions.Writer = terragruntOptions.Logger.SetStdout(cliContext.App.Writer)
-	terragruntOptions.ErrWriter = terragruntOptions.Logger.SetOut(cliContext.App.ErrWriter)
+	terragruntOptions.Writer = terragruntOptions.Logger.SetStdout(cliContext.Writer)
+	terragruntOptions.ErrWriter = terragruntOptions.Logger.SetOut(cliContext.ErrWriter)
 	return terragruntOptions, nil
 }
 
