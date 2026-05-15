@@ -20,7 +20,7 @@ jobs:
         terraform: ["1.9.7"]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
@@ -41,7 +41,7 @@ jobs:
           wget https://releases.hashicorp.com/terraform/${{ matrix.terraform }}/terraform_${{ matrix.terraform }}_linux_amd64.zip -O /tmp/terraform.zip
           sudo unzip -o -d /usr/local/bin/ /tmp/terraform.zip
 
-      - uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+      - uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
         with:
           aws-region: us-east-1
           role-to-assume: arn:aws:iam::043612128888:role/nrd-oss-terragrunt-github-actions-ci
