@@ -14,7 +14,11 @@ jobs:
       # This is because the permission block is replacive instead of additive so setting
       # id-token removes any other permissions the job has and goreleaser need to write contents
       contents: write
-    runs-on: ubuntu-latest
+    runs-on:
+      - runs-on=${{ github.run_id }}
+      - pool=${{ vars.RUNS_ON_ENV_DEV }}__large_ubuntu_24_x64
+      - env=${{ vars.RUNS_ON_ENV_DEV }}
+      - region=us-east-1
     strategy:
       matrix:
         terraform: ["1.9.7"]
@@ -23,6 +27,8 @@ jobs:
         uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
         with:
           egress-policy: audit
+
+      - uses: coveo-platform/setup-runner@v1.1.1
 
       - name: Setup Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
