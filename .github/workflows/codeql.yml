@@ -28,8 +28,8 @@ jobs:
     name: Analyze
     runs-on:
       - runs-on=${{ github.run_id }}
-      - pool=${{ vars.RUNS_ON_ENV_DEV }}__default_ubuntu_24_arm64
-      - env=${{ vars.RUNS_ON_ENV_DEV }}
+      - pool=cip-dev-v3__default_ubuntu_24_arm64
+      - env=cip-dev-v3
       - region=us-east-1
     permissions:
       actions: read
@@ -64,7 +64,6 @@ jobs:
           # If you wish to specify custom queries, you can do so here or in a config file.
           # By default, queries listed here will override any specified in a config file.
           # Prefix the list here with "+" to use these queries and those in the config file.
-
           # Details on CodeQL's query packs refer to : https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
           # queries: security-extended,security-and-quality
 
@@ -77,10 +76,8 @@ jobs:
       - name: Perform CodeQL Analysis
         # ℹ️ Command-line programs to run using the OS shell.
         # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
-
         #   If the Autobuild fails above, remove it and uncomment the following three lines.
         #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
-
         # - run: |
         #     echo "Run, Build Application using script"
         #     ./location_of_script_within_repo/buildscript.sh

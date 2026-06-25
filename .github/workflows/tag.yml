@@ -16,8 +16,8 @@ jobs:
       contents: write
     runs-on:
       - runs-on=${{ github.run_id }}
-      - pool=${{ vars.RUNS_ON_ENV_DEV }}__large_ubuntu_24_x64
-      - env=${{ vars.RUNS_ON_ENV_DEV }}
+      - pool=cip-dev-v3__large_ubuntu_24_x64
+      - env=cip-dev-v3
       - region=us-east-1
     strategy:
       matrix:
