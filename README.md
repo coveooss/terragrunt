@@ -1,5 +1,8 @@
 # Terragrunt
 
+> [!WARNING]
+> This repository is archived and is no longer maintained.
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/coveooss/terragrunt)](https://goreportcard.com/report/github.com/coveooss/terragrunt)
 [![GoDoc](https://godoc.org/github.com/coveooss/terragrunt?status.svg)](https://godoc.org/github.com/coveooss/terragrunt)
 
